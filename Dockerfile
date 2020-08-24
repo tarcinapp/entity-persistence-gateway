@@ -1,8 +1,10 @@
-FROM maven:3.6.3-adoptopenjdk-11 AS MAVEN_BUILD
+FROM openjdk:11-jre-slim AS MAVEN_BUILD
 COPY pom.xml /build/
 COPY src /build/src/
+COPY mvnw /build/
+COPY .mvn /build/
 WORKDIR /build/
-RUN mvn package
+RUN mvnw package
 
 FROM openjdk:11-jre-slim
 ENV PORT 8080
