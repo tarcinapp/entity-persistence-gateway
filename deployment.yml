@@ -1,0 +1,47 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: entity-persistence-gateway-service
+  namespace: tarcinapp-test
+spec:
+  selector:
+    app: entity-persistence-gateway
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: entity-persistence-gateway-deployment
+  namespace: tarcinapp-test
+  labels:
+    app: entity-persistence-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: entity-persistence-gateway
+  template:
+    metadata:
+      labels:
+        app: entity-persistence-gateway
+    spec:
+      imagePullSecrets:
+      - name: pipeline-docker-registry
+      containers:
+      - name: entity-persistence-gateway
+        image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 60
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 3
