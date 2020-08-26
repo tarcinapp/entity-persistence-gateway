@@ -5,8 +5,10 @@ stages:
       dockerfilePath: ./Dockerfile
       buildContext: .
       tag: tarcinapp/entity-persistence-gateway:${CICD_EXECUTION_SEQUENCE}
+      pushRemote: true
+      registry: 127.0.0.1:34544
     env:
-      PLUGIN_MTU: 1450
+      PLUGIN_MTU: "1450"
 - name: Deploy
   steps:
   - applyYamlConfig:
