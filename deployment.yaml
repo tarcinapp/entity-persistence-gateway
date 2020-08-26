@@ -29,9 +29,9 @@ spec:
       labels:
         app: entity-persistence-gateway
     spec:
+      imagePullSecrets:
+      - name: pipeline-docker-registry
       containers:
-        imagePullSecrets:
-          - name: pipeline-docker-registry
       - name: entity-persistence-gateway
         image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
         ports:
