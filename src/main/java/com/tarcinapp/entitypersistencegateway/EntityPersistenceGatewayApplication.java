@@ -18,7 +18,7 @@ public class EntityPersistenceGatewayApplication {
 		return builder.routes()
 			.route("proxy", r -> r.path("/**")
 				.filters(f -> f.addRequestHeader("TarcinappUserID", "261b3278-631f-4655-8b87-b8a29a51213f"))
-				.uri("http://185.169.55.181:31585/")
+				.uri("http://entity-persistence-service/")
 			)
 			.build();
 	}
