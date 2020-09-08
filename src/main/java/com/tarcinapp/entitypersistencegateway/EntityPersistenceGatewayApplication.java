@@ -14,12 +14,11 @@ public class EntityPersistenceGatewayApplication {
 	}
 
 	@Bean
-	public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+	public RouteLocator configurePersistenceAppRoutes(RouteLocatorBuilder builder) {
 		return builder.routes()
-			.route("proxy", r -> r
-				.path("/**")
-				//.filters(f->f.rewritePath("/(?<segment>.*)","/a-integration/${segment}"))
-				.uri("http://185.169.55.181:31585")
+			.route("proxy", r -> r.path("/**")
+				.filters(f -> f.addRequestHeader("TarcinappUserID", "261b3278-631f-4655-8b87-b8a29a51213f"))
+				.uri("http://185.169.55.181:31585/")
 			)
 			.build();
 	}
