@@ -17,7 +17,8 @@ public class EntityPersistenceGatewayApplication {
 	public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
 		return builder.routes()
 			.route("proxy", r -> r
-				.path("/test")
+				.path("/**")
+				//.filters(f->f.rewritePath("/(?<segment>.*)","/a-integration/${segment}"))
 				.uri("http://185.169.55.181:31585")
 			)
 			.build();
