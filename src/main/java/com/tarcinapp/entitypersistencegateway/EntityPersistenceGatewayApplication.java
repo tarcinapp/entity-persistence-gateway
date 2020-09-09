@@ -13,6 +13,9 @@ public class EntityPersistenceGatewayApplication {
 	@Value( "${backendServiceEndpoint}" )
 	private String backendServiceEndpoint;
 
+	@Value("${headers.userId}")
+	private String userIdHeaderName;
+
 	public static void main(String[] args) {
 		SpringApplication.run(EntityPersistenceGatewayApplication.class, args);
 	}
@@ -26,7 +29,7 @@ public class EntityPersistenceGatewayApplication {
 			 */
 			.route("proxy", r -> r.path("/**")
 				.filters(f -> f
-					.addRequestHeader("TarcinappUserID", "261b3278-631f-4655-8b87-b8a29a51213f"))
+					.addRequestHeader(userIdHeaderName, "261b3278-631f-4655-8b87-b8a29a51213f"))
 				.uri(backendServiceEndpoint)
 			)
 
