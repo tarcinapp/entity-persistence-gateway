@@ -8,6 +8,8 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -17,12 +19,16 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
         // Put the configuration properties
     }
 
-    private boolean isAuthorizationValid(String authorizationHeader) {
+    private boolean isAuthorizationValid(String jwtToken) {
         boolean isValid = true;
 
-        System.out.println(authorizationHeader);
+        
+        Claims claims = Jwts.parser()
+            .parseClaimsJws(jwtToken)
+            .getBody();
 
         // Logic for checking the value
+        System.out.println(claims.getSubject());
 
         return isValid;
     }
@@ -44,9 +50,9 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
                 return this.onError(exchange, "No Authorization header", HttpStatus.UNAUTHORIZED);
             };
 
-            String authorizationHeader = request.getHeaders().get("Authorization").get(0);
+            String jwtToken = request.getHeaders().get("Authorization").get(0);
 
-            if (!this.isAuthorizationValid(authorizationHeader)) {
+            if (!this.isAuthorizationValid(jwtToken)) {
                 return this.onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
             }
 
