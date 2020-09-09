@@ -16,7 +16,16 @@ public class EntityPersistenceGatewayApplication {
 	@Bean
 	public RouteLocator configurePersistenceAppRoutes(RouteLocatorBuilder builder) {
 		return builder.routes()
+		
+			/**
+			 * Explorer is a design time utility for testing the backend service.
+			 * It should not be exposed to the outside world.
+			 */
+			.route("explorer", r -> r.path("/explorer")
+				.uri("no://op")
+			)
 			.route("proxy", r -> r.path("/**")
+				
 				.filters(f -> f.addRequestHeader("TarcinappUserID", "261b3278-631f-4655-8b87-b8a29a51213f"))
 				.uri("http://entity-persistence-service/")
 			)
