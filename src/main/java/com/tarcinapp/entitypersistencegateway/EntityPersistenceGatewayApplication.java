@@ -1,5 +1,8 @@
 package com.tarcinapp.entitypersistencegateway;
 
+import com.tarcinapp.entitypersistencegateway.filters.AuthFilterFactory;
+import com.tarcinapp.entitypersistencegateway.filters.AuthFilterFactory.Config;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,8 +24,17 @@ public class EntityPersistenceGatewayApplication {
 	}
 
 	@Bean
-	public RouteLocator configurePersistenceAppRoutes(RouteLocatorBuilder builder) {
+	public RouteLocator configurePersistenceAppRoutes(RouteLocatorBuilder builder, AuthFilterFactory authFilterFactory) {
 		return builder.routes()
+
+			/**
+			 * Check JWT token validity for all routes.
+			 */
+			.route("proxy", r -> r.path("/**")
+				.filters(f -> f
+					.filter(authFilterFactory.apply(new Config())))
+				.uri(backendServiceEndpoint)
+			)
 
 			/**
 			 * All paths behind this gateway are subjected to the global request limits.
