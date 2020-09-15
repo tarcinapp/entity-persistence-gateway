@@ -68,7 +68,7 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
                 return this.onError(exchange, "Only token authorization is allowed", HttpStatus.UNAUTHORIZED);
             }
 
-            String jwtToken = authHeader.replaceFirst("Bearer\s", "");
+            String jwtToken = authHeader.replaceFirst("Bearer\\s", "");
 
             try {
                 Claims claims = this.validateAuthorization(jwtToken);
