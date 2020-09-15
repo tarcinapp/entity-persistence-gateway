@@ -34,6 +34,12 @@ spec:
       containers:
       - name: entity-persistence-gateway
         image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+        env:
+        - name: JWTS_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: entity-persistence-gateway-secret
+              value: JWTS_PRIVATE_KEY
         ports:
         - containerPort: 8080
         livenessProbe:

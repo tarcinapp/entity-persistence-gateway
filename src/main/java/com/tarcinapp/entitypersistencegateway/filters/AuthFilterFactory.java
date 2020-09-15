@@ -28,6 +28,9 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
 
 	@Value("${headers.userId}")
     private String userIdHeaderName;
+
+    @Value("${JWTS_PRIVATE_KEY}")
+    private String privateKey;
     
     public static class Config {
         // Put the configuration properties
@@ -93,8 +96,8 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
         };
     }
 
-    private static Key loadPrivateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] data = Base64.getDecoder().decode(("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAweyK9xaCVQoq+z84vUVXEjAeQvhAqjwJMtH5qvd7QOBlkwT/Rlg7TehVkMpzoda3FJKZE79BL5PAI9T975Hyky85DZ2sxFrbRHX251cs/O98h4d0Z9AEGR2F0nO4axaqoGqmN1qymRkaNCqDNrXeomkbjvgAN239I2TRUqrkhWSjR9//dfonKAhaL6ipv8lr5Pc/276btdaWhTHnMHYv+TqM+K0E2a64x/njDYqj/HhLltLN667R4HiYfKSF7D2VCck3ro9XatNVBWuzFT1es/OZ51zVHJwfQS57c9ayuvHcaHoguDlPxn52jISBEjo9IXpLmgOhsGaxwO4Qc9/WWwIDAQAB".getBytes()));
+    private Key loadPrivateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] data = Base64.getDecoder().decode((privateKey.getBytes()));
         X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
         KeyFactory fact = KeyFactory.getInstance("RSA");
         return fact.generatePublic(spec);
