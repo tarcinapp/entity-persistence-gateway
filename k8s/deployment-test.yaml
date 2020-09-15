@@ -39,7 +39,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: entity-persistence-gateway-secret
-              value: JWTS_PRIVATE_KEY
+              key: JWTS_PRIVATE_KEY
         ports:
         - containerPort: 8080
         livenessProbe:
