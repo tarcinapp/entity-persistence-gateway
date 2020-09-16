@@ -70,17 +70,9 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
             String jwtToken = authHeader.replaceFirst("Bearer\\s", "");
 
             try {
-                Claims claims = this.validateAuthorization(jwtToken);
-                String subject = claims.getSubject();
+                this.validateAuthorization(jwtToken);
 
-                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .header("headername", subject).build();
-
-                return chain.filter(exchange
-                    .mutate()
-                    .request(modifiedRequest)
-                    .build()
-                );
+                return chain.filter(exchange);
             } catch(JwtException jwtException) {
                 jwtException.printStackTrace();
                 return this.onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
