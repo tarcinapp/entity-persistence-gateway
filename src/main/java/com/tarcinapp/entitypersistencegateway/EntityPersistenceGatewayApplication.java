@@ -28,8 +28,8 @@ public class EntityPersistenceGatewayApplication {
 			.route("proxy", p -> p.path("/**")
 				.filters(f -> f
 					.requestRateLimiter(r -> r
-						.setRateLimiter(new RedisRateLimiter(5, 10))
 						.setKeyResolver(userKeyResolver())
+						.setRateLimiter(redisRateLimiter())
 					)
 				)
 				.uri(backendServiceEndpoint)
@@ -49,5 +49,10 @@ public class EntityPersistenceGatewayApplication {
 
 	KeyResolver userKeyResolver() {
 		return exchange -> Mono.just("1");
+	}
+
+	RedisRateLimiter redisRateLimiter() {
+		RedisRateLimiter redisRateLimiter = new RedisRateLimiter(5, 10);
+		return redisRateLimiter;
 	}
 }
