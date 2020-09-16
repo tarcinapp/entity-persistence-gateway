@@ -2,7 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters;
 
 import java.security.Key;
 import java.security.KeyFactory;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -25,9 +24,6 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFactory.Config> {
-
-	@Value("${headers.userId}")
-    private String userIdHeaderName;
 
     @Value("${JWTS_PRIVATE_KEY}")
     private String privateKey;
@@ -78,7 +74,7 @@ public class AuthFilterFactory extends AbstractGatewayFilterFactory<AuthFilterFa
                 String subject = claims.getSubject();
 
                 ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .header(userIdHeaderName, subject).build();
+                    .header("headername", subject).build();
 
                 return chain.filter(exchange
                     .mutate()
