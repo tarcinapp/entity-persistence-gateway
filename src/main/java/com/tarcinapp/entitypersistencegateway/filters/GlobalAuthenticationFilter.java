@@ -49,7 +49,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
 
         try {
             this.validateAuthorization(jwtToken);
-
+            
             return chain.filter(exchange);
         } catch (JwtException jwtException) {
             jwtException.printStackTrace();
