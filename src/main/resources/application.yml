@@ -9,8 +9,8 @@ spring:
     name: entity-persistence-gateway
   redis: 
     host: your-redis-host-here
-    port: your-redis-port-here
-    database: your-database-here
+    port: 1234
+    database: 0
     password: your-pass-here
   cloud:
     gateway:
