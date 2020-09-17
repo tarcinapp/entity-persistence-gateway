@@ -1,0 +1,36 @@
+app:
+  privateKey: your-key-here
+  backend:
+    protocol: http
+    host: entity-persistence-service
+    port: 80
+spring:
+  application: 
+    name: entity-persistence-gateway
+  redis: 
+    host: your-redis-host-here
+    port: your-redis-port-here
+    database: your-database-here
+    password: your-pass-here
+  cloud:
+    gateway:
+      routes:
+      - id: all
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/
+        predicates:
+        - Path=/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.requestedTokens: 1
+      - id: explorer
+        uri: no://op
+        predicates:
+        - Path=/explorer
+        filters:
+        - name: SetStatus
+          args:
+            status: 404
+
