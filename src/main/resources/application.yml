@@ -1,5 +1,5 @@
 app:
-  jwtsPrivateKey: your-key-from-k8s-secret
+  jwtsPrivateKey: your-key-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   backend:
     protocol: http
     host: entity-persistence-service
@@ -11,7 +11,7 @@ spring:
     host: gateway-redis-master
     port: 6379
     database: 0
-    password: your-password-from-k8s-secret
+    password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
       routes:
