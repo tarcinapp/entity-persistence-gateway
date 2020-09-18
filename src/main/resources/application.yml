@@ -1,5 +1,5 @@
 app:
-  jwtsPrivateKey: inject-the-key-from-configmap
+  jwtsPrivateKey: xxx
   backend:
     protocol: http
     host: entity-persistence-service
@@ -11,7 +11,7 @@ spring:
     host: gateway-redis-master
     port: 6379
     database: 0
-    password: inject-the-password-from-configmap
+    password: xxx
   cloud:
     gateway:
       routes:
