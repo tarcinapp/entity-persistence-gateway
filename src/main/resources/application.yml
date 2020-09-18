@@ -1,5 +1,5 @@
 app:
-  jwtsPrivateKey: xxx
+  jwtsPrivateKey: your-key-from-k8s-secret
   backend:
     protocol: http
     host: entity-persistence-service
@@ -11,7 +11,7 @@ spring:
     host: gateway-redis-master
     port: 6379
     database: 0
-    password: xxx
+    password: your-password-from-k8s-secret
   cloud:
     gateway:
       routes:
@@ -22,9 +22,9 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 10
-            redis-rate-limiter.burstCapacity: 20
-            redis-rate-limiter.requestedTokens: 1
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
       - id: explorer
         uri: no://op
         predicates:
