@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 @Order(0)
 public class GlobalAuthenticationFilter implements GlobalFilter {
 
-    @Value("${app.privateKey}")
+    @Value("${app.jwtsPrivateKey}")
     private String privateKey;
 
     @Override

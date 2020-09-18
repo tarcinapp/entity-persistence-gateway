@@ -1,5 +1,5 @@
 app:
-  privateKey: your-key-here
+  jwtsPrivateKey: inject-the-key-from-configmap
   backend:
     protocol: http
     host: entity-persistence-service
@@ -8,10 +8,10 @@ spring:
   application: 
     name: entity-persistence-gateway
   redis: 
-    host: your-redis-host-here
-    port: 1234
+    host: gateway-redis-master
+    port: 6379
     database: 0
-    password: your-pass-here
+    password: inject-the-password-from-configmap
   cloud:
     gateway:
       routes:
