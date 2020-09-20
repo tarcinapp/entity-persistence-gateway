@@ -34,6 +34,9 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
+        System.out.println("!!!!!!");
+        System.out.println(privateKey);
+
         ServerHttpRequest request = exchange.getRequest();
 
         if (!request.getHeaders().containsKey("Authorization")) {
