@@ -1,5 +1,5 @@
 app:
-  jwtsPrivateKey: your-key-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+  jwtsCertificate: your-key-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   backend:
     protocol: http
     host: entity-persistence-service
