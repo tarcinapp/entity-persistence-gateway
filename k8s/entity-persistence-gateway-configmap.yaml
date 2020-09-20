@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entity-persistence-gateway-config
+  namespace: tarcinapp-test
+data:
+  app.backend.protocol: "http"
+  app.backend.host: "entity-persistence-service"
+  app.backend.port: "80"
