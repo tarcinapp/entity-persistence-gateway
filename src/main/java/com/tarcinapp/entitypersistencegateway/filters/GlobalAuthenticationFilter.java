@@ -28,14 +28,11 @@ import reactor.core.publisher.Mono;
 @Order(0)
 public class GlobalAuthenticationFilter implements GlobalFilter {
 
-    @Value("${app.jwtsCertificate}")
+    @Value("${app.rs256PublicKey}")
     private String privateKey;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-
-        System.out.println("!!!!!!");
-        System.out.println(privateKey);
 
         ServerHttpRequest request = exchange.getRequest();
 
