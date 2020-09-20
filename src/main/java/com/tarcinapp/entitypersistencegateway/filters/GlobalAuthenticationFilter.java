@@ -31,6 +31,9 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
     @Value("${app.rs256PublicKey}")
     private String privateKey;
 
+    @Value("${app.requestHeaders.authenticationSubject}")
+    private String authSubjectHeader;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
@@ -49,7 +52,16 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
         String jwtToken = authHeader.replaceFirst("Bearer\\s", "");
 
         try {
-            this.validateAuthorization(jwtToken);
+            Claims claims = this.validateAuthorization(jwtToken);
+            String subject = claims.getSubject();
+
+            /**
+             * Add authentication subject to HTTP headers to share with other filters.
+             * This approach also prevents need for parsing JWT in other filters and saves CPU.
+             * */
+            exchange.getRequest()
+                .mutate()
+                .header(authSubjectHeader, subject);
             
             return chain.filter(exchange);
         } catch (JwtException jwtException) {
