@@ -36,8 +36,8 @@ spring:
 logging:
   level:
     reactor:
-      netty: INFO
+      netty: DEBUG
     org:
       springframework:
         cloud:
-          gateway: INFO
+          gateway: TRACE
