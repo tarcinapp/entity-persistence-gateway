@@ -34,6 +34,11 @@ spec:
       containers:
       - name: entity-persistence-gateway
         image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+        envFrom:
+        - secretRef:
+            name: entity-persistence-gateway-secret
+        - configMapRef:
+            name: entity-persistence-gateway-config
         ports:
         - containerPort: 8080
         livenessProbe:
