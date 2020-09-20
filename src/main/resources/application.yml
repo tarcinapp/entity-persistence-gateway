@@ -33,4 +33,11 @@ spring:
         - name: SetStatus
           args:
             status: 404
-
+logging:
+  level:
+    reactor:
+      netty: DEBUG
+    org:
+      springframework:
+        cloud:
+          gateway: TRACE
