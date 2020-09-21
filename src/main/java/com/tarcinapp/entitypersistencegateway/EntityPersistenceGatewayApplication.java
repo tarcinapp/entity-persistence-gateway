@@ -16,6 +16,9 @@ public class EntityPersistenceGatewayApplication {
 
 	@Bean
 	KeyResolver userKeyResolver() {
-		return exchange -> Mono.just("1");
+		return (exchange) -> {
+
+			return Mono.just("1");
+		};
 	}
 }

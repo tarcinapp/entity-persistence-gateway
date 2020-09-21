@@ -3,8 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.annotation.Order;
-
+import org.springframework.core.Ordered;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -25,8 +24,7 @@ import io.jsonwebtoken.Jwts;
 import reactor.core.publisher.Mono;
 
 @Component
-@Order(0)
-public class GlobalAuthenticationFilter implements GlobalFilter {
+public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
 
     @Value("${app.rs256PublicKey}")
     private String privateKey;
@@ -54,6 +52,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
         try {
             Claims claims = this.validateAuthorization(jwtToken);
             String subject = claims.getSubject();
+
+            System.out.println("Auth filter executed");
 
             /**
              * Add authentication subject to HTTP headers to share with other filters.
@@ -99,5 +99,10 @@ public class GlobalAuthenticationFilter implements GlobalFilter {
         response.setStatusCode(httpStatus);
 
         return response.setComplete();
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
     }
 }

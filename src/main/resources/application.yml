@@ -18,6 +18,7 @@ spring:
     gateway:
       routes:
       - id: all
+        order: 1
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/
         predicates:
         - Path=/**
