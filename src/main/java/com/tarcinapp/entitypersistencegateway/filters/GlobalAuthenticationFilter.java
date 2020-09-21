@@ -53,10 +53,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
             Claims claims = this.validateAuthorization(jwtToken);
             String subject = claims.getSubject();
 
-            System.out.println("Auth filter executed");
-
             /**
-             * Add authentication subject to HTTP headers to share with other filters.
+             * Add authentication subject to HTTP headers to share with other filters (authorization, rate limiting).
              * This approach also prevents need for parsing JWT in other filters and saves CPU.
              * */
             exchange.getRequest()
