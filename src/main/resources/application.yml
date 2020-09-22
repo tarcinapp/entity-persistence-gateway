@@ -17,17 +17,18 @@ spring:
   cloud:
     gateway:
       routes:
-      - id: all
-        order: 1
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/
+      - id: createEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
-        - Path=/**
+        - Path=/generic-entities
+        - Method=POST
         filters:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: SetOwnerUsers2Request
       - id: explorer
         uri: no://op
         predicates:
