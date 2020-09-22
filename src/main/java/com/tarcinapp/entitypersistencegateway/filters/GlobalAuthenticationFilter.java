@@ -11,6 +11,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
 
@@ -57,7 +58,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
         try {
             Claims claims = this.validateAuthorization(jwtToken);
             String subject = claims.getSubject();
-            ArrayList<String> groups = (ArrayList<String>) claims.get("groups");
+            ArrayList<String> groups = (ArrayList<String>) claims.get("groups", ArrayList.class);
+            ArrayList<String> roles = getRolesFromClaims(claims);
 
             // add auth subject to the request header
             exchange.getRequest()
@@ -71,6 +73,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
             GatewayContext gc = new GatewayContext();
                 gc.setAuthSubject(subject);
                 gc.setGroups(groups);
+                gc.setRoles(roles);
 
             exchange.getAttributes()
                 .put(GATEWAY_CONTEXT_ATTR, gc);
@@ -111,6 +114,18 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
         response.setStatusCode(httpStatus);
 
         return response.setComplete();
+    }
+
+    private ArrayList<String> getRolesFromClaims(Claims claims) {
+        LinkedHashMap resourceAccess = (LinkedHashMap)claims.get("resource_access");
+
+        if(resourceAccess==null) return null;
+
+        LinkedHashMap account =(LinkedHashMap) resourceAccess.get("account");
+
+        if(account==null) return null;
+        
+        return (ArrayList<String>) account.get("roles");
     }
 
     @Override
