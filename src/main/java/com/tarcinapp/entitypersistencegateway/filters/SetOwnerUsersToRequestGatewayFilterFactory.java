@@ -1,44 +1,35 @@
 package com.tarcinapp.entitypersistencegateway.filters;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.GatewayContext;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.io.buffer.NettyDataBufferFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import io.netty.buffer.ByteBufAllocator;
-import jdk.jfr.ContentType;
-import reactor.core.publisher.Flux;
+import org.springframework.http.MediaType;
+
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+
 import reactor.core.publisher.Mono;
 
 @Component
-public class SetOwnerUsers2RequestGatewayFilterFactory
-        extends AbstractGatewayFilterFactory<SetOwnerUsers2RequestGatewayFilterFactory.Config> {
+public class SetOwnerUsersToRequestGatewayFilterFactory
+        extends AbstractGatewayFilterFactory<SetOwnerUsersToRequestGatewayFilterFactory.Config> {
 
-    @Value("${app.requestHeaders.authenticationSubject}")
-    private String authSubjectHeader;
+    private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
+    private static final String OWNER_GROUPS_FIELD_NAME = "ownerGroups";
+    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    public SetOwnerUsers2RequestGatewayFilterFactory() {
+    public SetOwnerUsersToRequestGatewayFilterFactory() {
         super(Config.class);
     }
 
@@ -46,20 +37,31 @@ public class SetOwnerUsers2RequestGatewayFilterFactory
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
+
             ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                     .setContentType(MediaType.APPLICATION_JSON_VALUE)
                     .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        
-                        String authSubject = exchange1.getRequest().getHeaders().getFirst(authSubjectHeader);
+                        GatewayContext gc = (GatewayContext)exchange1.getAttributes().get(GATEWAY_CONTEXT_ATTR);
 
+                        if(gc == null) {
+                            return Mono.just(inboundJsonRequestStr);
+                        }
+                        
+                        String authSubject = gc.getAuthSubject();
+                        ArrayList<String> groups = gc.getGroups();
 
                         try {
+                            ObjectMapper objectMapper = new ObjectMapper();
                             Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
                                 new TypeReference<Map<String, Object>>() {
                                 });
-                            inboundJsonRequestMap.put("ownerUsers", new String[]{authSubject});
 
+                            if(authSubject != null)
+                                inboundJsonRequestMap.put(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
+
+                            if(groups != null)
+                                inboundJsonRequestMap.put(OWNER_GROUPS_FIELD_NAME, groups.toArray(new String[groups.size()]));
+                            
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 
                             return Mono.just(outboundJsonRequestStr);
@@ -77,7 +79,7 @@ public class SetOwnerUsers2RequestGatewayFilterFactory
             return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
         };
     }
- 
+     
     public static class Config {
         
     }

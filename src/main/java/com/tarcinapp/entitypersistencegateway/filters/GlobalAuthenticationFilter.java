@@ -9,7 +9,10 @@ import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+
+import com.tarcinapp.entitypersistencegateway.GatewayContext;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -32,6 +35,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
     @Value("${app.requestHeaders.authenticationSubject}")
     private String authSubjectHeader;
 
+    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
@@ -52,15 +57,24 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
         try {
             Claims claims = this.validateAuthorization(jwtToken);
             String subject = claims.getSubject();
+            ArrayList<String> groups = (ArrayList<String>) claims.get("groups");
 
-            /**
-             * Add authentication subject to HTTP headers to share with other filters (authorization, rate limiting).
-             * This approach also prevents need for parsing JWT in other filters and saves CPU.
-             * */
+            // add auth subject to the request header
             exchange.getRequest()
                 .mutate()
                 .header(authSubjectHeader, subject);
             
+            /**
+             * Add security fields to GatewayContext to share with other filters (authorization, rate limiting).
+             * This approach also prevents need for parsing JWT in other filters and saves CPU.
+             * */
+            GatewayContext gc = new GatewayContext();
+                gc.setAuthSubject(subject);
+                gc.setGroups(groups);
+
+            exchange.getAttributes()
+                .put(GATEWAY_CONTEXT_ATTR, gc);
+
             return chain.filter(exchange);
         } catch (JwtException jwtException) {
             jwtException.printStackTrace();

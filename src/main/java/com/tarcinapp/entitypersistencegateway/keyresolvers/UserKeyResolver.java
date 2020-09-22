@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.keyresolvers;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.tarcinapp.entitypersistencegateway.GatewayContext;
+
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -10,13 +11,12 @@ import reactor.core.publisher.Mono;
 @Component
 public class UserKeyResolver implements KeyResolver {
 
-    @Value("${app.requestHeaders.authenticationSubject}")
-    private String authSubjectHeader;
+    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
     @Override
     public Mono<String> resolve(ServerWebExchange exchange) {
-        String subject = exchange.getRequest().getHeaders().getFirst(authSubjectHeader);
+        GatewayContext subject = (GatewayContext)exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
 
-        return Mono.just(subject);
+        return Mono.just(subject.getAuthSubject());
     }
 }

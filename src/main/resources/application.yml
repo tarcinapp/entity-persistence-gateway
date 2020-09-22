@@ -28,7 +28,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: SetOwnerUsers2Request
+        - name: SetOwnerUsersToRequest
       - id: explorer
         uri: no://op
         predicates:
