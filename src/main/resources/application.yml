@@ -27,7 +27,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1MB
+            maxSize: 512KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -42,7 +42,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1MB
+            maxSize: 512KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -64,6 +64,56 @@ spring:
         predicates:
         - Path=/generic-entities/count
         - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}
+        - Method=PATCH
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+      - id: replaceEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}
+        - Method=PUT
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+      - id: deleteEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}
+        - Method=DELETE
         filters:
         - name: RequestRateLimiter
           args:
