@@ -1,5 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -37,6 +39,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
     private String authSubjectHeader;
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+
+    Logger logger = LogManager.getLogger(GlobalAuthenticationFilter.class);
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -77,16 +81,16 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
                 gc.setRoles(roles);
                 gc.setAuthParty(authParth);
 
-
             exchange.getAttributes()
                 .put(GATEWAY_CONTEXT_ATTR, gc);
 
             return chain.filter(exchange);
         } catch (JwtException jwtException) {
-            jwtException.printStackTrace();
+            logger.error(jwtException);
+
             return this.onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
 
         return this.onError(exchange, "Authorization validation could not be completed",

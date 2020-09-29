@@ -10,6 +10,7 @@ import java.util.Random;
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -64,6 +65,8 @@ public class RequestIdGenerationFilter implements GlobalFilter, Ordered {
             .build();
 
         gc.setRequestId(requestId);
+
+        ThreadContext.put("requestId", requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
     }
