@@ -22,7 +22,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class RequestIdGenerationFilter implements GlobalFilter, Ordered {
+public class GlobalRequestIdGenerationFilter implements GlobalFilter, Ordered {
 
     @Value("${app.requestHeaders.authenticationSubject}")
     private String requestIdHeader;
@@ -44,18 +44,18 @@ public class RequestIdGenerationFilter implements GlobalFilter, Ordered {
         String datePart = dateFormat.format(date);
 
         // create auth party part
-        String authPart = gc.getAuthParty().toUpperCase();
+        String authParty = gc.getAuthParty() != null ? gc.getAuthParty() : "unknown";
 
         // create random part
-        String random = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        String random = RandomStringUtils.randomAlphanumeric(5);
 
-        sb.append(requestIdPrefix);
+        sb.append(requestIdPrefix.toUpperCase());
         sb.append("-");
         sb.append(datePart);
         sb.append("-");
-        sb.append(authPart);
+        sb.append(authParty.toUpperCase());
         sb.append("-");
-        sb.append(random);
+        sb.append(random.toUpperCase());
 
         String requestId = sb.toString();
 

@@ -15,8 +15,14 @@ public class UserKeyResolver implements KeyResolver {
 
     @Override
     public Mono<String> resolve(ServerWebExchange exchange) {
-        GatewayContext subject = (GatewayContext)exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
+        GatewayContext gc = (GatewayContext)exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
 
-        return Mono.just(subject.getAuthSubject());
+        String key = gc.getAuthSubject();
+
+        if(key==null) {
+            key = exchange.getRequest().getRemoteAddress().getHostName();
+        }
+
+        return Mono.just(key);
     }
 }

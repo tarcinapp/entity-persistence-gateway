@@ -32,8 +32,8 @@ import reactor.core.publisher.Mono;
 @Component
 public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
 
-    @Value("${app.rs256PublicKey}")
-    private String privateKey;
+    @Value("${app.rs256PublicKey:#{null}}")
+    private String rs256PublicKey;
 
     @Value("${app.requestHeaders.authenticationSubject}")
     private String authSubjectHeader;
@@ -44,6 +44,18 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        if(rs256PublicKey==null) {
+            logger.warn("RS256 key is not configured. Requests won't be authenticated! Please configure RS256 public key.");
+
+            // instantiate empty gateway context
+            GatewayContext gc = new GatewayContext();
+
+            exchange.getAttributes()
+                .put(GATEWAY_CONTEXT_ATTR, gc);
+
+            return chain.filter(exchange);
+        }
 
         ServerHttpRequest request = exchange.getRequest();
 
@@ -110,7 +122,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
 	}
 	
 	private Key loadPrivateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] data = Base64.getDecoder().decode((privateKey.getBytes()));
+        byte[] data = Base64.getDecoder().decode((rs256PublicKey.getBytes()));
         X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
         KeyFactory fact = KeyFactory.getInstance("RSA");
         return fact.generatePublic(spec);
