@@ -55,14 +55,15 @@ public class RequestIdGenerationFilter implements GlobalFilter, Ordered {
         sb.append(authPart);
         sb.append("-");
         sb.append(random);
-        
-        System.out.println("Request ID: ");
-        System.out.println(sb);
+
+        String requestId = sb.toString();
 
         ServerHttpRequest request = exchange.getRequest()
             .mutate()
-            .header(requestIdHeader, sb.toString())
+            .header(requestIdHeader, requestId)
             .build();
+
+        gc.setRequestId(requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
     }

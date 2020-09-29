@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class GatewayContext {
     private String authSubject;
     private String authParty;
+    private String requestId;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
 
@@ -38,5 +39,13 @@ public class GatewayContext {
 
     public ArrayList<String> getRoles() {
         return this.roles;
+    }
+
+    public String getRequestId() {
+        return this.requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }
