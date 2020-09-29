@@ -34,6 +34,42 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - name: SetOwnerUsersToRequest
+      - id: updateAllEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        predicates:
+        - Path=/generic-entities
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1MB
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        predicates:
+        - Path=/generic-entities
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: countEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
+        predicates:
+        - Path=/generic-entities/count
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
       - id: explorer
         uri: no://op
         predicates:
