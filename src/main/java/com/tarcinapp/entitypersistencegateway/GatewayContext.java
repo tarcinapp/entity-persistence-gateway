@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public class GatewayContext {
     private String authSubject;
+    private String authParty;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
 
@@ -13,6 +14,14 @@ public class GatewayContext {
 
     public String getAuthSubject() {
         return this.authSubject;
+    }
+
+    public void setAuthParty(String authParty) {
+        this.authParty = authParty;
+    }
+
+    public String getAuthParty() {
+        return this.authParty;
     }
 
     public void setGroups(ArrayList<String> groups) {

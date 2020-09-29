@@ -2,6 +2,8 @@ app:
   rs256PublicKey: your-key-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   requestHeaders:
     authenticationSubject: "TarcinappAuthSubject"
+    requestId: "TarcinappRequestId"
+  requestIdPrefix: "TAPP"
   backend:
     protocol: http
     host: entity-persistence-service

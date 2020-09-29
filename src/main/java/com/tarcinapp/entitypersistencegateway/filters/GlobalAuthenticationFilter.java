@@ -58,6 +58,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
         try {
             Claims claims = this.validateAuthorization(jwtToken);
             String subject = claims.getSubject();
+            String authParth = claims.get("azp", String.class);
             ArrayList<String> groups = (ArrayList<String>) claims.get("groups", ArrayList.class);
             ArrayList<String> roles = getRolesFromClaims(claims);
 
@@ -68,12 +69,14 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
             
             /**
              * Add security fields to GatewayContext to share with other filters (authorization, rate limiting).
-             * This approach also prevents need for parsing JWT in other filters and saves CPU.
+             * This approach also prevents need for parsing JWT in other filters and saves time and CPU.
              * */
             GatewayContext gc = new GatewayContext();
                 gc.setAuthSubject(subject);
                 gc.setGroups(groups);
                 gc.setRoles(roles);
+                gc.setAuthParty(authParth);
+
 
             exchange.getAttributes()
                 .put(GATEWAY_CONTEXT_ATTR, gc);
