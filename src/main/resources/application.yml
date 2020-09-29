@@ -25,6 +25,9 @@ spring:
         - Path=/generic-entities
         - Method=POST
         filters:
+        - name: RequestSize
+          args:
+            maxSize: 1MB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
