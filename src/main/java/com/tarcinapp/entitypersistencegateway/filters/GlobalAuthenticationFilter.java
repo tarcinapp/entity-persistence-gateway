@@ -45,8 +45,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        if(rs256PublicKey==null) {
-            logger.warn("RS256 key is not configured. Requests won't be authenticated! Please configure RS256 public key.");
+        if(rs256PublicKey==null || rs256PublicKey.equals("false")) {
+            logger.warn("RS256 key is not configured. Requests won't be authenticated! Please configure RS256 public key to enable authentication.");
 
             // instantiate empty gateway context
             GatewayContext gc = new GatewayContext();

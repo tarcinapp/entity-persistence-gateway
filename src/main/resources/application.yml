@@ -1,5 +1,5 @@
 app:
-  rs256PublicKey: your-key-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+  rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   requestHeaders:
     authenticationSubject: "TarcinappAuthSubject"
     requestId: "TarcinappRequestId"
@@ -19,6 +19,7 @@ spring:
   cloud:
     gateway:
       routes:
+      # entity controller
       - id: createEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
@@ -113,6 +114,52 @@ spring:
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities/{entityId}
+        - Method=DELETE
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      
+      # relations controller on entity
+      - id: getRelationsOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}/relations
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: createRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}/relations
+        - Method=POST
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}/relations
+        - Method=PATCH
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: deleteRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{entityId}/relations
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
