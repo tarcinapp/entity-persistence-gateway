@@ -19,6 +19,7 @@ spring:
   cloud:
     gateway:
       routes:
+      
       # entity controller
       - id: createEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
@@ -167,6 +168,109 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+
+      # relations controller
+      - id: createRelation
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateAllRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: countRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations/count
+        predicates:
+        - Path=/relations/count
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{relationId}
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{relationId}
+        - Method=PATCH
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+      - id: replaceRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{relationId}
+        - Method=PUT
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 512KB
+      - id: deleteRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{relationId}
+        - Method=DELETE
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      #explorer controller
       - id: explorer
         uri: no://op
         predicates:
