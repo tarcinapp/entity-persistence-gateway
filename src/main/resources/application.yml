@@ -29,7 +29,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -44,7 +44,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -96,7 +96,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -110,7 +110,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -122,7 +122,6 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-      
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -178,7 +177,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -192,7 +191,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -244,7 +243,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -258,7 +257,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 512KB
+            maxSize: 4KB
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -279,6 +278,20 @@ spring:
         - name: SetStatus
           args:
             status: 404
+      # kind path mapping
+      - id: findEntityByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: ConvertKindPathToQueryFilter
 logging:
   level:
     reactor:
