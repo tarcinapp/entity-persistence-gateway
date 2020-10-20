@@ -40,7 +40,7 @@ public class GlobalRequestIdGenerationFilter implements GlobalFilter, Ordered {
 
         // create date part
         Date date = Calendar.getInstance().getTime();  
-        DateFormat dateFormat = new SimpleDateFormat("yyyymmddhhmmss");  
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMddhHHmmss");  
         String datePart = dateFormat.format(date);
 
         // create auth party part
