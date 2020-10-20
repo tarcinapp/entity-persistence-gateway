@@ -4,6 +4,7 @@ metadata:
   name: entity-persistence-gateway-config
   namespace: tarcinapp-test
 data:
+  app.auth.rs256PublicKey: "your-jwts-private-key-here"
   app.backend.protocol: "http"
   app.backend.host: "entity-persistence-service"
   app.backend.port: "80"
