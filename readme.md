@@ -5,20 +5,27 @@ This application adds API Gateway capabilities to the entity-persistence-service
 * Authorization related fields (ownerUsers and ownerGroups) are filled by the gateway with the claim values provided in the JWT token payload.
 * Authorization policy execution with the OPA (Open Policy Agent).
 * Resource filtering in responses based on the policy execution results.
-# Configuration
+# Authentication
+This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token.
+# Authorization
+This application requires 4 level of roles: admin, editor, member and visitor. You can configure names for the roles in configuration. Roles must be in JWT according to the configuration.
+Admin: Can query, alter and delete all the data.
+Editor: Can query all the data but can not change the creationTimeStamp field of records. Cannot delete any data. 
+Member: 
+* Can query all public data.
+* Can query all protected data if the user is in one of the groups recorded in ownerGroups field of the specific data.
+* Can query all private data if the user is in the ownerUsers field of the data.
+* Never see the managed fields of the data such as: validFromDateTime, validUntilDateTime, visibility.
+* Can create data if the policy allows the operation. Every invocation that the member attempts are subjected to OPA policies. OPA policies are managed externally. 
+Visitor:
+* Only GET operations are allowed.
+* Can see the public data.
+* Never see the managed fields of the data such as: validFromDateTime, validUntilDateTime, visibility.
+
 ## JWTS Private Key
-This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'JWTS_PRIVATE_KEY' environment variable. It's better to set the value from a Secret in K8S environments. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
+This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
 # Deployment
 ## Deployment with Rancher Pipelines
 This application contains .rancher-pipeline.yaml file for CI/CD pipeline configuration in Rancher. This file configured to tell Rancher to use the YAML files located under /k8s folder of the application for creating k8s resources.
 ### Configuration
-Application deployment yaml file assumes that a Secret named entity-persistence-gateway-secret is configured in the tarcinapp-test namespace prior to the deployment. Create the secret as follows before deploying the application:
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-    name: entity-persistence-gateway-secret
-    namespace: tarcinapp-test
-data:
-    JWTS_PRIVATE_KEY: *your private key here*
-```
+Application deployment yaml file assumes that a Secret named entity-persistence-gateway-secret is configured in the tarcinapp-test namespace prior to the deployment. Find sample configmap and secret under k8s folder.

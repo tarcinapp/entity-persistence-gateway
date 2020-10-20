@@ -1,5 +1,6 @@
 app:
-  rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+  auth:
+    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   requestHeaders:
     authenticationSubject: "TarcinappAuthSubject"
     requestId: "TarcinappRequestId"
@@ -292,6 +293,7 @@ spring:
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryFilter
+        - name: ClearFieldQueries
 logging:
   level:
     reactor:
