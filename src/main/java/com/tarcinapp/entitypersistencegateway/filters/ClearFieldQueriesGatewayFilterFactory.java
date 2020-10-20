@@ -139,7 +139,7 @@ public class ClearFieldQueriesGatewayFilterFactory
                         .build()
                         .toUri();
 
-                    logger.debug("New query string: " + newUri);
+                    logger.debug("New URI " + newUri);
 
                     originalRequest.uri(newUri);
                 })
