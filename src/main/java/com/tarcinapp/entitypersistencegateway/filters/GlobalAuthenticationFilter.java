@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
 
-    @Value("${app.rs256PublicKey:#{null}}")
+    @Value("${app.auth.rs256PublicKey:#{null}}")
     private String rs256PublicKey;
 
     @Value("${app.requestHeaders.authenticationSubject}")
@@ -57,6 +57,8 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
             return chain.filter(exchange);
         }
 
+        logger.debug("RS256 public key is configured. Request will be authenticated.");
+
         ServerHttpRequest request = exchange.getRequest();
 
         if (!request.getHeaders().containsKey("Authorization")) {
@@ -77,6 +79,9 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
             String authParth = claims.get("azp", String.class);
             ArrayList<String> groups = (ArrayList<String>) claims.get("groups", ArrayList.class);
             ArrayList<String> roles = getRolesFromClaims(claims);
+
+            logger.debug("JWT token is validated.");
+            logger.debug("Claims: " + claims);
 
             // add auth subject to the request header
             exchange.getRequest()
@@ -136,15 +141,11 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
     }
 
     private ArrayList<String> getRolesFromClaims(Claims claims) {
-        LinkedHashMap resourceAccess = (LinkedHashMap)claims.get("resource_access");
+        LinkedHashMap realm_access = (LinkedHashMap)claims.get("realm_access");
 
         if(resourceAccess==null) return null;
 
-        LinkedHashMap account =(LinkedHashMap) resourceAccess.get("account");
-
-        if(account==null) return null;
-        
-        return (ArrayList<String>) account.get("roles");
+        return (ArrayList<String>) resourceAccess.get("roles");
     }
 
     @Override
