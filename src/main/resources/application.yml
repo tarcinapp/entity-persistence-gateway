@@ -293,7 +293,7 @@ spring:
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryFilter
-        - name: ClearFieldQueries
+        # - name: ClearFieldQueries
 logging:
   level:
     reactor:

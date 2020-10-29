@@ -68,7 +68,7 @@ public class ClearFieldQueriesGatewayFilterFactory
             // check if user role contains any role whose value equal or above editor role level
             if(roles.indexOf("tarcinapp_admin") >= 0 || roles.indexOf("tarcinapp_editor") >= 0) {
                 
-                logger.debug("No need to clear field queries for these roles. Exiting withouth any modification.");
+                logger.debug("No need to clear field queries for these roles. Exiting filter withouth any modification.");
                 return chain.filter(exchange);
             }
 
@@ -108,8 +108,16 @@ public class ClearFieldQueriesGatewayFilterFactory
                 query.removeIf((nvp) -> {
                     Matcher matcher = FIELD_QUERY_PATTERN.matcher(nvp.getName());
                     
-                    if(matcher.find())
-                        return hideFields.contains(matcher.group(1));
+                    if(matcher.find()) {
+                        String matched = matcher.group(1);
+                        boolean willBeRemoved = hideFields.contains(matcher.group(1));
+
+                        if(willBeRemoved) {
+                            logger.debug("User asked for the field: '" + matched + "'. This field will be removed from query string.");
+                            return true;
+                        }
+                    }
+                        
                     
                     return false;
                 });
