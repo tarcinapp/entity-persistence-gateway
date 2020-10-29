@@ -144,6 +144,7 @@ public class ClearFieldQueriesGatewayFilterFactory
 
                     URI newUri = UriComponentsBuilder.fromUri(uri)
                         .replaceQuery(newQueryStr)
+                        .encode()
                         .build()
                         .toUri();
 

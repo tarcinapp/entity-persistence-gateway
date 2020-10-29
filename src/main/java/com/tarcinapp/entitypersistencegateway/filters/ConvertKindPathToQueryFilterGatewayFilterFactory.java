@@ -79,6 +79,7 @@ public class ConvertKindPathToQueryFilterGatewayFilterFactory
 
                     URI newUri = UriComponentsBuilder.fromUri(uri)
                         .replaceQuery(newQueryStr)
+                        .encode()
                         .build()
                         .toUri();
 
