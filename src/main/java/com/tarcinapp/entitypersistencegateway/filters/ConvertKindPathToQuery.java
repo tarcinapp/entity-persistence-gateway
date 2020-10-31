@@ -34,13 +34,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Component
-public class ConvertKindPathToQueryFilterGatewayFilterFactory
-        extends AbstractGatewayFilterFactory<ConvertKindPathToQueryFilterGatewayFilterFactory.Config> {
+public class ConvertKindPathToQuery
+        extends AbstractGatewayFilterFactory<ConvertKindPathToQuery.Config> {
 
     private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[kind\\].*");
-    private Logger logger = LogManager.getLogger(ConvertKindPathToQueryFilterGatewayFilterFactory.class);
+    private Logger logger = LogManager.getLogger(ConvertKindPathToQuery.class);
 
-    public ConvertKindPathToQueryFilterGatewayFilterFactory() {
+    public ConvertKindPathToQuery() {
         super(Config.class);
     }
 
