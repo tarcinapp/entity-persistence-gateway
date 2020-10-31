@@ -23,16 +23,16 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
-public class SetOwnerUsersToRequestGatewayFilterFactory
-        extends AbstractGatewayFilterFactory<SetOwnerUsersToRequestGatewayFilterFactory.Config> {
+public class SetOwnerUsersToRequest
+        extends AbstractGatewayFilterFactory<SetOwnerUsersToRequest.Config> {
 
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
     private static final String OWNER_GROUPS_FIELD_NAME = "ownerGroups";
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    Logger logger = LogManager.getLogger(SetOwnerUsersToRequestGatewayFilterFactory.class);
+    Logger logger = LogManager.getLogger(SetOwnerUsersToRequest.class);
 
-    public SetOwnerUsersToRequestGatewayFilterFactory() {
+    public SetOwnerUsersToRequest() {
         super(Config.class);
     }
 

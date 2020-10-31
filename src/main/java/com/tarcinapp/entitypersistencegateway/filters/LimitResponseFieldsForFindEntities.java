@@ -35,16 +35,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Component
-public class ClearFieldQueriesGatewayFilterFactory
-        extends AbstractGatewayFilterFactory<ClearFieldQueriesGatewayFilterFactory.Config> {
+public class LimitResponseFieldsForFindEntities
+        extends AbstractGatewayFilterFactory<LimitResponseFieldsForFindEntities.Config> {
 
-    private Logger logger = LogManager.getLogger(ClearFieldQueriesGatewayFilterFactory.class);
+    private Logger logger = LogManager.getLogger(LimitResponseFieldsForFindEntities.class);
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
     private final static Pattern FIELD_QUERY_PATTERN = Pattern.compile("filter\\[fields\\]\\[([^\\]]+)\\]");
 
-    public ClearFieldQueriesGatewayFilterFactory() {
+    public LimitResponseFieldsForFindEntities() {
         super(Config.class);
     }
 
@@ -53,7 +53,7 @@ public class ClearFieldQueriesGatewayFilterFactory
 
         return (exchange, chain) -> {
             
-            logger.debug("ClearFieldQueries filter is started.");
+            logger.debug("LimitResponseFieldsByPolicy filter is started.");
 
             GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();
