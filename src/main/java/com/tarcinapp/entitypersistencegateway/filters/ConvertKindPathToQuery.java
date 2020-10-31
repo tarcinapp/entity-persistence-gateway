@@ -74,8 +74,7 @@ public class ConvertKindPathToQuery
 
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.NOT_FOUND);
-
-                return chain.filter(exchange);
+                return response.setComplete();
             }
 
             logger.debug("/"+kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
