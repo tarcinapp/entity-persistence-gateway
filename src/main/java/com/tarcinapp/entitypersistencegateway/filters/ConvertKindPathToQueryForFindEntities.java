@@ -39,16 +39,16 @@ import reactor.core.publisher.Mono;
 import org.springframework.http.HttpStatus;
 
 @Component
-public class ConvertKindPathToQuery
-        extends AbstractGatewayFilterFactory<ConvertKindPathToQuery.Config> {
+public class ConvertKindPathToQueryForFindEntities
+        extends AbstractGatewayFilterFactory<ConvertKindPathToQueryForFindEntities.Config> {
 
 
     @Autowired
     private EntityKindsConfig entityKindsConfig;
     private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[kind\\].*");
-    private Logger logger = LogManager.getLogger(ConvertKindPathToQuery.class);
+    private Logger logger = LogManager.getLogger(ConvertKindPathToQueryForFindEntities.class);
 
-    public ConvertKindPathToQuery() {
+    public ConvertKindPathToQueryForFindEntities() {
         super(Config.class);
     }
 

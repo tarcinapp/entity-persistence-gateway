@@ -292,7 +292,7 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
-        - name: ConvertKindPathToQuery
+        - name: ConvertKindPathToQueryForFindEntities
         - name: LimitResponseFieldsForFindEntities
 logging:
   level:
