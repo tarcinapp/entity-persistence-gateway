@@ -30,7 +30,7 @@ import io.jsonwebtoken.Jwts;
 import reactor.core.publisher.Mono;
 
 @Component
-public class GlobalAuthenticationFilter implements GlobalFilter, Ordered   {
+public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Value("${app.auth.rs256PublicKey:#{null}}")
     private String rs256PublicKey;
