@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters;
+package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -159,14 +159,6 @@ public class LimitResponseFieldsForFindEntities
     }
      
     public static class Config {
-        private String fieldNames;
 
-        public String getFieldNames() {
-            return this.fieldNames;
-        }
-
-        public void setFieldNames(String fieldNames) {
-            this.fieldNames = fieldNames;
-        }
     }
 }

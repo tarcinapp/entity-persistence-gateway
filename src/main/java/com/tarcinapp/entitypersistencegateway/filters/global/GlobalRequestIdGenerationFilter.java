@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters;
+package com.tarcinapp.entitypersistencegateway.filters.global;
 
 import java.nio.charset.Charset;
 import java.text.DateFormat;

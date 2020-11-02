@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters;
+package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 
 import java.net.URI;
 import java.nio.charset.Charset;
