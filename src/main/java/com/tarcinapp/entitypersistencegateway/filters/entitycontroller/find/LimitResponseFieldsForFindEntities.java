@@ -53,7 +53,7 @@ public class LimitResponseFieldsForFindEntities
 
         return (exchange, chain) -> {
             
-            logger.debug("LimitResponseFieldsByPolicy filter is started.");
+            logger.debug("LimitResponseFieldsForFindEntities filter is started.");
 
             GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();

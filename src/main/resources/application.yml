@@ -63,6 +63,7 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - name: LimitResponseFieldsForFindEntities
+        - name: LimitResponseItemsForFindEntities
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
         predicates:
@@ -295,7 +296,7 @@ spring:
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryForFindEntities
         - name: LimitResponseFieldsForFindEntities
-        #- name: LimitResponseDataForFindEntities
+        - name: LimitResponseItemsForFindEntities
 logging:
   level:
     reactor:
