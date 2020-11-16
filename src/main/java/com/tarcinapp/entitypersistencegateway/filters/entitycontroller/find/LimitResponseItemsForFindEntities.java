@@ -3,8 +3,13 @@ package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 import java.util.regex.Pattern;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+
 import com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find.LimitResponseFieldsForFindEntities.Config;
 import org.apache.logging.log4j.LogManager;
 import java.util.regex.Matcher;
@@ -28,7 +33,7 @@ public class LimitResponseItemsForFindEntities
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    private final static Pattern MANAGED_FIELDS_PATTERN = Pattern.compile("filter\\[where\\].*(?:ownerUsers|ownerGroups|visibility).*");
+    private final static Pattern MANAGED_FIELDS_PATTERN = Pattern.compile("((filter\\[where\\].*(?:ownerUsers|ownerGroups|visibility)).*|set\\.*\\[(pendings|inactives)\\])");
 
     public LimitResponseItemsForFindEntities() {
         super(Config.class);
@@ -76,33 +81,18 @@ public class LimitResponseItemsForFindEntities
                 return false;
             });
 
-            // move existing filters under and condition
             List<NameValuePair> newQuery = query.stream()
                 .map(nvp -> {
                     String newName = nvp.getName()
-                        .replace("filter[where]", "filter[where][and][0]");
+                        .replace("set[", "set[and][0][");
                     return new BasicNameValuePair(newName, nvp.getValue());
                 })
                 .collect(Collectors.toList());
 
-            // add values for managed fields
-
-            // add those I am the owner
-            newQuery.add(new BasicNameValuePair("filter[where][and][1][or][0][ownerUsers]", gc.getAuthSubject()));
-
-            // add those public
-            newQuery.add(new BasicNameValuePair("filter[where][and][1][or][1][visibility]", "public"));
-
-            // add those protected and one of my group is the owner
-            if(gc.getGroups().size() > 1)
-                gc.getGroups().stream()
-                    .forEach(g -> {
-                        newQuery.add(new BasicNameValuePair("filter[where][and][1][or][2][ownerGroups][inq]", g));
-                    });
-            else
-                newQuery.add(new BasicNameValuePair("filter[where][and][1][or][2][ownerGroups]", gc.getGroups().get(0)));
-            
-            newQuery.add(new BasicNameValuePair("filter[where][and][1][or][2][visibility]", "protected"));
+            // add sets
+            newQuery.add(new BasicNameValuePair("set[and][1][actives]", ""));
+            newQuery.add(new BasicNameValuePair("set[and][2][or][0][publics]", ""));
+            newQuery.add(new BasicNameValuePair("set[and][2][or][1][my]", ""));
 
             ServerWebExchange modifiedExchange = exchange.mutate()
                 .request(originalRequest -> {
@@ -119,7 +109,12 @@ public class LimitResponseItemsForFindEntities
 
                     logger.debug("New URI " + newUri);
 
-                    originalRequest.uri(newUri);
+                    String groups = gc.getGroups().stream().collect(Collectors.joining(","));
+
+                    originalRequest
+                        .uri(newUri)
+                        .header("x-query-userid", gc.getAuthSubject())
+                        .header("x-query-groups", groups);
                 })
                 .build();
 
