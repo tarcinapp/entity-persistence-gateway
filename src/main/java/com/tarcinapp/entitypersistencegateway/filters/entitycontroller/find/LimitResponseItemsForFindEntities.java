@@ -25,6 +25,25 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.util.stream.Collectors;
 
+/**
+ * This filter restricts the returned records from entity query.
+ * Restrictions are based on user's role, owners of each record and record's visibility.
+ * 
+ * What is record's ownership?
+ * Each record has ownerGroups and ownerUsers arrays.
+ * - If user's id present on ownerUsers array, then this user is the most powerfull user on that specific record. 
+ * No matter what the record's visibility.
+ * - If user's group name present on ownerGroups array, and, the records visibility is protected, then again user is the owner of the record.
+ * --------
+ * If user is not an editor or an admin, then:
+ * - User can see it's own records.
+ * - User can see active, public records.
+ * 
+ * For example;
+ * If a record's visibility value is public, but it's validitiy is expired, then this filter prevents this record to return from response.
+ * If a record's visibility value is public and validUntilDateTime field is empty whereas validFromDateTime field has a value in past, then this filter let
+ * that specific record to return from response.
+ */
 @Component
 public class LimitResponseItemsForFindEntities
         extends AbstractGatewayFilterFactory<LimitResponseItemsForFindEntities.Config> {
@@ -32,8 +51,6 @@ public class LimitResponseItemsForFindEntities
     private Logger logger = LogManager.getLogger(LimitResponseItemsForFindEntities.class);
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
-
-    private final static Pattern MANAGED_FIELDS_PATTERN = Pattern.compile("((filter\\[where\\].*(?:ownerUsers|ownerGroups|visibility)).*|set\\.*\\[(pendings|inactives)\\])");
 
     public LimitResponseItemsForFindEntities() {
         super(Config.class);
@@ -56,7 +73,9 @@ public class LimitResponseItemsForFindEntities
             
             logger.debug("User roles are: " + roles);
 
-            // check if user role contains any role whose value equal or above editor role level
+            /**
+             * This filter only applies when user has lower authority then editor user. 
+             */
             if(roles.indexOf("tarcinapp_admin") >= 0 || roles.indexOf("tarcinapp_editor") >= 0) {
                 
                 logger.debug("No need to limit response items for these roles. Exiting filter withouth any modification.");
@@ -68,19 +87,10 @@ public class LimitResponseItemsForFindEntities
 
             List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
-            logger.debug("Remove if any of the managed field is used in query.");
-
-            query.removeIf((nvp) -> {
-                Matcher matcher = MANAGED_FIELDS_PATTERN.matcher(nvp.getName());
-                
-                if(matcher.matches()) {
-                    logger.debug("User used a managed field in query: '" + nvp.getName() + "'. This query will be removed before going to downstream service.");
-                    return true;
-                }
-                
-                return false;
-            });
-
+            /**
+             * If user asks for specific sets, make sure they are valid under enforced scope.
+             * To that end, move all set queries under the 'and' clause and combine with enforced sets.
+             */
             List<NameValuePair> newQuery = query.stream()
                 .map(nvp -> {
                     String newName = nvp.getName()
@@ -89,11 +99,19 @@ public class LimitResponseItemsForFindEntities
                 })
                 .collect(Collectors.toList());
 
-            // add sets
+            /**
+             * Following sets are added in order to reduce the scope of the query.
+             * Users with low authority can only see the public and active records with their own records.
+             * 
+             * Note: If a record has user's user id in its ownerUsers array, then this record belongs to that user.
+             * In addition to that, if user's group id presents in record's ownerGroups array and it's visibility is protected,
+             * this record is also belongs to that user too.
+             */
             newQuery.add(new BasicNameValuePair("set[and][1][actives]", ""));
             newQuery.add(new BasicNameValuePair("set[and][2][or][0][publics]", ""));
-            newQuery.add(new BasicNameValuePair("set[and][2][or][1][my]", ""));
+            newQuery.add(new BasicNameValuePair("set[and][2][or][1][owners]", "ebe92b0c-bda2-49d0-99d0-feb538aa7db6;founders"));
 
+            // as we built new query string, now we can go ahead and change the query from the original request
             ServerWebExchange modifiedExchange = exchange.mutate()
                 .request(originalRequest -> {
 
@@ -109,12 +127,8 @@ public class LimitResponseItemsForFindEntities
 
                     logger.debug("New URI " + newUri);
 
-                    String groups = gc.getGroups().stream().collect(Collectors.joining(","));
-
                     originalRequest
-                        .uri(newUri)
-                        .header("x-query-userid", gc.getAuthSubject())
-                        .header("x-query-groups", groups);
+                        .uri(newUri);
                 })
                 .build();
 
