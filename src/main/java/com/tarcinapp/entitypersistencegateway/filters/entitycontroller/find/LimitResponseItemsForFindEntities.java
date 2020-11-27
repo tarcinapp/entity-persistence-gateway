@@ -65,6 +65,8 @@ public class LimitResponseItemsForFindEntities
 
             GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();
+            String userId = gc.getAuthParty();
+            ArrayList<String> groups = gc.getGroups();
 
             if(roles == null) {
                 logger.debug("Authentication information not found. Exiting filter without any modification.");
@@ -109,7 +111,10 @@ public class LimitResponseItemsForFindEntities
              */
             newQuery.add(new BasicNameValuePair("set[and][1][actives]", ""));
             newQuery.add(new BasicNameValuePair("set[and][2][or][0][publics]", ""));
-            newQuery.add(new BasicNameValuePair("set[and][2][or][1][owners]", "ebe92b0c-bda2-49d0-99d0-feb538aa7db6;founders"));
+
+            // owners set requires user id and groups in following format userId1,userId2;group1,group2
+            String groupsStr = groups.stream().collect(Collectors.joining(","));
+            newQuery.add(new BasicNameValuePair("set[and][2][or][1][owners]", userId + ";" + groupsStr));
 
             // as we built new query string, now we can go ahead and change the query from the original request
             ServerWebExchange modifiedExchange = exchange.mutate()

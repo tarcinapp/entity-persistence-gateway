@@ -9,8 +9,8 @@ This application adds API Gateway capabilities to the entity-persistence-service
 This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token.
 # Authorization
 This application requires 4 level of roles: admin, editor, member and visitor. You can configure names for the roles in configuration. Roles must be in JWT according to the configuration.
-Admin: Can query, alter and delete all the data.
-Editor: Can query all the data but can not change the creationTimeStamp field of records. Cannot delete any data. 
+Admin: Can query, create, alter and delete all the data.
+Editor: Can query all the data but can not change the creationDateTime field of records. Cannot delete any data.  Cannot change ownership of the records. Cannot create a data with creationDateTime field. Can not create a data with ownerUsers or ownerGroups fields
 Member: 
 * Can query all public data.
 * Can query all protected data if the user is in one of the groups recorded in ownerGroups field of the specific data.
