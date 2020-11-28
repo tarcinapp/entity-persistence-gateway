@@ -60,4 +60,3 @@ spec:
         - "run"
         - "--ignore=.*"  # exclude hidden dirs created by Kubernetes
         - "--server"
-        - "/policies"
