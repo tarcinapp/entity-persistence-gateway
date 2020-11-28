@@ -65,7 +65,7 @@ public class LimitResponseItemsForFindEntities
 
             GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();
-            String userId = gc.getAuthParty();
+            String userId = gc.getAuthSubject();
             ArrayList<String> groups = gc.getGroups();
 
             if(roles == null) {
