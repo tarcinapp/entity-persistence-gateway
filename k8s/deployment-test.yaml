@@ -51,3 +51,13 @@ spec:
           timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 3
+      - name: opa
+        image: openpolicyagent/opa:0.24.0
+        ports:
+        - name: http
+          containerPort: 8181
+        args:
+        - "run"
+        - "--ignore=.*"  # exclude hidden dirs created by Kubernetes
+        - "--server"
+        - "/policies"
