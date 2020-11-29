@@ -5,7 +5,6 @@ RUN mvn package
 
 FROM openjdk:11-jre-slim
 
-COPY ./entity-persistence-gateway-policies/policies /policies
 COPY --from=builder /workspace/target/*.jar  /opt/app.jar
 WORKDIR /opt
 EXPOSE 8080
