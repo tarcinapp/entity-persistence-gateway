@@ -6,7 +6,7 @@ This application adds API Gateway capabilities to the entity-persistence-service
 * Authorization policy execution with the OPA (Open Policy Agent).
 * Resource filtering in responses based on the policy execution results.
 # Authentication
-This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token.
+This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token. Roles must present in payload as string array with the `roles` key. Email verification status must present with the `email_verified` key.
 # Authorization
 This application requires 4 level of roles: admin, editor, member and visitor. You can configure names for the roles in configuration. Roles must be in JWT according to the configuration.
 Admin: Can query, create, alter and delete all the data.
