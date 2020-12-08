@@ -1,5 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.authorization;
 
+import reactor.core.publisher.Mono;
+
 public interface IAuthorizationClient {
-    PolicyResult executePolicy(String policyName, PolicyData data);
+    Mono<PolicyResult> executePolicy(PolicyData data);
 }

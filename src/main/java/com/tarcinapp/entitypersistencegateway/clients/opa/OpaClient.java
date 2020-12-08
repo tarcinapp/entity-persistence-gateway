@@ -71,22 +71,16 @@ public class OpaClient implements IAuthorizationClient {
             .build();
     }
 
-    public PolicyResult executePolicy(String policyName, PolicyData data) {
+    public Mono<PolicyResult> executePolicy(PolicyData data) {
 
         PolicyRequest policyInput = new PolicyRequest();
         policyInput.setInput(data);
 
-        PolicyResult result = new PolicyResult();
-
-        String response = webClient
+        return webClient
             .post()
-            .uri(policyName)
+            .uri(data.getPolicyName())
             .body(BodyInserters.fromValue(policyInput))
             .retrieve()
-            .bodyToMono(String.class).block();
-
-        System.out.println(response);
-
-        return result;
+            .bodyToMono(PolicyResult.class);
     }
 }

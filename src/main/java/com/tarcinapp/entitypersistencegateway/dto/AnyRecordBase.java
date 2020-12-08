@@ -14,6 +14,7 @@ public class AnyRecordBase {
     private String visibility;
     private ZonedDateTime creationDateTime;
     private ZonedDateTime validFromDateTime;
+    private ZonedDateTime validUntilDateTime;
     private ZonedDateTime lastUpdatedDateTime;
 
     public String getKind() {
@@ -74,6 +75,14 @@ public class AnyRecordBase {
 
     public ZonedDateTime  getCreationDateTime() {
         return this.creationDateTime;
+    }
+
+    public ZonedDateTime getValidUntilDateTime() {
+        return this.validUntilDateTime;
+    }
+
+    public void setValidUntilDateTime(ZonedDateTime validUntilDateTime) {
+        this.validUntilDateTime = validUntilDateTime;
     }
 
     public void setCreationDateTime(ZonedDateTime  creationDateTime) {
