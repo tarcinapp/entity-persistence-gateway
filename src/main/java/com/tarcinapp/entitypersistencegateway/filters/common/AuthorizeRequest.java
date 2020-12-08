@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -115,8 +116,8 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             String creationDateTime = (String) inboundJsonRequestMap.get("creationDateTime");
             String validFromDateTime = (String) inboundJsonRequestMap.get("validFromDateTime");
             String validUntilDateTime = (String) inboundJsonRequestMap.get("validUntilDateTime");
-            // TODO: extract ownerUsers here
-            // TODO: extract ownerGroups here
+            List<String> ownerUsers = (List<String>) inboundJsonRequestMap.get("ownerUsers");
+            List<String> ownerGroups = (List<String>) inboundJsonRequestMap.get("ownerGroups");
 
             anyRecordBase.setId(id);
             anyRecordBase.setKind(kind);
@@ -126,8 +127,8 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             if(creationDateTime!=null) anyRecordBase.setCreationDateTime(ZonedDateTime.parse(creationDateTime));
             if(validFromDateTime!=null) anyRecordBase.setValidFromDateTime(ZonedDateTime.parse(validFromDateTime));
             if(validUntilDateTime!=null) anyRecordBase.setValidUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
-
-            // TODO: set all other fields
+            anyRecordBase.setOwnerUsers(ownerUsers);
+            anyRecordBase.setOwnerGroups(ownerGroups);
 
             policyData.setRequestPayload(anyRecordBase);
         } catch (JsonMappingException e) {
