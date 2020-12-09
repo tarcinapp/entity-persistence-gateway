@@ -1,5 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.authorization;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PolicyResult {
     
     private boolean allow;
@@ -9,6 +11,7 @@ public class PolicyResult {
         return this.allow;
     }
 
+    @JsonProperty(value="allow")
     public void setAllow(boolean allow) {
         this.allow = allow;
     }

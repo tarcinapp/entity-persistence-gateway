@@ -81,6 +81,9 @@ public class OpaClient implements IAuthorizationClient {
             .uri(data.getPolicyName())
             .body(BodyInserters.fromValue(policyInput))
             .retrieve()
-            .bodyToMono(PolicyResult.class);
+            .bodyToMono(PolicyResponse.class)
+            .map(pr -> {
+                return pr.getResult();
+            });
     }
 }
