@@ -46,7 +46,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
     @Override
     public GatewayFilter apply(Config config) {
 
-        // implement in sepeare method in order to reduce nesting
+        // implement in seperate method in order to reduce nesting
         return (exchange, chain) -> this.filter(config, exchange, chain);
     }
 

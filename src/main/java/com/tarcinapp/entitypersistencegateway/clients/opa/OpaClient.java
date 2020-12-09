@@ -35,13 +35,13 @@ public class OpaClient implements IAuthorizationClient {
 
     private WebClient webClient;
 
-    @Value("${app.opa.host:#{localhost}}")
+    @Value("${app.opa.host:localhost}")
     private String host;
 
-    @Value("${app.opa.port:#{8181}}")
+    @Value("${app.opa.port:8181}")
     private String port;
 
-    @Value("${app.opa.protocol:#{http}}")
+    @Value("${app.opa.protocol:http}")
     private String protocol;
 
     private String url;
