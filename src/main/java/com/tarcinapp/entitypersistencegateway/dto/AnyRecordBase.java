@@ -4,6 +4,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 @JsonInclude(Include.NON_NULL)
 public class AnyRecordBase {
@@ -76,10 +78,12 @@ public class AnyRecordBase {
         this.visibility = visibility;
     }
 
+    @JsonSerialize(using=ToStringSerializer.class)
     public ZonedDateTime  getCreationDateTime() {
         return this.creationDateTime;
     }
 
+    @JsonSerialize(using=ToStringSerializer.class)
     public ZonedDateTime getValidUntilDateTime() {
         return this.validUntilDateTime;
     }
@@ -92,6 +96,7 @@ public class AnyRecordBase {
         this.creationDateTime = creationDateTime;
     }
 
+    @JsonSerialize(using=ToStringSerializer.class)
     public ZonedDateTime  getValidFromDateTime() {
         return this.validFromDateTime;
     }
@@ -100,6 +105,7 @@ public class AnyRecordBase {
         this.validFromDateTime = validFromDateTime;
     }
 
+    @JsonSerialize(using=ToStringSerializer.class)
     public ZonedDateTime  getLastUpdatedDateTime() {
         return this.lastUpdatedDateTime;
     }
