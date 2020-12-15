@@ -12,6 +12,8 @@ import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyResult;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
+
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reactivestreams.Publisher;
@@ -54,8 +56,10 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         ServerHttpRequest request = exchange.getRequest();
         String token = this.extractToken(request);
 
-        // TODO: token not found, not pretty sure what can we do while authorizing? throw exception?
+        logger.info("Authorization filter is started. Policy name: " + config.getPolicyName());
+
         if(token == null) {
+            logger.warn("Token not found to authorize the request. To enforce token to be sent, please configure rs256 key. This request won't be authorized");
             return chain.filter(exchange);
         }
 
@@ -77,6 +81,8 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
          * If we have a payload, we need to extract the body to pass to the policy
          */
         if(hasPayload) {
+            logger.info(httpMethod + " method contains a payload. Payload will be attached to the policy data.");
+
             ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class,
@@ -137,6 +143,18 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         } catch (JsonProcessingException e) {
             logger.error(e);
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        if(logger.getLevel().compareTo(Level.DEBUG) >= 0) {
+            logger.debug("Policy data is prepared.");
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                String policyDataStr = mapper.writeValueAsString(policyData);
+                logger.debug("Policy data: {}", policyDataStr);
+            } catch (JsonProcessingException e) {
+                logger.debug("Unable to serialize policy data to JSON string.");
+            }
         }
  
         return authorizationClient.executePolicy(policyData)
