@@ -141,11 +141,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private ArrayList<String> getRolesFromClaims(Claims claims) {
-        LinkedHashMap realm_access = (LinkedHashMap)claims.get("realm_access");
-
-        if(realm_access==null) return null;
-
-        return (ArrayList<String>) realm_access.get("roles");
+        return (ArrayList<String>)claims.get("roles");
     }
 
     @Override
