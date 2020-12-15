@@ -27,7 +27,6 @@ public class SetOwnerUsersToRequest
         extends AbstractGatewayFilterFactory<SetOwnerUsersToRequest.Config> {
 
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
-    private static final String OWNER_GROUPS_FIELD_NAME = "ownerGroups";
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
     Logger logger = LogManager.getLogger(SetOwnerUsersToRequest.class);
@@ -51,7 +50,6 @@ public class SetOwnerUsersToRequest
                         }
                         
                         String authSubject = gc.getAuthSubject();
-                        ArrayList<String> groups = gc.getGroups();
 
                         try {
                             ObjectMapper objectMapper = new ObjectMapper();
@@ -61,9 +59,6 @@ public class SetOwnerUsersToRequest
 
                             if(authSubject != null)
                                 inboundJsonRequestMap.put(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
-
-                            if(groups != null)
-                                inboundJsonRequestMap.put(OWNER_GROUPS_FIELD_NAME, groups.toArray(new String[groups.size()]));
                             
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 
