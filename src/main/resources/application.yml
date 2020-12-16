@@ -49,6 +49,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllEntities/policy
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
