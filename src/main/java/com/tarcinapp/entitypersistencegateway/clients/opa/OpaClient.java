@@ -86,4 +86,16 @@ public class OpaClient implements IAuthorizationClient {
                 return pr.getResult();
             });
     }
+
+    public <T> Mono<T> executePolicy(PolicyData data,  Class<T> type) {
+        PolicyRequest policyInput = new PolicyRequest();
+        policyInput.setInput(data);
+
+        return webClient
+            .post()
+            .uri(data.getPolicyName())
+            .body(BodyInserters.fromValue(policyInput))
+            .retrieve()
+            .bodyToMono(type);
+    }
 }
