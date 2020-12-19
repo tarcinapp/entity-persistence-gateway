@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.clients.opa;
 
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -21,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyResult;
@@ -96,6 +99,12 @@ public class OpaClient implements IAuthorizationClient {
             .uri(data.getPolicyName())
             .body(BodyInserters.fromValue(policyInput))
             .retrieve()
-            .bodyToMono(type);
+            .bodyToMono(GenericPolicyResponse.class)
+            .map(gpr -> {
+                ObjectMapper mapper = new ObjectMapper()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                
+                return mapper.convertValue(gpr.getResult(), type);
+            });
     }
 }
