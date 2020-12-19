@@ -69,6 +69,8 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - name: LimitResponseFieldsForFindEntities
+          args:
+            policyName: data/filters/limitResponseFieldsForFindEntities/forbiddenFields
         - name: LimitResponseItemsForFindEntities
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
