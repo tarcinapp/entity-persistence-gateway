@@ -92,12 +92,13 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         }
 
         return authorizationClient.executePolicy(policyData)
-            .doOnNext(result -> {
+            .flatMap(result -> {
 
                 if(!result.isAllow())
                     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, result.getReason());
-            })
-            .then();
+
+                return chain.filter(exchange);
+            });
     }
 
     // This method takes the already filled policyData and adds the record base into policyData. Then calls the authorizeWithPolicyData method
