@@ -78,7 +78,7 @@ public class LimitResponseItemsForFindEntities
             /**
              * This filter only applies when user has lower authority then editor user. 
              */
-            if(roles.indexOf("tarcinapp_admin") >= 0 || roles.indexOf("tarcinapp_editor") >= 0) {
+            if(roles.indexOf("tarcinapp.admin") >= 0 || roles.indexOf("tarcinapp.editor") >= 0) {
                 
                 logger.debug("No need to limit response items for these roles. Exiting filter withouth any modification.");
                 return chain.filter(exchange);
