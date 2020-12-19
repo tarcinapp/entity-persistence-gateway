@@ -68,6 +68,9 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntities/policy
         - name: LimitResponseFieldsForFindEntities
           args:
             policyName: data/filters/limitResponseFieldsForFindEntities/forbiddenFields
