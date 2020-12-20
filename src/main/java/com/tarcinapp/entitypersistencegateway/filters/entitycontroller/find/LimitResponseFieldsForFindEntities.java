@@ -31,6 +31,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import reactor.core.publisher.Mono;
 
+/**
+ * This filter is used to prevent some fields of the records return from the response.
+ * 
+ * For example, visitor users are not permitted to see the 'visibility', 'validFromDateTime', 'validUntilDateTime' fields.
+ * However, permitted fields list is not certain, as this filter asks the forbidden fields list to the PDP.
+ */
 @Component
 public class LimitResponseFieldsForFindEntities
         extends AbstractGatewayFilterFactory<LimitResponseFieldsForFindEntities.Config> {
@@ -82,6 +88,9 @@ public class LimitResponseFieldsForFindEntities
                 }
             }
 
+            /**
+             * Ask to the PDP to get the list of forbidden fields for that specific call
+             */
             return authorizationClient.executePolicy(policyData, PolicyResponse.class).flatMap(pr -> {
                 List<String> hideFields = pr.getFields();
 

@@ -76,6 +76,7 @@ public class LimitResponseItemsForFindEntities
             logger.debug("User roles are: " + roles);
 
             /**
+             * TODO: ask the set to the PDP
              * This filter only applies when user has lower authority then editor user. 
              */
             if(roles.indexOf("tarcinapp.admin") >= 0 || roles.indexOf("tarcinapp.editor") >= 0) {

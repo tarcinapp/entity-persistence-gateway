@@ -103,6 +103,24 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
     // This method takes the already filled policyData and adds the record base into policyData. Then calls the authorizeWithPolicyData method
     private Publisher<String> authorizeWithPayload(ServerWebExchange exchange, PolicyData policyData, String inboundJsonRequestStr) {
+        ServerHttpRequest request = exchange.getRequest();
+
+
+        /**
+         * if this operation is to create new record, we need to include the record counts to the policy data
+         */
+        if(request.getMethod() == HttpMethod.POST) {
+            
+            // TODO: if we have extracted record id, that means we are creating the new record over a relation,
+            // this situation requires special handling
+        }
+
+        /**
+         * if this operation is to update existing record, then we need to include the original record to the policy
+         */
+        if(request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
+            
+        }
 
         // record base is an object containing all managed fields in the request, we use it in policyData
         AnyRecordBase anyRecordBase = new AnyRecordBase();
