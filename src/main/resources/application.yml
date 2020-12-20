@@ -89,7 +89,7 @@ spring:
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}
+        - Path=/generic-entities/{recordId}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -100,7 +100,7 @@ spring:
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}
+        - Path=/generic-entities/{recordId}
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -114,7 +114,7 @@ spring:
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}
+        - Path=/generic-entities/{recordId}
         - Method=PUT
         filters:
         - name: RequestRateLimiter
@@ -128,7 +128,7 @@ spring:
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}
+        - Path=/generic-entities/{recordId}
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
@@ -140,7 +140,7 @@ spring:
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}/relations
+        - Path=/generic-entities/{recordId}/relations
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -151,7 +151,7 @@ spring:
       - id: createRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}/relations
+        - Path=/generic-entities/{recordId}/relations
         - Method=POST
         filters:
         - name: RequestRateLimiter
@@ -162,7 +162,7 @@ spring:
       - id: updateRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}/relations
+        - Path=/generic-entities/{recordId}/relations
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -173,7 +173,7 @@ spring:
       - id: deleteRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{entityId}/relations
+        - Path=/generic-entities/{recordId}/relations
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
@@ -236,7 +236,7 @@ spring:
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{relationId}
+        - Path=/relations/{recordId}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -247,7 +247,7 @@ spring:
       - id: updateRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{relationId}
+        - Path=/relations/{recordId}
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -261,7 +261,7 @@ spring:
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{relationId}
+        - Path=/relations/{recordId}
         - Method=PUT
         filters:
         - name: RequestRateLimiter
@@ -275,7 +275,7 @@ spring:
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{relationId}
+        - Path=/relations/{recordId}
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
