@@ -6,30 +6,25 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyResult;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.RequestPath;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
@@ -131,7 +126,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
      * For update requests, this method delegates the authorization to authorizeRecordUpdate method
      * in order to add the information about the record that is going to be updated into the policy data.
      * */ 
-    private Mono<Void> authorizeWithPayload(ServerWebExchange exchange, PolicyData policyData,
+    private Mono<Boolean> authorizeWithPayload(ServerWebExchange exchange, PolicyData policyData,
             Map<String, Object> payloadJSON) {
         ServerHttpRequest request = exchange.getRequest();
 
@@ -187,13 +182,16 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         return recordBaseFromPayload;
     }
 
-    private Mono<Void> authorizeRecordUpdate(ServerWebExchange exchange, PolicyData policyData) {
-        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
+    private Mono<Boolean> authorizeRecordUpdate(ServerWebExchange exchange, PolicyData policyData) {
+        ServerHttpRequest request = exchange.getRequest();
+        RequestPath path = request.getPath();
 
-        // get the original record id
-        String recordId = uriVariables.get("recordId");
 
-        return this.executePolicy(policyData);
+        return backendBaseClient.get(path.toString(), AnyRecordBase.class)
+            .flatMap(originalRecord -> {
+                policyData.setOriginalRecord(originalRecord);
+                return this.executePolicy(policyData);
+            });
     }
 
     /**
@@ -202,7 +200,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
      * @param policyData
      * @return
      */
-    private Mono<Void> executePolicy(PolicyData policyData) {
+    private Mono<Boolean> executePolicy(PolicyData policyData) {
 
         if (logger.getLevel().compareTo(Level.DEBUG) >= 0) {
             logger.debug("Policy data is prepared.");
@@ -217,10 +215,10 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         }
 
         return authorizationClient.executePolicy(policyData)
-            .flatMap(result -> {
+            .map(result -> {
 
                 if (result.isAllow())
-                    return Mono.empty();
+                    return Boolean.TRUE;
 
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, UNAUTHORIZATION_REASON);
         });
