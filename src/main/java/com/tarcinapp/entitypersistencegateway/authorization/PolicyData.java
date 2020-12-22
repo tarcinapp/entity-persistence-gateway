@@ -18,8 +18,6 @@ public class PolicyData {
     private RequestPath requestPath;
     private MultiValueMap<String, String> queryParams;
     private String encodedJwt;
-    private int recordCountByUser;
-    private int recordCountInKindByUser;
     private AnyRecordBase requestPayload;
     private AnyRecordBase originalRecord;
 
@@ -72,22 +70,6 @@ public class PolicyData {
     public void setQueryParams(MultiValueMap<String,String> queryParams) {
 		this.queryParams = queryParams;
 	}
-
-    public int getRecordCountByUser() {
-        return this.recordCountByUser;
-    }
-
-    public void setRecordCountByUser(int recordCountByUser) {
-        this.recordCountByUser = recordCountByUser;
-    }
-
-    public int getRecordCountInKindByUser() {
-        return this.recordCountInKindByUser;
-    }
-
-    public void setRecordCountInKindByUser(int recordCountInKindByUser) {
-        this.recordCountInKindByUser = recordCountInKindByUser;
-    }
 
     public String getEncodedJwt() {
         return this.encodedJwt;

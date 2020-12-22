@@ -27,6 +27,7 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.RequestPath;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -141,16 +142,6 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         policyData.setRequestPayload(recordBaseFromPayload);
 
         /**
-         * if this operation is to create new record, we need to include the record
-         * counts to the policy data.
-         * */ 
-        if (request.getMethod() == HttpMethod.POST) {
-
-            // add record count details to the policy data and authorize
-            return this.authorizeRecordCreation(exchange, policyData);
-        }
-
-        /**
          * if this operation is to update existing record, then we need to include the
          * original record to the policy
          */
@@ -158,7 +149,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             return this.authorizeRecordUpdate(exchange, policyData);
         }
 
-        // practically we will never reach to this line as this method is invoked with a payload
+        // authorize POST request
         return this.executePolicy(policyData);
     }
 
@@ -194,11 +185,6 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         recordBaseFromPayload.setOwnerGroups(ownerGroups);
 
         return recordBaseFromPayload;
-    }
-
-    private Mono<Void> authorizeRecordCreation(ServerWebExchange exchange, PolicyData policyData) {
-
-        return this.executePolicy(policyData);
     }
 
     private Mono<Void> authorizeRecordUpdate(ServerWebExchange exchange, PolicyData policyData) {
