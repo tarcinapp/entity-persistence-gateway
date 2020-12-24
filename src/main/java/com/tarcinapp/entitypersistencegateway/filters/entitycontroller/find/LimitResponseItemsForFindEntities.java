@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * What is record's ownership?
  * Each record has ownerGroups and ownerUsers arrays.
  * - If user's id present on ownerUsers array, then this user is the most powerfull user on that specific record. 
- * No matter what the record's visibility.
+ * No matter what the record's visibility is.
  * - If user's group name present on ownerGroups array, and, the records visibility is protected, then again user is the owner of the record.
  * --------
  * If user is not an editor or an admin, then:
@@ -43,6 +43,12 @@ import java.util.stream.Collectors;
  * If a record's visibility value is public, but it's validitiy is expired, then this filter prevents this record to return from response.
  * If a record's visibility value is public and validUntilDateTime field is empty whereas validFromDateTime field has a value in past, then this filter let
  * that specific record to return from response.
+ * 
+ * How this filter works?
+ * This filter utilizes the `set` feature of the backend.
+ * In order to limit the items in response, this filter adds required sets as the query variable. If user already used `set` in the query, 
+ * we are and'ing them with those emitted by this filter.
+ * 
  */
 @Component
 public class LimitResponseItemsForFindEntities
