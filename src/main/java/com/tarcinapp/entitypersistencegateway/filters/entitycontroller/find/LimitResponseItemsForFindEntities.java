@@ -119,9 +119,9 @@ public class LimitResponseItemsForFindEntities
             newQuery.add(new BasicNameValuePair("set[and][1][actives]", ""));
             newQuery.add(new BasicNameValuePair("set[and][2][or][0][publics]", ""));
 
-            // owners set requires user id and groups in following format userId1,userId2;group1,group2
+            // owners set requires user id and groups in following format [userId1,userId2][group1,group2]
             String groupsStr = groups.stream().collect(Collectors.joining(","));
-            newQuery.add(new BasicNameValuePair("set[and][2][or][1][owners]", userId + ";" + groupsStr));
+            newQuery.add(new BasicNameValuePair("set[and][2][or][1][owners]", "[" + userId + "][" + groupsStr + "]"));
 
             // as we built new query string, now we can go ahead and change the query from the original request
             ServerWebExchange modifiedExchange = exchange.mutate()
