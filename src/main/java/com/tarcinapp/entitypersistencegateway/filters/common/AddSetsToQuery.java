@@ -1,29 +1,23 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.util.regex.Pattern;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
+import java.util.stream.Collectors;
 
-import com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find.LimitResponseFieldsForFindEntities.Config;
-import org.apache.logging.log4j.LogManager;
-import java.util.regex.Matcher;
-import org.apache.logging.log4j.Logger;
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.stereotype.Component;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
-import java.util.stream.Collectors;
 
 /**
  * This filter restricts the returned records from entity query.
@@ -51,14 +45,14 @@ import java.util.stream.Collectors;
  * 
  */
 @Component
-public class LimitResponseItemsForFindEntities
-        extends AbstractGatewayFilterFactory<LimitResponseItemsForFindEntities.Config> {
+public class AddSetsToQuery
+        extends AbstractGatewayFilterFactory<AddSetsToQuery.Config> {
 
-    private Logger logger = LogManager.getLogger(LimitResponseItemsForFindEntities.class);
+    private Logger logger = LogManager.getLogger(AddSetsToQuery.class);
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    public LimitResponseItemsForFindEntities() {
+    public AddSetsToQuery() {
         super(Config.class);
     }
 
@@ -67,7 +61,7 @@ public class LimitResponseItemsForFindEntities
 
         return (exchange, chain) -> {
 
-            logger.debug("LimitResponseItemsForFindEntities filter is started.");
+            logger.debug("AddSetsToQuery filter is started.");
 
             GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();
