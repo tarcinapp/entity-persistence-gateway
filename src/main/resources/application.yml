@@ -86,6 +86,9 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
