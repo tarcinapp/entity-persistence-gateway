@@ -2,6 +2,8 @@ package com.tarcinapp.entitypersistencegateway.dto;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -78,38 +80,42 @@ public class AnyRecordBase {
         this.visibility = visibility;
     }
 
-    @JsonSerialize(using=ToStringSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public ZonedDateTime  getCreationDateTime() {
         return this.creationDateTime;
     }
 
-    @JsonSerialize(using=ToStringSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public ZonedDateTime getValidUntilDateTime() {
         return this.validUntilDateTime;
     }
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public void setValidUntilDateTime(ZonedDateTime validUntilDateTime) {
         this.validUntilDateTime = validUntilDateTime;
     }
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public void setCreationDateTime(ZonedDateTime  creationDateTime) {
         this.creationDateTime = creationDateTime;
     }
 
-    @JsonSerialize(using=ToStringSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public ZonedDateTime  getValidFromDateTime() {
         return this.validFromDateTime;
     }
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public void setValidFromDateTime(ZonedDateTime  validFromDateTime) {
         this.validFromDateTime = validFromDateTime;
     }
 
-    @JsonSerialize(using=ToStringSerializer.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public ZonedDateTime  getLastUpdatedDateTime() {
         return this.lastUpdatedDateTime;
     }
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     public void setLastUpdatedDateTime(ZonedDateTime  lastUpdatedDateTime) {
         this.lastUpdatedDateTime = lastUpdatedDateTime;
     }

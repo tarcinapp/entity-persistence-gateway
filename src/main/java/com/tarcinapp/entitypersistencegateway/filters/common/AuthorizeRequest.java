@@ -1,7 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.time.ZonedDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +24,6 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.RequestPath;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -56,7 +54,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
     @Override
     public GatewayFilter apply(Config config) {
-
+ 
         // implement in seperate method in order to reduce nesting
         return (exchange, chain) -> this.filter(config, exchange, chain);
     }
@@ -87,7 +85,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         boolean hasPayload = httpMethod == HttpMethod.POST || httpMethod == HttpMethod.PUT
                 || httpMethod == HttpMethod.PATCH;
 
-        // if we have a payload, we need to extract the body to pass to the policy
+        // if we have a payload, we need to extract the body to pass to the policy, PUT, POST, PATCH methods are handled here
         if (hasPayload) {
             logger.info(httpMethod + " method contains a payload. Payload will be attached to the policy data.");
 
@@ -114,16 +112,31 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
             return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
         }
+        
+        // from here, we do not have body block
+        // only GET or DELETE method authorizations are reaching here
+        // from here, its important to know if we are targeting a single record (GET-one, or DELETE-one) or multiple records (GET-all, count, or DELETE-all)
+        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
+        String recordId = uriVariables.get("recordId");
 
+        // check if we are getting or removing a single data
+        if(recordId != null) {
+            // TODO: this block may be executed if we may be deleting multiple data over relation
+            // from here we know that the we are dealing with single record.
+            // as operations with payloads are handled above, we only need to include the originalRecord to the policy
+            return this.authorizeWithOriginalRecord(exchange, policyData)
+                .flatMap(result -> chain.filter(exchange));
+        }
+
+        // the only cases cause following line to be executed  is get-all, count and delete-all operations.
+        // these operations do not have request payload, or single targeted originalRecord
+        // we can go ahead and ask the PDP to decide whether this operation is authorized
         return this.executePolicy(policyData).flatMap(result -> chain.filter(exchange));
     }
 
     /**
      * This method fills the policy data with the managed fields extracted from the request payload.
      * Checks if the operation is intentended to create new record, or update an existing record.
-     * 
-     * For creation requests, this method delegates the authorization to authorizeRecordCreation method 
-     * in order to add the record counts into policy data.
      * 
      * For update requests, this method delegates the authorization to authorizeRecordUpdate method
      * in order to add the information about the record that is going to be updated into the policy data.
@@ -143,7 +156,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
          * original record to the policy
          */
         if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
-            return this.authorizeRecordUpdate(exchange, policyData);
+            return this.authorizeWithOriginalRecord(exchange, policyData);
         }
 
         // authorize POST request
@@ -184,7 +197,19 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         return recordBaseFromPayload;
     }
 
-    private Mono<Boolean> authorizeRecordUpdate(ServerWebExchange exchange, PolicyData policyData) {
+    /**
+     * This method adds the original targeted record to the policy if we have a record id.
+     * That is, if we are going to authorize single record update, delete or get method,
+     * this method retrieves the original record and adds it to the policy.
+     * 
+     * Note: if the method contains a payload, payload should be added to the policy data
+     * before invoking this method.
+     * 
+     * @param exchange
+     * @param policyData
+     * @return
+     */
+    private Mono<Boolean> authorizeWithOriginalRecord(ServerWebExchange exchange, PolicyData policyData) {
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
 
         // we use recordId to check if this is updateAll operation
@@ -205,9 +230,14 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
     /**
      * One of the main problem this method solves is to decide which path to ask for the original record.
      * 
-     * According to the API spec generated by LB backed, PUT operations always target a single record.
+     * If the Http method is GET and we have the recordId, then we can directly ask to the same path for the original record
+     * to pass to the auth policy.
+     * 
+     * According to the API spec generated by LB backend, PUT operations always target a single record.
      * Thus, if this operation is PUT, then we can directly ask with GET to the same path to retrieve
      * the original record.
+     * 
+     * That is, PUT and GET-with-recordId treated as same.
      * 
      * Whereas PATCH operations may target single record or multiple records.
      * Thus, if this operation is PATCH and if the request path ends with the 'recordId' predicate variable, 
@@ -226,9 +256,6 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
         // we use recordId to check if this is updateAll operation
         String recordId = uriVariables.get("recordId");
-
-        if(request.getMethod() == HttpMethod.PUT)
-            return this.backendBaseClient.get(path.toString(), AnyRecordBase.class);
 
         if(path.endsWith(recordId))
             return this.backendBaseClient.get(path.toString(), AnyRecordBase.class);
