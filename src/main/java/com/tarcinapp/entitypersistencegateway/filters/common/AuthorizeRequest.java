@@ -7,6 +7,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
@@ -151,6 +152,8 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         // let the policy data contain record base of request payload
         policyData.setRequestPayload(recordBaseFromPayload);
 
+        logger.debug("Request payload attached to the policy data.");
+
         /**
          * if this operation is to update existing record, then we need to include the
          * original record to the policy
@@ -219,10 +222,16 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         if(recordId == null)
             return this.executePolicy(policyData);
 
+        logger.debug("Request targets a single specific record with record id: " + recordId);
+        logger.debug("Original record will be attached to the policy data.");
+
         // we have single targeted record
         return this.retriveOriginalRecord(exchange)
             .flatMap(originalRecord -> {
                 policyData.setOriginalRecord(originalRecord);
+
+                logger.debug("Original record is retrieved and attached to the policy data.");
+
                 return this.executePolicy(policyData);
             });
     }
@@ -274,6 +283,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         if (logger.getLevel().compareTo(Level.DEBUG) >= 0) {
             logger.debug("Policy data is prepared.");
             ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
 
             try {
                 String policyDataStr = mapper.writeValueAsString(policyData);
@@ -283,11 +293,17 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             }
         }
 
+        logger.debug("Sending policy data to the PEP.");
+
         return authorizationClient.executePolicy(policyData)
             .map(result -> {
 
-                if (result.isAllow())
+                if (result.isAllow()) {
+                    logger.debug("PEP authorized our request.");
                     return Boolean.TRUE;
+                }
+                    
+                logger.debug("PEP did't authorized the request. Throwing unauthorized exception.");
 
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, UNAUTHORIZATION_REASON);
         });
