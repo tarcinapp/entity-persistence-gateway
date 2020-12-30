@@ -2,12 +2,17 @@ package com.tarcinapp.entitypersistencegateway;
 
 import java.util.ArrayList;
 
+import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
+
+import reactor.core.publisher.Mono;
+
 public class GatewayContext {
     private String authSubject;
     private String authParty;
     private String requestId;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
+    private Mono<AnyRecordBase> originalRecord;
 
     public void setAuthSubject(String authSubject) {
         this.authSubject = authSubject;
@@ -47,5 +52,13 @@ public class GatewayContext {
 
     public void setRequestId(String requestId) {
         this.requestId = requestId;
+    }
+
+    public Mono<AnyRecordBase> getOriginalRecord() {
+        return this.originalRecord;
+    }
+
+    public void setOriginalRecord(Mono<AnyRecordBase> originalRecord) {
+        this.originalRecord = originalRecord;
     }
 }
