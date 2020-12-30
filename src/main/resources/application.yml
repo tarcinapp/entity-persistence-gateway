@@ -115,12 +115,12 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: AuthorizeRequest
-          args:
-            policyName: /policies/auth/routes/updateEntityById/policy
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateEntityById/policy
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -135,6 +135,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/replaceEntityById/policy
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
