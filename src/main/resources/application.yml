@@ -118,6 +118,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
@@ -135,6 +136,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/replaceEntityById/policy
@@ -149,6 +151,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: FindOriginalRecord
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tarcinapp.entitypersistencegateway.GatewayContext;
 import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
@@ -48,6 +49,8 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
      * I found this unsecure and embedded a static string into code.
      */
     private static String UNAUTHORIZATION_REASON = "You are unauthorized to perform this operation";
+
+    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
     public AuthorizeRequest() {
         super(Config.class);
@@ -213,6 +216,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
      * @return
      */
     private Mono<Boolean> authorizeWithOriginalRecord(ServerWebExchange exchange, PolicyData policyData) {
+        GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
 
         // we use recordId to check if this is updateAll operation
@@ -226,7 +230,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         logger.debug("Original record will be attached to the policy data.");
 
         // we have single targeted record
-        return this.retriveOriginalRecord(exchange)
+        return gc.getOriginalRecord()
             .flatMap(originalRecord -> {
                 policyData.setOriginalRecord(originalRecord);
 
