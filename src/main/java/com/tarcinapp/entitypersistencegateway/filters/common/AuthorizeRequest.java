@@ -191,12 +191,16 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         recordBaseFromPayload.setName(name);
         recordBaseFromPayload.setSlug(slug);
         recordBaseFromPayload.setVisibility(visibility);
+
         if (creationDateTime != null)
             recordBaseFromPayload.setCreationDateTime(ZonedDateTime.parse(creationDateTime));
+
         if (validFromDateTime != null)
             recordBaseFromPayload.setValidFromDateTime(ZonedDateTime.parse(validFromDateTime));
+
         if (validUntilDateTime != null)
             recordBaseFromPayload.setValidUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
+            
         recordBaseFromPayload.setOwnerUsers(ownerUsers);
         recordBaseFromPayload.setOwnerGroups(ownerGroups);
 
