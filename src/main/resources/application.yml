@@ -73,7 +73,7 @@ spring:
             policyName: /policies/auth/routes/findEntities/policy
         - name: LimitResponseFieldsForFindEntities
           args:
-            policyName: data/filters/limitResponseFieldsForFindEntities/forbiddenFields
+            policyName: /policies/fields/genericentities/policy
         - name: AddSetsToQuery
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
