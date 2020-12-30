@@ -14,9 +14,12 @@ public class AnyRecordBase {
     private String kind;
     private String name;
     private String slug;
+    private String visibility;
     private List<String> ownerUsers;
     private List<String> ownerGroups;
-    private String visibility;
+    private int ownerUsersCount;
+    private int ownerGroupsCount;
+    private String lastUpdatedBy;
     
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime creationDateTime;
@@ -117,5 +120,28 @@ public class AnyRecordBase {
     public void setLastUpdatedDateTime(ZonedDateTime  lastUpdatedDateTime) {
         this.lastUpdatedDateTime = lastUpdatedDateTime;
     }
-    
+
+    public int getOwnerUsersCount() {
+        return this.ownerUsersCount;
+    }
+
+    public void setOwnerUsersCount(int ownerUsersCount) {
+        this.ownerUsersCount = ownerUsersCount;
+    }
+
+    public int getOwnerGroupsCount() {
+        return this.ownerGroupsCount;
+    }
+
+    public void setOwnerGroupsCount(int ownerGroupsCount) {
+        this.ownerGroupsCount = ownerGroupsCount;
+    }
+
+    public String getLastUpdatedBy() {
+        return this.lastUpdatedBy;
+    }
+
+    public void setLastUpdatedBy(String lastUpdatedBy) {
+        this.lastUpdatedBy = lastUpdatedBy;
+    }
 }
