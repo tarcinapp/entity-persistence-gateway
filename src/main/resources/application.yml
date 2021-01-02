@@ -101,6 +101,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
