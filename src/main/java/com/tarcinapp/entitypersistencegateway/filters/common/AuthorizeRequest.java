@@ -9,8 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
-import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
+import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 

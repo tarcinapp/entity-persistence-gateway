@@ -24,9 +24,9 @@ import javax.annotation.PostConstruct;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyResult;
+import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

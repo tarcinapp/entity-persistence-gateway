@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.authorization;
+package com.tarcinapp.entitypersistencegateway.auth;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;

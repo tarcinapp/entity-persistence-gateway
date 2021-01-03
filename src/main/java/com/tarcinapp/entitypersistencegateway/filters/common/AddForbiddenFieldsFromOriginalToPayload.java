@@ -5,8 +5,8 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
+import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

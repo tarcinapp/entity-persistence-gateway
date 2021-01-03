@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.authorization.IAuthorizationClient;
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
+import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;

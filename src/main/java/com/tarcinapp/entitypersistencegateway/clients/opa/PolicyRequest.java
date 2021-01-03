@@ -1,6 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.clients.opa;
 
-import com.tarcinapp.entitypersistencegateway.authorization.PolicyData;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 public class PolicyRequest {
     

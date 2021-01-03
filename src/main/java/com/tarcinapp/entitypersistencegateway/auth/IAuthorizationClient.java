@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.authorization;
+package com.tarcinapp.entitypersistencegateway.auth;
 
 import reactor.core.publisher.Mono;
 
