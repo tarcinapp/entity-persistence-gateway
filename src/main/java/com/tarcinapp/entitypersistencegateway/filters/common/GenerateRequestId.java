@@ -1,20 +1,18 @@
-package com.tarcinapp.entitypersistencegateway.filters.global;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Random;
 
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.Ordered;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -22,7 +20,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class GlobalRequestIdGenerationFilter {
+public class GenerateRequestId  extends AbstractGatewayFilterFactory<GenerateRequestId.Config>  {
 
     @Value("${app.requestHeaders.authenticationSubject}")
     private String requestIdHeader;
@@ -32,6 +30,16 @@ public class GlobalRequestIdGenerationFilter {
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
+    public GenerateRequestId() {
+        super(Config.class);
+    }
+
+    @Override
+    public GatewayFilter apply(Config config) {
+        
+        // implement in seperate method in order to reduce nesting
+        return (exchange, chain) -> this.filter(exchange, chain);
+    }
     
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         GatewayContext gc = exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
@@ -69,5 +77,9 @@ public class GlobalRequestIdGenerationFilter {
         ThreadContext.put("requestId", requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
+    }
+
+    public static class Config {
+
     }
 }

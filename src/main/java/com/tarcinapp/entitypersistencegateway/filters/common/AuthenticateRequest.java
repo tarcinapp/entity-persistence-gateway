@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.global;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
