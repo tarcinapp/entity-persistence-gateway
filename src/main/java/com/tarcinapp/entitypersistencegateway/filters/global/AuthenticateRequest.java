@@ -32,8 +32,15 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import reactor.core.publisher.Mono;
 
+/**
+ * This filter authenticates the requests with Bearer token.
+ * If request is authenticated GatewayContext is initialized and a policy data is prepared.
+ * 
+ * Preparing policy data at the authentication point lets subsequent filters to use existing policy data
+ * without dealing with re-preparing it again.
+ */
 @Component
-public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
+public class AuthenticateRequest implements GlobalFilter, Ordered {
 
     @Autowired
     IPublicKeyBuilder publicKeyBuilder;
@@ -45,7 +52,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    Logger logger = LogManager.getLogger(GlobalAuthenticationFilter.class);
+    Logger logger = LogManager.getLogger(AuthenticateRequest.class);
 
     @PostConstruct
     private void init() {
