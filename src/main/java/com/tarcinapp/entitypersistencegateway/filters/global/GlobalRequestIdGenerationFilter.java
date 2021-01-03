@@ -22,7 +22,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class GlobalRequestIdGenerationFilter implements GlobalFilter, Ordered {
+public class GlobalRequestIdGenerationFilter {
 
     @Value("${app.requestHeaders.authenticationSubject}")
     private String requestIdHeader;
@@ -32,7 +32,7 @@ public class GlobalRequestIdGenerationFilter implements GlobalFilter, Ordered {
 
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
-    @Override
+    
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         GatewayContext gc = exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
 
@@ -69,10 +69,5 @@ public class GlobalRequestIdGenerationFilter implements GlobalFilter, Ordered {
         ThreadContext.put("requestId", requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
-    }
-
-    @Override
-    public int getOrder() {
-        return 1;
     }
 }

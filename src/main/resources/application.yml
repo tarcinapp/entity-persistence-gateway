@@ -31,6 +31,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: AuthenticateRequest
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
@@ -49,6 +50,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 4KB
+        - name: AuthenticateRequest
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateAllEntities/policy
@@ -63,6 +65,7 @@ spring:
         - Path=/generic-entities
         - Method=GET
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -81,6 +84,7 @@ spring:
         - Path=/generic-entities/count
         - Method=GET
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -96,6 +100,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=GET
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -111,14 +116,16 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PATCH
         filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: RequestSize
-          args:
-            maxSize: 4KB
+        
         - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
@@ -129,14 +136,15 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PUT
         filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: RequestSize
-          args:
-            maxSize: 4KB
         - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
@@ -147,6 +155,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=DELETE
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -316,6 +325,7 @@ spring:
         - Path=/{kindPath}
         - Method=GET
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
