@@ -1,17 +1,11 @@
 package com.tarcinapp.entitypersistencegateway.filters.global;
 
 import java.security.Key;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
-
-import javax.annotation.PostConstruct;
 
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
-import com.tarcinapp.entitypersistencegateway.auth.IPublicKeyBuilder;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,8 +37,6 @@ import reactor.core.publisher.Mono;
 public class AuthenticateRequest implements GlobalFilter, Ordered {
 
     @Autowired
-    IPublicKeyBuilder publicKeyBuilder;
-
     private Key key;
 
     @Value("${app.requestHeaders.authenticationSubject}")
@@ -53,16 +45,6 @@ public class AuthenticateRequest implements GlobalFilter, Ordered {
     private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
 
     Logger logger = LogManager.getLogger(AuthenticateRequest.class);
-
-    @PostConstruct
-    private void init() {
-
-        try {
-            this.key = this.publicKeyBuilder.loadPublicKey();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            logger.error("An error occured while trying to load public key for authentication.", e);
-        }
-    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
