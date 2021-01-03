@@ -10,6 +10,7 @@ public class GatewayContext {
     private String authSubject;
     private String authParty;
     private String requestId;
+    private String encodedJwt;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
     private Mono<AnyRecordBase> originalRecord;
@@ -28,6 +29,14 @@ public class GatewayContext {
 
     public String getAuthParty() {
         return this.authParty;
+    }
+
+    public String getEncodedJwt() {
+        return this.encodedJwt;
+    }
+
+    public void setEncodedJwt(String encodedJwt) {
+        this.encodedJwt = encodedJwt;
     }
 
     public void setGroups(ArrayList<String> groups) {

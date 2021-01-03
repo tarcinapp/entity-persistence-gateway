@@ -97,6 +97,7 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
                 gc.setGroups(groups);
                 gc.setRoles(roles);
                 gc.setAuthParty(authParth);
+                gc.setEncodedJwt(jwtToken);
 
             exchange.getAttributes()
                 .put(GATEWAY_CONTEXT_ATTR, gc);
