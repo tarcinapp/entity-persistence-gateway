@@ -7,6 +7,13 @@ import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import reactor.core.publisher.Mono;
 
+/**
+ * This object is instantiated and filled at the authentication filter and is available through all filters.
+ * GatewayContext is designed to keep all common data properties about the request. 
+ * With this approach, filters do not need to recalculate values for these fields.
+ * 
+ * GatewayContext is available from the request attributes.
+ */
 public class GatewayContext {
     private String authSubject;
     private String authParty;
