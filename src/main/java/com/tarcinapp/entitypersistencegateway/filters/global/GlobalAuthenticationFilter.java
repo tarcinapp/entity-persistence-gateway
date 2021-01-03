@@ -1,11 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.filters.global;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.Ordered;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -13,10 +7,19 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.LinkedHashMap;
+
+import javax.annotation.PostConstruct;
 
 import com.tarcinapp.entitypersistencegateway.GatewayContext;
+import com.tarcinapp.entitypersistencegateway.auth.IPublicKeyBuilder;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -32,8 +35,10 @@ import reactor.core.publisher.Mono;
 @Component
 public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
 
-    @Value("${app.auth.rs256PublicKey:#{null}}")
-    private String rs256PublicKey;
+    @Autowired
+    IPublicKeyBuilder publicKeyBuilder;
+
+    private Key key;
 
     @Value("${app.requestHeaders.authenticationSubject}")
     private String authSubjectHeader;
@@ -42,11 +47,21 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
 
     Logger logger = LogManager.getLogger(GlobalAuthenticationFilter.class);
 
+    @PostConstruct
+    private void init() {
+
+        try {
+            this.key = this.publicKeyBuilder.loadPublicKey();
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            logger.error("An error occured while trying to load public key for authentication.", e);
+        }
+    }
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        if(rs256PublicKey==null || rs256PublicKey.equals("false")) {
-            logger.warn("RS256 key is not configured. Requests won't be authenticated! Please configure RS256 public key to enable authentication.");
+        if(this.key==null) {
+            logger.warn("RS256 key is not configured. Requests won't be authenticated! Please configure a valid RS256 public key to enable authentication.");
 
             // instantiate empty gateway context
             GatewayContext gc = new GatewayContext();
@@ -116,22 +131,15 @@ public class GlobalAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Claims validateAuthorization(String jwtToken) throws NoSuchAlgorithmException, InvalidKeySpecException, JwtException {
-        Key privateKey = loadPrivateKey();
+        
 
         Jws<Claims> claims = Jwts
             .parserBuilder()
-            .setSigningKey(privateKey)
+            .setSigningKey(this.key)
             .build()
             .parseClaimsJws(jwtToken);
 
         return claims.getBody();        
-	}
-	
-	private Key loadPrivateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] data = Base64.getDecoder().decode((rs256PublicKey.getBytes()));
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
-        KeyFactory fact = KeyFactory.getInstance("RSA");
-        return fact.generatePublic(spec);
 	}
 	
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
