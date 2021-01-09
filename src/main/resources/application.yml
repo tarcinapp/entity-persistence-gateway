@@ -19,7 +19,6 @@ spring:
   cloud:
     gateway:
       routes:
-      
       # entity controller
       - id: createEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
@@ -105,7 +104,6 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
@@ -124,8 +122,6 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        
-        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
@@ -144,7 +140,6 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: FindOriginalRecord
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/replaceEntityById/policy
@@ -160,7 +155,6 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: FindOriginalRecord
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
