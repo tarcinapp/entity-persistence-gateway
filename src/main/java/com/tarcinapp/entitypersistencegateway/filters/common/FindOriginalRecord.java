@@ -5,7 +5,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tarcinapp.entitypersistencegateway.GatewayContext;
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
@@ -37,7 +37,7 @@ public class FindOriginalRecord extends AbstractGatewayFilterFactory<FindOrigina
     @Autowired
     IBackendClientBase backendBaseClient;
 
-    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     private Logger logger = LogManager.getLogger(FindOriginalRecord.class);
 
@@ -67,12 +67,9 @@ public class FindOriginalRecord extends AbstractGatewayFilterFactory<FindOrigina
         logger.debug("Request is targeting a single record. FindOriginalRecord filter is going to find the original record from backend.");
         
         // we will put the original record in gateway context.
-        GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
+        GatewaySecurityContext gc = (GatewaySecurityContext)exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
 
         Mono<AnyRecordBase> originalRecord = this.backendBaseClient.get(path.toString(), AnyRecordBase.class);
-
-        // we have original record as mono
-        gc.setOriginalRecord(originalRecord);
 
         if(logger.getLevel() == Level.DEBUG) {
             // subscribe for debugging purposes

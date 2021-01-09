@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import com.tarcinapp.entitypersistencegateway.GatewayContext;
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.ThreadContext;
@@ -22,13 +22,14 @@ import reactor.core.publisher.Mono;
 @Component
 public class GenerateRequestId  extends AbstractGatewayFilterFactory<GenerateRequestId.Config>  {
 
-    @Value("${app.requestHeaders.authenticationSubject}")
+    @Value("${app.requestHeaders.requestId}")
     private String requestIdHeader;
 
     @Value("${app.requestIdPrefix}")
     private String requestIdPrefix;
 
-    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
+    private final static String REQUEST_ID_ATTR = "RequestId";
 
     public GenerateRequestId() {
         super(Config.class);
@@ -42,7 +43,7 @@ public class GenerateRequestId  extends AbstractGatewayFilterFactory<GenerateReq
     }
     
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        GatewayContext gc = exchange.getAttribute(GATEWAY_CONTEXT_ATTR);
+        GatewaySecurityContext gc = exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
 
         StringBuilder sb = new StringBuilder();
 
@@ -72,9 +73,9 @@ public class GenerateRequestId  extends AbstractGatewayFilterFactory<GenerateReq
             .header(requestIdHeader, requestId)
             .build();
 
-        gc.setRequestId(requestId);
+        exchange.getAttributes().put(REQUEST_ID_ATTR, requestId);
 
-        ThreadContext.put("requestId", requestId);
+        ThreadContext.put(REQUEST_ID_ATTR, requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
     }

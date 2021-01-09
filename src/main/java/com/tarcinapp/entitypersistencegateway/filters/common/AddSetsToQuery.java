@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.tarcinapp.entitypersistencegateway.GatewayContext;
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -50,7 +50,7 @@ public class AddSetsToQuery
 
     private Logger logger = LogManager.getLogger(AddSetsToQuery.class);
 
-    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     public AddSetsToQuery() {
         super(Config.class);
@@ -63,7 +63,7 @@ public class AddSetsToQuery
 
             logger.debug("AddSetsToQuery filter is started.");
 
-            GatewayContext gc = (GatewayContext)exchange.getAttributes().get(GATEWAY_CONTEXT_ATTR);
+            GatewaySecurityContext gc = (GatewaySecurityContext)exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
             ArrayList<String> roles = gc.getRoles();
             String userId = gc.getAuthSubject();
             ArrayList<String> groups = gc.getGroups();

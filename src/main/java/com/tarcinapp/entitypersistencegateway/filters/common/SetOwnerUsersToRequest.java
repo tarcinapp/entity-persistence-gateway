@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.GatewayContext;
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +27,7 @@ public class SetOwnerUsersToRequest
         extends AbstractGatewayFilterFactory<SetOwnerUsersToRequest.Config> {
 
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
-    private final static String GATEWAY_CONTEXT_ATTR = "GatewayContext";
+    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     Logger logger = LogManager.getLogger(SetOwnerUsersToRequest.class);
 
@@ -43,7 +43,7 @@ public class SetOwnerUsersToRequest
             ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                     .setContentType(MediaType.APPLICATION_JSON_VALUE)
                     .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                        GatewayContext gc = (GatewayContext)exchange1.getAttributes().get(GATEWAY_CONTEXT_ATTR);
+                        GatewaySecurityContext gc = (GatewaySecurityContext)exchange1.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
 
                         if(gc == null) {
                             return Mono.just(inboundJsonRequestStr);

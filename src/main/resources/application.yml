@@ -2,7 +2,6 @@ app:
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   requestHeaders:
-    authenticationSubject: "TarcinappAuthSubject"
     requestId: "TarcinappRequestId"
   requestIdPrefix: "TAPP"
   backend:

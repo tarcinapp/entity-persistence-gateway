@@ -11,8 +11,8 @@ import org.springframework.http.server.RequestPath;
 import org.springframework.util.MultiValueMap;
 
 @JsonInclude(Include.NON_NULL)
-public class PolicyData {
-    
+public class PolicyData implements Cloneable {
+
     private String policyName;
     private HttpMethod httpMethod;
     private RequestPath requestPath;
@@ -44,8 +44,8 @@ public class PolicyData {
     public void setOriginalRecord(AnyRecordBase originalRecord) {
         this.originalRecord = originalRecord;
     }
-   
-    @JsonSerialize(using=ToStringSerializer.class)
+
+    @JsonSerialize(using = ToStringSerializer.class)
     public HttpMethod getHttpMethod() {
         return this.httpMethod;
     }
@@ -54,7 +54,7 @@ public class PolicyData {
         this.httpMethod = httpMethod;
     }
 
-    @JsonSerialize(using=ToStringSerializer.class)
+    @JsonSerialize(using = ToStringSerializer.class)
     public RequestPath getRequestPath() {
         return this.requestPath;
     }
@@ -63,13 +63,13 @@ public class PolicyData {
         this.requestPath = requestPath;
     }
 
-    public MultiValueMap<String,String> getQueryParams() {
-		return queryParams;
-	}
+    public MultiValueMap<String, String> getQueryParams() {
+        return queryParams;
+    }
 
-    public void setQueryParams(MultiValueMap<String,String> queryParams) {
-		this.queryParams = queryParams;
-	}
+    public void setQueryParams(MultiValueMap<String, String> queryParams) {
+        this.queryParams = queryParams;
+    }
 
     public String getEncodedJwt() {
         return this.encodedJwt;
@@ -77,6 +77,11 @@ public class PolicyData {
 
     public void setEncodedJwt(String encodedJwt) {
         this.encodedJwt = encodedJwt;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return (PolicyData) super.clone();
     }
 
 }

@@ -5,24 +5,21 @@ import java.util.ArrayList;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
-import reactor.core.publisher.Mono;
-
 /**
  * This object is instantiated and filled at the authentication filter and is available through all filters.
  * GatewayContext is designed to keep all common data properties about the request. 
  * With this approach, filters do not need to recalculate values for these fields.
  * 
- * GatewayContext is available from the request attributes.
+ * GatewaySecurityContext is available from the request attributes.
  */
-public class GatewayContext {
+public class GatewaySecurityContext {
     private String authSubject;
     private String authParty;
-    private String requestId;
     private String encodedJwt;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
-    private Mono<AnyRecordBase> originalRecord;
-    private Mono<PolicyData> policyData;
+    private AnyRecordBase originalRecord;
+    private PolicyData policyData;
 
     public void setAuthSubject(String authSubject) {
         this.authSubject = authSubject;
@@ -64,27 +61,19 @@ public class GatewayContext {
         return this.roles;
     }
 
-    public String getRequestId() {
-        return this.requestId;
-    }
-
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
-
-    public Mono<AnyRecordBase> getOriginalRecord() {
+    public AnyRecordBase getOriginalRecord() {
         return this.originalRecord;
     }
 
-    public void setOriginalRecord(Mono<AnyRecordBase> originalRecord) {
+    public void setOriginalRecord(AnyRecordBase originalRecord) {
         this.originalRecord = originalRecord;
     }
 
-    public Mono<PolicyData> getPolicyData() {
+    public PolicyData getPolicyData() {
         return this.policyData;
     }
 
-    public void setPolicyData(Mono<PolicyData> policyData) {
+    public void setPolicyData(PolicyData policyData) {
         this.policyData = policyData;
     }
 }
