@@ -2,29 +2,27 @@ package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -32,10 +30,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 /**
- * This filter is used to prevent some fields of the records return from the response.
+ * This filter is used to prevent some fields of the records return from the
+ * response.
  * 
- * For example, visitor users are not permitted to see the 'visibility', 'validFromDateTime', 'validUntilDateTime' fields.
- * However, permitted fields list is not certain, as this filter asks the forbidden fields list to the PDP.
+ * For example, visitor users are not permitted to see the 'visibility',
+ * 'validFromDateTime', 'validUntilDateTime' fields. However, permitted fields
+ * list is not certain, as this filter asks the forbidden fields list to the
+ * PDP.
  */
 @Component
 public class LimitResponseFieldsForFindEntities
@@ -43,6 +44,11 @@ public class LimitResponseFieldsForFindEntities
 
     @Autowired
     IAuthorizationClient authorizationClient;
+
+    @Autowired
+    Key key;
+
+    private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
     private Logger logger = LogManager.getLogger(LimitResponseFieldsForFindEntities.class);
 
@@ -56,55 +62,54 @@ public class LimitResponseFieldsForFindEntities
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            ServerHttpRequest request = exchange.getRequest();
-            String token = this.extractToken(request);
 
             logger.debug("LimitResponseFieldsForFindEntities filter is started.");
 
-            if (token == null) {
-                logger.debug("Authentication information not found. Exiting filter without any modification.");
+            if (key == null) {
+                logger.info("Authentication information not found. Exiting filter without any modification.");
                 return chain.filter(exchange);
             }
 
-            HttpMethod httpMethod = request.getMethod();
+            return this.filter(config, exchange, chain)
+                .onErrorResume(e -> {
+                    // An error occured while trying to limit fields.
+                    // it's safer to return 500 Internal Server Error
+                    logger.error(e);
 
-            // instantiate policy data
-            PolicyData policyData = new PolicyData();
-            policyData.setPolicyName(config.getPolicyName());
-            policyData.setHttpMethod(httpMethod);
-            policyData.setEncodedJwt(token);
-            policyData.setQueryParams(request.getQueryParams());
-            policyData.setRequestPath(request.getPath());
+                    ServerHttpResponse response = exchange.getResponse();
+                    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
 
-            if (logger.getLevel().compareTo(Level.DEBUG) >= 0) {
-                logger.debug("Policy data is prepared to ask PDP.");
-                ObjectMapper mapper = new ObjectMapper();
+                    return response.setComplete();
+                });
+        };
+    }
 
-                try {
-                    String policyDataStr = mapper.writeValueAsString(policyData);
-                    logger.debug("Policy data: {}", policyDataStr);
-                } catch (JsonProcessingException e) {
-                    logger.debug("Unable to serialize policy data to JSON string.");
-                }
+    private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
+        PolicyData policyInquiryData;
+
+        try {
+            policyInquiryData = getPolicyInquriyData(exchange);
+        } catch (CloneNotSupportedException e) {
+            return Mono.error(e);
+        }
+
+        policyInquiryData.setPolicyName(config.policyName);
+
+        /**
+         * Ask to the PDP to get the list of forbidden fields for that specific call
+         */
+        return authorizationClient.executePolicy(policyInquiryData, PolicyResponse.class).flatMap(pr -> {
+            List<String> hideFields = pr.getFields();
+
+            if (hideFields.size() == 0) {
+                logger.debug("No field is configured to be hidden for this invocation. Exiting from filter.");
+                return chain.filter(exchange);
             }
 
-            /**
-             * Ask to the PDP to get the list of forbidden fields for that specific call
-             */
-            return authorizationClient.executePolicy(policyData, PolicyResponse.class).flatMap(pr -> {
-                List<String> hideFields = pr.getFields();
+            logger.debug("Following fields will be hidden by modifying the query parameters: " + hideFields.toString());
 
-                if (hideFields.size() == 0) {
-                    logger.debug("No field is configured to be hidden for this invocation. Exiting from filter.");
-                    return chain.filter(exchange);
-                }
-
-                logger.debug(
-                        "Following fields will be hidden by modifying the query parameters: " + hideFields.toString());
-
-                return this.limitTheFieldsInRequest(hideFields, exchange, chain);
-            });
-        };
+            return this.limitTheFieldsInRequest(hideFields, exchange, chain);
+        });
     }
 
     private Mono<Void> limitTheFieldsInRequest(List<String> fields, ServerWebExchange exchange,
@@ -156,6 +161,7 @@ public class LimitResponseFieldsForFindEntities
                 query.add(nvp);
         });
 
+        // apply modified query string
         ServerWebExchange modifiedExchange = exchange.mutate().request(originalRequest -> {
 
             String newQueryStr = query.stream().map(v -> v.getName() + "=" + v.getValue())
@@ -171,16 +177,16 @@ public class LimitResponseFieldsForFindEntities
         return chain.filter(modifiedExchange);
     }
 
-    private String extractToken(ServerHttpRequest request) {
-        if (!request.getHeaders().containsKey("Authorization"))
-            return null;
-
-        String authHeader = request.getHeaders().get("Authorization").get(0);
-
-        if (!authHeader.startsWith("Bearer "))
-            return null;
-
-        return authHeader.replaceFirst("Bearer\\s", "");
+    /**
+     * A shorthand method for accessing the PolicyInquriyData
+     * 
+     * @param exchange
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
+        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        return (PolicyData) policyInquiryData.clone();
     }
 
     /**
@@ -199,7 +205,7 @@ public class LimitResponseFieldsForFindEntities
     }
 
     /**
-     * This filter uses the policy name to inquiry PDP. PDP evaluates the PolicyData
+     * This filter uses the policy name to inquiry PEP. PEP evaluates the PolicyData
      * and returns the list of forbidden fields for that specific inquiry.
      */
     public static class Config {
