@@ -47,7 +47,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class AuthenticateRequest extends AbstractGatewayFilterFactory<AuthenticateRequest.Config> {
 
-    @Autowired
+    @Autowired(required = false)
     private Key key;
 
     @Autowired

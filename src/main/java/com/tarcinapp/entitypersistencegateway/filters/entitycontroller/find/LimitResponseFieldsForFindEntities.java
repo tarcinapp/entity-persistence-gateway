@@ -45,7 +45,7 @@ public class LimitResponseFieldsForFindEntities
     @Autowired
     IAuthorizationClient authorizationClient;
 
-    @Autowired
+    @Autowired(required = false)
     Key key;
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";

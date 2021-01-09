@@ -5,7 +5,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
-@TestPropertySource(properties = {"JWTS_PRIVATE_KEY = private-key"})
+@TestPropertySource(properties = {
+	"app.backend.host = 185.169.55.181"
+})
 class EntityPersistenceGatewayApplicationTests {
 
 	@Test

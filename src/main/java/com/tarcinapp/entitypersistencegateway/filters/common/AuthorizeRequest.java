@@ -28,7 +28,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
     @Autowired
     IAuthorizationClient authorizationClient;
 
-    @Autowired
+    @Autowired(required = false)
     private Key key;
 
     private Logger logger = LogManager.getLogger(AuthorizeRequest.class);
