@@ -1,9 +1,14 @@
 package com.tarcinapp.entitypersistencegateway.dto;
 
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -32,6 +37,13 @@ public class AnyRecordBase {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime lastUpdatedDateTime;
+
+    @JsonIgnore
+    private Map<String, String> properties; 
+
+    public AnyRecordBase() {
+        properties = new HashMap<>(); 
+    }
 
     public String getKind() {
         return this.kind;
@@ -143,5 +155,19 @@ public class AnyRecordBase {
 
     public void setLastUpdatedBy(String lastUpdatedBy) {
         this.lastUpdatedBy = lastUpdatedBy;
+    }
+
+    public Map<String, String> getProperties(){ 
+        return properties; 
+     } 
+     
+     @JsonAnySetter 
+     public void setCustomFields(String property, String value){ 
+        properties.put(property, value); 
+     }
+
+    @JsonAnyGetter
+    public Map<String, String> getCustomFields() {
+        return this.properties;
     }
 }
