@@ -28,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -115,10 +116,18 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
              */
             return this.onUserAuthenticated(claims, exchange, chain);
         }).onErrorResume(e -> {
-            logger.error(e);
 
             ServerHttpResponse response = exchange.getResponse();
-            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+
+            if(e instanceof WebClientResponseException) {
+                WebClientResponseException clientResponseException = (WebClientResponseException)e;
+
+                if(clientResponseException.getStatusCode() == HttpStatus.NOT_FOUND)
+                    response.setStatusCode(HttpStatus.NOT_FOUND);
+            } else {
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                logger.error(e);
+            }
 
             return response.setComplete();
         });
