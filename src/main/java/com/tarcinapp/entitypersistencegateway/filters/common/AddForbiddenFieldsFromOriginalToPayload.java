@@ -1,26 +1,27 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.util.Map;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
@@ -35,9 +36,11 @@ import reactor.core.publisher.Mono;
  * those fields as forbiddenFields.
  * 
  * In such cases, users cannot change the value of those fields. Their update
- * attempts will be rejected with '401 - Unauthorized' error code. Note that, if
- * a user is authorized to update a forbidden field (with required roles), then
- * he will be able to change the value for that field according to the policy.
+ * attempts will be rejected with '401 - Unauthorized' error code.
+ * 
+ * Nevertheless, if a user is authorized to update a forbidden field (with
+ * required roles), then he will be able to change the value for that field
+ * according to the policy.
  * 
  * To make replaceById operations available for those users, this filter adds
  * values for the forbidden fields from the original record.
@@ -52,6 +55,8 @@ public class AddForbiddenFieldsFromOriginalToPayload
     @Autowired
     IAuthorizationClient authorizationClient;
 
+    private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
+
     private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayload.class);
 
     public AddForbiddenFieldsFromOriginalToPayload() {
@@ -60,57 +65,122 @@ public class AddForbiddenFieldsFromOriginalToPayload
 
     @Override
     public GatewayFilter apply(Config config) {
-        return (exchange, chain) -> this.filter(config, exchange, chain);
+        return (exchange, chain) -> {
+
+            return this.filter(config, exchange, chain)
+                .onErrorResume(e -> {
+                    logger.error(e);
+
+                    ServerHttpResponse response = exchange.getResponse();
+                    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+
+                    return response.setComplete();
+                });
+        };
     }
 
     private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
-        String token = this.extractToken(request);
+        PolicyData policyInquiryData;
 
-        HttpMethod httpMethod = request.getMethod();
+        try {
+            policyInquiryData = getPolicyInquriyData(exchange);
+        } catch (CloneNotSupportedException e) {
+            return Mono.error(e);
+        }
 
-        // instantiate policy data
-        PolicyData policyData = new PolicyData();
-        policyData.setPolicyName(config.getPolicyName());
-        policyData.setHttpMethod(httpMethod);
-        policyData.setEncodedJwt(token);
-        policyData.setQueryParams(request.getQueryParams());
-        policyData.setRequestPath(request.getPath());
+        policyInquiryData.setPolicyName(config.getPolicyName());
+
+        return this.authorizationClient.executePolicy(policyInquiryData, PolicyResponse.class).flatMap(pr -> {
+
+            if (pr.fields.size() > 0)
+                return this.takeFieldsFromTheOriginalRecord(pr.fields, exchange, chain);
+
+            logger.debug("No field found as forbidden. Exiting from filter.");
+            return chain.filter(exchange);
+        });
+
+    }
+
+    private Mono<Void> takeFieldsFromTheOriginalRecord(ArrayList<String> fields, ServerWebExchange exchange,
+            GatewayFilterChain chain) {
+
+        AnyRecordBase originalRecord;
+
+        try {
+            originalRecord = this.getOriginalRecord(exchange);
+        } catch (CloneNotSupportedException e) {
+            return Mono.error(e);
+        }
 
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                    
+                .setRewriteFunction(String.class, String.class, (exchange1, payloadStr) -> {
+
                     try {
-                        // parse the inbound string as JSON
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        Map<String, Object> payloadJSON;
-                        payloadJSON = objectMapper.readValue(inboundJsonRequestStr,
-                                new TypeReference<Map<String, Object>>() {
-                                });
+                        ObjectMapper objectMapper = new ObjectMapper()
+                            .registerModule(new JavaTimeModule());
+                        AnyRecordBase payloadRecord = objectMapper.readValue(payloadStr, AnyRecordBase.class);
 
-                        // todo: ask to policy with the original record for forbidden fields.
+                        BeanWrapperImpl originalRecordWrapper = new BeanWrapperImpl(originalRecord);
+                        BeanWrapperImpl payloadRecordWrapper = new BeanWrapperImpl(payloadRecord);
 
-                        return Mono.just(inboundJsonRequestStr);
+
+                        fields.stream()
+                            .forEach(field -> {
+                                Object propertyValue = originalRecordWrapper.getPropertyValue(field);
+                                payloadRecordWrapper.setPropertyValue(field, propertyValue);
+                            });
+                        
+                        String outboundJsonRequestStr = objectMapper.writeValueAsString(payloadRecord);
+
+                        return Mono.just(outboundJsonRequestStr);
+                    } catch (JsonMappingException e) {
+                        return Mono.error(e);
                     } catch (JsonProcessingException e) {
-                        logger.error(e);
-                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+                        return Mono.error(e);
                     }
-                });
+            });
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
-    private String extractToken(ServerHttpRequest request) {
-        if (!request.getHeaders().containsKey("Authorization"))
-            return null;
+    /**
+     * A shorthand method for accessing the original record from the policy data.
+     * 
+     * @param exchange
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    private AnyRecordBase getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
+        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        return policyInquiryData.getOriginalRecord();
+    }
 
-        String authHeader = request.getHeaders().get("Authorization").get(0);
+    /**
+     * A shorthand method for accessing the PolicyInquriyData
+     * 
+     * @param exchange
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
+        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        return (PolicyData) policyInquiryData.clone();
+    }
 
-        if (!authHeader.startsWith("Bearer "))
-            return null;
+    /**
+     * This POJO is used to map PDP response of inquiry of forbidden fields.
+     */
+    private static class PolicyResponse {
+        ArrayList<String> fields;
 
-        return authHeader.replaceFirst("Bearer\\s", "");
+        public ArrayList<String> getFields() {
+            return this.fields;
+        }
+
+        public void setFields(ArrayList<String> fields) {
+            this.fields = fields;
+        }
     }
 
     public static class Config {
