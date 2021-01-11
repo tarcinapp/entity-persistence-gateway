@@ -26,6 +26,8 @@ import reactor.core.publisher.Mono;
 public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddOwnershipInfoToPayload.Config> {
 
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
+    private static final String CREATED_BY_FIELD_NAME = "createdBy";
+    private static final String LAST_UPDATED_BY = "lastUpdatedBy";
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     @Autowired
@@ -70,8 +72,11 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
                                 new TypeReference<Map<String, Object>>() {
                                 });
 
-                            if(authSubject != null)
+                            if(authSubject != null) {
                                 inboundJsonRequestMap.put(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
+                                inboundJsonRequestMap.put(CREATED_BY_FIELD_NAME, authSubject);
+                                inboundJsonRequestMap.put(LAST_UPDATED_BY, authSubject);
+                            }        
                             
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 

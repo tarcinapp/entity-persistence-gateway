@@ -25,6 +25,7 @@ public class AnyRecordBase {
     private int ownerUsersCount;
     private int ownerGroupsCount;
     private String lastUpdatedBy;
+    private String createdBy;
     
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime creationDateTime;
@@ -157,9 +158,13 @@ public class AnyRecordBase {
         this.lastUpdatedBy = lastUpdatedBy;
     }
 
-    public Map<String, String> getProperties(){ 
-        return properties; 
-     } 
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
      
      @JsonAnySetter 
      public void setCustomFields(String property, String value){ 
