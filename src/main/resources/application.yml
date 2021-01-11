@@ -49,14 +49,14 @@ spring:
           args:
             maxSize: 4KB
         - name: AuthenticateRequest
-        - name: AuthorizeRequest
-          args:
-            policyName: /policies/auth/routes/updateAllEntities/policy
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllEntities/policy
       - id: findEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
@@ -158,6 +158,9 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteEntityById/policy
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}

@@ -30,7 +30,7 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
     private static final String LAST_UPDATED_BY = "lastUpdatedBy";
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
-    @Autowired
+    @Autowired(required = false)
     Key key;
 
     Logger logger = LogManager.getLogger(AddOwnershipInfoToPayload.class);
