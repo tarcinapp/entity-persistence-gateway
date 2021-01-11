@@ -30,15 +30,15 @@ spring:
           args:
             maxSize: 4KB
         - name: AuthenticateRequest
-        - name: AuthorizeRequest
-          args:
-            policyName: /policies/auth/routes/createEntity/policy
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: SetOwnerUsersToRequest
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createEntity/policy
+        - name: AddOwnershipInfoToPayload
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
