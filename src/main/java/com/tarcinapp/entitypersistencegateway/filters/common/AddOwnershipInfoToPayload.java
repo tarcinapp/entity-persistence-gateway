@@ -73,9 +73,13 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
                                 });
 
                             if(authSubject != null) {
-                                inboundJsonRequestMap.put(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
-                                inboundJsonRequestMap.put(CREATED_BY_FIELD_NAME, authSubject);
-                                inboundJsonRequestMap.put(LAST_UPDATED_BY, authSubject);
+
+                                /**
+                                 * We used putIfAbsent here because user may be authorized to send custom values for these fields.
+                                 */
+                                inboundJsonRequestMap.putIfAbsent(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
+                                inboundJsonRequestMap.putIfAbsent(CREATED_BY_FIELD_NAME, authSubject);
+                                inboundJsonRequestMap.putIfAbsent(LAST_UPDATED_BY, authSubject);
                             }        
                             
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
