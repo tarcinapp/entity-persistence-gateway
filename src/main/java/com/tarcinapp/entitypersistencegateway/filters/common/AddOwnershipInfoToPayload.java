@@ -1,6 +1,8 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.Key;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,7 +30,10 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
     private static final String CREATED_BY_FIELD_NAME = "createdBy";
     private static final String LAST_UPDATED_BY = "lastUpdatedBy";
+    private static final String CREATION_DATE_TIME_FIELD_NAME = "creationDateTime";
+    private final static String LAST_UPDATED_DATE_TIME_FIELD_NAME = "lastUpdatedDateTime";
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
+    
 
     @Autowired(required = false)
     Key key;
@@ -73,6 +78,8 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
                                 });
 
                             if(authSubject != null) {
+                                
+                                String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
 
                                 /**
                                  * We used putIfAbsent here because user may be authorized to send custom values for these fields.
@@ -80,6 +87,8 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
                                 inboundJsonRequestMap.putIfAbsent(OWNER_USERS_FIELD_NAME, new String[]{authSubject});
                                 inboundJsonRequestMap.putIfAbsent(CREATED_BY_FIELD_NAME, authSubject);
                                 inboundJsonRequestMap.putIfAbsent(LAST_UPDATED_BY, authSubject);
+                                inboundJsonRequestMap.putIfAbsent(CREATION_DATE_TIME_FIELD_NAME, now);
+                                inboundJsonRequestMap.putIfAbsent(LAST_UPDATED_DATE_TIME_FIELD_NAME, now);
                             }        
                             
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
@@ -88,12 +97,10 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
 
                             return Mono.just(outboundJsonRequestStr);
                         } catch (JsonMappingException e) {
-                            logger.error(e);
+                            return Mono.error(e);
                         } catch (JsonProcessingException e) {
-                            logger.error(e);
+                            return Mono.error(e);
                         }
-
-                    return Mono.just(inboundJsonRequestStr);
                 });
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
