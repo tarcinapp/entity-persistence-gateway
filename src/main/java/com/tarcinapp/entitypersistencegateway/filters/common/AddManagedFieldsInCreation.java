@@ -25,7 +25,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddOwnershipInfoToPayload.Config> {
+public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<AddManagedFieldsInCreation.Config> {
 
     private static final String OWNER_USERS_FIELD_NAME = "ownerUsers";
     private static final String CREATED_BY_FIELD_NAME = "createdBy";
@@ -38,9 +38,9 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
     @Autowired(required = false)
     Key key;
 
-    Logger logger = LogManager.getLogger(AddOwnershipInfoToPayload.class);
+    Logger logger = LogManager.getLogger(AddManagedFieldsInCreation.class);
 
-    public AddOwnershipInfoToPayload() {
+    public AddManagedFieldsInCreation() {
         super(Config.class);
     }
 
@@ -49,7 +49,7 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
 
         return (exchange, chain) -> {
 
-            logger.debug("AddOwnershipInfoToPayload filter is started");
+            logger.debug("AddManagedFieldsInCreation filter is started");
 
             if(key == null) {
                 logger.warn("RS256 key is not configured. Ownership information won't be added to the request payload! Please configure a valid RS256 public key to enable record ownership.");
@@ -93,7 +93,7 @@ public class AddOwnershipInfoToPayload extends AbstractGatewayFilterFactory<AddO
                             
                             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 
-                            logger.debug("Request payload is modified by adding the owner user. New payload: ", outboundJsonRequestStr);
+                            logger.debug("Request payload is modified with adding the owner user. New payload: ", outboundJsonRequestStr);
 
                             return Mono.just(outboundJsonRequestStr);
                         } catch (JsonMappingException e) {

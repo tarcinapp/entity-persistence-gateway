@@ -38,7 +38,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
-        - name: AddOwnershipInfoToPayload
+        - name: AddManagedFieldsInCreation
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
