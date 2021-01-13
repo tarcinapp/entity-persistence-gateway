@@ -2,7 +2,6 @@ package com.tarcinapp.entitypersistencegateway;
 
 import java.util.ArrayList;
 
-import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 /**
@@ -19,7 +18,6 @@ public class GatewaySecurityContext {
     private ArrayList<String> roles;
     private ArrayList<String> groups;
     private AnyRecordBase originalRecord;
-    private PolicyData policyData;
 
     public void setAuthSubject(String authSubject) {
         this.authSubject = authSubject;
@@ -67,13 +65,5 @@ public class GatewaySecurityContext {
 
     public void setOriginalRecord(AnyRecordBase originalRecord) {
         this.originalRecord = originalRecord;
-    }
-
-    public PolicyData getPolicyData() {
-        return this.policyData;
-    }
-
-    public void setPolicyData(PolicyData policyData) {
-        this.policyData = policyData;
     }
 }
