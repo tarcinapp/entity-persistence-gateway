@@ -143,9 +143,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/replaceEntityById/policy
-        - name: AddForbiddenFieldsFromOriginalToPayload
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/genericentities/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:

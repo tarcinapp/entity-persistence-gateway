@@ -34,7 +34,6 @@ public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<Add
     private final static String LAST_UPDATED_DATE_TIME_FIELD_NAME = "lastUpdatedDateTime";
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     
-
     @Autowired(required = false)
     Key key;
 

@@ -49,17 +49,17 @@ import reactor.core.publisher.Mono;
  * authorization logic. Please apply this filter after the authorization filter.
  */
 @Component
-public class AddForbiddenFieldsFromOriginalToPayload
-        extends AbstractGatewayFilterFactory<AddForbiddenFieldsFromOriginalToPayload.Config> {
+public class AddForbiddenFieldsFromOriginalToPayloadInReplace
+        extends AbstractGatewayFilterFactory<AddForbiddenFieldsFromOriginalToPayloadInReplace.Config> {
 
     @Autowired
     IAuthorizationClient authorizationClient;
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
-    private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayload.class);
+    private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayloadInReplace.class);
 
-    public AddForbiddenFieldsFromOriginalToPayload() {
+    public AddForbiddenFieldsFromOriginalToPayloadInReplace() {
         super(Config.class);
     }
 
