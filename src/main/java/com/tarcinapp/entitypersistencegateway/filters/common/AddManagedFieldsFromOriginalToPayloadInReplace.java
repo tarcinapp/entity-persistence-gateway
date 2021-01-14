@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
+import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,10 +40,6 @@ import reactor.core.publisher.Mono;
 @Component
 public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
 
-    private static final String CREATED_BY_FIELD_NAME = "createdBy";
-    private static final String LAST_UPDATED_BY = "lastUpdatedBy";
-    private static final String CREATION_DATE_TIME_FIELD_NAME = "creationDateTime";
-    private final static String LAST_UPDATED_DATE_TIME_FIELD_NAME = "lastUpdatedDateTime";
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
@@ -89,10 +86,10 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
                          * We used putIfAbsent here because user may be authorized to send custom values
                          * for these fields.
                          */
-                        inboundJsonRequestMap.putIfAbsent(CREATED_BY_FIELD_NAME, originalRecord.getCreatedBy());
-                        inboundJsonRequestMap.putIfAbsent(LAST_UPDATED_BY, gc.getAuthSubject());
-                        inboundJsonRequestMap.putIfAbsent(CREATION_DATE_TIME_FIELD_NAME, creationDateTime);
-                        inboundJsonRequestMap.putIfAbsent(LAST_UPDATED_DATE_TIME_FIELD_NAME, now);
+                        inboundJsonRequestMap.putIfAbsent(ManagedField.CREATED_BY.getFieldName(), originalRecord.getCreatedBy());
+                        inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_BY.getFieldName(), gc.getAuthSubject());
+                        inboundJsonRequestMap.putIfAbsent(ManagedField.CREATION_DATE_TIME.getFieldName(), creationDateTime);
+                        inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_DATE_TIME.getFieldName(), now);
 
                         String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 

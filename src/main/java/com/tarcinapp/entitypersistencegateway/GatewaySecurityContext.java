@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway;
 
 import java.util.ArrayList;
 
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
-
 /**
  * This object is instantiated and filled at the authentication filter and is available through all filters.
  * GatewayContext is designed to keep all common data properties about the request. 
