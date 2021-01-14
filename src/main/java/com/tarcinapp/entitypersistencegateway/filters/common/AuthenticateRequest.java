@@ -307,7 +307,15 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             // from here we know that the we are dealing with single record.
             // as operations with payloads are handled above, we only need to include the
             // originalRecord to the policy
-            return this.backendBaseClient.get(request.getPath().toString(), AnyRecordBase.class)
+
+            // this path may contain relations /my-model/{recordId}/some-relation
+            // we need to convert it to the /my-model/{recordId}
+            String requestPath = request.getPath().toString();
+
+            // path becomes /my-model/{recordId}
+            String rootPath = requestPath.replaceAll("\\/" + recordId + "\\/.*", "\\/" + recordId);
+
+            return this.backendBaseClient.get(rootPath, AnyRecordBase.class)
                     .flatMap(originalRecord -> {
                         // set original record to gateway security context
                         gatewaySecurityContext.setOriginalRecord(originalRecord);
