@@ -2,7 +2,12 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,16 +61,15 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
 
             logger.debug("AddManagedFieldsInReplace filter is started");
 
-            return this.filter(exchange, chain);
+            return this.filter(config, exchange, chain);
         };
     }
 
-    private Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                    GatewaySecurityContext gc = (GatewaySecurityContext) exchange1.getAttributes()
-                            .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+                    GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
 
                     try {
                         AnyRecordBase originalRecord = this.getOriginalRecord(exchange);
@@ -75,21 +79,48 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
 
                         ObjectMapper objectMapper = new ObjectMapper();
                         Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
-                                new TypeReference<Map<String, Object>>() {
-                                });
+                            new TypeReference<Map<String, Object>>() {});
 
                         String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
                         String creationDateTime = DateTimeFormatter.ISO_INSTANT
                                 .format(originalRecord.getCreationDateTime());
 
+                        List<ManagedField> fieldsToAdd = new ArrayList<ManagedField>();
+                        
+                        // if no include or exclude array specified, this filter adds all managed fields
+                        if(config.getIncludeFields() == null && config.getIncludeFields() == null)
+                            fieldsToAdd = Arrays.asList(ManagedField.values());
+                        
+                        // if we have includeFields, excludeFields is ignored
+                        else if(config.getExcludeFields() == null)
+                            fieldsToAdd = config.getIncludeFields().stream()
+                                .map(ManagedField::valueOf)
+                                .collect(Collectors.toList());
+                        
+                        // if we reach here we only have exclude fields is configured
+                        else
+                            fieldsToAdd = config.getExcludeFields().stream()
+                                .map(ManagedField::valueOf)
+                                .collect(Collectors.toList());
+
                         /**
                          * We used putIfAbsent here because user may be authorized to send custom values
                          * for these fields.
                          */
-                        inboundJsonRequestMap.putIfAbsent(ManagedField.CREATED_BY.getFieldName(), originalRecord.getCreatedBy());
-                        inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_BY.getFieldName(), gc.getAuthSubject());
-                        inboundJsonRequestMap.putIfAbsent(ManagedField.CREATION_DATE_TIME.getFieldName(), creationDateTime);
-                        inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_DATE_TIME.getFieldName(), now);
+                        fieldsToAdd.stream().forEach(field -> {
+
+                            if(field.equals(ManagedField.CREATED_BY))
+                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.getCreatedBy());
+                            
+                            if(field.equals(ManagedField.LAST_UPDATED_BY))
+                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), gatewaySecurityContext.getAuthSubject());
+
+                            if(field.equals(ManagedField.CREATION_DATE_TIME))
+                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), creationDateTime);
+                            
+                            if(field.equals(ManagedField.LAST_UPDATED_DATE_TIME))
+                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
+                        });
 
                         String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
 
@@ -106,6 +137,11 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
+    private GatewaySecurityContext getGatewaySecurityContext(ServerWebExchange exchange) {
+        return (GatewaySecurityContext) exchange.getAttributes()
+                            .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+    }
+
     /**
      * A shorthand method for accessing the original record from the policy data.
      * 
@@ -119,6 +155,24 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
     }
 
     public static class Config {
+        List<String> includeFields;
+        List<String> excludeFields;
+
+        public List<String> getIncludeFields() {
+            return this.includeFields;
+        }
+
+        public void setIncludeFields(List<String> includeFields) {
+            this.includeFields = includeFields;
+        }
+
+        public List<String> getExcludeFields() {
+            return this.excludeFields;
+        }
+
+        public void setExcludeFields(List<String> excludeFields) {
+            this.excludeFields = excludeFields;
+        }
 
     }
 }
