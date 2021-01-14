@@ -17,7 +17,6 @@ public class GatewaySecurityContext {
     private String encodedJwt;
     private ArrayList<String> roles;
     private ArrayList<String> groups;
-    private AnyRecordBase originalRecord;
 
     public void setAuthSubject(String authSubject) {
         this.authSubject = authSubject;
@@ -57,13 +56,5 @@ public class GatewaySecurityContext {
 
     public ArrayList<String> getRoles() {
         return this.roles;
-    }
-
-    public AnyRecordBase getOriginalRecord() {
-        return this.originalRecord;
-    }
-
-    public void setOriginalRecord(AnyRecordBase originalRecord) {
-        this.originalRecord = originalRecord;
     }
 }

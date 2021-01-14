@@ -273,8 +273,6 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
                             if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
                                 return this.backendBaseClient.get(request.getPath().toString(), AnyRecordBase.class)
                                         .flatMap(originalRecord -> {
-                                            // set original record to gateway security context
-                                            gatewaySecurityContext.setOriginalRecord(originalRecord);
 
                                             // set original record to the policy data
                                             policyInquiryData.setOriginalRecord(originalRecord);
@@ -317,8 +315,6 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
             return this.backendBaseClient.get(rootPath, AnyRecordBase.class)
                     .flatMap(originalRecord -> {
-                        // set original record to gateway security context
-                        gatewaySecurityContext.setOriginalRecord(originalRecord);
 
                         // set original record to the policy data
                         policyInquiryData.setOriginalRecord(originalRecord);
