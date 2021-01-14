@@ -169,6 +169,7 @@ spring:
         - Path=/generic-entities/{recordId}/relations
         - Method=GET
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -180,6 +181,7 @@ spring:
         - Path=/generic-entities/{recordId}/relations
         - Method=POST
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -191,6 +193,7 @@ spring:
         - Path=/generic-entities/{recordId}/relations
         - Method=PATCH
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -202,12 +205,12 @@ spring:
         - Path=/generic-entities/{recordId}/relations
         - Method=DELETE
         filters:
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-
       # relations controller
       - id: createRelation
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
