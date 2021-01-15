@@ -3,7 +3,11 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import java.security.Key;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,7 +33,7 @@ import reactor.core.publisher.Mono;
 public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<AddManagedFieldsInCreation.Config> {
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-    
+
     @Autowired(required = false)
     Key key;
 
@@ -46,62 +50,117 @@ public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<Add
 
             logger.debug("AddManagedFieldsInCreation filter is started");
 
-            if(key == null) {
-                logger.warn("RS256 key is not configured. Ownership information won't be added to the request payload! Please configure a valid RS256 public key to enable record ownership.");
+            if (key == null) {
+                logger.warn(
+                        "RS256 key is not configured. Ownership information won't be added to the request payload! Please configure a valid RS256 public key to enable record ownership.");
 
                 return chain.filter(exchange);
             }
 
-            return this.filter(exchange, chain);
+            return this.filter(config, exchange, chain);
         };
     }
 
-    private Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
-                    .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                    .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                        GatewaySecurityContext gc = (GatewaySecurityContext)exchange1.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
-                        
-                        String authSubject = gc.getAuthSubject();
-
-                        logger.debug("Owner user is: ", authSubject);
-
-                        try {
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
-                                new TypeReference<Map<String, Object>>() {
-                                });
-
-                            if(authSubject != null) {
-                                
-                                String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-
-                                /**
-                                 * We used putIfAbsent here because user may be authorized to send custom values for these fields.
-                                 */
-                                inboundJsonRequestMap.putIfAbsent(ManagedField.OWNER_USERS.getFieldName(), new String[]{authSubject});
-                                inboundJsonRequestMap.putIfAbsent(ManagedField.CREATED_BY.getFieldName(), authSubject);
-                                inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_BY.getFieldName(), authSubject);
-                                inboundJsonRequestMap.putIfAbsent(ManagedField.CREATION_DATE_TIME.getFieldName(), now);
-                                inboundJsonRequestMap.putIfAbsent(ManagedField.LAST_UPDATED_DATE_TIME.getFieldName(), now);
-                            }        
-                            
-                            String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
-
-                            logger.debug("Request payload is modified with adding the owner user. New payload: ", outboundJsonRequestStr);
-
-                            return Mono.just(outboundJsonRequestStr);
-                        } catch (JsonMappingException e) {
-                            return Mono.error(e);
-                        } catch (JsonProcessingException e) {
-                            return Mono.error(e);
-                        }
-                });
+                .setContentType(MediaType.APPLICATION_JSON_VALUE)
+                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> this
+                        .processPayload(config, exchange1, inboundJsonRequestStr));
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
+    private Mono<String> processPayload(Config config, ServerWebExchange exchange, String inboundJsonRequestStr) {
+        GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
+                    new TypeReference<Map<String, Object>>() {
+                    });
+
+            String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+            String authSubject = gatewaySecurityContext.getAuthSubject();
+            List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
+            /**
+             * We used putIfAbsent here because user may be authorized to send custom values
+             * for these fields.
+             */
+            fieldsToAdd.stream().forEach(field -> {
+
+                if (field.equals(ManagedField.CREATION_DATE_TIME))
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
+
+                if (field.equals(ManagedField.LAST_UPDATED_DATE_TIME))
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
+
+                if (authSubject != null) {
+
+                    if (field.equals(ManagedField.OWNER_USERS))
+                        inboundJsonRequestMap.putIfAbsent(ManagedField.OWNER_USERS.getFieldName(),
+                                new String[] { authSubject });
+
+                    if (field.equals(ManagedField.CREATED_BY))
+                        inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);
+
+                    if (field.equals(ManagedField.LAST_UPDATED_BY))
+                        inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);
+                }
+            });
+
+            String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
+
+            logger.debug("Request payload is modified with adding the owner user. New payload: ",
+                    outboundJsonRequestStr);
+
+            return Mono.just(outboundJsonRequestStr);
+        } catch (JsonMappingException e) {
+            return Mono.error(e);
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        }
+    }
+
+    private List<ManagedField> getFieldsToAdd(Config config) {
+        List<ManagedField> fieldsToAdd = new ArrayList<ManagedField>();
+
+        // if no include or exclude array specified, this filter adds all managed fields
+        if (config.getIncludeFields() == null && config.getIncludeFields() == null)
+            fieldsToAdd = Arrays.asList(ManagedField.values());
+
+        // if we have includeFields, excludeFields is ignored
+        else if (config.getExcludeFields() == null)
+            fieldsToAdd = config.getIncludeFields().stream().map(ManagedField::valueOf).collect(Collectors.toList());
+
+        // if we reach here we only have exclude fields is configured
+        else
+            fieldsToAdd = config.getExcludeFields().stream().map(ManagedField::valueOf).collect(Collectors.toList());
+
+        return fieldsToAdd;
+    }
+
+    private GatewaySecurityContext getGatewaySecurityContext(ServerWebExchange exchange) {
+        return (GatewaySecurityContext) exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
+    }
+
     public static class Config {
-        
+        List<String> includeFields;
+        List<String> excludeFields;
+
+        public List<String> getIncludeFields() {
+            return this.includeFields;
+        }
+
+        public void setIncludeFields(List<String> includeFields) {
+            this.includeFields = includeFields;
+        }
+
+        public List<String> getExcludeFields() {
+            return this.excludeFields;
+        }
+
+        public void setExcludeFields(List<String> excludeFields) {
+            this.excludeFields = excludeFields;
+        }
     }
 }

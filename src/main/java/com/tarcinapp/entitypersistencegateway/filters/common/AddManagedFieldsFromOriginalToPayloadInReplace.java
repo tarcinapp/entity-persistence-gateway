@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,6 +23,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
+import org.springframework.cloud.gateway.filter.factory.rewrite.RewriteFunction;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -31,19 +31,21 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Replace operations requires the record's all parameters.
- * If a parameter does not exist in payload, backend removes it from the record.
+ * Replace operations requires the record's all parameters. If a parameter does
+ * not exist in payload, backend removes it from the record.
  * 
  * There are some cases where user is unauthorized to send managed fields:
  * createdBy, lastUpdatedBy, creationDateTime, lastUpdatedDateTime
  * 
- * To not to lose these parameters, this filter taking values from the original record
- * and modifies the request payload.
+ * To not to lose these parameters, this filter taking values from the original
+ * record and modifies the request payload.
  * 
- * If user is authorized to send values for any of these fields, user's value is used.
+ * If user is authorized to send values for any of these fields, user's value is
+ * used.
  */
 @Component
-public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
+public class AddManagedFieldsFromOriginalToPayloadInReplace
+        extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
@@ -68,78 +70,84 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
     private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
-                    GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
-
-                    try {
-                        AnyRecordBase originalRecord = this.getOriginalRecord(exchange);
-
-                        if (originalRecord == null)
-                            return Mono.just(inboundJsonRequestStr);
-
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
-                            new TypeReference<Map<String, Object>>() {});
-
-                        String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-                        String creationDateTime = DateTimeFormatter.ISO_INSTANT
-                                .format(originalRecord.getCreationDateTime());
-
-                        List<ManagedField> fieldsToAdd = new ArrayList<ManagedField>();
-                        
-                        // if no include or exclude array specified, this filter adds all managed fields
-                        if(config.getIncludeFields() == null && config.getIncludeFields() == null)
-                            fieldsToAdd = Arrays.asList(ManagedField.values());
-                        
-                        // if we have includeFields, excludeFields is ignored
-                        else if(config.getExcludeFields() == null)
-                            fieldsToAdd = config.getIncludeFields().stream()
-                                .map(ManagedField::valueOf)
-                                .collect(Collectors.toList());
-                        
-                        // if we reach here we only have exclude fields is configured
-                        else
-                            fieldsToAdd = config.getExcludeFields().stream()
-                                .map(ManagedField::valueOf)
-                                .collect(Collectors.toList());
-
-                        /**
-                         * We used putIfAbsent here because user may be authorized to send custom values
-                         * for these fields.
-                         */
-                        fieldsToAdd.stream().forEach(field -> {
-
-                            if(field.equals(ManagedField.CREATED_BY))
-                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.getCreatedBy());
-                            
-                            if(field.equals(ManagedField.LAST_UPDATED_BY))
-                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), gatewaySecurityContext.getAuthSubject());
-
-                            if(field.equals(ManagedField.CREATION_DATE_TIME))
-                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), creationDateTime);
-                            
-                            if(field.equals(ManagedField.LAST_UPDATED_DATE_TIME))
-                                inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
-                        });
-
-                        String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
-
-                        return Mono.just(outboundJsonRequestStr);
-                    } catch (JsonMappingException e) {
-                        return Mono.error(e);
-                    } catch (JsonProcessingException e) {
-                        return Mono.error(e);
-                    } catch (CloneNotSupportedException e) {
-                        return Mono.error(e);
-                    }
-                });
+                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> this
+                        .processPayload(config, exchange1, inboundJsonRequestStr));
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
+    private Mono<String> processPayload(Config config, ServerWebExchange exchange, String inboundJsonRequestStr) {
+        GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
+
+        try {
+            AnyRecordBase originalRecord = this.getOriginalRecord(exchange);
+
+            if (originalRecord == null)
+                return Mono.just(inboundJsonRequestStr);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
+                    new TypeReference<Map<String, Object>>() {
+                    });
+
+            String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
+            String creationDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.getCreationDateTime());
+            String authSubject = gatewaySecurityContext.getAuthSubject();
+            List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
+            
+            /**
+             * We used putIfAbsent here because user may be authorized to send custom values
+             * for these fields.
+             */
+            fieldsToAdd.stream().forEach(field -> {
+
+                if (field.equals(ManagedField.CREATED_BY) && authSubject != null)
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.getCreatedBy());
+
+                if (field.equals(ManagedField.LAST_UPDATED_BY) && authSubject != null)
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);
+
+                if (field.equals(ManagedField.CREATION_DATE_TIME))
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), creationDateTime);
+
+                if (field.equals(ManagedField.LAST_UPDATED_DATE_TIME))
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
+            });
+
+            String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
+
+            return Mono.just(outboundJsonRequestStr);
+        } catch (JsonMappingException e) {
+            return Mono.error(e);
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        } catch (CloneNotSupportedException e) {
+            return Mono.error(e);
+        }
+    }
+
+    private List<ManagedField> getFieldsToAdd(Config config) {
+        List<ManagedField> fieldsToAdd = new ArrayList<ManagedField>();
+
+        // if no include or exclude array specified, this filter adds all managed fields
+        if (config.getIncludeFields() == null && config.getIncludeFields() == null)
+            fieldsToAdd = Arrays.asList(ManagedField.values());
+
+        // if we have includeFields, excludeFields is ignored
+        else if (config.getExcludeFields() == null)
+            fieldsToAdd = config.getIncludeFields().stream().map(ManagedField::valueOf)
+                    .collect(Collectors.toList());
+
+        // if we reach here we only have exclude fields is configured
+        else
+            fieldsToAdd = config.getExcludeFields().stream().map(ManagedField::valueOf)
+                    .collect(Collectors.toList());
+        
+        return fieldsToAdd;
+    }
+
     private GatewaySecurityContext getGatewaySecurityContext(ServerWebExchange exchange) {
-        return (GatewaySecurityContext) exchange.getAttributes()
-                            .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+        return (GatewaySecurityContext) exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
     }
 
     /**
@@ -173,6 +181,5 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace extends AbstractGate
         public void setExcludeFields(List<String> excludeFields) {
             this.excludeFields = excludeFields;
         }
-
     }
 }
