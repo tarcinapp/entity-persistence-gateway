@@ -39,8 +39,7 @@ import reactor.core.publisher.Mono;
  * PDP.
  */
 @Component
-public class LimitResponseFieldsForFindEntities
-        extends AbstractGatewayFilterFactory<LimitResponseFieldsForFindEntities.Config> {
+public class LimitFieldsForFindEntities extends AbstractGatewayFilterFactory<LimitFieldsForFindEntities.Config> {
 
     @Autowired
     IAuthorizationClient authorizationClient;
@@ -50,11 +49,11 @@ public class LimitResponseFieldsForFindEntities
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
-    private Logger logger = LogManager.getLogger(LimitResponseFieldsForFindEntities.class);
+    private Logger logger = LogManager.getLogger(LimitFieldsForFindEntities.class);
 
     private final static Pattern FIELD_QUERY_PATTERN = Pattern.compile("filter\\[fields\\]\\[([^\\]]+)\\]");
 
-    public LimitResponseFieldsForFindEntities() {
+    public LimitFieldsForFindEntities() {
         super(Config.class);
     }
 

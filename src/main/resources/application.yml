@@ -72,7 +72,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
-        - name: LimitResponseFieldsForFindEntities
+        - name: LimitFieldsForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddSetsToQuery
@@ -107,6 +107,9 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -336,7 +339,7 @@ spring:
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryForFindEntities
-        - name: LimitResponseFieldsForFindEntities
+        - name: LimitFieldsForFindEntities
         - name: AddSetsToQuery
 logging:
   level:
