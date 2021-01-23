@@ -37,28 +37,27 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-@Component
-public class DynamicPostTransformFilter extends AbstractGatewayFilterFactory<DynamicPostTransformFilter.Config> {
+public class DynamicPostTransformFilter<T> extends AbstractGatewayFilterFactory<T> {
 
     private final Map<String, MessageBodyDecoder> messageBodyDecoders;
     private final Map<String, MessageBodyEncoder> messageBodyEncoders;
 
-    public DynamicPostTransformFilter(Set<MessageBodyDecoder> messageBodyDecoders,
+    public DynamicPostTransformFilter(Class<T> configClass, Set<MessageBodyDecoder> messageBodyDecoders,
             Set<MessageBodyEncoder> messageBodyEncoders) {
-        super(Config.class);
+        super(configClass);
         this.messageBodyDecoders = messageBodyDecoders.stream()
                 .collect(Collectors.toMap(MessageBodyDecoder::encodingType, identity()));
         this.messageBodyEncoders = messageBodyEncoders.stream()
                 .collect(Collectors.toMap(MessageBodyEncoder::encodingType, identity()));
     }
 
-    protected String applyTransform(String input, Config config) {
+    protected String applyTransform(String input, T config) {
         // we're not doing anything fancy here
         return input.toUpperCase();
     }
 
     @Override
-    public GatewayFilter apply(Config config) {
+    public GatewayFilter apply(T config) {
 
         return new OrderedGatewayFilter((exchange, chain) -> {
             ServerHttpResponse originalResponse = exchange.getResponse();
@@ -168,15 +167,6 @@ public class DynamicPostTransformFilter extends AbstractGatewayFilterFactory<Dyn
             
             return chain.filter(exchange.mutate().response(decoratedResponse).build());
         }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 1);
-    }
-
-    private Mono<Void> filter(Config config, ServerWebExchange exchange) {
-        return Mono.empty();
-    }
-
-    @Override
-    public Config newConfig() {
-        return new Config();
     }
 
     public static class Config {
