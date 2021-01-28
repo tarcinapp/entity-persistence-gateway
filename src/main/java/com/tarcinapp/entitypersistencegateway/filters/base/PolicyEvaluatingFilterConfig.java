@@ -1,6 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.base;
 
-public class PolicyEvaluatingFilterConfigBase {
+public class PolicyEvaluatingFilterConfig {
     
     private String policyName;
 

@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
  * If authentication key is not configured, filter is not get executed but gives
  * it's order to the next filter with doing anything
  */
-public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatingFilterConfigBase, C>
+public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatingFilterConfig, C>
         extends AbstractGatewayFilterFactory<T> {
 
     @Autowired(required = false)
