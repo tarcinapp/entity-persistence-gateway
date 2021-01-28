@@ -2,15 +2,21 @@ package com.tarcinapp.entitypersistencegateway.filters.base;
 
 import java.security.Key;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
@@ -29,7 +35,7 @@ import reactor.core.publisher.Mono;
 public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatingFilterConfigBase, C>
         extends AbstractGatewayFilterFactory<T> {
 
-    @Autowired
+    @Autowired(required = false)
     Key key;
 
     @Autowired
@@ -55,10 +61,18 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
         return (exchange, chain) -> {
 
             if (key == null) {
+                logger.warn("Policy evaluation is skipped as security key is not configured.");
                 return chain.filter(exchange);
             }
 
-            return this.filter(config, exchange, chain);
+            return this.filter(config, exchange, chain).onErrorResume(e -> {
+                logger.error("An error occured while evaluating the policy.", e);
+
+                ServerHttpResponse response = exchange.getResponse();
+                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+
+                return response.setComplete();
+            });
         };
     }
 
@@ -69,8 +83,10 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
      * This is the first method where the logic begins.
      */
     private Mono<Void> filter(T config, ServerWebExchange exchange, GatewayFilterChain chain) {
+        logger.info("Policy inquiry is started.");
+
         PolicyData policyInquiryData;
-        
+
         try {
             policyInquiryData = this.getPolicyInquriyData(exchange);
             policyInquiryData.setPolicyName(config.getPolicyName());
@@ -79,17 +95,23 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
             return Mono.error(e);
         }
 
-        return this.executePolicy(policyInquiryData)
-            .flatMap(pr -> {
+        return this.executePolicy(policyInquiryData).flatMap(pr -> {
 
-                return this.apply(config, pr)
-                    .filter(exchange, chain);        
-            });
+            logger.debug("Policy evaluation is completed.");
+
+            if (logger.getLevel() == Level.DEBUG)
+                logger.trace("Policy response is: ", this.serializeObjectAsJsonForLogging(pr));
+
+            return this.apply(config, pr).filter(exchange, chain);
+        });
     }
 
-    // TODO: add logs here
     private Mono<C> executePolicy(PolicyData policyInquiryData) {
-        
+
+        if (logger.getLevel() == Level.DEBUG) {
+            logger.trace("Policy inquiry data is: ", this.serializeObjectAsJsonForLogging(policyInquiryData));
+        }
+
         return this.authorizationClient.executePolicy(policyInquiryData, policyResultClass);
     }
 
@@ -103,5 +125,16 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
     private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
         PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
         return (PolicyData) policyInquiryData.clone();
+    }
+
+    private String serializeObjectAsJsonForLogging(Object o) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+
+        try {
+            return mapper.writeValueAsString(o);
+        } catch (JsonProcessingException e) {
+            return "Unable to serialize object to JSON.";
+        }
     }
 }
