@@ -15,22 +15,18 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
+import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
 @Component
-public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<AddManagedFieldsInCreation.Config> {
+public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFilterFactory<AddManagedFieldsInCreation.Config, String, String> {
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
@@ -40,42 +36,16 @@ public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<Add
     Logger logger = LogManager.getLogger(AddManagedFieldsInCreation.class);
 
     public AddManagedFieldsInCreation() {
-        super(Config.class);
+        super(Config.class, String.class, String.class);
     }
 
     @Override
-    public GatewayFilter apply(Config config) {
-
-        return (exchange, chain) -> {
-
-            logger.debug("AddManagedFieldsInCreation filter is started");
-
-            if (key == null) {
-                logger.warn(
-                        "RS256 key is not configured. Ownership information won't be added to the request payload! Please configure a valid RS256 public key to enable record ownership.");
-
-                return chain.filter(exchange);
-            }
-
-            return this.filter(config, exchange, chain);
-        };
-    }
-
-    private Mono<Void> filter(Config config, ServerWebExchange exchange, GatewayFilterChain chain) {
-        ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
-                .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> this
-                        .processPayload(config, exchange1, inboundJsonRequestStr));
-
-        return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
-    }
-
-    private Mono<String> processPayload(Config config, ServerWebExchange exchange, String inboundJsonRequestStr) {
+    public Mono<String> modifyRequestPayload(Config config, ServerWebExchange exchange, String payload) {
         GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
+            Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(payload,
                     new TypeReference<Map<String, Object>>() {
                     });
 
@@ -109,9 +79,6 @@ public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<Add
             });
 
             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
-
-            logger.debug("Request payload is modified with adding the owner user. New payload: ",
-                    outboundJsonRequestStr);
 
             return Mono.just(outboundJsonRequestStr);
         } catch (JsonMappingException e) {
@@ -163,4 +130,6 @@ public class AddManagedFieldsInCreation extends AbstractGatewayFilterFactory<Add
             this.excludeFields = excludeFields;
         }
     }
+
+    
 }

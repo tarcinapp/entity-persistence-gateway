@@ -22,6 +22,9 @@ public abstract class AbstractRequestPayloadModifierFilterFactory<C, I, O> exten
 
     public AbstractRequestPayloadModifierFilterFactory(Class<C> configClass, Class<I> inClass, Class<O> outClass) {
         super(configClass);
+
+        this.inClass = inClass;
+        this.outClass = outClass;
     }
 
     public abstract Mono<O> modifyRequestPayload(C config, ServerWebExchange exchange, I payload);
