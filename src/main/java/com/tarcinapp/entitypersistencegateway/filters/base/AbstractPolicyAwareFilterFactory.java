@@ -30,7 +30,7 @@ import reactor.core.publisher.Mono;
  * these filters. C is used for policy result
  * 
  * If authentication key is not configured, filter is not get executed but gives
- * it's order to the next filter with doing anything
+ * it's order to the next filter without doing anything
  */
 public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatingFilterConfig, C>
         extends AbstractGatewayFilterFactory<T> {
