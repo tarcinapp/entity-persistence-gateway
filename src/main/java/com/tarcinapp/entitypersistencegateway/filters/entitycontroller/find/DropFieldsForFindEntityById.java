@@ -8,6 +8,7 @@ import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilte
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.rewrite.MessageBodyDecoder;
 import org.springframework.cloud.gateway.filter.factory.rewrite.MessageBodyEncoder;
 import org.springframework.stereotype.Component;
@@ -21,17 +22,14 @@ public class DropFieldsForFindEntityById extends
 
     private Logger logger = LogManager.getLogger(DropFieldsForFindEntityById.class);
 
-    public DropFieldsForFindEntityById(Set<MessageBodyDecoder> messageBodyDecoders,
-            Set<MessageBodyEncoder> messageBodyEncoders) {
-        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class, messageBodyDecoders,
-                messageBodyEncoders);
+    public DropFieldsForFindEntityById() {
+        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class);
     }
 
     @Override
-    public Mono<String> modifyRequestPayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
-            PolicyResponse policyResult, String payload) {
-        // TODO Auto-generated method stub
-        return null;
+    public String modifyRequestPayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange, PolicyResponse pr, String payload) {
+        System.out.println(pr.getFields());
+        return payload.toUpperCase();
     }
 
     /**

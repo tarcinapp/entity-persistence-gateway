@@ -19,6 +19,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
+import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -67,7 +69,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     public GatewayFilter apply(Config config) {
 
         // implement in seperate method in order to reduce nesting
-        return (exchange, chain) -> {
+        return new OrderedGatewayFilter((exchange, chain) -> {
 
             logger.debug("Authentication filter is started.");
 
@@ -94,7 +96,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             }
 
             return this.filter(exchange, chain);
-        };
+        }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 99);
     }
 
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

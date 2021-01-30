@@ -32,8 +32,8 @@ import reactor.core.publisher.Mono;
  * If authentication key is not configured, filter is not get executed but gives
  * it's order to the next filter without doing anything
  */
-public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatingFilterConfig, C>
-        extends AbstractGatewayFilterFactory<T> {
+public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatingFilterConfig, PR>
+        extends AbstractGatewayFilterFactory<C> {
 
     @Autowired(required = false)
     Key key;
@@ -45,18 +45,18 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
-    private Class<C> policyResultClass;
+    private Class<PR> policyResultClass;
 
-    public AbstractPolicyAwareFilterFactory(Class<T> configClass, Class<C> policyResultClass) {
+    public AbstractPolicyAwareFilterFactory(Class<C> configClass, Class<PR> policyResultClass) {
         super(configClass);
 
         this.policyResultClass = policyResultClass;
     }
 
-    public abstract GatewayFilter apply(T config, C policyResult);
+    public abstract GatewayFilter apply(C config, PR policyResult);
 
     @Override
-    public GatewayFilter apply(T config) {
+    public GatewayFilter apply(C config) {
 
         return (exchange, chain) -> {
 
@@ -82,7 +82,7 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
      * 
      * This is the first method where the logic begins.
      */
-    private Mono<Void> filter(T config, ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> filter(C config, ServerWebExchange exchange, GatewayFilterChain chain) {
         logger.info("Policy inquiry is started for policy name: " + config.getPolicyName());
 
         PolicyData policyInquiryData;
@@ -106,7 +106,7 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
         });
     }
 
-    private Mono<C> executePolicy(PolicyData policyInquiryData) {
+    protected Mono<PR> executePolicy(PolicyData policyInquiryData) {
 
         if (logger.getLevel() == Level.DEBUG) {
             logger.trace("Policy inquiry data is: ", this.serializeObjectAsJsonForLogging(policyInquiryData));
@@ -122,7 +122,7 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
      * @return
      * @throws CloneNotSupportedException
      */
-    private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
+    protected PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
         PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
         return (PolicyData) policyInquiryData.clone();
     }
