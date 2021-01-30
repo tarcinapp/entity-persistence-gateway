@@ -83,7 +83,7 @@ public abstract class AbstractPolicyAwareFilterFactory<T extends PolicyEvaluatin
      * This is the first method where the logic begins.
      */
     private Mono<Void> filter(T config, ServerWebExchange exchange, GatewayFilterChain chain) {
-        logger.info("Policy inquiry is started.");
+        logger.info("Policy inquiry is started for policy name: " + config.getPolicyName());
 
         PolicyData policyInquiryData;
 
