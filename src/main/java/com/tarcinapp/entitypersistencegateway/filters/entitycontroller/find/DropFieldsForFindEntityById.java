@@ -1,7 +1,13 @@
 package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 
 import java.util.ArrayList;
+import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
@@ -9,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import reactor.core.publisher.Mono;
 
 @Component
 public class DropFieldsForFindEntityById extends
@@ -21,9 +29,36 @@ public class DropFieldsForFindEntityById extends
     }
 
     @Override
-    public String modifyRequestPayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange, PolicyResponse pr, String payload) {
-        System.out.println(pr.getFields());
-        return payload.toUpperCase();
+    public Mono<String> modifyRequestPayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
+            PolicyResponse pr, String payload) {
+
+        if (pr.getFields().size() == 0) {
+            logger.debug("There is no field going to be hidden from the response.");
+            return Mono.just(payload);
+        }
+
+        logger.debug("Following fields going to be hidden by the response drop filter: " + pr.getFields());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        try {
+            Map<String, Object> payloadMap = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {
+            });
+
+            pr.getFields().forEach(f -> {
+                payloadMap.remove(f);
+
+                logger.debug("Field '" + f + "' is dropped from the response.");
+            });
+
+            String modifiedPayload = objectMapper.writeValueAsString(payloadMap);
+
+            return Mono.just(modifiedPayload);
+        } catch (JsonMappingException e) {
+            return Mono.error(e);
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        }
     }
 
     /**

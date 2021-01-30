@@ -54,7 +54,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
         this.policyResultClass = policyResultClass;
     }
 
-    public abstract O modifyRequestPayload(C config, ServerWebExchange exchange, PR policyResult, I payload);
+    public abstract Mono<O> modifyRequestPayload(C config, ServerWebExchange exchange, PR policyResult, I payload);
 
     @Override
     public GatewayFilter apply(C config) {
@@ -74,6 +74,8 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
             } catch (CloneNotSupportedException e) {
                 return Mono.error(e);
             }
+
+            logger.debug("Asking PEP for response modification filter.");
 
             return AbstractPolicyAwareResponsePayloadModifierFilterFactory.super.executePolicy(policyInquiryData)
                     .flatMap(pr -> {
@@ -99,8 +101,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                                 ClientResponse clientResponse = prepareClientResponse(body, httpHeaders);
 
                                 Mono modifiedBody = extractBody(exchange, clientResponse, inClass)
-                                        .flatMap(originalBody -> Mono
-                                                .just(modifyRequestPayload(config, exchange, pr, (I) originalBody))
+                                        .flatMap(originalBody -> modifyRequestPayload(config, exchange, pr, (I) originalBody)
                                                 .switchIfEmpty(Mono.empty()));
 
                                 BodyInserter bodyInserter = BodyInserters.fromPublisher(modifiedBody, outClass);

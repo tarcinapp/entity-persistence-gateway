@@ -114,7 +114,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
             });
 
-            String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(inboundJsonRequestMap);
+            String outboundJsonRequestStr = objectMapper.writeValueAsString(inboundJsonRequestMap);
 
             return Mono.just(outboundJsonRequestStr);
         } catch (JsonMappingException e) {
