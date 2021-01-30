@@ -39,6 +39,9 @@ spring:
           args:
             policyName: /policies/auth/routes/createEntity/policy
         - name: AddManagedFieldsInCreation
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
