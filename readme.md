@@ -24,8 +24,8 @@ Visitor:
 
 ## JWTS Private Key
 This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
-# Deployment
-## Deployment with Rancher Pipelines
-This application contains .rancher-pipeline.yaml file for CI/CD pipeline configuration in Rancher. This file configured to tell Rancher to use the YAML files located under /k8s folder of the application for creating k8s resources.
-### Configuration
-Application deployment yaml file assumes that a Secret named entity-persistence-gateway-secret is configured in the tarcinapp-test namespace prior to the deployment. Find sample configmap and secret under k8s folder.
+## Deployment to Kubernetes
+Use k8s/deployment.yaml file to deploy all related k8s resources.
+
+## Local Development
+Configure vscode to start application with -Dspring.profiles.active=dev
