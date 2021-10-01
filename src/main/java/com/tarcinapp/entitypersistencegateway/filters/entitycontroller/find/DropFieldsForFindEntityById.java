@@ -3,6 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 import java.util.ArrayList;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -65,6 +66,7 @@ public class DropFieldsForFindEntityById extends
      * This POJO is used to map PDP response of inquiry of forbidden fields.
      */
     static class PolicyResponse {
+        @JsonProperty(value="which_fields_forbidden_for_finding")
         ArrayList<String> fields;
 
         public ArrayList<String> getFields() {
