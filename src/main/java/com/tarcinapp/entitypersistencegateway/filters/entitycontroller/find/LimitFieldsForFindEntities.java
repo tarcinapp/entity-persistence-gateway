@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
@@ -141,6 +142,8 @@ public class LimitFieldsForFindEntities extends
      * This POJO is used to map PDP response of inquiry of forbidden fields.
      */
     static class PolicyResponse {
+        
+        @JsonProperty(value="which_fields_forbidden_for_finding")
         ArrayList<String> fields;
 
         public ArrayList<String> getFields() {
