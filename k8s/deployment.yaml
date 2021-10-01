@@ -12,6 +12,31 @@ spec:
       port: 80
       targetPort: 8080
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entity-persistence-gateway-config
+  namespace: tarcinapp-test
+data:
+  app.auth.rs256PublicKey: "your-jwts-public-key-here no-line-breaks"
+  app.backend.protocol: "http"
+  app.backend.host: "entity-persistence-service"
+  app.backend.port: "80"
+  app.opa.protocol: "http"
+  app.opa.host: "entity-persistence-gateway-policies-service"
+  app.opa.port: "8181"
+  spring.redis.host: "gateway-redis-master"
+  spring.redis.port: "6379"
+  spring.redis.database: "0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: entity-persistence-gateway-secret
+  namespace: tarcinapp-test
+data:
+  spring.redis.password: "bWFuYWdl"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,7 +58,7 @@ spec:
       - name: pipeline-docker-registry
       containers:
       - name: entity-persistence-gateway
-        image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+        image: localhost:5000/entitypersistencegateway:latest
         imagePullPolicy: Always
         envFrom:
         - secretRef:
