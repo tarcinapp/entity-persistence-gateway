@@ -2,6 +2,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -172,6 +173,8 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
      * This POJO is used to map PDP response of inquiry of forbidden fields.
      */
     private static class PolicyResponse {
+        
+        @JsonProperty(value="which_fields_forbidden_for_update")
         ArrayList<String> fields;
 
         public ArrayList<String> getFields() {
