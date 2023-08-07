@@ -1,18 +1,13 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.create;
+package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.commons.logging.Log;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties.Web.Server;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -21,20 +16,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig.EntityKindsSingleConfig;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
-import com.tarcinapp.entitypersistencegateway.filters.common.AddManagedFieldsInCreation;
-
 import reactor.core.publisher.Mono;
 
+/*
+ * This filter is used to place kind name extracted from the path to the request payload for create, update and patch entity requests.
+ * 
+ * Takes kindPath from URI and checks if it is configured as an entity kind.
+ * If it is configured as an entity kind, it places kind name to the request payload as kind: "kindName".
+ * 
+ */
 @Component
-public class ConvertKindPathToQueryForCreateEntity
+public class PlaceKindNameInRequestForEntityManagement
         extends
-        AbstractRequestPayloadModifierFilterFactory<ConvertKindPathToQueryForCreateEntity.Config, String, String> {
+        AbstractRequestPayloadModifierFilterFactory<PlaceKindNameInRequestForEntityManagement.Config, String, String> {
 
     @Autowired
     private EntityKindsConfig entityKindsConfig;
-    private Logger logger = LogManager.getLogger(ConvertKindPathToQueryForCreateEntity.class);
+    private Logger logger = LogManager.getLogger(PlaceKindNameInRequestForEntityManagement.class);
 
-    public ConvertKindPathToQueryForCreateEntity() {
+    public PlaceKindNameInRequestForEntityManagement() {
         super(Config.class, String.class, String.class);
     }
 
@@ -58,7 +58,8 @@ public class ConvertKindPathToQueryForCreateEntity
                 logger.debug("There is no kindPath configuration found for path /" + kindPath);
                 logger.debug("Exiting ConvertKindPathToQueryForCreateEntity filter with 404.");
 
-                // TODO: return 404
+                exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+                return Mono.empty();
             }
 
             logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");

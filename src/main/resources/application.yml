@@ -362,7 +362,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: ConvertKindPathToQueryForCreateEntity
+        - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
@@ -370,6 +370,30 @@ spring:
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
+      - id: replaceEntityByIdKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: PlaceKindNameInRequestForEntityManagement
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/replaceEntityById/policy
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
 logging:
   level:
     reactor:
