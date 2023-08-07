@@ -29,3 +29,4 @@ Use k8s/deployment.yaml file to deploy all related k8s resources.
 
 ## Local Development
 Configure vscode to start application with -Dspring.profiles.active=dev
+Make local configurations under src/main/resources/application-dev.yaml
