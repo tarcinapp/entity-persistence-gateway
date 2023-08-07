@@ -75,7 +75,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
-        - name: LimitFieldsForFindEntities
+        - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddSetsToQuery
@@ -342,7 +342,9 @@ spring:
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryForFindEntities
-        - name: LimitFieldsForFindEntities
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
         - name: AddSetsToQuery
 logging:
   level:
