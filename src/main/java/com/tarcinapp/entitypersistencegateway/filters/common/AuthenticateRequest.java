@@ -5,6 +5,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -121,10 +122,10 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
             ServerHttpResponse response = exchange.getResponse();
 
-            if(e instanceof WebClientResponseException) {
-                WebClientResponseException clientResponseException = (WebClientResponseException)e;
+            if (e instanceof WebClientResponseException) {
+                WebClientResponseException clientResponseException = (WebClientResponseException) e;
 
-                if(clientResponseException.getStatusCode() == HttpStatus.NOT_FOUND)
+                if (clientResponseException.getStatusCode() == HttpStatus.NOT_FOUND)
                     response.setStatusCode(HttpStatus.NOT_FOUND);
             } else {
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -139,7 +140,8 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      * This method tries to validate the token with the configured key.
      * 
      * In order to do that, we are first trying to extract the Bearer token.
-     * If a valid Bearer token can be extracted, it is put into GatewaySecurityContext.
+     * If a valid Bearer token can be extracted, it is put into
+     * GatewaySecurityContext.
      * 
      * @param exchange
      * @return
@@ -161,16 +163,16 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
         try {
             Claims claims = Jwts.parserBuilder()
-                .setSigningKey(this.key)
-                .build()
-                .parseClaimsJws(jwt)
-                .getBody();
-            
+                    .setSigningKey(this.key)
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
+
             logger.debug("JWT token is validated.");
 
             // put the jwt into GatewaySecurityContext
             this.getSecurityContext(exchange)
-                .setEncodedJwt(jwt);
+                    .setEncodedJwt(jwt);
 
             return Mono.just(claims);
         } catch (JwtException e) {
@@ -190,7 +192,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     private Mono<Void> onUserAuthenticated(Claims claims, ServerWebExchange exchange, GatewayFilterChain chain) {
         logger.debug("Claims: " + claims);
 
-        // claims are 
+        // claims are
         this.buildGatewaySecurityContext(claims, exchange);
 
         return buildPolicyInquiryData(exchange, chain);
@@ -201,6 +203,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      * This context data includes: subject, roles, groups and auth party.
      * 
      * Extracted data builds the GatewaySecurityContext.
+     * 
      * @param claims
      * @param exchange
      */
@@ -210,12 +213,14 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         // extract data
         String subject = claims.getSubject();
         String authParth = claims.get("azp", String.class);
-        
-        @SuppressWarnings("unchecked")
-        ArrayList<String> groups = (ArrayList<String>) claims.get("groups", ArrayList.class);
 
         @SuppressWarnings("unchecked")
-        ArrayList<String> roles = (ArrayList<String>) claims.get("roles");
+        ArrayList<String> groups = Optional.ofNullable((ArrayList<String>) claims.get("groups", ArrayList.class))
+                .orElse(new ArrayList<String>());
+
+        @SuppressWarnings("unchecked")
+        ArrayList<String> roles = Optional.ofNullable((ArrayList<String>) claims.get("roles"))
+                .orElse(new ArrayList<String>());
 
         // put extracted data into context
         gc.setAuthSubject(subject);
@@ -330,6 +335,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
     /**
      * A shorthand method for accessing the GatewaySecurityContext
+     * 
      * @param exchange
      * @return
      */
@@ -339,6 +345,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
     /**
      * A shorthand method for accessing the PolicyInquriyData
+     * 
      * @param exchange
      * @return
      */
@@ -387,6 +394,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
         return recordBaseFromPayload;
     }
+
     public static class Config {
 
     }
