@@ -4,6 +4,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,7 +31,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class ConvertKindPathToQueryForFindEntities
         extends AbstractGatewayFilterFactory<ConvertKindPathToQueryForFindEntities.Config> {
 
-
     @Autowired
     private EntityKindsConfig entityKindsConfig;
     private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[kind\\].*");
@@ -49,15 +49,17 @@ public class ConvertKindPathToQueryForFindEntities
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String kindPath = uriVariables.get("kindPath");
 
-            logger.debug("Caller requested kindPath '" + kindPath + "'. Checking if " + kindPath + " is configured as an entity kind.");
+            logger.debug("Caller requested kindPath '" + kindPath + "'. Checking if " + kindPath
+                    + " is configured as an entity kind.");
 
             EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
-                .filter(entityKind -> entityKind.getPathMap().equals(kindPath))
-                .findFirst()
-                .orElse(null);
+                    .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
+                            .equals(Optional.ofNullable(kindPath)))
+                    .findFirst()
+                    .orElse(null);
 
-            if(foundEntityKindConfig==null) {
-                logger.debug("There is no kindPath configuration found for path /"+kindPath);
+            if (foundEntityKindConfig == null) {
+                logger.debug("There is no kindPath configuration found for path /" + kindPath);
                 logger.debug("Exiting ConvertKindPathToQuery filter with 404.");
 
                 ServerHttpResponse response = exchange.getResponse();
@@ -65,7 +67,7 @@ public class ConvertKindPathToQueryForFindEntities
                 return response.setComplete();
             }
 
-            logger.debug("/"+kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+            logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
 
             // remove any kind of query variables about kind field
             URI uri = exchange.getRequest().getURI();
@@ -74,40 +76,40 @@ public class ConvertKindPathToQueryForFindEntities
             List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
             query
-                .removeIf((nvp) -> {
-                    Matcher matcher = KIND_QUERY_PATTERN.matcher(nvp.getName());
+                    .removeIf((nvp) -> {
+                        Matcher matcher = KIND_QUERY_PATTERN.matcher(nvp.getName());
 
-                    return matcher.matches();
-                });
+                        return matcher.matches();
+                    });
 
             ServerWebExchange modifiedExchange = exchange.mutate()
-                .request(originalRequest -> {
+                    .request(originalRequest -> {
 
-                    logger.debug("Adding where filter for kind.");
+                        logger.debug("Adding where filter for kind.");
 
-                    query.add(new BasicNameValuePair("filter[where][kind]", foundEntityKindConfig.getName()));
+                        query.add(new BasicNameValuePair("filter[where][kind]", foundEntityKindConfig.getName()));
 
-                    String newQueryStr = query.stream()
-                        .map(v -> v.getName() + "=" +v.getValue())
-                        .collect(Collectors.joining( "&" ));
+                        String newQueryStr = query.stream()
+                                .map(v -> v.getName() + "=" + v.getValue())
+                                .collect(Collectors.joining("&"));
 
-                    URI newUri = UriComponentsBuilder.fromUri(uri)
-                        .replaceQuery(newQueryStr)
-                        .encode()
-                        .build()
-                        .toUri();
+                        URI newUri = UriComponentsBuilder.fromUri(uri)
+                                .replaceQuery(newQueryStr)
+                                .encode()
+                                .build()
+                                .toUri();
 
-                    logger.debug("New URI: " + newUri);
+                        logger.debug("New URI: " + newUri);
 
-                    originalRequest.uri(newUri);
-                })
-                .build();
+                        originalRequest.uri(newUri);
+                    })
+                    .build();
 
             return chain.filter(modifiedExchange);
         };
     }
-     
+
     public static class Config {
-        
+
     }
 }

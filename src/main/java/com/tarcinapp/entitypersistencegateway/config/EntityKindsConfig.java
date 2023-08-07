@@ -26,7 +26,6 @@ public class EntityKindsConfig {
 
         private String name;
         private String pathMap;
-        private String schema;
 
         public String getName() {
             return this.name;
@@ -42,14 +41,6 @@ public class EntityKindsConfig {
 
         public void setPathMap(String pathMap) {
             this.pathMap = pathMap;
-        }
-
-        public String getSchema() {
-            return this.schema;
-        }
-
-        public void setSchema(String schema) {
-            this.schema = schema;
         }
     }
 }
