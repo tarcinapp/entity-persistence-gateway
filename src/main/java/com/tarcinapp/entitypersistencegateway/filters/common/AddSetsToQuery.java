@@ -105,16 +105,16 @@ public class AddSetsToQuery
             /**
              * Following set is are added in order to reduce the scope of the query.
              * Users with low authority can only see the public and active records with their own active and pending records.
-             * This is exactly what 'prod' set does.
+             * This is exactly what 'audience' set does.
              * 
              * Note: If a record has user's user id in its ownerUsers array, then this record belongs to that user.
-             * In addition to that, if user's group id presents in record's ownerGroups array and it's visibility is protected,
+             * In addition to that, if user's group id presents in record's ownerGroups array and it's visibility is protected
              * or public (not private) this record is also belongs to that user too.
              */
 
-            // prod set requires user id and groups in following format [userId1,userId2][group1,group2]
+            // audience set requires user id and groups in following format [userId1,userId2][group1,group2]
             String groupsStr = groups.stream().collect(Collectors.joining(","));
-            newQuery.add(new BasicNameValuePair("set[and][1][prod]", "[" + userId + "][" + groupsStr + "]"));
+            newQuery.add(new BasicNameValuePair("set[and][1][audience]", "[" + userId + "][" + groupsStr + "]"));
 
             // as we built new query string, now we can go ahead and change the query from the original request
             ServerWebExchange modifiedExchange = exchange.mutate()
