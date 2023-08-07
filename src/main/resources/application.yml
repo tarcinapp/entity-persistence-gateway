@@ -346,6 +346,30 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddSetsToQuery
+      - id: createEntityByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: ConvertKindPathToQueryForCreateEntity
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createEntity/policy
+        - name: AddManagedFieldsInCreation
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
 logging:
   level:
     reactor:
