@@ -45,7 +45,7 @@ public class PlaceKindNameInRequestForEntityManagement
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String kindPath = uriVariables.get("kindPath");
 
-            logger.debug("Caller sent POST kindPath '" + kindPath + "'. Checking if " + kindPath
+            logger.debug("Caller sent POST, PUT or PATCH kindPath '" + kindPath + "'. Checking if " + kindPath
                     + " is configured as an entity kind.");
 
             EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
