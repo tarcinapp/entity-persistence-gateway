@@ -40,30 +40,36 @@ public class PlaceKindNameInRequestForEntityManagement
 
     @Override
     public Mono<String> modifyRequestPayload(Config config, ServerWebExchange exchange, String payload) {
-        logger.debug("ConvertKindPathToQueryForCreateEntity filter is started.");
+        logger.debug("PlaceKindNameInRequestForEntityManagement filter is started.");
 
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-            String kindPath = uriVariables.get("kindPath");
+        String kindPath = uriVariables.get("kindPath");
+        
 
-            logger.debug("Caller sent POST, PUT or PATCH kindPath '" + kindPath + "'. Checking if " + kindPath
-                    + " is configured as an entity kind.");
+        logger.debug("Caller sent POST, PUT or PATCH kindPath '" + kindPath + "'. Checking if " + kindPath
+            + " is configured as an entity kind.");
 
-            EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
-                    .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
-                            .equals(Optional.ofNullable(kindPath)))
-                    .findFirst()
-                    .orElse(null);
+        EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
+            .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
+                    .equals(Optional.ofNullable(kindPath)))
+            .findFirst()
+            .orElse(null);
 
-            if (foundEntityKindConfig == null) {
-                logger.debug("There is no kindPath configuration found for path /" + kindPath);
-                logger.debug("Exiting ConvertKindPathToQueryForCreateEntity filter with 404.");
+        if (foundEntityKindConfig == null) {
+            logger.debug("There is no kindPath configuration found for path /" + kindPath);
+            logger.debug("Exiting PlaceKindNameInRequestForEntityManagement filter with 404.");
 
-                exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
-                return Mono.empty();
-            }
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+            return Mono.empty();
+        }
 
-            logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+        logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+    
 
+
+        /*
+         * Place kind name to the request payload as kind: "kindName".
+         */
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> payloadMap = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {
