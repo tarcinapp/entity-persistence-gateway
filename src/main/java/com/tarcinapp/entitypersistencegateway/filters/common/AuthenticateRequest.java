@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.KindPathConfigAttr;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
@@ -20,8 +21,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
-import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -47,6 +46,10 @@ import reactor.core.publisher.Mono;
  * 
  * Preparing policy data at the authentication point lets subsequent filters to
  * use existing policy data without dealing with re-preparing it again.
+ * 
+ * Authentication filter may be used for requests coming over kindPath.
+ * For instance, if the kindPath is configured as /users/{id}, then the original
+ * resource URL is /generic-entities/{id}.
  */
 @Component
 public class AuthenticateRequest extends AbstractGatewayFilterFactory<AuthenticateRequest.Config> {
@@ -70,7 +73,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     public GatewayFilter apply(Config config) {
 
         // implement in seperate method in order to reduce nesting
-        return new OrderedGatewayFilter((exchange, chain) -> {
+        return ((exchange, chain) -> {
 
             logger.debug("Authentication filter is started.");
 
@@ -97,7 +100,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             }
 
             return this.filter(exchange, chain);
-        }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 99);
+        });
     }
 
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -192,7 +195,10 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     private Mono<Void> onUserAuthenticated(Claims claims, ServerWebExchange exchange, GatewayFilterChain chain) {
         logger.debug("Claims: " + claims);
 
-        // claims are
+        /*
+         * Fill GatewaySecurityContext with data extracted from JWT claims and put it to
+         * attributes.
+         */
         this.buildGatewaySecurityContext(claims, exchange);
 
         return buildPolicyInquiryData(exchange, chain);
@@ -275,10 +281,27 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
                             /**
                              * if this operation is to update existing record, then we need to include the
-                             * original record to the policy
+                             * original record to the policy.
+                             * 
+                             * Request may be coming from kindPath. Thus, we are first checking if the request
+                             * is a kindPath request.
+                             * If it is a kindPath request, then in order to query for the original record
+                             * from the backend, we need to know the original resource URL, which is accessible from the
+                             * KindPathConfigAttr.
                              */
                             if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
-                                return this.backendBaseClient.get(request.getPath().toString(), AnyRecordBase.class)
+                                String originalResourceUrl = request.getPath().toString();
+
+                                // check if we have a kindPath configuration
+                                KindPathConfigAttr kindPathConfigAttr = exchange.getAttribute("KindPathConfigAttr");
+
+                                if (kindPathConfigAttr != null && kindPathConfigAttr.isKindPathConfigured()) {
+
+                                    // we have a kindPath configuration
+                                    originalResourceUrl = kindPathConfigAttr.getOriginalResourceUrl();
+                                }
+
+                                return this.backendBaseClient.get(originalResourceUrl, AnyRecordBase.class)
                                         .flatMap(originalRecord -> {
 
                                             // set original record to the policy data

@@ -1,5 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
+import java.nio.file.WatchEvent.Kind;
 import java.util.Map;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.KindPathConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig.EntityKindsSingleConfig;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
@@ -23,6 +25,8 @@ import reactor.core.publisher.Mono;
  * 
  * Takes kindPath from URI and checks if it is configured as an entity kind.
  * If it is configured as an entity kind, it places kind name to the request payload as kind: "kindName".
+ * 
+ * Original entity's URL is placed to the request payload as originalUrl: "originalUrl". Because the original URL is needed for the authorization logic.
  * 
  */
 @Component
@@ -44,8 +48,8 @@ public class PlaceKindNameInRequestForEntityManagement
 
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
         String kindPath = uriVariables.get("kindPath");
+        String recordId = uriVariables.get("recordId");
         
-
         logger.debug("Caller sent POST, PUT or PATCH kindPath '" + kindPath + "'. Checking if " + kindPath
             + " is configured as an entity kind.");
 
@@ -64,8 +68,18 @@ public class PlaceKindNameInRequestForEntityManagement
         }
 
         logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
-    
 
+        /*
+         * Place original resource URL to the request payload as originalUrl: "originalUrl".
+         * Because the original URL is needed for the authorization logic.
+         */
+        KindPathConfigAttr kindPathConfigAttr = new KindPathConfigAttr();
+        kindPathConfigAttr.setKindPathConfigured(true);
+        kindPathConfigAttr.setKindName(foundEntityKindConfig.getName());
+        kindPathConfigAttr.setOriginalResourceUrl("/generic-entities/" + recordId);
+
+        // Place kindPathConfigAttr to the request attributes.
+        exchange.getAttributes().put("KindPathConfigAttr", kindPathConfigAttr);
 
         /*
          * Place kind name to the request payload as kind: "kindName".
@@ -76,6 +90,8 @@ public class PlaceKindNameInRequestForEntityManagement
             });
 
             payloadMap.put("kind", foundEntityKindConfig.getName());
+            logger.debug("Kind name '" + foundEntityKindConfig.getName() + "' is placed to the request payload.");
+
 
             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(payloadMap);
 

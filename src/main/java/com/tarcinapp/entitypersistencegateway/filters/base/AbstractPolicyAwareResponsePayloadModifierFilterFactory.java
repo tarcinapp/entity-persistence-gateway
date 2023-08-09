@@ -59,7 +59,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
     @Override
     public GatewayFilter apply(C config) {
 
-        return new OrderedGatewayFilter((exchange, chain) -> {
+        return (exchange, chain) -> {
 
             if (key == null) {
                 logger.debug("Skipping policy aware payload modifier filter as key is not configured.");
@@ -163,7 +163,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                         return chain.filter(exchange.mutate().response(decoratedResponse).build());
                     });
 
-        }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 1);
+        };
     }
 
     @Override
