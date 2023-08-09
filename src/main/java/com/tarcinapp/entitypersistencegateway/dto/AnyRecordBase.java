@@ -40,7 +40,7 @@ public class AnyRecordBase {
     private ZonedDateTime lastUpdatedDateTime;
 
     @JsonIgnore
-    private Map<String, String> properties; 
+    private Map<String, Object> properties; 
 
     public AnyRecordBase() {
         properties = new HashMap<>(); 
@@ -167,12 +167,12 @@ public class AnyRecordBase {
     }
      
      @JsonAnySetter 
-     public void setCustomFields(String property, String value){ 
+     public void setCustomFields(String property, Object value){ 
         properties.put(property, value); 
      }
 
     @JsonAnyGetter
-    public Map<String, String> getCustomFields() {
+    public Map<String, Object> getCustomFields() {
         return this.properties;
     }
 }
