@@ -1,5 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
+import java.security.Key;
 import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -56,6 +57,9 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     @Autowired
     IAuthorizationClient authorizationClient;
 
+    @Autowired(required = false)
+    private Key key;
+
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
     private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayloadInReplace.class);
@@ -67,6 +71,14 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
+
+            logger.debug("AddForbiddenFieldsFromOriginalToPayloadInReplace filter is started. Policy name: "
+                    + config.getPolicyName());
+
+            if (this.key == null) {
+                logger.warn("RS256 key is not configured. We can't query for forbidden fields. This request won't be authorized.");
+                return chain.filter(exchange);
+            }
 
             return this.filter(config, exchange, chain)
                 .onErrorResume(e -> {
