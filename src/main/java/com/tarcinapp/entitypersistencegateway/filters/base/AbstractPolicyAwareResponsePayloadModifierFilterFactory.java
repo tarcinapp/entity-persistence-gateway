@@ -54,7 +54,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
         this.policyResultClass = policyResultClass;
     }
 
-    public abstract Mono<O> modifyRequestPayload(C config, ServerWebExchange exchange, PR policyResult, I payload);
+    public abstract Mono<O> modifyResponsePayload(C config, ServerWebExchange exchange, PR policyResult, I payload);
 
     @Override
     public GatewayFilter apply(C config) {
@@ -67,6 +67,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
             }
 
             PolicyData policyInquiryData;
+
             try {
                 policyInquiryData = AbstractPolicyAwareResponsePayloadModifierFilterFactory.super.getPolicyInquriyData(
                         exchange);
@@ -88,6 +89,8 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                             @Override
                             public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
 
+                                logger.debug("PEP returned response for the response modification filter.");
+
                                 String originalResponseContentType = exchange
                                         .getAttribute(ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR);
                                 HttpHeaders httpHeaders = new HttpHeaders();
@@ -101,7 +104,8 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                                 ClientResponse clientResponse = prepareClientResponse(body, httpHeaders);
 
                                 Mono modifiedBody = extractBody(exchange, clientResponse, inClass)
-                                        .flatMap(originalBody -> modifyRequestPayload(config, exchange, pr, (I) originalBody)
+                                        .flatMap(originalBody -> modifyResponsePayload(config, exchange, pr,
+                                                (I) originalBody)
                                                 .switchIfEmpty(Mono.empty()));
 
                                 BodyInserter bodyInserter = BodyInserters.fromPublisher(modifiedBody, outClass);
@@ -162,7 +166,6 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
 
                         return chain.filter(exchange.mutate().response(decoratedResponse).build());
                     });
-
         };
     }
 

@@ -30,7 +30,7 @@ public class DropFieldsForFindEntityById extends
     }
 
     @Override
-    public Mono<String> modifyRequestPayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
+    public Mono<String> modifyResponsePayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
             PolicyResponse pr, String payload) {
 
         if (pr.getFields().size() == 0) {
