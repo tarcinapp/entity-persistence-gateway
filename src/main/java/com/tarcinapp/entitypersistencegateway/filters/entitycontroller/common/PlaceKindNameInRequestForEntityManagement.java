@@ -27,7 +27,6 @@ import reactor.core.publisher.Mono;
  * If it is configured as an entity kind, it places kind name to the request payload as kind: "kindName".
  * 
  * Original entity's URL is placed to the request payload as originalUrl: "originalUrl". Because the original URL is needed for the authorization logic.
- * 
  */
 @Component
 public class PlaceKindNameInRequestForEntityManagement
@@ -44,6 +43,7 @@ public class PlaceKindNameInRequestForEntityManagement
 
     @Override
     public Mono<String> modifyRequestPayload(Config config, ServerWebExchange exchange, String payload) {
+
         logger.debug("PlaceKindNameInRequestForEntityManagement filter is started.");
 
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
