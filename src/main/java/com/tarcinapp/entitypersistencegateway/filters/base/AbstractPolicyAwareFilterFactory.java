@@ -85,15 +85,7 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
     private Mono<Void> filter(C config, ServerWebExchange exchange, GatewayFilterChain chain) {
         logger.info("Policy inquiry is started for policy name: " + config.getPolicyName());
 
-        PolicyData policyInquiryData;
-
-        try {
-            policyInquiryData = this.getPolicyInquriyData(exchange);
-            policyInquiryData.setPolicyName(config.getPolicyName());
-        } catch (CloneNotSupportedException e) {
-            logger.error(e);
-            return Mono.error(e);
-        }
+        PolicyData policyInquiryData = this.getPolicyInquriyData(exchange);
 
         return this.executePolicy(policyInquiryData).flatMap(pr -> {
 
@@ -119,12 +111,22 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
      * A shorthand method for accessing the PolicyInquriyData
      * 
      * @param exchange
-     * @return
-     * @throws CloneNotSupportedException
+     * @return     
      */
-    protected PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
-        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
-        return (PolicyData) policyInquiryData.clone();
+    protected PolicyData getPolicyInquriyData(ServerWebExchange exchange) {
+        PolicyData policyInquiryDataClone = null;
+
+        try {
+            PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+
+            if (policyInquiryData != null) {
+                policyInquiryDataClone = (PolicyData) policyInquiryData.clone();
+            }
+        } catch (CloneNotSupportedException e) {
+            logger.debug("Cloning policy inquiry data is failed.", e);
+        }
+
+        return policyInquiryDataClone;
     }
 
     private String serializeObjectAsJsonForLogging(Object o) {

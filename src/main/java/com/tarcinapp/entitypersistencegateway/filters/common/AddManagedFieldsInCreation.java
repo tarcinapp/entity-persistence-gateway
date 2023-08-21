@@ -52,6 +52,7 @@ public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFi
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             String authSubject = gatewaySecurityContext.getAuthSubject();
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
+            
             /**
              * We used putIfAbsent here because user may be authorized to send custom values
              * for these fields.

@@ -13,6 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
+
 public abstract class AbstractRequestPayloadModifierFilterFactory<C, I, O> extends AbstractGatewayFilterFactory<C> {
 
     private Class<I> inClass;
@@ -46,10 +47,12 @@ public abstract class AbstractRequestPayloadModifierFilterFactory<C, I, O> exten
     }
 
     private Mono<Void> filter(C config, ServerWebExchange exchange, GatewayFilterChain chain) {
+
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
-                .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                .setRewriteFunction(inClass, outClass, (ex, payload) -> this
-                        .modifyRequestPayload(config, ex, payload));
+            .setContentType(MediaType.APPLICATION_JSON_VALUE)
+            .setRewriteFunction(inClass, outClass, (ex, payload) -> {
+                return modifyRequestPayload(config, ex, payload);
+            });
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
