@@ -2,12 +2,15 @@ app:
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   requestHeaders:
-    requestId: "TarcinappRequestId"
+    requestId: "X-Request-Id"
   requestIdPrefix: "TAPP"
   backend:
     protocol: http
     host: entity-persistence-service
     port: 80
+
+---
+
 spring:
   application: 
     name: entity-persistence-gateway
@@ -394,11 +397,10 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+
+---
+
 logging:
   level:
-    reactor:
-      netty: INFO
-    org:
-      springframework:
-        cloud:
-          gateway: INFO
+    reactor.netty: INFO
+    org.springframework.cloud.gateway: INFO
