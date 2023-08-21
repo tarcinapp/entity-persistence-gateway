@@ -34,6 +34,10 @@ public class PublicKeyFactory {
             KeyFactory fact = KeyFactory.getInstance("RSA");
             return fact.generatePublic(spec);
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+
+            /*
+             * This log can't contain request id because it is not generated yet.
+             */
 			logger.error("An error occured while trying to load public key for authentication.", e);
 		}
         
