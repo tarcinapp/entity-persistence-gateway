@@ -331,24 +331,6 @@ spring:
           args:
             status: 404
       # kind path mapping
-      - id: findEntityByKindPath
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
-        predicates:
-        - Path=/{kindPath}
-        - Method=GET
-        filters:
-        - name: AuthenticateRequest
-        - name: RequestRateLimiter
-          args:
-            redis-rate-limiter:
-              replenishRate: 10
-              burstCapacity: 20
-        - RewritePath=/(?<kindPath>/?.*), /generic-entities
-        - name: ConvertKindPathToQueryForFindEntities
-        - name: DropFieldsFromResponseForFindEntities
-          args:
-            policyName: /policies/fields/genericentities/policy
-        - name: AddSetsToQuery
       - id: createEntityByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -373,6 +355,24 @@ spring:
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
+      - id: findAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: AddSetsToQuery
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -397,7 +397,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
-      - id: countEntityByKindPath
+      - id: countEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/{kindPath}/count
@@ -415,7 +415,79 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
-
+      - id: updateAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllEntities/policy
+      - id: findEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=GET
+        filters:
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntityById/policy
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: updateEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 4KB
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateEntityById/policy
+      - id: deleteEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=DELETE
+        filters:
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteEntityById/policy
 ---
 
 logging:
