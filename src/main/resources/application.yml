@@ -397,6 +397,24 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+      - id: countEntityByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/count
+        - Method=GET
+        filters:
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities/count
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countEntities/policy
+        - name: AddSetsToQuery
 
 ---
 

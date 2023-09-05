@@ -103,7 +103,7 @@ public class AddSetsToQuery
                 .collect(Collectors.toList());
 
             /**
-             * Following set is are added in order to reduce the scope of the query.
+             * Following set is added in order to reduce the scope of the query.
              * Users with low authority can only see the public and active records with their own active and pending records.
              * This is exactly what 'audience' set does.
              * 
