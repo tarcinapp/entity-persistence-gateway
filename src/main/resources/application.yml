@@ -78,10 +78,11 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
+        - name: AddSetsToQuery
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
-        - name: AddSetsToQuery
+        - name: PreventStringifiedJsonFilter
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
         predicates:
@@ -369,6 +370,7 @@ spring:
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: ConvertKindPathToQueryForFindEntities
+        - name: PreventStringifiedJsonFilter
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
