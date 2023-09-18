@@ -1,10 +1,13 @@
 # Overview
 This application adds API Gateway capabilities to the entity-persistence-service of tarcinapp project. These capabilities include:
-* Global request rate limiting for all endpoints. Some endpoints require even narrower request rates limits. This requirement is addressed in that particular route.
+* Global request rate limiting for all endpoints. Some routes require even narrower request rates limits. This requirement is addressed in that particular route.
 * Signed JWT based authorization token validation for all endpoints of entity-persistence-service.
 * Authorization related fields (ownerUsers and ownerGroups) are filled by the gateway with the claim values provided in the JWT token payload.
-* Authorization policy execution with the OPA (Open Policy Agent).
-* Resource filtering in responses based on the policy execution results.
+* Authorization policy execution with the OPA (Open Policy Agent). With that, control's who can create, update, inquiry what.
+* Manage certain fields based on caller's role (ownerUsers, ownerGroups, creationDateTime, createdBy, lastUpdatedDateTime, lastUpdatedBy)
+* Field masking in responses based on the policy execution results.
+* Reduce query scope according to caller's roles
+* Generate idempotency key based on given fields list for the record creation (It's still backend's responsibility to enable/disable idempotency).
 # Authentication
 This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token. Roles must present in payload as string array with the `roles` key. Email verification status must present with the `email_verified` key.
 # Authorization
