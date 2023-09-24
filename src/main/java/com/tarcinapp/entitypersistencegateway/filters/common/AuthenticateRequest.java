@@ -280,7 +280,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
                             logger.debug("Request payload attached to the policy data.");
 
                             /**
-                             * if this operation is to update existing record, then we need to include the
+                             * if this operation is to perform update on existing record, then we need to include the
                              * original record to the policy.
                              * 
                              * Request may be coming from kindPath. Thus, we are first checking if the request

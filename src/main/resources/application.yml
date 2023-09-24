@@ -41,6 +41,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
+        - name: GenerateIdempotencyKey
+          args:
+            record: entity
+        - name: PutIdempotencyKeyToHeader
         - name: AddManagedFieldsInCreation
         - name: DropFieldsForFindEntityById
           args:
