@@ -21,5 +21,7 @@
     <logger name="com.tarcinapp" level="trace" additivity="false">
         <appender-ref ref="Console" />
     </logger>
+
+    <!--<logger name="org.redisson" level="TRACE" />-->
  
 </configuration>

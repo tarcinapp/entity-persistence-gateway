@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,6 +19,13 @@ import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
+import org.redisson.api.RLockReactive;
+import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RReadWriteLockReactive;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -59,6 +67,12 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
     @Autowired
     IBackendClientBase backendBaseClient;
+
+    @Autowired
+    RedissonClient redisson;
+
+    @Autowired
+    RedissonReactiveClient redissonReactiveClient;
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
@@ -120,7 +134,16 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
              * Request is authenticated. This filter has still tasks to do for authenticated
              * users such as preparing the GatewaySecurityContext.
              */
-            return this.onUserAuthenticated(claims, exchange, chain);
+
+            try {
+                return this.onUserAuthenticated(claims, exchange, chain);
+            } catch (InterruptedException e) {
+                logger.error(e);
+
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed while trying to get write-lock over resource.", e);
+            }
+
         }).onErrorResume(e -> {
 
             ServerHttpResponse response = exchange.getResponse();
@@ -130,6 +153,8 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
                 if (clientResponseException.getStatusCode() == HttpStatus.NOT_FOUND)
                     response.setStatusCode(HttpStatus.NOT_FOUND);
+            } else if (e instanceof ResponseStatusException) {
+                response.setStatusCode(((ResponseStatusException) e).getStatus());
             } else {
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
                 logger.error(e);
@@ -191,8 +216,10 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      * @param exchange
      * @param chain
      * @return
+     * @throws InterruptedException
      */
-    private Mono<Void> onUserAuthenticated(Claims claims, ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> onUserAuthenticated(Claims claims, ServerWebExchange exchange, GatewayFilterChain chain)
+            throws InterruptedException {
         logger.debug("Claims: " + claims);
 
         /*
@@ -237,12 +264,17 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
     /**
      * Policy data preparation requires access to the payload.
+     * 
+     * @throws InterruptedException
      */
-    private Mono<Void> buildPolicyInquiryData(ServerWebExchange exchange, GatewayFilterChain chain) {
+    private Mono<Void> buildPolicyInquiryData(ServerWebExchange exchange, GatewayFilterChain chain)
+            throws InterruptedException {
         GatewaySecurityContext gatewaySecurityContext = getSecurityContext(exchange);
         PolicyData policyInquiryData = getPolicyInquriyData(exchange);
         ServerHttpRequest request = exchange.getRequest();
         HttpMethod httpMethod = request.getMethod();
+        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
+        String recordId = uriVariables.get("recordId");
 
         policyInquiryData.setHttpMethod(httpMethod);
         policyInquiryData.setEncodedJwt(gatewaySecurityContext.getEncodedJwt());
@@ -257,76 +289,56 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         // if we have a payload, we need to extract the body to pass to the policy, PUT,
         // POST, PATCH methods are handled here
         if (hasPayload) {
-            logger.info(httpMethod + " method contains a payload. Payload will be attached to the policy data.");
+            logger.debug(httpMethod + " method contains a payload. Payload will be attached to the policy data.");
 
-            ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
-                    .setContentType(MediaType.APPLICATION_JSON_VALUE)
-                    .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
+            // if we have a payload and a recordId given, then we are performing write
+            // operation over a resource. thus we need to lease a distributed write-lock to
+            // prevent other threads to write on the same resource while we are doing our
+            // work on it.
 
-                        try {
-                            // parse the inbound string as JSON
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            Map<String, Object> payloadJSON;
-                            payloadJSON = objectMapper.readValue(inboundJsonRequestStr,
-                                    new TypeReference<Map<String, Object>>() {
-                                    });
+            if (recordId != null) {
 
-                            // prepare the record base from the request payload
-                            AnyRecordBase recordBaseFromPayload = this.prepareRecordBaseFromPayload(payloadJSON);
+                final long currentThreadId = Thread.currentThread().getId();
+                final RReadWriteLockReactive lock = redissonReactiveClient.getReadWriteLock("lock-on-" + recordId);
+                final RLockReactive writeLock = lock.writeLock();
 
-                            // let the policy data contain record base of request payload
-                            policyInquiryData.setRequestPayload(recordBaseFromPayload);
+                return writeLock.isLocked()
+                        .flatMap(locked -> {
 
-                            logger.debug("Request payload attached to the policy data.");
-
-                            /**
-                             * if this operation is to perform update on existing record, then we need to include the
-                             * original record to the policy.
-                             * 
-                             * Request may be coming from kindPath. Thus, we are first checking if the request
-                             * is a kindPath request.
-                             * If it is a kindPath request, then in order to query for the original record
-                             * from the backend, we need to know the original resource URL, which is accessible from the
-                             * KindPathConfigAttr.
-                             */
-                            if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
-                                String originalResourceUrl = request.getPath().toString();
-
-                                // check if we have a kindPath configuration
-                                KindPathConfigAttr kindPathConfigAttr = exchange.getAttribute("KindPathConfigAttr");
-
-                                if (kindPathConfigAttr != null && kindPathConfigAttr.isKindPathConfigured()) {
-
-                                    // we have a kindPath configuration
-                                    originalResourceUrl = kindPathConfigAttr.getOriginalResourceUrl();
-                                }
-
-                                return this.backendBaseClient.get(originalResourceUrl, AnyRecordBase.class)
-                                        .flatMap(originalRecord -> {
-
-                                            // set original record to the policy data
-                                            policyInquiryData.setOriginalRecord(originalRecord);
-
-                                            return Mono.just(inboundJsonRequestStr);
-                                        });
+                            if (locked) {
+                                throw new ResponseStatusException(HttpStatus.LOCKED,
+                                        "Resource already locked. Resource id: " + recordId);
                             }
-                        } catch (JsonProcessingException e) {
-                            logger.error(e);
-                            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
-                        }
 
-                        return Mono.just(inboundJsonRequestStr);
-                    });
+                            return writeLock
+                                    .tryLock(3, 30, TimeUnit.SECONDS, currentThreadId)
+                                    .flatMap(lockAcquired -> {
 
-            return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
+                                        if (!lockAcquired) {
+                                            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                                    "Failed to acquire write lock on resource " + recordId);
+                                        }
+
+                                        logger.debug("Lock acquired for the resource: " + recordId);
+
+                                        return preparePolicyInquiryDataWithPayloadAndOriginalRecord(exchange, chain);
+                                    })
+                                    .onErrorResume(throwable  -> {
+
+                                        return writeLock.unlock(currentThreadId)
+                                            .then(Mono.error(throwable));
+                                    })
+                                    .doFinally(signalType -> {
+                                        writeLock.unlock(currentThreadId).subscribe();
+                                    });
+                        });
+            }
         }
 
         // from here, we do not have body block
         // only GET or DELETE method authorizations are reaching here
         // from here, its important to know if we are targeting a single record
         // (GET-one, or DELETE-one) or multiple records (GET-all, count, or DELETE-all)
-        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-        String recordId = uriVariables.get("recordId");
 
         // check if we are getting or removing a single data
         if (recordId != null) {
@@ -354,6 +366,78 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         }
 
         return chain.filter(exchange);
+    }
+
+    // add incoming request body to the policy inquiry data
+    // add original record retrieved from backend to the policy inquiry data
+    private Mono<Void> preparePolicyInquiryDataWithPayloadAndOriginalRecord(ServerWebExchange exchange,
+            GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        PolicyData policyInquiryData = getPolicyInquriyData(exchange);
+
+        ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
+                .setContentType(MediaType.APPLICATION_JSON_VALUE)
+                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
+
+                    try {
+                        // parse the inbound string as JSON
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        Map<String, Object> payloadJSON;
+                        payloadJSON = objectMapper.readValue(inboundJsonRequestStr,
+                                new TypeReference<Map<String, Object>>() {
+                                });
+
+                        // prepare the record base from the request payload
+                        AnyRecordBase recordBaseFromPayload = this.prepareRecordBaseFromPayload(payloadJSON);
+
+                        // let the policy data contain record base of request payload
+                        policyInquiryData.setRequestPayload(recordBaseFromPayload);
+
+                        logger.debug("Request payload attached to the policy data.");
+
+                        /**
+                         * if this operation is to perform update on existing record, then we need to
+                         * include the
+                         * original record to the policy.
+                         * 
+                         * Request may be coming from kindPath. Thus, we are first checking if the
+                         * request
+                         * is a kindPath request.
+                         * If it is a kindPath request, then in order to query for the original record
+                         * from the backend, we need to know the original resource URL, which is
+                         * accessible from the
+                         * KindPathConfigAttr.
+                         */
+                        if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
+                            String originalResourceUrl = request.getPath().toString();
+
+                            // check if we have a kindPath configuration
+                            KindPathConfigAttr kindPathConfigAttr = exchange.getAttribute("KindPathConfigAttr");
+
+                            if (kindPathConfigAttr != null && kindPathConfigAttr.isKindPathConfigured()) {
+
+                                // we have a kindPath configuration
+                                originalResourceUrl = kindPathConfigAttr.getOriginalResourceUrl();
+                            }
+
+                            return this.backendBaseClient.get(originalResourceUrl, AnyRecordBase.class)
+                                    .flatMap(originalRecord -> {
+
+                                        // set original record to the policy data
+                                        policyInquiryData.setOriginalRecord(originalRecord);
+
+                                        return Mono.just(inboundJsonRequestStr);
+                                    });
+                        }
+                    } catch (JsonProcessingException e) {
+                        logger.error(e);
+                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+                    }
+
+                    return Mono.just(inboundJsonRequestStr);
+                });
+
+        return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
     /**
