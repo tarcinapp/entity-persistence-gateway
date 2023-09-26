@@ -69,9 +69,6 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     IBackendClientBase backendBaseClient;
 
     @Autowired
-    RedissonClient redisson;
-
-    @Autowired
     RedissonReactiveClient redissonReactiveClient;
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
