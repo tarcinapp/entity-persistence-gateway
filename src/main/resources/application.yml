@@ -13,7 +13,6 @@ app:
       show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
     unmanaged:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
-  #defaultFieldset: unmanaged
   queries:
     my: sets[owners]=[${userId}][]
     actives: sets[actives]
@@ -56,6 +55,7 @@ spring:
             record: entity
         - name: PutIdempotencyKeyToHeader
         - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -129,6 +129,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
+        - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -372,6 +373,7 @@ spring:
           args:
             record: entity
         - name: PutIdempotencyKeyToHeader
+        - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -472,6 +474,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
+        - name: PutIdempotencyKeyToHeader
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy

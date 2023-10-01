@@ -3,6 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration;
@@ -52,6 +53,9 @@ public class ApplyFieldsetConfig
     public Mono<String> modifyResponsePayload(Config config, ServerWebExchange exchange, String oldPayload) {
         Map<String, FieldsetProperties> fieldSets = this.entityKindsConfig.getFieldsets();
 
+        /*
+         * If there is no fieldset configured, there is nothing that this filter can do.
+         */
         if (fieldSets == null)
             return Mono.just(oldPayload);
 
@@ -74,7 +78,7 @@ public class ApplyFieldsetConfig
 
             try {
                 String newPayload = this.applyFieldset(oldPayload, fieldsetProperties);
-                
+
                 return Mono.just(newPayload);
             } catch (JsonProcessingException e) {
                 logger.error(e);
@@ -143,18 +147,39 @@ public class ApplyFieldsetConfig
         // serialize/deserialize java.time.* classes
         objectMapper.registerModule(new JavaTimeModule());
 
-        List<Map<String, Object>> payloadMap = objectMapper.readValue(payload,
-                new TypeReference<List<Map<String, Object>>>() {
-                });
+        // read the payload
+        JsonNode jsonNode = objectMapper.readTree(payload);
+        String modifiedPayload = "";
 
-        payloadMap.stream()
+        if (jsonNode.isArray()) {
+            // If it's an array
+            List<Map<String, Object>> payloadMap = objectMapper.readValue(payload,
+                    new TypeReference<List<Map<String, Object>>>() {
+                    });
 
-                // on each item of the response array
-                .forEach(item -> {
-                    item.entrySet().removeIf(predicate);
-                });
+            payloadMap.stream()
 
-        String modifiedPayload = objectMapper.writeValueAsString(payloadMap);
+                    // on each item of the response array
+                    .forEach(item -> {
+                        item.entrySet().removeIf(predicate);
+                    });
+
+            modifiedPayload = objectMapper.writeValueAsString(payloadMap);
+        } else if (jsonNode.isObject()) {
+            // If it's an object
+            Map<String, Object> payloadMap = objectMapper.readValue(payload,
+                    new TypeReference<Map<String, Object>>() {
+                    });
+
+            payloadMap.entrySet()
+                    .removeIf(predicate);
+
+            modifiedPayload = objectMapper.writeValueAsString(payloadMap);
+        } else {
+            // Handle other cases as needed
+            throw new IllegalArgumentException("Unsupported JSON structure");
+        }
+
         return modifiedPayload;
     }
 
