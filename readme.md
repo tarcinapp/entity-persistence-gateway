@@ -25,6 +25,25 @@ Visitor:
 * Can see the public data.
 * Never see the managed fields of the data such as: validFromDateTime, validUntilDateTime, visibility.
 
+# Configuration
+## Saved Field Sets
+Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.
+Role based masking on the fields is still applied. Role-based field masking remains in effect. Even if clients make specific requests or use field sets, they will be unable to view certain fields unless they have the necessary authorization.
+
+`app.fieldsets.managed`: Selects only the managed fields from the backend.
+`app.fieldsets.unmanaged`: Selects only the unmanaged fields from the backend. Only id, name and kind is kept in the list of requested fields.
+
+Field sets can be used in query parameters such as:
+generic-entities?fieldset=unmanaged
+
+# Saved Queries
+A query parameter string can be configured to shorten the long list of commonly used queries. Context variables such as userId, and now can be used while building queries
+
+`app.queries.my`: set[owners][]=[${userId}][]
+`app.queries.actives`: set[actives]
+
+generic-entities?query=my
+
 ## JWTS Private Key
 This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
 ## Deployment to Kubernetes

@@ -8,6 +8,16 @@ app:
     protocol: http
     host: entity-persistence-service
     port: 80
+  fieldsets:
+    managed:
+      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+    unmanaged:
+      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+  #defaultFieldset: unmanaged
+  queries:
+    my: sets[owners]=[${userId}][]
+    actives: sets[actives]
+    inactives: sets[inactives]
 
 ---
 
@@ -82,6 +92,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
+        - name: ApplyFieldsetConfig
         - name: AddSetsToQuery
         - name: DropFieldsFromResponseForFindEntities
           args:
@@ -382,6 +393,7 @@ spring:
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
+        - name: ApplyFieldsetConfig
         - name: AddSetsToQuery
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
