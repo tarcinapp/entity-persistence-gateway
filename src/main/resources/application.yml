@@ -14,9 +14,10 @@ app:
     unmanaged:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
   queries:
-    my: sets[owners]=[${userId}][]
-    actives: sets[actives]
-    inactives: sets[inactives]
+    my: "'sets[owners]=['+#userId+'][]'"
+    actives: "'sets[actives]'"
+    inactives: "'sets[inactives]'"
+  allowLoopbackQueryNotation: true
 
 ---
 
@@ -93,6 +94,7 @@ spring:
           args:
             policyName: /policies/auth/routes/findEntities/policy
         - name: ApplyFieldsetConfig
+        - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
         - name: DropFieldsFromResponseForFindEntities
           args:
@@ -390,6 +392,7 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: ConvertToLoopbackQuery
         - name: ConvertKindPathToQueryForFindEntities
         - name: PreventStringifiedJsonFilter
         - name: DropFieldsFromResponseForFindEntities

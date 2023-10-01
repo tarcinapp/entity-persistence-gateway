@@ -89,10 +89,7 @@ public class ApplyFieldsetConfig
         }
 
         if (query.size() == 0)
-            return Mono.just(oldPayload);
-
-        logger.debug(
-                "We have fieldset configured and the client sent a query string. We are going to look at if client asked for a specific fieldset.");
+            return Mono.just(oldPayload);        
 
         final String[] newPayloadHolder = { oldPayload };
 
