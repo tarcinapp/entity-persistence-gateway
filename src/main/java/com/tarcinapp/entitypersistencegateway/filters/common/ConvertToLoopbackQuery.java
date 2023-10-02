@@ -85,6 +85,10 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
 
             List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
+            // this variable is defined to pass to the SPEL of saved queries.
+            Map<String, String> queryMap = query.stream()
+                    .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+
             List<NameValuePair> newQuery = query.stream()
                     .flatMap(nvp -> {
 
@@ -119,23 +123,33 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
 
                             String savedQuery = savedQueries.getQueries().get(value);
 
-                            if(savedQuery == null) {
-                                logger.warn("Client requested a saved query: " + savedQuery + ". But there is no such query defined in application config.");
+                            if (savedQuery == null) {
+                                logger.warn("Client requested a saved query: " + savedQuery
+                                        + ". But there is no such query defined in application config.");
                                 return Stream.empty();
                             }
 
-                            GatewaySecurityContext gatewaySecurityContext = exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+                            GatewaySecurityContext gatewaySecurityContext = exchange
+                                    .getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
 
                             // Create a StandardEvaluationContext
                             StandardEvaluationContext context = new StandardEvaluationContext();
 
                             // set variables to the spel evaluation context here
-                            context.setVariable("userId", gatewaySecurityContext.getAuthSubject());
+
+                            // set gateway security context if we have in hand
+                            if(gatewaySecurityContext == null)
+                                context.setVariable("userId", gatewaySecurityContext.getAuthSubject());
+
+                            // make existing query variables accessible by SPEL saved queries
+                            context.setVariable("query", queryMap);
+
                             ExpressionParser parser = new SpelExpressionParser();
                             Expression expression = parser.parseExpression(savedQuery);
                             String resolvedQuery = (String) expression.getValue(context);
-                            List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(resolvedQuery, Charset.forName("UTF-8"));
-                            
+                            List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(resolvedQuery,
+                                    Charset.forName("UTF-8"));
+
                             return nameValuePairs.stream();
                         }
 

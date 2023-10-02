@@ -17,6 +17,8 @@ app:
     my: "'sets[owners]=['+#userId+'][]'"
     actives: "'sets[actives]'"
     inactives: "'sets[inactives]'"
+    name: "'filter[where][name]=' + #query['name']"
+    slug: "'filter[where][slug]=' + #query['slug']"
   allowLoopbackQueryNotation: true
 
 ---
