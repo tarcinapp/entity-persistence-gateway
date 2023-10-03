@@ -394,6 +394,9 @@ spring:
               replenishRate: 10
               burstCapacity: 20
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntities/policy
         - name: ConvertToLoopbackQuery
         - name: ConvertKindPathToQueryForFindEntities
         - name: PreventStringifiedJsonFilter
