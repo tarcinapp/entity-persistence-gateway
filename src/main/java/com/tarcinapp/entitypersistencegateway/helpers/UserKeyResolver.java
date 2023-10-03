@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.keyresolvers;
+package com.tarcinapp.entitypersistencegateway.helpers;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
