@@ -3,7 +3,7 @@ app:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   requestHeaders:
     requestId: "X-Request-Id"
-  requestIdPrefix: "TAPP"
+  shortcode: "TAPP"
   backend:
     protocol: http
     host: entity-persistence-service
@@ -518,9 +518,3 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
----
-
-logging:
-  level:
-    reactor.netty: INFO
-    org.springframework.cloud.gateway: INFO
