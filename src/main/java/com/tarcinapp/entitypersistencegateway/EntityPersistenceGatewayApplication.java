@@ -8,5 +8,6 @@ public class EntityPersistenceGatewayApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EntityPersistenceGatewayApplication.class, args);
+
 	}
 }
