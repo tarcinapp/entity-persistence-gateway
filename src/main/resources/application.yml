@@ -96,13 +96,19 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
+        - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
         - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/genericentities/policy
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
-        - name: PreventStringifiedJsonFilter
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
         predicates:
@@ -398,9 +404,12 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
+        - name: PreventStringifiedJsonFilter
         - name: ConvertToLoopbackQuery
         - name: ConvertKindPathToQueryForFindEntities
-        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/genericentities/policy
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy

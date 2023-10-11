@@ -86,7 +86,8 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
         logger.info("Policy inquiry is started for policy name: " + config.getPolicyName());
 
         PolicyData policyInquiryData = this.getPolicyInquriyData(exchange);
-
+        policyInquiryData.setPolicyName(config.getPolicyName());
+        
         return this.executePolicy(policyInquiryData).flatMap(pr -> {
 
             logger.debug("Policy evaluation is completed.");
