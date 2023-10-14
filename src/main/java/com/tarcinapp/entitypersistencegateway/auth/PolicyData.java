@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 public class PolicyData implements Cloneable {
 
     private String policyName;
+    private String appShortcode;
     private HttpMethod httpMethod;
     private RequestPath requestPath;
     private MultiValueMap<String, String> queryParams;
@@ -27,6 +28,14 @@ public class PolicyData implements Cloneable {
 
     public void setPolicyName(String policyName) {
         this.policyName = policyName;
+    }
+
+    public String getAppShortcode() {
+        return this.appShortcode;
+    }
+
+    public void setAppShortcode(String appShortcode) {
+        this.appShortcode = appShortcode;
     }
 
     public AnyRecordBase getRequestPayload() {

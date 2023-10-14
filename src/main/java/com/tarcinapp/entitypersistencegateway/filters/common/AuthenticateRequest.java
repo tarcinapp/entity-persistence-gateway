@@ -27,6 +27,7 @@ import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -71,6 +72,9 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     @Autowired
     RedissonReactiveClient redissonReactiveClient;
 
+    @Value("${app.shortcode:#{tarcinapp}}")
+    private String appShortcode;
+
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
@@ -92,7 +96,10 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             exchange.getAttributes().put(GATEWAY_SECURITY_CONTEXT_ATTR, new GatewaySecurityContext());
 
             // set the PolicyInquiryData to attributes
-            exchange.getAttributes().put(POLICY_INQUIRY_DATA_ATTR, new PolicyData());
+            PolicyData policyData = new PolicyData();
+            policyData.setAppShortcode(this.appShortcode);
+            
+            exchange.getAttributes().put(POLICY_INQUIRY_DATA_ATTR, policyData);
 
             /**
              * Check if we have autowired key field in class. Existence of the key variable
