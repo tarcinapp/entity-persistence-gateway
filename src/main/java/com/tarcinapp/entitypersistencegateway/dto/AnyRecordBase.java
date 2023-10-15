@@ -26,7 +26,10 @@ public class AnyRecordBase {
     private int ownerGroupsCount;
     private String lastUpdatedBy;
     private String createdBy;
-    
+    private Integer version;
+    private String idempotencyKey;
+    private String application;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime creationDateTime;
 
@@ -40,10 +43,10 @@ public class AnyRecordBase {
     private ZonedDateTime lastUpdatedDateTime;
 
     @JsonIgnore
-    private Map<String, Object> properties; 
+    private Map<String, Object> properties;
 
     public AnyRecordBase() {
-        properties = new HashMap<>(); 
+        properties = new HashMap<>();
     }
 
     public String getKind() {
@@ -114,23 +117,23 @@ public class AnyRecordBase {
         this.validUntilDateTime = validUntilDateTime;
     }
 
-    public void setCreationDateTime(ZonedDateTime  creationDateTime) {
+    public void setCreationDateTime(ZonedDateTime creationDateTime) {
         this.creationDateTime = creationDateTime;
     }
 
-    public ZonedDateTime  getValidFromDateTime() {
+    public ZonedDateTime getValidFromDateTime() {
         return this.validFromDateTime;
     }
 
-    public void setValidFromDateTime(ZonedDateTime  validFromDateTime) {
+    public void setValidFromDateTime(ZonedDateTime validFromDateTime) {
         this.validFromDateTime = validFromDateTime;
     }
 
-    public ZonedDateTime  getLastUpdatedDateTime() {
+    public ZonedDateTime getLastUpdatedDateTime() {
         return this.lastUpdatedDateTime;
     }
 
-    public void setLastUpdatedDateTime(ZonedDateTime  lastUpdatedDateTime) {
+    public void setLastUpdatedDateTime(ZonedDateTime lastUpdatedDateTime) {
         this.lastUpdatedDateTime = lastUpdatedDateTime;
     }
 
@@ -165,11 +168,35 @@ public class AnyRecordBase {
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
     }
-     
-     @JsonAnySetter 
-     public void setCustomFields(String property, Object value){ 
-        properties.put(property, value); 
-     }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getApplication() {
+        return application;
+    }
+
+    public void setApplication(String application) {
+        this.application = application;
+    }
+
+    @JsonAnySetter
+    public void setCustomFields(String property, Object value) {
+        properties.put(property, value);
+    }
 
     @JsonAnyGetter
     public Map<String, Object> getCustomFields() {
