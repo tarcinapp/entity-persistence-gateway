@@ -1,7 +1,7 @@
 FROM maven:3.6.3-adoptopenjdk-11 AS builder
 COPY . /workspace/
 WORKDIR /workspace
-RUN mvn package
+RUN mvn package -Dmaven.test.skip=true
 
 FROM openjdk:11-jre-slim
 

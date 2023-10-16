@@ -1,18 +1,10 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.reactivestreams.Publisher;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -20,36 +12,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.core.env.Environment;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.ServerWebInputException;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
-public class GenerateIdempotencyKey
-        extends AbstractGatewayFilterFactory<GenerateIdempotencyKey.Config> {
+public class AcquireLockForCreation
+        extends AbstractGatewayFilterFactory<AcquireLockForCreation.Config> {
 
-    private Logger logger = LogManager.getLogger(GenerateIdempotencyKey.class);
-
-    @Autowired
-    private Environment environment;
+    private Logger logger = LogManager.getLogger(AcquireLockForCreation.class);
 
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
@@ -57,7 +33,7 @@ public class GenerateIdempotencyKey
     @Autowired
     RedissonReactiveClient redissonReactiveClient;
 
-    public GenerateIdempotencyKey() {
+    public AcquireLockForCreation() {
         super(Config.class);
     }
 
@@ -65,19 +41,7 @@ public class GenerateIdempotencyKey
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            logger.debug("GenerateIdempotencyKey filter is started.");
-
-            String keyFieldsProperty = "app.idempotency." + config.getRecord() + ".keyfields";
-            String keyFieldsStr = environment.getProperty(keyFieldsProperty);
-
-            if (keyFieldsStr == null) {
-                return chain.filter(exchange);
-            }
-
-            List<String> fields = Arrays.asList(keyFieldsStr.split(","));
-
-            logger.debug("Idempotency is configured for " + config.getRecord()
-                    + ". Following fields are going to be used:" + fields.toString());
+            logger.debug("AcquireLockForCreation filter is started.");
 
             return modifyRequestBodyFilterFactory
                     .apply(
@@ -86,13 +50,8 @@ public class GenerateIdempotencyKey
 
                                         try {
 
-                                            String idempotencyKey = calculateIdempotencyKey(fields, ex, payload);
-                                            logger.debug("Idempotency key is calculated as: " + idempotencyKey);
-
-                                            // add calculated idempotency key to the header
-                                            ex
-                                                    .getAttributes()
-                                                    .put("IdempotencyKey", idempotencyKey);
+                                            String payloadHash = calculatePayloadhHash(ex, payload);
+                                            logger.debug("Payload hash is calculated as: " + payloadHash);
 
                                             /*
                                              * if (true) {
@@ -106,11 +65,11 @@ public class GenerateIdempotencyKey
                                              */
 
                                             // Pass the request as it is to the filter chain
-                                            return this.lockRecord(config, keyFieldsStr, idempotencyKey)
+                                            return this.lockRecord(payloadHash)
                                                     .then(Mono.just(payload));
                                         } catch (JsonProcessingException e) {
                                             logger.error(
-                                                    "An error occured while parsing the request payload for idempotency.",
+                                                    "An error occured while parsing the request payload for hash calculation.",
                                                     e);
 
                                             throw new ResponseStatusException(
@@ -134,11 +93,11 @@ public class GenerateIdempotencyKey
         };
     }
 
-    private Mono<Void> lockRecord(Config config, String recordKind, String idempotencyKey) {
+    private Mono<Void> lockRecord(String payloadHash) {
 
         final long currentThreadId = Thread.currentThread().getId();
         final RReadWriteLockReactive lock = redissonReactiveClient
-                .getReadWriteLock("lock-on-" + config.getRecord() + "-creation-" + idempotencyKey);
+                .getReadWriteLock("lock-on-record-creation-" + payloadHash);
         final RLockReactive writeLock = lock.writeLock();
 
         return writeLock.isLocked()
@@ -146,11 +105,11 @@ public class GenerateIdempotencyKey
 
                     if (locked) {
                         throw new ResponseStatusException(HttpStatus.LOCKED,
-                                "Resource already locked. Idempotency key: " + idempotencyKey);
+                                "Resource already locked. payload hash: " + payloadHash);
                     }
 
-                    logger.debug("Lock acquired for the " + config.getRecord() + " creation with idempotency key: "
-                            + idempotencyKey);
+                    logger.debug("Lock acquired for the record creation with payload hash: "
+                            + payloadHash);
 
                     return writeLock
                             .tryLock(3, 30, TimeUnit.SECONDS, currentThreadId)
@@ -158,12 +117,11 @@ public class GenerateIdempotencyKey
 
                                 if (!lockAcquired) {
                                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                            "Failed to acquire write lock for the " + config.getRecord()
-                                                    + " creation with idempotency key: " + idempotencyKey);
+                                            "Failed to acquire write lock for the record creation with payload hash: "
+                                                    + payloadHash);
                                 }
 
-                                logger.debug("Lock acquired for the resource " + recordKind
-                                        + " creation with idempotency key: " + idempotencyKey);
+                                logger.debug("Lock acquired for the record creation with payload hash: " + payloadHash);
 
                                 return Mono.<Void>empty();
                             })
@@ -178,39 +136,19 @@ public class GenerateIdempotencyKey
                 });
     }
 
-    private String calculateIdempotencyKey(List<String> config, ServerWebExchange ex, String payload)
+    private String calculatePayloadhHash(ServerWebExchange ex, String payload)
             throws JsonMappingException, JsonProcessingException {
-        List<String> values = parseKeyFieldsFromRequestBody(payload, config);
-        String idempotencyKey = generateIdempotencyKey(values);
-
-        return idempotencyKey;
-    }
-
-    private List<String> parseKeyFieldsFromRequestBody(String payload, List<String> fields)
-            throws JsonMappingException, JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(payload);
-
-        return fields.stream()
-                .map(field -> jsonNode.at(field))
-                .filter(selectedNode -> !selectedNode.isMissingNode())
-                .map(selectedNode -> selectedNode.getNodeType() == JsonNodeType.STRING ? selectedNode.asText()
-                        : selectedNode.toString())
-                .collect(Collectors.toList());
-    }
-
-    private String generateIdempotencyKey(List<String> values) {
 
         // Use a hash function (e.g., SHA-256) to hash the keyFields to create an
-        // idempotency key.
+        // payload hash.
         // This example uses SHA-256 for simplicity; you can choose a suitable hashing
         // algorithm.
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(String.join(",", values).getBytes());
+            byte[] hash = digest.digest(payload.getBytes());
             return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error generating idempotency key", e);
+            throw new RuntimeException("Error calculating hash from the payload", e);
         }
     }
 
@@ -223,16 +161,6 @@ public class GenerateIdempotencyKey
     }
 
     public static class Config {
-
-        private String record;
-
-        public String getRecord() {
-            return record;
-        }
-
-        public void setRecord(String record) {
-            this.record = record;
-        }
 
     }
 }

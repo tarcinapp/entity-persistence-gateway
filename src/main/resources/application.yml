@@ -54,10 +54,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
-        - name: GenerateIdempotencyKey
-          args:
-            record: entity
-        - name: PutIdempotencyKeyToHeader
+        - name: AcquireLockForCreation
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
@@ -380,10 +377,7 @@ spring:
           args:
             policyName: /policies/auth/routes/createEntity/policy
         - name: AddManagedFieldsInCreation
-        - name: GenerateIdempotencyKey
-          args:
-            record: entity
-        - name: PutIdempotencyKeyToHeader
+        - name: AcquireLockForCreation
         - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
@@ -492,7 +486,6 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
-        - name: PutIdempotencyKeyToHeader
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy

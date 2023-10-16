@@ -7,7 +7,7 @@ This application adds API Gateway capabilities to the entity-persistence-service
 * Manage certain fields based on caller's role (ownerUsers, ownerGroups, creationDateTime, createdBy, lastUpdatedDateTime, lastUpdatedBy)
 * Field masking in responses based on the policy execution results.
 * Reduce query scope according to caller's roles
-* Generate idempotency key based on given fields list for the record creation (It's still backend's responsibility to enable/disable idempotency).
+* Acquire distributed lock for CRUD operations
 # Authentication
 This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token. Roles must present in payload as string array with the `roles` key. Email verification status must present with the `email_verified` key.
 # Authorization
