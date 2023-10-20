@@ -22,6 +22,13 @@ public class EntityKindsConfig {
         this.entityKinds = entityKinds;
     }
 
+    @Override
+    public String toString() {
+        return "EntityKindsConfig [entityKinds=" + entityKinds + "]";
+    }
+
+
+
     public static class EntityKindsSingleConfig {
 
         private String name;
@@ -41,6 +48,11 @@ public class EntityKindsConfig {
 
         public void setPathMap(String pathMap) {
             this.pathMap = pathMap;
+        }
+
+        @Override
+        public String toString() {
+            return "EntityKindsSingleConfig [name=" + name + ", pathMap=" + pathMap + "]";
         }
     }
 }
