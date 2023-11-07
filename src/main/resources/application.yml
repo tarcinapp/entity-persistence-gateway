@@ -43,7 +43,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -67,7 +67,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -148,7 +148,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -166,7 +166,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -253,7 +253,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -267,7 +267,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -319,7 +319,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -333,7 +333,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -363,7 +363,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
@@ -416,7 +416,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
@@ -458,7 +458,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - RewritePath=/(?<kindPath>/?.*), /generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -496,7 +496,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 4KB
+            maxSize: 1KB
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter

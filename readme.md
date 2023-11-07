@@ -1,6 +1,7 @@
 # Overview
 This application adds API Gateway capabilities to the entity-persistence-service of tarcinapp project. These capabilities include:
-* Global request rate limiting for all endpoints. Some routes require even narrower request rates limits. This requirement is addressed in that particular route.
+* Limit http request size (1kb default)
+* request rate limiting for all endpoints
 * Signed JWT based authorization token validation for all endpoints of entity-persistence-service.
 * Authorization related fields (ownerUsers and ownerGroups) are filled by the gateway with the claim values provided in the JWT token payload.
 * Authorization policy execution with the OPA (Open Policy Agent). With that, control's who can create, update, inquiry what.
