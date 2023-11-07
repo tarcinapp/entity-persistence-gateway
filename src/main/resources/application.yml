@@ -15,7 +15,6 @@ app:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
   queries:
     my: "'sets[owners]=['+#userId+'][]'"
-    book: "'filter[where][name]=' + #query['book-name']"
     actives: "'sets[actives]'"
     inactives: "'sets[inactives]'"
     name: "'filter[where][name]=' + #query['name']"

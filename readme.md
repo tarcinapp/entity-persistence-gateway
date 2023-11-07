@@ -8,6 +8,9 @@ This application adds API Gateway capabilities to the entity-persistence-service
 * Field masking in responses based on the policy execution results.
 * Reduce query scope according to caller's roles
 * Acquire distributed lock for CRUD operations
+* Hide loopback data querying notation from clients. Loopback uses it's own notation.
+* Define sets of fields to make querying easier. ?fieldset=my-fields
+* Define predefined queries. ?q=my-query
 # Authentication
 This application uses JWT based token authentication. JWT token validation takes place only if the rs256 encrypted public key provided. Roles are extraced from the JWT token. Roles must present in payload as string array with the `roles` key. Email verification status must present with the `email_verified` key.
 # Authorization
