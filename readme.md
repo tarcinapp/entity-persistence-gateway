@@ -1,5 +1,20 @@
 # Overview
-The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway), is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including authentication, authorization, routing, and field masking, ensuring that your APIs are securely accessed and data is protected. Furthermore, it offers predefined queries and field sets to streamline querying processes, making it easier to access and manipulate data within your application. As the front door to the Entity Persistence Service and Entity Persistence Policies, the Entity Persistence Gateway efficiently handles incoming requests, enforces security policies, and orchestrates responses. With its diverse set of features, it simplifies the management of fine-grained access control, making it an indispensable part of your application ecosystem.
+The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway) framework, is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including
+* Authentication
+* Authorization
+* Routing
+* Rate Limiting
+* Distributed Lock
+* Field masking
+* Predefined queries
+* Predefined sets of fields to streamline querying processes
+
+Here is the visualized representation of the request-response flow for the `createEntity` operation in the entity-persistence-gateway application.
+<p align="center">
+  <img src="./doc/img/flow.png" alt="Request-Response flow for createEntity" width="400">
+</p>
+
+As the front door to the Entity Persistence Service and Entity Persistence Policies, the Entity Persistence Gateway efficiently handles incoming requests, enforces security policies, and orchestrates responses. With its diverse set of features, it simplifies the management of fine-grained access control, making it an indispensable part of your application ecosystem.
 
 ## What is Tarcinapp Suite?
 
