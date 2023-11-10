@@ -1,9 +1,16 @@
 app:
-  auth:
-    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+
+  # set the name of your application (e.g. books, recipes, movies, etc..)
+  name: entity-persistence-gateway
+
+  # shortcode is going to be used as prefix for generated request id for each request and role names (e.g. tarcinapp.member)
+  shortcode: "tarcinapp"
+
+  # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
-  shortcode: "TAPP"
+  auth:
+    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
   backend:
     protocol: http
     host: entity-persistence-service
@@ -25,7 +32,7 @@ app:
 
 spring:
   application: 
-    name: entity-persistence-gateway
+    name: ${app.name}
   redis: 
     host: gateway-redis-master
     port: 6379

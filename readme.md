@@ -26,7 +26,8 @@ The Tarcinapp suite is a comprehensive and flexible application framework, harmo
 
 At its core is the **Entity Persistence Service**, an easily adaptable REST-based backend application built on the [Loopback 4](https://loopback.io) framework. This service utilizes on a schemaless MongoDB database to provide a scalable and highly adaptable data persistence layer. Offering a generic data model with predefined fields such as `id`, `name`,  `kind`, `lastUpdateDateTime`, `creationDateTime`, `ownerUsers` and [more](#programming-conventions), it effortlessly adapts to diverse use cases.  
 
-The integration with the **Entity Persistence Gateway** empowers users to implement enhanced validation, authentication, authorization, and rate-limiting functionalities, ensuring a secure and efficient environment. Leveraging the power of **Redis**, the application seamlessly manages distributed locks, enabling robust data synchronization and rate limiting. Furthermore, the ecosystem includes the **Open Policy Agent (OPA)** to enforce policies, safeguarding your application against unauthorized access and ensuring compliance with your security and operational requirements. These policies, combined with the entire suite of components, form a cohesive and powerful ecosystem, paving the way for efficient and secure microservice development.  
+The integration with the **Entity Persistence Gateway** empowers users to implement enhanced validation, authentication, authorization, and rate-limiting functionalities. Leveraging the power of **Redis**, the application seamlessly manages distributed locks and rate limiting. Furthermore, the ecosystem includes the [Open Policy Agent (OPA](https://www.openpolicyagent.org)) to enforce policies, safeguarding your application against unauthorized access and ensuring compliance with your security and operational requirements.  
+  
 Here is an example request and response to the one of the most basic endpoint: `/generic-entities`:
 <p align="left">
   <img src="./doc/img/request-response.png" alt="Sample request and response">
@@ -48,32 +49,31 @@ Here's a more structured list of the capabilities provided by the Entity Persist
 
 4. **Authorization Policy Execution**: Leveraging the Open Policy Agent (OPA), the gateway executes authorization policies that determine who can create, update, or query specific records, providing fine-grained access control.
 
-5. **Claim-Based Field Population**: Fields related to authorization, such as ownerUsers and ownerGroups, are automatically populated by the gateway based on the claims provided in the JWT token payload.
+5. **Claim-Based Field Population**: Fields related to authorization, such as `ownerUsers` and `ownerGroups`, are automatically populated by the gateway based on the claims provided in the JWT token payload.
 
-6. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., ownerUsers, ownerGroups, creationDateTime, createdBy, lastUpdatedDateTime, lastUpdatedBy) according to the caller's role, ensuring controlled access and data integrity.
+6. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., `ownerUsers`, `ownerGroups`, `creationDateTime`, `createdBy`, `lastUpdatedDateTime`, `lastUpdatedBy`) according to the caller's role, ensuring controlled access and data integrity.
 
-7. **Field Masking**: The gateway masks certain fields in responses based on the results of policy execution, enhancing data security by restricting sensitive information from being exposed.
+7. **Field Masking**: The gateway masks certain fields in responses based on the results of policy execution, enhancing data security by restricting sensitive information from being exposed. To learn how to configure which role can see what field see [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies).
 
 8. **Query Scope Reduction**: The gateway reduces the scope of queries based on the caller's role, ensuring that users can only access data that aligns with their authorized roles and permissions.
 
-9. **Distributed Lock Management**: For CRUD (Create, Read, Update, Delete) operations, the gateway acquires distributed locks to prevent data conflicts and ensure data consistency in a distributed system.
+9. **Distributed Lock Management**: For CRUD operations, the gateway acquires distributed locks to prevent data conflicts and ensure data consistency in a distributed system.
 
-10. **Query Language Abstraction**: The gateway hides the underlying Loopback data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience.
+10. **Query Language Abstraction**: The gateway hides the underlying Loopback data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience. For example, clients can use `?limit=5&skip=10` instead of `?filter[limit]=5&filter[skip]=10`.
 
-11. **Field Sets for Easier Querying**: It offers the ability to define sets of fields, enhancing the querying process by allowing clients to request specific sets of fields for response data.
+11. **Field Sets for Easier Querying**: It offers the ability to define sets of fields, enhancing the querying process by allowing clients to request specific sets of fields for response data. Field sets are defined at the gateway configuration. This way, clients can make a query like `?fieldset=bookinfo` which only returns `id`, `name` and `author` fields only of the book records.
 
-12. **Predefined Queries**: Clients can utilize predefined queries (e.g., ?q=my-query) to streamline their data retrieval process by specifying common query conditions.
+12. **Predefined Queries**: Clients can utilize predefined queries (e.g., `?q=my-query`) to streamline their data retrieval process by specifying common query conditions. When setting up predefined queries, utilize context variables such as user id and other query parameters. You can leverage advanced Java operations using SPEL to manipulate these variables while constructing the query for the backend.
 
-13. **Route Configuration**: The gateway allows route configuration for the /generic-entity endpoint based on the 'kind' of entity. For example, it can route all requests for 'kind: book' to the /generic-entity, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various 'kinds,' providing flexibility in routing requests to the Entity Persistence Service.
+13. **Route Configuration**: The gateway allows route configuration for the `/generic-entity` endpoint based on the 'kind' of entity. For example, it can route all requests for `kind: book` to the `/generic-entity`, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various kinds, providing semantic endpoints in routing requests to the Entity Persistence Service.
 
 These capabilities collectively empower the Entity Persistence Gateway to deliver comprehensive security, access control, data management, and routing features to your application.
 
 # Configuration
-The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. This configuration file plays a pivotal role in shaping the behavior of the gateway and ensures seamless communication between the client applications and the underlying Entity Persistence Service.  
+The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. You can see the whole configuration from this file: [application.yaml](src/main/resources/application.yml).
 
-Each route is meticulously configured, defining various aspects such as request size limits, authentication, authorization, and more.  
-
-You can map environment variables to various configuration properties in your Spring application.yaml file. For example, by using Spring Boot's built-in support for reading environment variables, you can map an environment variable named `APP_AUTH_RS256_PUBLIC_KEY` to the `app.auth.rs256PublicKey` property. This way, you can set the RS256 public key for JWT validation as an environment variable.
+You can map environment variables to various configuration properties in the Spring application.yaml file for containerized environments.  
+For example to configure  `app.auth.rs256PublicKey` parameter in the YAML file you can use the environment variable named `APP_AUTH_RS256_PUBLIC_KEY`.
 
 ## Authentication
 Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided. Without proper JWT token validation, requests will not be authenticated.
