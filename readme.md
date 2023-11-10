@@ -94,7 +94,7 @@ app:
 ```  
   
 **Shortcode:**
-Ensure that the shortcode is a concise representation of your application and is used consistently in constructing role names and other application-specific identifiers.
+This configuration is used in constructing role names and other application-specific identifiers. Ensure that the shortcode is a concise representation of your application.  
 
 * **Key**: `app.shortcode`
 * **Description**: Shortcode serves as a prefix for generated request IDs and role names. For instance, if shortcode is set to "tarcinapp" role names will be constructed as "tarcinapp.member".
