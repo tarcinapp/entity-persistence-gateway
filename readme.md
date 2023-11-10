@@ -129,11 +129,16 @@ app:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
 ```
   
-`app.fieldsets.managed`: Selects only the managed fields from the backend.
+`app.fieldsets.managed`: Selects only the managed fields from the backend.  
 `app.fieldsets.unmanaged`: Selects only the unmanaged fields from the backend. Only id, name and kind is kept in the list of requested fields along with other unmanaged fields.
 
 Field sets can be used in query parameters such as:  
-`generic-entities?fieldset=unmanaged`
+`generic-entities?fieldset=unmanaged`  
+
+**Example field set configuration for books application**:  
+```bash
+APP_FIELDSETS_BOOKINFO=id, name, slug, author
+```
 
 **Note:** Role-based field masking remains in effect. Even if clients make specific requests or use field sets, they will be unable to view certain fields unless they have the necessary authorization.
 
@@ -142,12 +147,33 @@ You can define a default field set configuration which applies to all findAll, f
 `app.defaultFieldset:unmanaged`
 
 # Saved Queries
-A query parameter string can be configured to shorten the long list of commonly used queries. Context variables such as userId, and now can be used while building queries
+A query parameter string can be configured to shorten the long list of commonly used queries. Context variables such as `userId`, `now` can be used while building queries. You can use `query` context variable to access other query parameters to build new query to the backend.
 
-`app.queries.my`: "'sets[owners]=['+#userId+'][]'"
-`app.queries.actives`: "'sets[actives]'"
+Here you can find examples from predefined queries:
 
-generic-entities?query=my
+```yaml
+app:  
+  queries:  
+    my: "'sets[owners]=['+#userId+'][]'"  
+    actives: "'sets[actives]'"
+```
+**Example usage:**  
+`generic-entities?query=my`
+
+**Introducing new predefined query configuration:**  
+```bash
+APP_QUERIES_BY_BOOK_NAME="'filter[where][slug]=' + #query['book-name']"
+```
+Usage: `?books/q=by-book-name&book-name=overcoat`
+
+**Power of SPEL:**  
+Predefined query configuration within entity-persistence-gateway levareges Spring Expression Language (SPEL) to let advanced configurations. For example you can 
+split the given list of ids from the specific query parameter and make a query to the backend to retrieve all records with these list of ids:
+```bash
+APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or][where][id]=' + value).collect(T(java.util.stream.Collectors).joining('&'))}"
+```
+
+
 
 ## JWTS Private Key
 This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
