@@ -73,19 +73,19 @@ These capabilities collectively empower the Entity Persistence Gateway to delive
 The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. You can see the whole configuration from this file: [application.yaml](src/main/resources/application.yml).
 
 You can map environment variables to various configuration properties in the Spring application.yaml file for containerized environments.  
-For example to configure  `app.auth.rs256PublicKey` parameter in the YAML file you can use the environment variable named `APP_AUTH_RS256_PUBLIC_KEY`.
+For example to configure  `app.auth.rs256PublicKey` parameter in the YAML file you can use the environment variable named `APP_AUTH_RS256_PUBLIC_KEY`. See [Externalized Configuration](https://docs.spring.io/spring-boot/docs/1.5.6.RELEASE/reference/html/boot-features-external-config.html).
 
 ## Authentication
-Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided. Without proper JWT token validation, requests will not be authenticated.
+Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided.
 
-### Public Key Configuration
-Before diving into JWT validation, it's important to note that you must configure the RS256 encrypted public key to enable proper token validation. This configuration is pivotal for the security of the gateway. Without it, requests will not be authenticated, leaving your application exposed to potential security risks.
-
-### How to Configure the Public Key
-To configure the RS256 encrypted public key for JWT validation, you should provide it in your application's environment variables or configuration settings. The exact method of configuration may vary depending on your deployment environment. Make sure the public key is stored securely and made available to the Entity Persistence Gateway application.
+```yaml
+app:
+  auth: 
+    rs256PublicKey: your-public-key-here
+```
 
 ### Role Extraction
-Roles play a critical role in controlling and authorizing access to various parts of the Entity Persistence Gateway. These roles are extracted from the JWT token provided in the request. To properly set roles for your users, ensure that the JWT token includes a string array of roles, identified by the roles key.
+Roles play a critical role in controlling and authorizing access to various parts of the Entity Persistence Gateway. These roles are extracted from the JWT token provided in the request. To properly set roles for your users, ensure that the JWT token includes a string array of roles, identified by the roles key. Assuming your `app.shortcode` is configured as tarcinapp:  
 
 ```json
 {
@@ -97,7 +97,7 @@ Roles play a critical role in controlling and authorizing access to various part
 In the example above, the JWT token includes an array of roles that are essential for determining the user's access level within the system.
 
 ### Email Verification Status
-Email verification status is another important attribute that can influence a user's access to certain resources. The JWT token should include the email verification status, marked by the email_verified key.
+Email verification status is another important attribute that can influence a user's access to certain resources. The JWT token should include the email verification status, marked by the `email_verified` key.
 
 ```json
 {
