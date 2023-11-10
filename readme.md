@@ -115,9 +115,7 @@ Effective role names can be constructed using the application short code, `tarci
 
 To determine if a user is allowed to perform an operation, a policy data containing the application shortcode, JWT token, request body, requested endpoint, query parameters and HTTP headers is prepared and sent to the entity-persistence-policies component through an HTTP call. If request is allowed, gateway permits the flow to proceed. Otherwise, gateway returns a HTTP 401 error. Similarly, same policy data is used to determine which fields are forbidden for what operation.
 
-To learn more see entity-persistence-policies documentation.
-
-
+To learn what roles are privileged to make which operations see [entity-persistence-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies#policies) documentation for each route.
 
 # Configuration
 ## Saved Field Sets
