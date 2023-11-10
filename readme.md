@@ -49,25 +49,31 @@ Here's a more structured list of the capabilities provided by the Entity Persist
 
 4. **Authorization Policy Execution**: Leveraging the Open Policy Agent (OPA), the gateway executes authorization policies that determine who can create, update, or query specific records, providing fine-grained access control.
 
-5. **Claim-Based Field Population**: Fields related to authorization, such as `ownerUsers` and `ownerGroups`, are automatically populated by the gateway based on the claims provided in the JWT token payload.
+5. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., `ownerUsers`, `ownerGroups`, `creationDateTime`, `createdBy`, `lastUpdatedDateTime`, `lastUpdatedBy`) according to the caller's role, ensuring controlled access and data integrity.
 
-6. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., `ownerUsers`, `ownerGroups`, `creationDateTime`, `createdBy`, `lastUpdatedDateTime`, `lastUpdatedBy`) according to the caller's role, ensuring controlled access and data integrity.
+6. **Field Masking**: The gateway masks certain fields in responses based on the results of policy execution, enhancing data security by restricting sensitive information from being exposed. To learn how to configure which role can see what field see [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies).
 
-7. **Field Masking**: The gateway masks certain fields in responses based on the results of policy execution, enhancing data security by restricting sensitive information from being exposed. To learn how to configure which role can see what field see [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies).
+7. **Query Scope Reduction**: The gateway reduces the scope of queries based on the caller's role, ensuring that users can only access data that aligns with their authorized roles and permissions.
 
-8. **Query Scope Reduction**: The gateway reduces the scope of queries based on the caller's role, ensuring that users can only access data that aligns with their authorized roles and permissions.
+8. **Distributed Lock Management**: For CRUD operations, the gateway acquires distributed locks to prevent data conflicts and ensure data consistency in a distributed system.
 
-9. **Distributed Lock Management**: For CRUD operations, the gateway acquires distributed locks to prevent data conflicts and ensure data consistency in a distributed system.
+9.  **Query Language Abstraction**: The gateway hides the underlying Loopback data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience. For example, clients can use `?limit=5&skip=10` instead of `?filter[limit]=5&filter[skip]=10`.
 
-10. **Query Language Abstraction**: The gateway hides the underlying Loopback data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience. For example, clients can use `?limit=5&skip=10` instead of `?filter[limit]=5&filter[skip]=10`.
+10. **Field Sets for Easier Querying**: It offers the ability to define sets of fields, enhancing the querying process by allowing clients to request specific sets of fields for response data. Field sets are defined at the gateway configuration. This way, clients can make a query like `?fieldset=bookinfo` which only returns `id`, `name` and `author` fields only of the book records.
 
-11. **Field Sets for Easier Querying**: It offers the ability to define sets of fields, enhancing the querying process by allowing clients to request specific sets of fields for response data. Field sets are defined at the gateway configuration. This way, clients can make a query like `?fieldset=bookinfo` which only returns `id`, `name` and `author` fields only of the book records.
+11. **Predefined Queries**: Clients can utilize predefined queries (e.g., `?q=my-query`) to streamline their data retrieval process by specifying common query conditions. When setting up predefined queries, utilize context variables such as user id and other query parameters. You can leverage advanced Java operations using SPEL to manipulate these variables while constructing the query for the backend.
 
-12. **Predefined Queries**: Clients can utilize predefined queries (e.g., `?q=my-query`) to streamline their data retrieval process by specifying common query conditions. When setting up predefined queries, utilize context variables such as user id and other query parameters. You can leverage advanced Java operations using SPEL to manipulate these variables while constructing the query for the backend.
-
-13. **Route Configuration**: The gateway allows route configuration for the `/generic-entity` endpoint based on the 'kind' of entity. For example, it can route all requests for `kind: book` to the `/generic-entity`, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various kinds, providing semantic endpoints in routing requests to the Entity Persistence Service.
+12. **Route Configuration**: The gateway allows route configuration for the `/generic-entity` endpoint based on the 'kind' of entity. For example, it can route all requests for `kind: book` to the `/generic-entity`, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various kinds, providing semantic endpoints in routing requests to the Entity Persistence Service.
 
 These capabilities collectively empower the Entity Persistence Gateway to deliver comprehensive security, access control, data management, and routing features to your application.
+
+## Managed Fields
+List of managed fields
+When this fields are filled by the gateway
+
+## Field Masking
+How we mask in the response
+What we do for replace operations?
 
 # Configuration
 The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. You can see the whole configuration from this file: [application.yaml](src/main/resources/application.yml).
@@ -242,8 +248,20 @@ Loopback 4 is using a certain notation to enable backend querying as described h
 
 Use this functionality along with predefined queries to address your application needs.  
 
-## JWTS Private Key
-This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
+## Rate Limiting
+must have redis already configured
+sample from a route
+
+## Request Size Limiting
+1 kb limit for all 
+
+## Routing by Kind Configuration
+
+
+
+
+
+
 ## Deployment to Kubernetes
 Use k8s/deployment.yaml file to deploy all related k8s resources.
 
