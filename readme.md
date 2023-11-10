@@ -192,7 +192,7 @@ APP_FIELDSETS_BOOKINFO=id, name, slug, author
 You can define a default field set configuration which applies to all findAll, findById and create operations. Default field set can be configured as follows:
 `app.defaultFieldset:unmanaged`
 
-# Saved Queries
+## Saved Queries
 A query parameter string can be configured to shorten the long list of commonly used queries. Context variables such as `userId`, `now` can be used while building queries. You can use `query` context variable to access other query parameters to build new query to the backend.
 
 Here you can find examples from predefined queries:
