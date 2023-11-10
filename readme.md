@@ -117,16 +117,25 @@ To determine if a user is allowed to perform an operation, a policy data contain
 
 To learn what roles are privileged to make which operations see [entity-persistence-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies#policies) documentation for each route.
 
-# Configuration
 ## Saved Field Sets
-Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.
-Role-based field masking remains in effect. Even if clients make specific requests or use field sets, they will be unable to view certain fields unless they have the necessary authorization.
-
+Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.  
+These are the preconfigured field sets:  
+```yaml
+app: 
+ fieldsets:
+    managed:
+      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+    unmanaged:
+      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+```
+  
 `app.fieldsets.managed`: Selects only the managed fields from the backend.
 `app.fieldsets.unmanaged`: Selects only the unmanaged fields from the backend. Only id, name and kind is kept in the list of requested fields along with other unmanaged fields.
 
-Field sets can be used in query parameters such as:
-generic-entities?fieldset=unmanaged
+Field sets can be used in query parameters such as:  
+`generic-entities?fieldset=unmanaged`
+
+**Note:** Role-based field masking remains in effect. Even if clients make specific requests or use field sets, they will be unable to view certain fields unless they have the necessary authorization.
 
 ### Default Field Set
 You can define a default field set configuration which applies to all findAll, findById and create operations. Default field set can be configured as follows:
