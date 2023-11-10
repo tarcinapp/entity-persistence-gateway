@@ -100,69 +100,26 @@ app:
 ## Backend and OPA Host Configuration
 Configure the connection details for the backend service that serves the entity-persistence-service and entity-persistence-gateway-policies.
 
-**Configuration Parameters:**
+**Entity Persistence Service Configuration:**  
+Configure the connection details for the backend service that serves the entity-persistence-service. Use the `app.backend` section in your YAML configuration to set the protocol, host, and port for communication with the entity-persistence-service.
+```yaml
+app:
+  backend:
+    protocol: http
+    host: entity-persistence-service
+    port: 80
+```
 
-- **Protocol:**
-  - **Key:** `app.backend.protocol`
-  - **Description:** Set the protocol for communication with the entity-persistence-service. It can be either HTTP or HTTPS.
-    ```yaml
-    app:
-      backend:
-        protocol: http
-    ```
+**Open Policy Agent (OPA) Host Configuration:**  
+Configure the connection details for the Open Policy Agent (OPA) host, responsible for managing external policies related to the application. Use the app.opa section in your YAML configuration to set the protocol, host, and port for communication with the OPA host.
 
-- **Host:**
-  - **Key:** `app.backend.host`
-  - **Description:** Specify the hostname of the entity-persistence-service. This is the backend where your application interacts with data.
-    ```yaml
-    app:
-      backend:
-        host: entity-persistence-service
-    ```
-
-- **Port:**
-  - **Key:** `app.backend.port`
-  - **Description:** Define the port on which the entity-persistence-service is running. Update this value based on your service configuration.
-    ```yaml
-    app:
-      backend:
-        port: 80
-    ```
-
-**Open Policy Agent (OPA) Host Configuration**
-
-Configure the connection details for the Open Policy Agent (OPA) host, which is responsible for managing external policies related to the application.
-
-**Configuration Parameters:**
-
-- **Protocol:**
-  - **Key:** `app.opa.protocol`
-  - **Description:** Set the protocol for communication with the OPA host. It is recommended to use HTTPS for secure communication.
-    ```yaml
-    app:
-      opa:
-        protocol: https
-    ```
-
-- **Host:**
-  - **Key:** `app.opa.host`
-  - **Description:** Specify the hostname of the entity-persistence-gateway-policies. This is the host where OPA policies are managed.
-    ```yaml
-    app:
-      opa:
-        host: entity-persistence-gateway-policies
-    ```
-
-- **Port:**
-  - **Key:** `app.opa.port`
-  - **Description:** Define the port on which the OPA host is running. Update this value based on your OPA service configuration.
-    ```yaml
-    app:
-      opa:
-        port: 443
-    ```
-
-
+```yaml
+app:
+  opa:
+    protocol: https
+    host: entity-persistence-gateway-policies
+    port: 443
+```
 
 ## Authentication
 Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided.
