@@ -167,13 +167,33 @@ APP_QUERIES_BY_BOOK_NAME="'filter[where][slug]=' + #query['book-name']"
 Usage: `?books/q=by-book-name&book-name=overcoat`
 
 **Power of SPEL:**  
-Predefined query configuration within entity-persistence-gateway levareges Spring Expression Language (SPEL) to let advanced configurations. For example you can 
+Predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. For example you can 
 split the given list of ids from the specific query parameter and make a query to the backend to retrieve all records with these list of ids:
 ```bash
 APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or][where][id]=' + value).collect(T(java.util.stream.Collectors).joining('&'))}"
 ```
 
+## Loopback Query Abstraction
+Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a security issue to let your clients know what backend technology you are using. `allowLoopbackQueryNotation` configuration can be useful for purpose.
 
+
+**Searching Entities:**  
+**Original**: `?s=foo`
+**Mapped**: `?filter[where][name][regexp]=.*foo.*`
+
+**Ordering Entities:**  
+**Original**: `?order=name`  
+**Mapped**: `?filter[order]=name`  
+
+**Skipping Entities:**  
+**Original**: `?skip=10`  
+**Mapped**: `?filter[skip]=10`  
+
+**Limiting Entities:**  
+**Original**: `?limit=20`  
+**Mapped**: `?filter[limit]=20`  
+
+Use this functionality along with predefined queries to address your application needs.  
 
 ## JWTS Private Key
 This application validates RSA256 encrypted authorization tokens using the private key string. Provide the key to the application with 'app.auth.rs256PublicKey' environment variable. For CI/CD pipelines in Rancher managed environment, please see *Deployment with Rancher Pipelines*.
