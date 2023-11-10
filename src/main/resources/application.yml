@@ -11,10 +11,19 @@ app:
     requestId: "X-Request-Id"
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+
+  # configuration of the host which serves the entity-persistence-service. 
   backend:
     protocol: http
     host: entity-persistence-service
     port: 80
+
+  # configuration of the opa host
+  opa:
+    protocol: https
+    host: entity-persistence-gateway-policies
+    port: 443
+
   fieldsets:
     managed:
       show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
@@ -26,6 +35,8 @@ app:
     inactives: "'sets[inactives]'"
     name: "'filter[where][name]=' + #query['name']"
     slug: "'filter[where][slug]=' + #query['slug']"
+
+  # set false if you want to prevent loopback notation in query parameters
   allowLoopbackQueryNotation: true
 
 ---

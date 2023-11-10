@@ -73,7 +73,96 @@ These capabilities collectively empower the Entity Persistence Gateway to delive
 The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. You can see the whole configuration from this file: [application.yaml](src/main/resources/application.yml).
 
 You can map environment variables to various configuration properties in the Spring application.yaml file for containerized environments.  
-For example to configure  `app.auth.rs256PublicKey` parameter in the YAML file you can use the environment variable named `APP_AUTH_RS256_PUBLIC_KEY`. See [Externalized Configuration](https://docs.spring.io/spring-boot/docs/1.5.6.RELEASE/reference/html/boot-features-external-config.html).
+For example to configure  `app.auth.rs256PublicKey` parameter in the YAML file you can use the environment variable named `APP_AUTH_RS256PUBLIC_KEY`. See [Externalized Configuration](https://docs.spring.io/spring-boot/docs/1.5.6.RELEASE/reference/html/boot-features-external-config.html).
+
+## Application Name & Shortcode
+**Application Name:**  
+This configuration is passed to `spring.application.name`. This ensures consistency across the application, allowing Spring components to identify the application by its configured name.
+
+* **Key**: `app.name`
+* **Description**: Set the name of your application. This name is used internally and can represent the nature of your application, such as "books," "recipes," or "movies."
+
+```yaml
+app:
+  name: entity-persistence-gateway
+```  
+  
+**Shortcode:**
+Ensure that the shortcode is a concise representation of your application and is used consistently in constructing role names and other application-specific identifiers.
+
+* **Key**: `app.shortcode`
+* **Description**: Shortcode serves as a prefix for generated request IDs and role names. For instance, if shortcode is set to "tarcinapp" role names will be constructed as "tarcinapp.member".
+```yaml
+app:
+  shortcode: "tarcinapp"
+```
+
+## Backend and OPA Host Configuration
+Configure the connection details for the backend service that serves the entity-persistence-service and entity-persistence-gateway-policies.
+
+**Configuration Parameters:**
+
+- **Protocol:**
+  - **Key:** `app.backend.protocol`
+  - **Description:** Set the protocol for communication with the entity-persistence-service. It can be either HTTP or HTTPS.
+    ```yaml
+    app:
+      backend:
+        protocol: http
+    ```
+
+- **Host:**
+  - **Key:** `app.backend.host`
+  - **Description:** Specify the hostname of the entity-persistence-service. This is the backend where your application interacts with data.
+    ```yaml
+    app:
+      backend:
+        host: entity-persistence-service
+    ```
+
+- **Port:**
+  - **Key:** `app.backend.port`
+  - **Description:** Define the port on which the entity-persistence-service is running. Update this value based on your service configuration.
+    ```yaml
+    app:
+      backend:
+        port: 80
+    ```
+
+**Open Policy Agent (OPA) Host Configuration**
+
+Configure the connection details for the Open Policy Agent (OPA) host, which is responsible for managing external policies related to the application.
+
+**Configuration Parameters:**
+
+- **Protocol:**
+  - **Key:** `app.opa.protocol`
+  - **Description:** Set the protocol for communication with the OPA host. It is recommended to use HTTPS for secure communication.
+    ```yaml
+    app:
+      opa:
+        protocol: https
+    ```
+
+- **Host:**
+  - **Key:** `app.opa.host`
+  - **Description:** Specify the hostname of the entity-persistence-gateway-policies. This is the host where OPA policies are managed.
+    ```yaml
+    app:
+      opa:
+        host: entity-persistence-gateway-policies
+    ```
+
+- **Port:**
+  - **Key:** `app.opa.port`
+  - **Description:** Define the port on which the OPA host is running. Update this value based on your OPA service configuration.
+    ```yaml
+    app:
+      opa:
+        port: 443
+    ```
+
+
 
 ## Authentication
 Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided.
@@ -174,7 +263,8 @@ APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or]
 ```
 
 ## Loopback Query Abstraction
-Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a security issue to let your clients know what backend technology you are using. `allowLoopbackQueryNotation` configuration can be useful for purpose.
+Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
+`app.allowLoopbackQueryNotation` configuration can be useful for purpose.
 
 
 **Searching Entities:**  
