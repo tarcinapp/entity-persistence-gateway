@@ -227,7 +227,7 @@ app:
     actives: "'sets[actives]'"
 ```
 **Example usage:**  
-`generic-entities?query=my`
+`/generic-entities?query=my` mapped to `generic-entities?sets[actives]`
 
 **Introducing new predefined query configuration:**  
 ```bash
@@ -241,6 +241,7 @@ split the given list of ids from the specific query parameter and make a query t
 ```bash
 APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or][where][id]=' + value).collect(T(java.util.stream.Collectors).joining('&'))}"
 ```
+The configuration above can be used like `/generic-entities?q=by-ids&ids=123,456,789` mapped to `/generic-entities?filter[or][where][id]=123&filter[or][where][id]=456&filter[or][where][id]=789`.
 
 ## Loopback Query Abstraction
 Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
@@ -248,7 +249,7 @@ Loopback 4 is using a certain notation to enable backend querying as described h
 
 
 **Searching Entities:**  
-**Original**: `?s=foo`
+**Original**: `?s=foo`  
 **Mapped**: `?filter[where][name][regexp]=.*foo.*`
 
 **Ordering Entities:**  
@@ -277,8 +278,9 @@ spring:
     password: redis pass
 ```
 This establishes the connection to Redis, providing the necessary backend for managing rate limits.  
+  
 **Rate Limiting Configuration for Each Route**  
-For fine-grained control over rate limiting, individual routes can be configured with specific rate limits. In the route configuration, add the `RequestRateLimiter` filter with corresponding arguments. Below is an example configuration:
+For fine-grained control over rate limiting, individual routes can be configured with specific rate limits. In the route configuration, modify the `RequestRateLimiter` filter with corresponding arguments. Below is an example configuration:
 ```yaml
 filters:
   - name: RequestRateLimiter
@@ -292,9 +294,24 @@ In this example, the RequestRateLimiter filter is applied to the route, and its 
 * `burstCapacity`: The maximum number of tokens (requests) allowed to be consumed in a burst.
   
 This configuration ensures that each route is protected by rate limiting, preventing excessive requests and maintaining optimal system performance. Adjust the `replenishRate` and `burstCapacity` values according to the specific requirements of each route, using environment variables.
+  
+**Key Resolution for Rate Limiting**
+Rate limiting in the gateway requires a key resolver. In the absence of authentication, the key resolver defaults to the calling host. If authentication is enabled, the key is derived from the authenticated subject. This ensures that rate limits are applied based on the identity of the caller, maintaining fairness and control in managing incoming requests.
 
 ## Request Size Limiting
-1 kb limit for all 
+The `RequestSize` filter in the gateway is designed to limit the size of incoming requests, preventing potential issues related to large payloads and ensuring system stability. This filter is typically the first one applied to each route. To configure the `RequestSize` filter, modify the following snippet to the route configuration in the application.yaml file, using environment variables.
+```yaml
+filters:
+  - name: RequestSize
+    args:
+      maxSize: 1KB
+```
+  
+In this example, the RequestSize filter is applied to the route, and the `maxSize` argument specifies the maximum allowed size for incoming requests. Adjust the `maxSize` value according to the specific requirements and constraints of the application.
+  
+It's worth noting that the RequestSize filter is set to a default value of 1KB if no explicit configuration is provided. This ensures a reasonable default limit for request sizes if not explicitly specified.
+* The RequestSize filter helps prevent issues related to large payloads and ensures efficient handling of incoming requests.  
+* This filter is typically the first one applied to each route, emphasizing its role in managing incoming request sizes for optimal system performance.
 
 ## Routing by Kind Configuration
 
