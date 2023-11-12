@@ -77,6 +77,9 @@ Gateway application is responsible for managing and populating certain fields du
 
 These fields carry important metadata about the entity, such as creation and update timestamps, ownership information, and the creator's identity. entity-persistence-gateway ensures that the values for these fields are appropriately set based on the authorization context. For instance, creation and last update timestamps are set to the current time, while ownership and creator information are derived from the authenticated subject.
 
+### User Roles and Managed Fields
+In cases where administrators are authorized to directly modify managed fields, the entity-persistence-gateway defers the decision to entity-persistence-gateway-policies. These policies determine if the requested changes comply with defined policies. For more restricted roles like editors, members, and visitors, the gateway automatically populates managed fields based on established policies, ensuring data integrity and adherence to security measures. This ensures consistent application of security policies, even when administrators have the privilege to directly input values.
+
 ## Field Masking
 How we mask in the response
 What we do for replace operations?
