@@ -325,10 +325,8 @@ app:
     - pathMap: books
       name: book
 ```
-In this example, a single entity kind is configured with the name set to "book" and the corresponding pathMap configured as "books." This configuration enables the gateway to route requests coming to /books to the generic /generic-entities endpoint. For GET requests, the gateway automatically adds `?filter[where][kind]=book` to the query parameters, ensuring seamless handling of requests specific to the "book" entity kind.  
+In this example, a single entity kind is configured with the name set to "book" and the corresponding pathMap configured as "books." This configuration enables the gateway to route requests coming to `/books` to the generic `/generic-entities` endpoint. For GET requests, the gateway automatically adds `?filter[where][kind]=book` to the query parameters. For create, update, and replace operations, the gateway includes a kind field in the payload with the specified value ("book" in this case) ensuring seamless handling of requests specific to the "book" entity kind.  
   
-For create, update, and replace operations, the gateway includes a kind field in the payload with the specified value ("book" in this case). This simplifies the management of different entity kinds under a unified endpoint.  
-
 Same configuration can be done from the environment variables as follows:  
 ```bash
 APP_ENTITYKINDS_0_PATHMAP=books
