@@ -78,13 +78,19 @@ Gateway application is responsible for managing and populating certain fields du
 These fields carry important metadata about the entity, such as creation and update timestamps, ownership information, and the creator's identity. entity-persistence-gateway ensures that the values for these fields are appropriately set based on the authorization context. For instance, creation and last update timestamps are set to the current time, while ownership and creator information are derived from the authenticated subject.
 
 ### User Roles and Managed Fields
-In cases where administrators are authorized to directly modify managed fields, the entity-persistence-gateway defers the decision to [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies). These policies determine if the requested changes comply with defined policies. For more restricted roles like editors, members, and visitors, the gateway automatically populates managed fields based on established policies, ensuring data integrity and adherence to security measures. This ensures consistent application of security policies, even when administrators have the privilege to directly input values.  
+In cases where administrators are authorized to directly modify managed fields, the entity-persistence-gateway defers the decision to [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies). These policies determine if the requested changes comply with defined policies. For more restricted roles like editors, members, and visitors, the gateway automatically populates managed fields based on established policies, ensuring data integrity and adherence to security measures. If client attempts to set one of the managed fields, while not authorized to do, gateway returns `401 Unauthorized`.
   
 To learn more about which fields are forbidden for which roles, see the [forbidden fields file](https://github.com/tarcinapp/entity-persistence-gateway-policies/blob/main/policies/fields/generic-entities/forbidden_fields.rego) within [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies).
 
 ## Field Masking
-How we mask in the response
-What we do for replace operations?
+In the entity-persistence-gateway, we apply field masking to enhance data security by restricting the exposure of sensitive information. This is achieved based on the results of policy execution, where the policy determines the list of [forbidden fields](https://github.com/tarcinapp/entity-persistence-gateway-policies/blob/main/policies/fields/generic-entities/forbidden_fields.rego). The gateway then applies this list to mask certain fields in the response.  
+
+This field masking is implemented across multiple routes: `createEntity`, `findEntityById` and `findAll` operations. It's important to note that policy application plays a decisive role in determining who can see what. Additionally, unlike the loopback approach, which allows clients to choose fields in the response, the entity-persistence-gateway simplifies the process by unconditionally dropping unwanted fields from the response, ensuring a consistent and secure field masking mechanism at the response flow.
+ 
+### Field Masking for Update & Replace Operations
+In the context of the `replaceEntityById` operation, clients are required to send all fields of the entity specified by its ID. This raises a crucial question: how should clients provide new values for fields they are not allowed to see? If a client attempts to set a value for a forbidden field, the gateway responds with a `401 Unauthorized status`, preventing the update of restricted information. 
+But if the client omits these fields, the gateway ensures the new entity retains its original values in the original record, for those specific fields.  
+This approach maintains a balance between allowing clients to update visible fields and enforcing security restrictions on sensitive data, ensuring a secure and controlled update process for entities.
 
 # Configuration
 The overall configuration of the Entity Persistence Gateway is primarily managed through a Spring YAML file. You can see the whole configuration from this file: [application.yaml](src/main/resources/application.yml).
