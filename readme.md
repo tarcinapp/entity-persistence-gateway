@@ -33,9 +33,9 @@ Here is an example request and response to the one of the most basic endpoint: `
   <img src="./doc/img/request-response.png" alt="Sample request and response">
 </p>  
 
-**Note:** The client's authorization to create an entity, the fields that user can specify, and the fields returned in the response body may vary based on the user's role. The values of managed fields such as `visibility`, `idempotencyKey`, `validFromDateTime`, and `validUntilDateTime` can also be adjusted according to the user's role and the system's configuration.  
+**Note:** The client's authorization to create an entity, the fields that user can specify, and the fields returned in the response body may vary based on the user's role. The values of managed fields such as `visibility`, `idempotencyKey`, `validFromDateTime`, and `validUntilDateTime` can also be adjusted according to the user's role and the system's configuration.  See [Field Masking](#field-masking).
   
-**Note**: Endpoints can be configured with arbitrary values within the gateway component. For example, `/books` can be used for records with `kind: book`, and the field `kind` can be completely omitted from the API interaction.  
+**Note**: Endpoints can be configured with arbitrary values within the gateway component. For example, `/books` can be used for records with `kind: book`, and the field `kind` can be completely omitted from the API interaction. See [Routing by Kind Configuration](#routing-by-kind-configuration).
 
 # Entity Persistence Gateway in Detail
 Serving as a reverse proxy to each endpoint defined by the Entity Persistence Service, it channels incoming requests to their respective destinations. This enables the Entity Persistence Gateway to efficiently manage API traffic, enforce security policies, and direct responses back to the requesting clients. It ensures that clients interact with the Entity Persistence Service in a secure and controlled manner, serving as a crucial security and routing layer for your application.  
@@ -87,7 +87,7 @@ In the entity-persistence-gateway, we apply field masking to enhance data securi
 
 This field masking is implemented across multiple routes: `createEntity`, `findEntityById` and `findAll` operations. It's important to note that policy application plays a decisive role in determining who can see what. Additionally, unlike the loopback approach, which allows clients to choose fields in the response, the entity-persistence-gateway simplifies the process by unconditionally dropping unwanted fields from the response, ensuring a consistent and secure field masking mechanism at the response flow.
  
-### Field Masking for Update & Replace OperationsT
+### Field Masking for Update & Replace Operations
 In the context of the `replaceEntityById` operation, clients are required to send all fields of the entity specified by its ID. This raises a crucial question: how should clients provide new values for fields they are not allowed to see? If a client attempts to set a value for a forbidden field, the gateway responds with a `401 Unauthorized`, preventing the update of restricted information. 
 But if the client omits these fields, the gateway ensures the new entity retains its original values in the original record, for those specific fields.  
 This approach maintains a balance between allowing clients to update visible fields and enforcing security restrictions on sensitive data, ensuring a secure and controlled update process for entities.
