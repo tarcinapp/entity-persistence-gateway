@@ -1,3 +1,27 @@
+- [Overview](#overview)
+  - [What is Tarcinapp Suite?](#what-is-tarcinapp-suite)
+- [Entity Persistence Gateway in Detail](#entity-persistence-gateway-in-detail)
+  - [Managed Fields](#managed-fields)
+    - [User Roles and Managed Fields](#user-roles-and-managed-fields)
+  - [Field Masking](#field-masking)
+    - [Field Masking for Update \& Replace Operations](#field-masking-for-update--replace-operations)
+- [Configuration](#configuration)
+  - [Application Name \& Shortcode](#application-name--shortcode)
+  - [Backend and OPA Host Configuration](#backend-and-opa-host-configuration)
+  - [Authentication](#authentication)
+    - [Role Extraction](#role-extraction)
+    - [Email Verification Status](#email-verification-status)
+  - [Authorization](#authorization)
+  - [Saved Field Sets](#saved-field-sets)
+    - [Default Field Set](#default-field-set)
+  - [Saved Queries](#saved-queries)
+  - [Loopback Query Abstraction](#loopback-query-abstraction)
+  - [Rate Limiting](#rate-limiting)
+  - [Request Size Limiting](#request-size-limiting)
+  - [Routing by Kind Configuration](#routing-by-kind-configuration)
+  - [Deployment to Kubernetes](#deployment-to-kubernetes)
+  - [Local Development](#local-development)
+
 # Overview
 The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway) framework, is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including
 * Authentication
