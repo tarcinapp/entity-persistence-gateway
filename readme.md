@@ -19,8 +19,7 @@
   - [Rate Limiting](#rate-limiting)
   - [Request Size Limiting](#request-size-limiting)
   - [Routing by Kind Configuration](#routing-by-kind-configuration)
-  - [Deployment to Kubernetes](#deployment-to-kubernetes)
-  - [Local Development](#local-development)
+- [Local Development](#local-development)
 
 # Overview
 The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway) framework, is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including
@@ -357,9 +356,6 @@ APP_ENTITYKINDS_0_PATHMAP=books
 APP_ENTITYKINDS_0_NAME=book
 ```
 
-## Deployment to Kubernetes
-Use k8s/deployment.yaml file to deploy all related k8s resources.
-
-## Local Development
+# Local Development
 Configure vscode to start application with -Dspring.profiles.active=dev
 Make local configurations under src/main/resources/application-dev.yaml
