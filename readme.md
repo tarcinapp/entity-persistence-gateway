@@ -251,7 +251,7 @@ Loopback 4 is using a certain notation to enable backend querying as described h
 
 **Searching Entities:**  
 **Original**: `?s=foo`  
-**Mapped**: `?filter[where][name][regexp]=.*foo.*`
+**Mapped**: `?filter[where][name][regexp]=.*foo.*`  
 
 **Ordering Entities:**  
 **Original**: `?order=name`  
@@ -315,11 +315,25 @@ It's worth noting that the RequestSize filter is set to a default value of 1KB i
 * This filter is typically the first one applied to each route, emphasizing its role in managing incoming request sizes for optimal system performance.
 
 ## Routing by Kind Configuration
+In the gateway application, the `/generic-entities` endpoint serves as a foundational point for managing various records, each distinguished by a field named `kind`. To streamline requests and enhance clarity, the gateway allows for customized routing based on entity kinds. This configuration is particularly useful when managing different types of records under the same generic endpoint.
 
+To configure entity kind routing, following snippet can be used:
+```yaml
+# Entity Kind Configuration
+app:
+  entityKinds:
+    - pathMap: books
+      name: book
+```
+In this example, a single entity kind is configured with the name set to "book" and the corresponding pathMap configured as "books." This configuration enables the gateway to route requests coming to /books to the generic /generic-entities endpoint. For GET requests, the gateway automatically adds `?filter[where][kind]=book` to the query parameters, ensuring seamless handling of requests specific to the "book" entity kind.  
+  
+For create, update, and replace operations, the gateway includes a kind field in the payload with the specified value ("book" in this case). This simplifies the management of different entity kinds under a unified endpoint.  
 
-
-
-
+Same configuration can be done from the environment variables as follows:  
+```bash
+APP_ENTITYKINDS_0_PATHMAP=books
+APP_ENTITYKINDS_0_NAME=book
+```
 
 ## Deployment to Kubernetes
 Use k8s/deployment.yaml file to deploy all related k8s resources.
