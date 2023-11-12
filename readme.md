@@ -68,8 +68,14 @@ Here's a more structured list of the capabilities provided by the Entity Persist
 These capabilities collectively empower the Entity Persistence Gateway to deliver comprehensive security, access control, data management, and routing features to your application.
 
 ## Managed Fields
-List of managed fields
-When this fields are filled by the gateway
+Gateway application is responsible for managing and populating certain fields during the creation and update of entities. These fields are considered as managed fields and are added to the request payload before it is sent to the backend service. Managed fields include:
+* `creationDateTime`
+* `lastUpdatedDateTime`
+* `ownerUsers`
+* `createdBy`
+* `lastUpdatedBy`  
+
+These fields carry important metadata about the entity, such as creation and update timestamps, ownership information, and the creator's identity. entity-persistence-gateway ensures that the values for these fields are appropriately set based on the authorization context. For instance, creation and last update timestamps are set to the current time, while ownership and creator information are derived from the authenticated subject.
 
 ## Field Masking
 How we mask in the response
