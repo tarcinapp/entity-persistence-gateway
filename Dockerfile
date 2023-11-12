@@ -1,14 +1,11 @@
+FROM maven:3.6.3-adoptopenjdk-11 AS builder
+COPY . /workspace/
+WORKDIR /workspace
+RUN mvn package -Dmaven.test.skip=true
+
 FROM openjdk:11-jre-slim
-ENV PORT 8080
-ENV CLASSPATH /opt/lib
-EXPOSE 8080
 
-# copy pom.xml and wildcards to avoid this command failing if there's no target/lib directory
-COPY pom.xml target/lib* /opt/lib/
-
-# NOTE we assume there's only 1 jar in the target dir
-# but at least this means we don't have to guess the name
-# we could do with a better way to know the name - or to always create an app.jar or something
-COPY target/*.jar /opt/app.jar
+COPY --from=builder /workspace/target/*.jar  /opt/app.jar
 WORKDIR /opt
-CMD ["java", "-jar", "app.jar"]
+EXPOSE 8080
+CMD ["java", "-Dlog4j2.isThreadContextMapInheritable=true", "-jar", "app.jar"]

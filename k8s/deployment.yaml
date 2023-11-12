@@ -1,0 +1,79 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: entity-persistence-gateway-service
+  namespace: tarcinapp-test
+spec:
+  selector:
+    app: entity-persistence-gateway
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      nodePort: 30002
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entity-persistence-gateway-config
+  namespace: tarcinapp-test
+data:
+  app.auth.rs256PublicKey: "your-jwts-public-key-here no-line-breaks"
+  app.backend.protocol: "http"
+  app.backend.host: "entity-persistence-service"
+  app.backend.port: "80"
+  app.opa.protocol: "http"
+  app.opa.host: "entity-persistence-gateway-policies-service"
+  app.opa.port: "8181"
+  spring.redis.host: "gateway-redis-master"
+  spring.redis.port: "6379"
+  spring.redis.database: "0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: entity-persistence-gateway-secret
+  namespace: tarcinapp-test
+data:
+  spring.redis.password: "bWFuYWdl"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: entity-persistence-gateway-deployment
+  namespace: tarcinapp-test
+  labels:
+    app: entity-persistence-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: entity-persistence-gateway
+  template:
+    metadata:
+      labels:
+        app: entity-persistence-gateway
+    spec:
+      imagePullSecrets:
+      - name: pipeline-docker-registry
+      containers:
+      - name: entity-persistence-gateway
+        image: localhost:5000/entitypersistencegateway:latest
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: entity-persistence-gateway-secret
+        - configMapRef:
+            name: entity-persistence-gateway-config
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 60
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 3

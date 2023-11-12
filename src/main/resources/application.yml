@@ -1,0 +1,543 @@
+app:
+
+  # set the name of your application (e.g. books, recipes, movies, etc..)
+  name: entity-persistence-gateway
+
+  # shortcode is going to be used as prefix for generated request id for each request and role names (e.g. tarcinapp.member)
+  shortcode: "tarcinapp"
+
+  # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
+  requestHeaders:
+    requestId: "X-Request-Id"
+  auth:
+    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+
+  # configuration of the host which serves the entity-persistence-service. 
+  backend:
+    protocol: http
+    host: entity-persistence-service
+    port: 80
+
+  # configuration of the opa host
+  opa:
+    protocol: https
+    host: entity-persistence-gateway-policies
+    port: 443
+
+  fieldsets:
+    managed:
+      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+    unmanaged:
+      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+  queries:
+    my: "'sets[owners]=['+#userId+'][]'"
+    actives: "'sets[actives]'"
+    inactives: "'sets[inactives]'"
+    name: "'filter[where][name]=' + #query['name']"
+    slug: "'filter[where][slug]=' + #query['slug']"
+
+  # set false if you want to prevent loopback notation in query parameters
+  allowLoopbackQueryNotation: true
+
+---
+
+spring:
+  application: 
+    name: ${app.name}
+  redis: 
+    host: gateway-redis-master
+    port: 6379
+    database: 0
+    password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+  cloud:
+    gateway:
+      routes:
+      # entity controller
+      - id: createEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        predicates:
+        - Path=/generic-entities
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createEntity/policy
+        - name: AcquireLockForCreation
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: updateAllEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        predicates:
+        - Path=/generic-entities
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllEntities/policy
+      - id: findEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        predicates:
+        - Path=/generic-entities
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntities/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: countEntities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
+        predicates:
+        - Path=/generic-entities/count
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countEntities/policy
+        - name: AddSetsToQuery
+      - id: findEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntityById/policy
+        - name: ApplyFieldsetConfig
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: updateEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateEntityById/policy
+      - id: replaceEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/replaceEntityById/policy
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+      - id: deleteEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}
+        - Method=DELETE
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteEntityById/policy
+      # relations controller on entity
+      - id: getRelationsOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}/relations
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: createRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}/relations
+        - Method=POST
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}/relations
+        - Method=PATCH
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: deleteRelationOnEntity
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/generic-entities/{recordId}/relations
+        - Method=DELETE
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      # relations controller
+      - id: createRelation
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateAllRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        predicates:
+        - Path=/relations
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: countRelations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations/count
+        predicates:
+        - Path=/relations/count
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: findRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{recordId}
+        - Method=GET
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      - id: updateRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{recordId}
+        - Method=PATCH
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+      - id: replaceRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{recordId}
+        - Method=PUT
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+      - id: deleteRelationById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/relations/{recordId}
+        - Method=DELETE
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+      #explorer controller
+      - id: explorer
+        uri: no://op
+        predicates:
+        - Path=/explorer
+        filters:
+        - name: SetStatus
+          args:
+            status: 404
+      # kind path mapping
+      - id: createEntityByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: PlaceKindNameInRequestForEntityManagement
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createEntity/policy
+        - name: AddManagedFieldsInCreation
+        - name: AcquireLockForCreation
+        - name: ApplyFieldsetConfig
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: findAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=GET
+        filters:
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntities/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ConvertToLoopbackQuery
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: DropFieldsFromResponseForFindEntities
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: ApplyFieldsetConfig
+        - name: AddSetsToQuery
+      - id: replaceEntityByIdKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: PlaceKindNameInRequestForEntityManagement
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/replaceEntityById/policy
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/genericentities/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+      - id: countEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/count
+        - Method=GET
+        filters:
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities/count
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countEntities/policy
+        - name: AddSetsToQuery
+      - id: updateAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllEntities/policy
+      - id: findEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=GET
+        filters:
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntityById/policy
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/genericentities/policy
+      - id: updateEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateEntityById/policy
+      - id: deleteEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=/{kindPath}/{recordId}
+        - Method=DELETE
+        filters:
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteEntityById/policy

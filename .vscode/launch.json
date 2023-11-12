@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-EntityPersistenceGatewayApplication<entity-persistence-gateway>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "com.tarcinapp.entitypersistencegateway.EntityPersistenceGatewayApplication",
+            "projectName": "entity-persistence-gateway",
+            "args": "--spring.profiles.active=dev",
+            "vmArgs": "-Dlog4j2.isThreadContextMapInheritable=true"
+        }
+    ]
+}
