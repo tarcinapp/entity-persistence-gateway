@@ -87,8 +87,8 @@ In the entity-persistence-gateway, we apply field masking to enhance data securi
 
 This field masking is implemented across multiple routes: `createEntity`, `findEntityById` and `findAll` operations. It's important to note that policy application plays a decisive role in determining who can see what. Additionally, unlike the loopback approach, which allows clients to choose fields in the response, the entity-persistence-gateway simplifies the process by unconditionally dropping unwanted fields from the response, ensuring a consistent and secure field masking mechanism at the response flow.
  
-### Field Masking for Update & Replace Operations
-In the context of the `replaceEntityById` operation, clients are required to send all fields of the entity specified by its ID. This raises a crucial question: how should clients provide new values for fields they are not allowed to see? If a client attempts to set a value for a forbidden field, the gateway responds with a `401 Unauthorized status`, preventing the update of restricted information. 
+### Field Masking for Update & Replace OperationsT
+In the context of the `replaceEntityById` operation, clients are required to send all fields of the entity specified by its ID. This raises a crucial question: how should clients provide new values for fields they are not allowed to see? If a client attempts to set a value for a forbidden field, the gateway responds with a `401 Unauthorized`, preventing the update of restricted information. 
 But if the client omits these fields, the gateway ensures the new entity retains its original values in the original record, for those specific fields.  
 This approach maintains a balance between allowing clients to update visible fields and enforcing security restrictions on sensitive data, ensuring a secure and controlled update process for entities.
 
@@ -266,8 +266,32 @@ Loopback 4 is using a certain notation to enable backend querying as described h
 Use this functionality along with predefined queries to address your application needs.  
 
 ## Rate Limiting
-must have redis already configured
-sample from a route
+To enable rate limiting for operations in the gateway, a Redis instance needs to be configured. In the application.yaml file, specify the Redis host, port, database, and password under the spring.redis section:
+
+```yaml
+spring:
+  redis:
+    host: gateway-redis-master
+    port: 6379
+    database: 0
+    password: redis pass
+```
+This establishes the connection to Redis, providing the necessary backend for managing rate limits.  
+**Rate Limiting Configuration for Each Route**  
+For fine-grained control over rate limiting, individual routes can be configured with specific rate limits. In the route configuration, add the `RequestRateLimiter` filter with corresponding arguments. Below is an example configuration:
+```yaml
+filters:
+  - name: RequestRateLimiter
+    args:
+      redis-rate-limiter:
+        replenishRate: 10
+        burstCapacity: 20
+```
+In this example, the RequestRateLimiter filter is applied to the route, and its arguments define the rate limiting parameters:
+* `replenishRate`: The rate at which tokens are replenished (requests allowed) per second.
+* `burstCapacity`: The maximum number of tokens (requests) allowed to be consumed in a burst.
+  
+This configuration ensures that each route is protected by rate limiting, preventing excessive requests and maintaining optimal system performance. Adjust the `replenishRate` and `burstCapacity` values according to the specific requirements of each route, using environment variables.
 
 ## Request Size Limiting
 1 kb limit for all 
