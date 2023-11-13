@@ -258,15 +258,7 @@ APP_QUERIES_BY_BOOK_NAME="'filter[where][slug]=' + #query['book-name']"
 ```
 Usage: `/books?q=by-book-name&book-name=overcoat`
 
-**Power of SPEL:**  
-Predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. For example you can 
-split the given list of ids from the specific query parameter and make a query to the backend to retrieve all records with these list of ids:
-```bash
-APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or][where][id]=' + value).collect(T(java.util.stream.Collectors).joining('&'))}"
-```
-The configuration above can be used like `/generic-entities?q=by-ids&ids=123,456,789` mapped to:  
-`/generic-entities?filter[or][where][id]=123&filter[or][where][id]=456&filter[or][where][id]=789`.
-
+Note that predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. 
 ## Loopback Query Abstraction
 Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
 `app.allowLoopbackQueryNotation` configuration can be useful for purpose.
