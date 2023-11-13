@@ -54,7 +54,7 @@ spring:
       routes:
       # entity controller
       - id: createEntity
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=POST
@@ -62,6 +62,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -74,6 +75,7 @@ spring:
         - name: AcquireLockForCreation
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy

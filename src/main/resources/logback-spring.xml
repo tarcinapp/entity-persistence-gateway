@@ -22,6 +22,10 @@
         <appender-ref ref="Console" />
     </logger>
 
+    <logger name="org.redisson" level="INFO" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
     <!--<logger name="org.redisson" level="TRACE" />-->
  
 </configuration>
