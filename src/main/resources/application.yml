@@ -85,6 +85,7 @@ spring:
         - Path=/generic-entities
         - Method=PATCH
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
@@ -104,6 +105,7 @@ spring:
         - Path=/generic-entities
         - Method=GET
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -133,6 +135,7 @@ spring:
         - Path=/generic-entities/count
         - Method=GET
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -150,6 +153,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=GET
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -170,6 +174,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PATCH
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
@@ -189,6 +194,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PUT
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
@@ -212,6 +218,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=DELETE
         filters:
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
