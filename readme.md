@@ -154,6 +154,7 @@ app:
     protocol: http
     host: entity-persistence-service
     port: 80
+    baseURI: '/'
 ```
 
 **Open Policy Agent (OPA) Host Configuration:**  
@@ -262,7 +263,6 @@ Note that predefined query configuration within entity-persistence-gateway levar
 ## Loopback Query Abstraction
 Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
 `app.allowLoopbackQueryNotation` configuration can be useful for purpose.
-
 
 **Searching Entities:**  
 **Original**: `?s=foo`  

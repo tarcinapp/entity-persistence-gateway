@@ -97,6 +97,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateAllEntities/policy
+        - RemoveRequestHeader=Authorization
       - id: findEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
         predicates:
@@ -119,6 +120,7 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/genericentities/policy
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
@@ -141,6 +143,7 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -157,6 +160,7 @@ spring:
           args:
             policyName: /policies/auth/routes/findEntityById/policy
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -178,6 +182,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
+        - RemoveRequestHeader=Authorization
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -200,6 +205,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -215,6 +221,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
+        - RemoveRequestHeader=Authorization
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
