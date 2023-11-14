@@ -412,6 +412,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: AcquireLockForCreation
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -437,11 +438,12 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/genericentities/policy
+        - name: ApplyFieldsetConfig
+        - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
-        - name: ApplyFieldsetConfig
-        - name: AddSetsToQuery
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -466,6 +468,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
       - id: countEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -484,6 +487,7 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
       - id: updateAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -503,6 +507,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateAllEntities/policy
+        - RemoveRequestHeader=Authorization
       - id: findEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -519,6 +524,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -541,6 +547,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
+        - RemoveRequestHeader=Authorization
       - id: deleteEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -557,3 +564,4 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
+        - RemoveRequestHeader=Authorization
