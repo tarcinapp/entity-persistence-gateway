@@ -80,7 +80,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateAllEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=PATCH
@@ -99,7 +99,7 @@ spring:
             policyName: /policies/auth/routes/updateAllEntities/policy
         - RemoveRequestHeader=Authorization
       - id: findEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=GET
@@ -128,7 +128,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
       - id: countEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities/count
         - Method=GET
