@@ -310,7 +310,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             if (recordId != null) {
 
                 final long currentThreadId = Thread.currentThread().getId();
-                final RReadWriteLockReactive lock = redissonReactiveClient.getReadWriteLock("lock-on-" + recordId);
+                final RReadWriteLockReactive lock = redissonReactiveClient.getReadWriteLock(appShortcode + "+lock-on-" + recordId);
                 final RLockReactive writeLock = lock.writeLock();
 
                 return writeLock.isLocked()
