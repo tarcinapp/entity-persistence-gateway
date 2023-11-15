@@ -11,6 +11,7 @@ app:
     requestId: "X-Request-Id"
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+    issuer: keycloak
 
   # configuration of the host which serves the entity-persistence-service. 
   backend:

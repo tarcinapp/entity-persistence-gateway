@@ -75,6 +75,9 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     @Value("${app.shortcode:#{tarcinapp}}")
     private String appShortcode;
 
+    @Value("${app.auth.issuer:#{null}}")
+    private String tokenIssuer;
+
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
@@ -200,6 +203,10 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
                     .parseClaimsJws(jwt)
                     .getBody();
 
+            if(!claims.getIssuer().equals(this.tokenIssuer)) {
+                throw new JwtException("Invalid issuer");
+            }
+
             logger.debug("JWT token is validated.");
 
             // put the jwt into GatewaySecurityContext
@@ -209,7 +216,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             return Mono.just(claims);
         } catch (JwtException e) {
             logger.error(e);
-            return Mono.error(new Exception("Invalid Authorization header"));
+            return Mono.error(new Exception("Invalid Authorization header", e));
         }
     }
 
