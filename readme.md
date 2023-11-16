@@ -12,6 +12,7 @@
     - [Role Extraction](#role-extraction)
     - [Email Verification Status](#email-verification-status)
   - [Authorization](#authorization)
+  - [Enabling Disabling Routes](#enabling-disabling-routes)
   - [Saved Field Sets](#saved-field-sets)
     - [Default Field Set](#default-field-set)
   - [Saved Queries](#saved-queries)
@@ -210,6 +211,15 @@ To determine if a user is allowed to perform an operation, a policy data contain
 
 To learn what roles are privileged to make which operations see [entity-persistence-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies#policies) documentation for each route.
 
+## Enabling Disabling Routes
+You can configure application to disable certain routes by it's name. This way, application can be configured to return `405 Method Not Allowed` for the specified routes.  
+  
+```yaml
+app:
+  routes: 
+    disabled: updateAllEntities, updateAllEntitiesByKindPath
+```
+
 ## Saved Field Sets
 Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.  
 These are the preconfigured field sets:  
@@ -260,6 +270,7 @@ APP_QUERIES_BY_BOOK_NAME="'filter[where][slug]=' + #query['book-name']"
 Usage: `/books?q=by-book-name&book-name=overcoat`
 
 Note that predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. 
+
 ## Loopback Query Abstraction
 Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
 `app.allowLoopbackQueryNotation` configuration can be useful for purpose.

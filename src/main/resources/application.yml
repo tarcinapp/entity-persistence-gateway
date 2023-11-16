@@ -39,7 +39,9 @@ app:
 
   # set false if you want to prevent loopback notation in query parameters
   allowLoopbackQueryNotation: true
-
+  
+  routes:
+    disabled: updateAllEntities, updateAllEntitiesByKindPath
 ---
 
 spring:
@@ -61,6 +63,7 @@ spring:
         - Method=POST
         filters:
         - name: RequestSize
+        - name: CheckIfRouteEnabled
           args:
             maxSize: 1KB
         - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
@@ -86,10 +89,11 @@ spring:
         - Path=/generic-entities
         - Method=PATCH
         filters:
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -106,6 +110,7 @@ spring:
         - Path=/generic-entities
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -136,6 +141,7 @@ spring:
         - Path=/generic-entities/count
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -154,6 +160,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -175,10 +182,11 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PATCH
         filters:
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -195,10 +203,11 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=PUT
         filters:
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -219,6 +228,7 @@ spring:
         - Path=/generic-entities/{recordId}
         - Method=DELETE
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -399,6 +409,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
@@ -423,6 +434,7 @@ spring:
         - Path=/{kindPath}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -454,6 +466,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
@@ -476,6 +489,7 @@ spring:
         - Path=/{kindPath}/count
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities/count
         - name: ConvertKindPathToQueryForFindEntities
         - name: AuthenticateRequest
@@ -498,6 +512,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -515,6 +530,7 @@ spring:
         - Path=/{kindPath}/{recordId}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -538,6 +554,7 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -555,6 +572,7 @@ spring:
         - Path=/{kindPath}/{recordId}
         - Method=DELETE
         filters:
+        - name: CheckIfRouteEnabled
         - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
