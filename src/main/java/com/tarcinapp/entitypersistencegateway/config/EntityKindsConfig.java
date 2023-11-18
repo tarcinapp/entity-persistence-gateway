@@ -33,6 +33,15 @@ public class EntityKindsConfig {
 
         private String name;
         private String pathMap;
+        private String schema;
+
+        public String getSchema() {
+            return schema;
+        }
+
+        public void setSchema(String schema) {
+            this.schema = schema;
+        }
 
         public String getName() {
             return this.name;
@@ -52,7 +61,7 @@ public class EntityKindsConfig {
 
         @Override
         public String toString() {
-            return "EntityKindsSingleConfig [name=" + name + ", pathMap=" + pathMap + "]";
+            return "EntityKindsSingleConfig [name=" + name + ", pathMap=" + pathMap + ", schema=" + schema + "]";
         }
     }
 }

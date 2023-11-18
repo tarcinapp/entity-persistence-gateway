@@ -25,11 +25,14 @@ app:
     host: entity-persistence-gateway-policies
     port: 443
 
+  # predefined field sets
   fieldsets:
     managed:
       show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
     unmanaged:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+  
+  # predefined queriers
   queries:
     my: "'sets[owners]=['+#userId+'][]'"
     actives: "'sets[actives]'"
@@ -42,6 +45,11 @@ app:
   
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath
+
+  # base schema used for all managed fields. 
+  schemas:
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"integer"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
+    
 ---
 
 spring:
@@ -418,6 +426,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy

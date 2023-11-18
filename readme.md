@@ -12,6 +12,7 @@
     - [Role Extraction](#role-extraction)
     - [Email Verification Status](#email-verification-status)
   - [Authorization](#authorization)
+  - [Validation](#validation)
   - [Enabling Disabling Routes](#enabling-disabling-routes)
   - [Saved Field Sets](#saved-field-sets)
     - [Default Field Set](#default-field-set)
@@ -26,6 +27,7 @@
 The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway) framework, is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including
 * Authentication
 * Authorization
+* Validation
 * Routing
 * Rate Limiting
 * Distributed Lock
@@ -210,6 +212,48 @@ Effective role names can be constructed using the application short code, `tarci
 To determine if a user is allowed to perform an operation, a policy data containing the application shortcode, JWT token, request body, requested endpoint, query parameters and HTTP headers is prepared and sent to the entity-persistence-policies component through an HTTP call. If request is allowed, gateway permits the flow to proceed. Otherwise, gateway returns a HTTP 401 error. Similarly, same policy data is used to determine which fields are forbidden for what operation.
 
 To learn what roles are privileged to make which operations see [entity-persistence-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies#policies) documentation for each route.
+
+## Validation
+
+The gateway application supports JSON schema validation to ensure that the request body conforms to the specified JSON schema. The validation adheres to the `2020-12` specification and utilizes the [`networknt/json-schema-validator`](https://github.com/networknt/json-schema-validator) repository.
+
+To enable JSON schema validation, it is mandatory to configure [Routing by Kind](#routing-by-kind-configuration).
+
+Consider the following sample configuration for schema validation:
+
+```yaml
+app.entityKinds[0].pathMap=books
+app.entityKinds[0].name=book
+app.entityKinds[0].schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"},"author":{"type":"integer"}},"required":["name","author"]}
+```
+
+Consider the following example where JSON schema validation is applied:  
+```json
+{
+    "name": "Karamazov Brothers",
+    "author": "Dostoyevski"
+}
+```
+Response (On Validation Failure):
+```json
+{
+    "error": {
+        "name": "ValidationError",
+        "status": 422,
+        "message": "The request is not valid.",
+        "details": [
+            {
+                "code": "1029",
+                "field": "$.author",
+                "message": "$.author: string found, integer expected"
+            }
+        ]
+    }
+}
+```
+
+In this scenario, the request body is validated against the specified JSON schema. Since the "author" field is expected to be an integer according to the schema, an error response is generated when a string is provided.
+
 
 ## Enabling Disabling Routes
 You can configure application to disable certain routes by it's name. This way, application can be configured to return `405 Method Not Allowed` for the specified routes.  
