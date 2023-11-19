@@ -9,6 +9,7 @@ import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
@@ -32,6 +33,9 @@ public class AcquireLockForCreation
 
     @Autowired
     RedissonReactiveClient redissonReactiveClient;
+
+    @Value("${app.shortcode:#{tarcinapp}}")
+    private String appShortcode;
 
     public AcquireLockForCreation() {
         super(Config.class);
@@ -97,7 +101,7 @@ public class AcquireLockForCreation
 
         final long currentThreadId = Thread.currentThread().getId();
         final RReadWriteLockReactive lock = redissonReactiveClient
-                .getReadWriteLock("lock-on-record-creation-" + payloadHash);
+                .getReadWriteLock(appShortcode+"+lock-on-record-creation-" + payloadHash);
         final RLockReactive writeLock = lock.writeLock();
 
         return writeLock.isLocked()

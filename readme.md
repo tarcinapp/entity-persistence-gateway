@@ -12,6 +12,8 @@
     - [Role Extraction](#role-extraction)
     - [Email Verification Status](#email-verification-status)
   - [Authorization](#authorization)
+  - [Validation](#validation)
+  - [Enabling Disabling Routes](#enabling-disabling-routes)
   - [Saved Field Sets](#saved-field-sets)
     - [Default Field Set](#default-field-set)
   - [Saved Queries](#saved-queries)
@@ -25,6 +27,7 @@
 The Entity Persistence Gateway, powered by [Spring Cloud Gateway](https://spring.io/projects/spring-cloud-gateway) framework, is a central component within the Tarcinapp Suite. This gateway provides comprehensive functionality, including
 * Authentication
 * Authorization
+* Validation
 * Routing
 * Rate Limiting
 * Distributed Lock
@@ -154,6 +157,7 @@ app:
     protocol: http
     host: entity-persistence-service
     port: 80
+    baseURI: '/'
 ```
 
 **Open Policy Agent (OPA) Host Configuration:**  
@@ -209,6 +213,57 @@ To determine if a user is allowed to perform an operation, a policy data contain
 
 To learn what roles are privileged to make which operations see [entity-persistence-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies#policies) documentation for each route.
 
+## Validation
+
+The gateway application supports JSON schema validation to ensure that the request body conforms to the specified JSON schema. The validation adheres to the `2020-12` specification and utilizes the [`networknt/json-schema-validator`](https://github.com/networknt/json-schema-validator) repository.
+
+To enable JSON schema validation, it is mandatory to configure [Routing by Kind](#routing-by-kind-configuration).
+
+While defining your schema, you are not required to define [Managed Fields](#managed-fields) as they are always validated. Consider  the following sample configuration for schema validation:
+
+```yaml
+app.entityKinds[0].pathMap=books
+app.entityKinds[0].name=book
+app.entityKinds[0].schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"},"author":{"type":"integer"}},"required":["name","author"]}
+```
+
+Consider the following POST or PUT request body is sent to `/books` endpoint while application is configured as given above:
+```json
+{
+    "name": "Karamazov Brothers",
+    "author": "Dostoyevski"
+}
+```
+Response (On Validation Failure):
+```json
+{
+    "error": {
+        "name": "ValidationError",
+        "status": 422,
+        "message": "The request is not valid.",
+        "details": [
+            {
+                "code": "1029",
+                "field": "$.author",
+                "message": "$.author: string found, integer expected"
+            }
+        ]
+    }
+}
+```
+
+In this scenario, the request body is validated against the specified JSON schema. Since the "author" field is expected to be an integer according to the schema, an error response is generated when a string is provided.  
+For PATCH requests, only the given root properties are validated agains the schema no matter what field defined as required in the root level.
+
+## Enabling Disabling Routes
+You can configure application to disable certain routes by it's name. This way, application can be configured to return `405 Method Not Allowed` for the specified routes.  
+  
+```yaml
+app:
+  routes: 
+    disabled: updateAllEntities, updateAllEntitiesByKindPath
+```
+
 ## Saved Field Sets
 Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.  
 These are the preconfigured field sets:  
@@ -258,19 +313,11 @@ APP_QUERIES_BY_BOOK_NAME="'filter[where][slug]=' + #query['book-name']"
 ```
 Usage: `/books?q=by-book-name&book-name=overcoat`
 
-**Power of SPEL:**  
-Predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. For example you can 
-split the given list of ids from the specific query parameter and make a query to the backend to retrieve all records with these list of ids:
-```bash
-APP_QUERIES_BY_IDS="#{#query[ids].split(',') !.stream().map(value -> 'filter[or][where][id]=' + value).collect(T(java.util.stream.Collectors).joining('&'))}"
-```
-The configuration above can be used like `/generic-entities?q=by-ids&ids=123,456,789` mapped to:  
-`/generic-entities?filter[or][where][id]=123&filter[or][where][id]=456&filter[or][where][id]=789`.
+Note that predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. 
 
 ## Loopback Query Abstraction
 Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
 `app.allowLoopbackQueryNotation` configuration can be useful for purpose.
-
 
 **Searching Entities:**  
 **Original**: `?s=foo`  

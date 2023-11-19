@@ -11,6 +11,7 @@ app:
     requestId: "X-Request-Id"
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+    issuer: keycloak
 
   # configuration of the host which serves the entity-persistence-service. 
   backend:
@@ -24,11 +25,14 @@ app:
     host: entity-persistence-gateway-policies
     port: 443
 
+  # predefined field sets
   fieldsets:
     managed:
       show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
     unmanaged:
       hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+  
+  # predefined queriers
   queries:
     my: "'sets[owners]=['+#userId+'][]'"
     actives: "'sets[actives]'"
@@ -38,7 +42,14 @@ app:
 
   # set false if you want to prevent loopback notation in query parameters
   allowLoopbackQueryNotation: true
+  
+  routes:
+    disabled: updateAllEntities, updateAllEntitiesByKindPath
 
+  # base schema used for all managed fields. 
+  schemas:
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
+    
 ---
 
 spring:
@@ -54,14 +65,16 @@ spring:
       routes:
       # entity controller
       - id: createEntity
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=POST
         filters:
         - name: RequestSize
+        - name: CheckIfRouteEnabled
           args:
             maxSize: 1KB
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -74,11 +87,12 @@ spring:
         - name: AcquireLockForCreation
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateAllEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=PATCH
@@ -86,6 +100,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -95,12 +111,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateAllEntities/policy
+        - RemoveRequestHeader=Authorization
       - id: findEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -117,6 +136,7 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/genericentities/policy
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
@@ -124,11 +144,13 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
       - id: countEntities
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/generic-entities/count
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities/count
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -139,12 +161,15 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities/{recordId}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -155,6 +180,7 @@ spring:
           args:
             policyName: /policies/auth/routes/findEntityById/policy
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -167,6 +193,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -176,6 +204,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
+        - RemoveRequestHeader=Authorization
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -185,6 +214,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -198,12 +229,15 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/generic-entities/{recordId}
         - Method=DELETE
         filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -213,6 +247,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
+        - RemoveRequestHeader=Authorization
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -382,7 +417,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
-        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -390,12 +426,14 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/createEntity/policy
         - name: AddManagedFieldsInCreation
         - name: AcquireLockForCreation
         - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -405,13 +443,14 @@ spring:
         - Path=/{kindPath}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
@@ -421,11 +460,12 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/genericentities/policy
+        - name: ApplyFieldsetConfig
+        - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsFromResponseForFindEntities
           args:
             policyName: /policies/fields/genericentities/policy
-        - name: ApplyFieldsetConfig
-        - name: AddSetsToQuery
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -435,7 +475,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -443,6 +484,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/replaceEntityById/policy
@@ -450,13 +492,15 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
       - id: countEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/{kindPath}/count
         - Method=GET
         filters:
-        - RewritePath=/(?<kindPath>/?.*), /generic-entities/count
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities/count
         - name: ConvertKindPathToQueryForFindEntities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -468,6 +512,7 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
       - id: updateAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -477,7 +522,8 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
-        - RewritePath=/(?<kindPath>/?.*), /generic-entities
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -487,13 +533,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateAllEntities/policy
+        - RemoveRequestHeader=Authorization
       - id: findEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/{kindPath}/{recordId}
         - Method=GET
         filters:
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -503,6 +551,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
+        - RemoveRequestHeader=Authorization
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
@@ -515,23 +564,27 @@ spring:
         - name: RequestSize
           args:
             maxSize: 1KB
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/updateEntityById/policy
+        - RemoveRequestHeader=Authorization
       - id: deleteEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=/{kindPath}/{recordId}
         - Method=DELETE
         filters:
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), /generic-entities/${recordId}
+        - name: CheckIfRouteEnabled
+        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -541,3 +594,4 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
+        - RemoveRequestHeader=Authorization
