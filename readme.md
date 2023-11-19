@@ -219,7 +219,7 @@ The gateway application supports JSON schema validation to ensure that the reque
 
 To enable JSON schema validation, it is mandatory to configure [Routing by Kind](#routing-by-kind-configuration).
 
-Consider the following sample configuration for schema validation:
+While defining your schema, you are not required to define [Managed Fields](#managed-fields) as they are always validated. Consider  the following sample configuration for schema validation:
 
 ```yaml
 app.entityKinds[0].pathMap=books
@@ -227,7 +227,7 @@ app.entityKinds[0].name=book
 app.entityKinds[0].schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"},"author":{"type":"integer"}},"required":["name","author"]}
 ```
 
-Consider the following example where JSON schema validation is applied:  
+Consider the following POST or PUT request body is sent to `/books` endpoint while application is configured as given above:
 ```json
 {
     "name": "Karamazov Brothers",
@@ -252,8 +252,8 @@ Response (On Validation Failure):
 }
 ```
 
-In this scenario, the request body is validated against the specified JSON schema. Since the "author" field is expected to be an integer according to the schema, an error response is generated when a string is provided.
-
+In this scenario, the request body is validated against the specified JSON schema. Since the "author" field is expected to be an integer according to the schema, an error response is generated when a string is provided.  
+For PATCH requests, only the given root properties are validated agains the schema no matter what field defined as required in the root level.
 
 ## Enabling Disabling Routes
 You can configure application to disable certain routes by it's name. This way, application can be configured to return `405 Method Not Allowed` for the specified routes.  

@@ -1,9 +1,11 @@
 package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -15,6 +17,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -133,10 +136,31 @@ public class ValidateEntityRequestBody
                                 }
 
                                 try {
+                                    // start validation here
                                     JsonNode requestJsonNode = objectMapper.readTree(payload);
+                                    Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
                                     JsonSchema schema = combinedSchemas.get(foundEntityKindConfig.getName());
-                                    Set<ValidationMessage> errors = schema.validate(requestJsonNode);
 
+                                    // for create and replace operations, perform full validation
+                                    if (exchange.getRequest().getMethod() == HttpMethod.POST
+                                            || exchange.getRequest().getMethod() == HttpMethod.PUT) {
+                                        errors = schema.validate(requestJsonNode);
+                                    }
+
+                                    // for update operation, perform validation only over the given properties
+                                    if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
+                                        Set<ValidationMessage> patchValidationErrors = schema.validate(requestJsonNode);
+
+                                        if(patchValidationErrors.size() > 0) {
+
+                                            // skip errors indicating absence of a root field
+                                            errors = patchValidationErrors.stream()
+                                                .filter(pve -> !("1028".equals(pve.getCode()) && "$".equals(pve.getPath())))
+                                                .collect(Collectors.toCollection(LinkedHashSet::new));
+                                        }
+                                    }
+
+                                    // throw exception if validation error found
                                     if (errors.size() > 0) {
                                         logger.debug("Validation errors found.");
 
@@ -146,9 +170,7 @@ public class ValidateEntityRequestBody
 
                                     logger.debug("No validation error.");
 
-                                    // validation implementation must be placed here
                                     return Mono.just(payload);
-
                                 } catch (JsonProcessingException e) {
                                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON body", e);
                                 }

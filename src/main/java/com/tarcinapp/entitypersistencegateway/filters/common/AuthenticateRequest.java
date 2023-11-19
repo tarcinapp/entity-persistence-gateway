@@ -476,6 +476,8 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         // it in policyData
         AnyRecordBase recordBaseFromPayload = new AnyRecordBase();
 
+        // TODO: If there is a ClassCastException thrown here, it must be returned as a validation exception
+
         // extract managed fields from body
         String id = (String) payloadJSON.get("id");
         String kind = (String) payloadJSON.get("kind");
