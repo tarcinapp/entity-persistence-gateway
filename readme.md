@@ -334,11 +334,11 @@ Here you can find examples from predefined queries:
 ```yaml
 app:  
   queries:  
-    my: "'sets[owners]=['+#userId+'][]'"  
+    my: "'sets[owners][userIds]='+#userId"  
     actives: "'sets[actives]'"
 ```
 **Example usage:**  
-`/generic-entities?query=my` mapped to `generic-entities?sets[actives]`
+`/generic-entities?query=my` mapped to `generic-entities?sets[owners][userIds]={userId}`
 
 **Introducing new predefined query configuration:**  
 ```bash

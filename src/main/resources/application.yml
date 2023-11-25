@@ -37,7 +37,7 @@ app:
   
   # predefined queriers
   queries:
-    my: "'sets[owners]=['+#userId+'][]'"
+    my: "'sets[owners][userIds]='+#userId"
     actives: "'sets[actives]'"
     inactives: "'sets[inactives]'"
     name: "'filter[where][name]=' + #query['name']"
