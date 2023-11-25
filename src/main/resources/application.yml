@@ -62,6 +62,15 @@ spring:
     password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            #allowedOrigins: "http://localhost:8080"
+            allowedMethods: "GET, POST, PUT, PATCH, DELETE"
+            allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, X-Geolocation, X-Requested-With"
+            exposedHeaders: "Location, Content-Type"
+            allowCredentials: true
+            maxAge: 3600
       routes:
       # entity controller
       - id: createEntity
