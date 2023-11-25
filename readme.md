@@ -172,12 +172,13 @@ app:
 ```
 
 ## Authentication
-Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key that should be provided.
+Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key and the configuration of the issuer information.
 
 ```yaml
 app:
   auth: 
     rs256PublicKey: your-public-key-here
+    issuer: keycloak
 ```
 
 ### Role Extraction
