@@ -201,13 +201,16 @@ This format follows the convention of transforming property names into uppercase
   
 Remember to adjust the index (_0_) and property name (ALLOWEDORIGINS) according to your specific configuration needs.
 ## Authentication
-Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key and the configuration of the issuer information.
+Entity Persistence Gateway utilizes JWT-based token authentication to secure its endpoints. JWT token validation is a crucial step in ensuring that requests to the gateway are legitimate. This validation process is based on the presence of an RS256 encrypted public key, the configuration of the issuer and clock skew in seconds.
 
 ```yaml
 app:
   auth: 
     rs256PublicKey: your-public-key-here
     issuer: keycloak
+
+    # Configure the allowable clock skew in seconds for JWT verification
+    clockSkewSeconds: 60
 ```
 
 ### Role Extraction

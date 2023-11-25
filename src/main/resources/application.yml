@@ -13,6 +13,9 @@ app:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
     issuer: keycloak
 
+    # configure the allowable clock skew in seconds for JWT verification
+    clockSkewSeconds: 60
+
   # configuration of the host which serves the entity-persistence-service. 
   backend:
     protocol: http

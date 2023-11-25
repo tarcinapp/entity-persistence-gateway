@@ -78,6 +78,9 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     @Value("${app.auth.issuer:#{null}}")
     private String tokenIssuer;
 
+    @Value("${app.auth.clockSkewSeconds:60}")
+    private long clockSkewSeconds;
+
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
@@ -199,6 +202,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(this.key)
+                    .setAllowedClockSkewSeconds(this.clockSkewSeconds)
                     .build()
                     .parseClaimsJws(jwt)
                     .getBody();
