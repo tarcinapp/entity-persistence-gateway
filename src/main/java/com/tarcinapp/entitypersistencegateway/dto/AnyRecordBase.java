@@ -24,6 +24,10 @@ public class AnyRecordBase {
     private List<String> ownerGroups;
     private int ownerUsersCount;
     private int ownerGroupsCount;
+    private List<String> viewerUsers;
+    private List<String> viewerGroups;
+    private int viewerUsersCount;
+    private int viewerGroupsCount;
     private String lastUpdatedBy;
     private String createdBy;
     private Integer version;
@@ -191,6 +195,38 @@ public class AnyRecordBase {
 
     public void setApplication(String application) {
         this.application = application;
+    }
+
+        public List<String> getViewerUsers() {
+        return this.viewerUsers;
+    }
+
+    public void setViewerUsers(List<String> viewerUsers) {
+        this.viewerUsers = viewerUsers;
+    }
+
+    public List<String> getViewerGroups() {
+        return this.viewerGroups;
+    }
+
+    public void setViewerGroups(List<String> viewerGroups) {
+        this.viewerGroups = viewerGroups;
+    }
+
+    public int getViewerUsersCount() {
+        return viewerUsersCount;
+    }
+
+    public void setViewerUsersCount(int viewerUsersCount) {
+        this.viewerUsersCount = viewerUsersCount;
+    }
+
+    public int getViewerGroupsCount() {
+        return viewerGroupsCount;
+    }
+
+    public void setViewerGroupsCount(int viewerGroupsCount) {
+        this.viewerGroupsCount = viewerGroupsCount;
     }
 
     @JsonAnySetter

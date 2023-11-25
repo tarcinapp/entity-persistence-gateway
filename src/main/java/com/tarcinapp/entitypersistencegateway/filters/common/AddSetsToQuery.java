@@ -140,14 +140,16 @@ public class AddSetsToQuery
              * Note: If a record has user's user id in its ownerUsers array, then this
              * record belongs to that user.
              * In addition to that, if user's group id presents in record's ownerGroups
-             * array and it's visibility is protected
-             * or public (not private) this record is also belongs to that user too.
+             * array and it's visibility is protected or public (not private) this record is also belongs to that user too.
+             * In addition if user's id is in viewerUsers, then user is allowed to see no matter what is the visibility.
+             * In addition if user's group id is in viewerGroups, then user is allowed to see as long as visibility is protected or public (not private)
              */
 
             // audience set requires user id and groups in following format
             // [userId1,userId2][group1,group2]
             String groupsStr = groups.stream().collect(Collectors.joining(","));
-            newQuery.add(new BasicNameValuePair("set[and][1][audience]", "[" + userId + "][" + groupsStr + "]"));
+            newQuery.add(new BasicNameValuePair("set[and][1][audience][userIds]", userId));
+            newQuery.add(new BasicNameValuePair("set[and][1][audience][groupIds]", groupsStr));
 
             // as we built new query string, now we can go ahead and change the query from
             // the original request

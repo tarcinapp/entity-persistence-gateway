@@ -13,6 +13,9 @@ app:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
     issuer: keycloak
 
+    # configure the allowable clock skew in seconds for JWT verification
+    clockSkewSeconds: 60
+
   # configuration of the host which serves the entity-persistence-service. 
   backend:
     protocol: http
@@ -28,9 +31,9 @@ app:
   # predefined field sets
   fieldsets:
     managed:
-      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
     unmanaged:
-      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey
+      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
   
   # predefined queriers
   queries:
@@ -48,7 +51,7 @@ app:
 
   # base schema used for all managed fields. 
   schemas:
-    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"viewerUsers":{"type":"array","items":{"type":"string"}},"viewerGroups":{"type":"array","items":{"type":"string"}},"viewerUsersCount":{"type":"number"},"viewerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
     
 ---
 
@@ -62,6 +65,15 @@ spring:
     password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            #allowedOrigins: "http://localhost:8080"
+            allowedMethods: "GET, POST, PUT, PATCH, DELETE"
+            allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, X-Geolocation, X-Requested-With"
+            exposedHeaders: "Location, Content-Type"
+            allowCredentials: true
+            maxAge: 3600
       routes:
       # entity controller
       - id: createEntity
