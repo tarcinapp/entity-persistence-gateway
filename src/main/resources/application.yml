@@ -9,6 +9,7 @@ app:
   # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
+    
   auth:
     rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
     issuer: keycloak
@@ -21,6 +22,7 @@ app:
     protocol: http
     host: entity-persistence-service
     port: 80
+    baseUri: '/'
 
   # configuration of the opa host
   opa:
