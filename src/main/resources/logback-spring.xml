@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
- 
-    <property name="LOGS" value="./logs" />
- 
+
+    <springProperty scope="context" name="tarcinappLoggingLevel" source="app.logging.tacinapp" defaultValue="info" />
+    <springProperty scope="context" name="httpLoggingLevel" source="app.logging.http" defaultValue="info" />
+    <springProperty scope="context" name="gatewayLoggingLevel" source="app.logging.gateway" defaultValue="info" />
+    <springProperty scope="context" name="redissonLoggingLevel" source="app.logging.redisson" defaultValue="info" />
+
     <appender name="Console"
         class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -17,15 +20,20 @@
         <appender-ref ref="Console" />
     </root>
  
-    <!-- LOG "com.tarcinapp*" at TRACE level -->
-    <logger name="com.tarcinapp" level="trace" additivity="false">
+    <logger name="com.tarcinapp" level="${tarcinappLoggingLevel}" additivity="false">
         <appender-ref ref="Console" />
     </logger>
 
-    <logger name="org.redisson" level="INFO" additivity="false">
+    <logger name="org.redisson" level="${redissonLoggingLevel}" additivity="false">
         <appender-ref ref="Console" />
     </logger>
 
-    <!--<logger name="org.redisson" level="TRACE" />-->
+    <logger name="org.springframework.cloud.gateway" level="${gatewayLoggingLevel}" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
+    <logger name="org.springframework.web.HttpLogging" level="${httpLoggingLevel}" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
  
 </configuration>

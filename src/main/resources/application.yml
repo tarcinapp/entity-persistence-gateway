@@ -39,6 +39,13 @@ app:
     host: entity-persistence-gateway-policies
     port: 443
 
+  # logging configuration
+  logging:
+    tarcinapp: INFO
+    http: INFO
+    gateway: INFO
+    redisson: INFO
+
   # predefined field sets
   fieldsets:
     managed:
