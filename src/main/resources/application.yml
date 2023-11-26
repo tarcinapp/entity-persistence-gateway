@@ -24,6 +24,7 @@ app:
     address: 0.0.0.0
     port: 8081
     baseUri: /api/v1/
+    metricsEnabled: true
 
   # configuration of the host which serves the entity-persistence-service. 
   backend:
@@ -59,10 +60,16 @@ app:
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath
 
+  # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
+
   # base schema used for all managed fields. 
   schemas:
     anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"viewerUsers":{"type":"array","items":{"type":"string"}},"viewerGroups":{"type":"array","items":{"type":"string"}},"viewerUsersCount":{"type":"number"},"viewerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
     
+  # this map is used as a reference to configure 'management.endpoints.web.exposure.include' value, according to the 'app.inbound.metricsEnabled'
+  metricsEndpointsMap:
+    "true": gateway,health,metrics
+    "false": ""
 ---
 
 server:
@@ -93,6 +100,8 @@ spring:
             exposedHeaders: "Location, Content-Type"
             allowCredentials: true
             maxAge: 3600
+      metrics:
+        enabled: ${app.inbound.metricsEnabled}
       routes:
       # entity controller
       - id: createEntity
@@ -630,3 +639,13 @@ spring:
   resources:
     chain:
       enabled: false
+
+---
+
+#
+management:
+  endpoints:
+    web:
+      exposure:
+        # this section configured automatically according to the value of app.inbound.metricsEnabled value
+        include: ${app.metricsEndpointsMap.${app.inbound.metricsEnabled}:''}
