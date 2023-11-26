@@ -7,6 +7,7 @@
     - [Field Masking for Update \& Replace Operations](#field-masking-for-update--replace-operations)
 - [Configuration](#configuration)
   - [Application Name \& Shortcode](#application-name--shortcode)
+  - [Host, Port and Base URI Configuration](#host-port-and-base-uri-configuration)
   - [Backend and OPA Host Configuration](#backend-and-opa-host-configuration)
   - [Cross Origin Resource Sharing (CORS)](#cross-origin-resource-sharing-cors)
   - [Authentication](#authentication)
@@ -148,6 +149,18 @@ This configuration is used in constructing role names and other application-spec
 app:
   shortcode: "tarcinapp"
 ```
+## Host, Port and Base URI Configuration
+The configuration sets up the inbound properties for the application. The `app.inbound.port` specifies that the application will listen for incoming requests on port 8081. The `app.inbound.baseUri` defines the base URI path as "/api/v1/". Lastly, the `app.inbound.address` is configured as "0.0.0.0," indicating that the application will accept connections from any available network interface.
+
+```yaml
+app:
+  inbound:
+    address: 0.0.0.0
+    port: 8081
+    baseUri: /api/v1/
+```
+
+Adjust these properties according to your networking and URI path requirements.
 
 ## Backend and OPA Host Configuration
 Configure the connection details for the backend service that serves the entity-persistence-service and entity-persistence-gateway-policies.
