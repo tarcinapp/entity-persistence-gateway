@@ -9,9 +9,12 @@ app:
   # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
-    
+
   auth:
-    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+    #Leave "false" if you dont want to authenticate requests. See .README.
+    rs256PublicKey: "false" 
+
+    # Set issuer name of JWT
     issuer: keycloak
 
     # configure the allowable clock skew in seconds for JWT verification
