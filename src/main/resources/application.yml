@@ -626,3 +626,7 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+
+  resources:
+    chain:
+      enabled: false
