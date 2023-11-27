@@ -595,7 +595,7 @@ spring:
         - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=GET
         filters:
-#        - name: CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter

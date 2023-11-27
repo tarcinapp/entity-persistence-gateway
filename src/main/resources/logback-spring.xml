@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <springProperty scope="context" name="tarcinappLoggingLevel" source="app.logging.tacinapp" defaultValue="info" />
+    <springProperty scope="context" name="tarcinappLoggingLevel" source="app.logging.tarcinapp" defaultValue="info" />
     <springProperty scope="context" name="httpLoggingLevel" source="app.logging.http" defaultValue="info" />
     <springProperty scope="context" name="gatewayLoggingLevel" source="app.logging.gateway" defaultValue="info" />
     <springProperty scope="context" name="redissonLoggingLevel" source="app.logging.redisson" defaultValue="info" />
