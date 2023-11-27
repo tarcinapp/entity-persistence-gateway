@@ -6,6 +6,8 @@ app:
   # shortcode is going to be used as prefix for generated request id for each request and role names (e.g. tarcinapp.member)
   shortcode: "tarcinapp"
 
+  debug: false
+
   # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
@@ -79,6 +81,8 @@ app:
     "false": ""
 ---
 
+debug: ${app.debug}
+
 server:
   port: ${app.inbound.port}
   address: ${app.inbound.address}
@@ -91,11 +95,12 @@ server:
 spring:
   application: 
     name: ${app.name}
-  redis: 
-    host: gateway-redis-master
-    port: 6379
-    database: 0
-    password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+  data:
+    redis: 
+      host: gateway-redis-master
+      port: 6379
+      database: 0
+      password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
       globalcors:
@@ -109,6 +114,9 @@ spring:
             maxAge: 3600
       metrics:
         enabled: ${app.inbound.metricsEnabled}
+      filter:
+        local-response-cache: 
+          enabled: true
       routes:
       # entity controller
       - id: createEntity
@@ -587,7 +595,7 @@ spring:
         - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+#        - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -602,6 +610,7 @@ spring:
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
+        - LocalResponseCache=30m,500MB
       - id: updateEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -642,10 +651,10 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
-
-  resources:
-    chain:
-      enabled: false
+  web:
+    resources:
+      chain:
+        enabled: false
 
 ---
 

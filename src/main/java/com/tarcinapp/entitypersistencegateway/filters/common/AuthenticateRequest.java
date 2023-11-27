@@ -164,7 +164,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
                 if (clientResponseException.getStatusCode() == HttpStatus.NOT_FOUND)
                     response.setStatusCode(HttpStatus.NOT_FOUND);
             } else if (e instanceof ResponseStatusException) {
-                response.setStatusCode(((ResponseStatusException) e).getStatus());
+                response.setStatusCode(((ResponseStatusException) e).getStatusCode());
             } else {
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
                 logger.error(e);

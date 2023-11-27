@@ -7,8 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +15,8 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -63,7 +63,7 @@ public class ValidateEntityRequestBody
         super(ValidateEntityRequestBody.Config.class);
     }
 
-    @PostConstruct
+    @EventListener(ContextRefreshedEvent.class)
     private void createCombinedSchemas() {
 
         // if there is no entity kind configured, there is nothing to do in this
@@ -181,7 +181,7 @@ public class ValidateEntityRequestBody
                         ServerHttpResponse response = exchange.getResponse();
 
                         if (e instanceof ResponseStatusException) {
-                            response.setStatusCode(((ResponseStatusException) e).getStatus());
+                            response.setStatusCode(((ResponseStatusException) e).getStatusCode());
                         } else if (e instanceof JsonValidationException) {
                             JsonValidationException jve = (JsonValidationException) e;
                             ObjectMapper objectMapper = new ObjectMapper();

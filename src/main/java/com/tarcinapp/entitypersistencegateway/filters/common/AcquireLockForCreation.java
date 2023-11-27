@@ -86,7 +86,7 @@ public class AcquireLockForCreation
                         ServerHttpResponse response = exchange.getResponse();
 
                         if (e instanceof ResponseStatusException) {
-                            response.setStatusCode(((ResponseStatusException) e).getStatus());
+                            response.setStatusCode(((ResponseStatusException) e).getStatusCode());
                         } else {
                             response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
                             logger.error(e);

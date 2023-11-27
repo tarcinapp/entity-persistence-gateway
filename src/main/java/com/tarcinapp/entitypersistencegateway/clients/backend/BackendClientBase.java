@@ -2,10 +2,10 @@ package com.tarcinapp.entitypersistencegateway.clients.backend;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -38,7 +38,7 @@ public class BackendClientBase implements IBackendClientBase {
 
     private String url;
 
-    @PostConstruct 
+    @EventListener(ContextRefreshedEvent.class)
     private void initWebClient() {
         this.url = this.protocol + "://" + this.host + ":" + this.port;
     
