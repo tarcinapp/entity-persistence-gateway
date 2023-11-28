@@ -33,15 +33,14 @@ app:
     timeToLive: 6h
     size: 50MB
 
-
-  # configuration of the host which serves the entity-persistence-service. 
+  # configuration of the host which serves the entity-persistence-service or entity-persistence-service. 
   backend:
     protocol: http
     host: entity-persistence-service
     port: 80
     baseUri: '/'
 
-  # configuration of the opa host
+  # configuration of the entity-persistence-gateway-policies
   opa:
     protocol: https
     host: entity-persistence-gateway-policies
@@ -615,7 +614,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
-        #- RemoveRequestHeader=Authorization
+        - RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
