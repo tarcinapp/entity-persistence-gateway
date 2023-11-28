@@ -3,10 +3,15 @@ app:
   # set the name of your application (e.g. books, recipes, movies, etc..)
   name: entity-persistence-gateway
 
-  # shortcode is going to be used as prefix for generated request id for each request and role names (e.g. tarcinapp.member)
+  # shortcode is going to be used for:
+  # - prefix for generated request id for each request
+  # - prefix for the role names (e.g. tarcinapp.member)
+  # - jmx domain name, if jmx is enabled
   shortcode: "tarcinapp"
 
   debug: false
+
+  jmx: false
 
   # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
@@ -27,6 +32,13 @@ app:
     port: 8081
     baseUri: /api/v1/
     metricsEnabled: true
+    cors:
+      allowedOrigins: "http://localhost:8080"
+      allowedMethods: "GET, POST, PUT, PATCH, DELETE"
+      allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, Vary, X-Geolocation, X-Requested-With"
+      exposedHeaders: "Location, Content-Type"
+      allowCredentials: true
+      maxAge: 3600
 
   caching:
     enabled: true
@@ -111,12 +123,12 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            #allowedOrigins: "http://localhost:8080"
-            allowedMethods: "GET, POST, PUT, PATCH, DELETE"
-            allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, X-Geolocation, X-Requested-With"
-            exposedHeaders: "Location, Content-Type"
-            allowCredentials: true
-            maxAge: 3600
+            allowedOrigins: ${app.inbound.cors.allowedOrigins}
+            allowedMethods: ${app.inbound.cors.allowedMethods}
+            allowedHeaders: ${app.inbound.cors.allowedHeaders}
+            exposedHeaders: ${app.inbound.cors.exposedHeaders}
+            allowCredentials: ${app.inbound.cors.allowCredentials}
+            maxAge: ${app.inbound.cors.maxAge}
       metrics:
         enabled: ${app.inbound.metricsEnabled}
       filter:
@@ -664,7 +676,9 @@ spring:
     resources:
       chain:
         enabled: false
-
+  jmx:
+    enabled: ${app.jmx}
+    default-domain: ${app.shortcode}
 ---
 
 #
