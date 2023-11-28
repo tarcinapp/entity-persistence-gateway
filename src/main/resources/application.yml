@@ -123,6 +123,8 @@ spring:
       filter:
         local-response-cache: 
           enabled: ${app.caching.enabled}
+          size: ${app.caching.size}
+          time-to-live: ${app.caching.timeToLive}
       routes:
       # entity controller
       - id: createEntity
@@ -613,7 +615,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
-        - RemoveRequestHeader=Authorization
+        #- RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
