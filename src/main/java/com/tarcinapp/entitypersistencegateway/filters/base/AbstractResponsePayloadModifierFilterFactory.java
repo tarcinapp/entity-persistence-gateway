@@ -142,8 +142,9 @@ public abstract class AbstractResponsePayloadModifierFilterFactory<C, I, O> exte
             };
 
             return chain.filter(exchangeDecorator);
-
-        }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 2);
+        
+            // this is placed here to perform response payload modifications after retrieving the data from cache
+        }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 10);
     }
 
 }
