@@ -1,9 +1,10 @@
-FROM maven:3.6.3-adoptopenjdk-11 AS builder
+FROM maven:3.8.4-openjdk-17 AS builder
 COPY . /workspace/
 WORKDIR /workspace
 RUN mvn package -Dmaven.test.skip=true
 
-FROM openjdk:11-jre-slim
+
+FROM eclipse-temurin:17-jdk-alpine
 
 COPY --from=builder /workspace/target/*.jar  /opt/app.jar
 WORKDIR /opt
