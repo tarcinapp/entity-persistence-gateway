@@ -32,7 +32,7 @@ public class DropFieldsForFindEntityById extends
     @Override
     public Mono<String> modifyResponsePayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
             PolicyResponse pr, String payload) {
-
+                
         if (pr.getFields().size() == 0) {
             logger.debug("There is no field going to be hidden from the response.");
             return Mono.just(payload);

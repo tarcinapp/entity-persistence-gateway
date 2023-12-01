@@ -1,6 +1,8 @@
 package com.tarcinapp.entitypersistencegateway.clients.opa;
 
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,8 +21,6 @@ import reactor.netty.tcp.TcpClient;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,7 +56,7 @@ public class OpaClient implements IAuthorizationClient {
     /**
      * Set the opa url, default timeouts and headers
      */
-    @PostConstruct 
+    @EventListener(ContextRefreshedEvent.class)
     private void initWebClient() {
         this.url = this.protocol + "://" + this.host + ":" + this.port + "/v1/data/";
     

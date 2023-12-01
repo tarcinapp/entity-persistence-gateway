@@ -54,7 +54,7 @@ public class GenerateRequestId implements GlobalFilter {
          * The "azp" claim is used to indicate the party (usually a client application)
          * to which the issuer of the token has granted authorization.
          */
-        String authParty = gc.getAuthParty() != null ? gc.getAuthParty() : "unknown";
+        String authParty = gc != null && gc.getAuthParty() != null ? gc.getAuthParty() : "unknown";
 
         // create random part
         String random = RandomStringUtils.randomAlphanumeric(5);

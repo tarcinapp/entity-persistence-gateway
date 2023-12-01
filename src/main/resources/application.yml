@@ -3,30 +3,67 @@ app:
   # set the name of your application (e.g. books, recipes, movies, etc..)
   name: entity-persistence-gateway
 
-  # shortcode is going to be used as prefix for generated request id for each request and role names (e.g. tarcinapp.member)
+  # shortcode is going to be used for:
+  # - prefix for generated request id for each request
+  # - prefix for the role names (e.g. tarcinapp.member)
+  # - jmx domain name, if jmx is enabled
   shortcode: "tarcinapp"
+
+  debug: false
+
+  jmx: false
 
   # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
+
   auth:
-    rs256PublicKey: "false" #Override this field with a value from Kubernetes secret. Leave "false" if you dont want to authenticate requests. See .README.
+    #Leave "false" if you dont want to authenticate requests. See .README.
+    rs256PublicKey: "false" 
+
+    # Set issuer name of JWT
     issuer: keycloak
 
     # configure the allowable clock skew in seconds for JWT verification
     clockSkewSeconds: 60
 
-  # configuration of the host which serves the entity-persistence-service. 
+  inbound:
+    address: 0.0.0.0
+    port: 8081
+    baseUri: /api/v1/
+    metricsEnabled: true
+    cors:
+      allowedOrigins: "http://localhost:8080"
+      allowedMethods: "GET, POST, PUT, PATCH, DELETE"
+      allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, Vary, X-Geolocation, X-Requested-With"
+      exposedHeaders: "Location, Content-Type"
+      allowCredentials: true
+      maxAge: 3600
+
+  caching:
+    enabled: true
+    timeToLive: 6h
+    size: 50MB
+
+  # configuration of the host which serves the entity-persistence-service or entity-persistence-service. 
   backend:
     protocol: http
     host: entity-persistence-service
     port: 80
+    baseUri: '/'
 
-  # configuration of the opa host
+  # configuration of the entity-persistence-gateway-policies
   opa:
     protocol: https
     host: entity-persistence-gateway-policies
     port: 443
+
+  # logging configuration
+  logging:
+    tarcinapp: INFO
+    http: INFO
+    gateway: INFO
+    redisson: INFO
 
   # predefined field sets
   fieldsets:
@@ -37,7 +74,7 @@ app:
   
   # predefined queriers
   queries:
-    my: "'sets[owners]=['+#userId+'][]'"
+    my: "'sets[owners][userIds]='+#userId"
     actives: "'sets[actives]'"
     inactives: "'sets[inactives]'"
     name: "'filter[where][name]=' + #query['name']"
@@ -49,44 +86,69 @@ app:
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath
 
+  # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
+
   # base schema used for all managed fields. 
   schemas:
     anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"viewerUsers":{"type":"array","items":{"type":"string"}},"viewerGroups":{"type":"array","items":{"type":"string"}},"viewerUsersCount":{"type":"number"},"viewerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
     
+  # this map is used as a reference to configure 'management.endpoints.web.exposure.include' value, according to the 'app.inbound.metricsEnabled'
+  metricsEndpointsMap:
+    "true": gateway,health,metrics
+    "false": ""
+---
+
+debug: ${app.debug}
+
+server:
+  port: ${app.inbound.port}
+  address: ${app.inbound.address}
+  compression: 
+    enabled: true
+    mime-types: application/json
+
 ---
 
 spring:
   application: 
     name: ${app.name}
-  redis: 
-    host: gateway-redis-master
-    port: 6379
-    database: 0
-    password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+  data:
+    redis: 
+      host: gateway-redis-master
+      port: 6379
+      database: 0
+      password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
       globalcors:
         cors-configurations:
           '[/**]':
-            #allowedOrigins: "http://localhost:8080"
-            allowedMethods: "GET, POST, PUT, PATCH, DELETE"
-            allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, X-Geolocation, X-Requested-With"
-            exposedHeaders: "Location, Content-Type"
-            allowCredentials: true
-            maxAge: 3600
+            allowedOrigins: ${app.inbound.cors.allowedOrigins}
+            allowedMethods: ${app.inbound.cors.allowedMethods}
+            allowedHeaders: ${app.inbound.cors.allowedHeaders}
+            exposedHeaders: ${app.inbound.cors.exposedHeaders}
+            allowCredentials: ${app.inbound.cors.allowCredentials}
+            maxAge: ${app.inbound.cors.maxAge}
+      metrics:
+        enabled: ${app.inbound.metricsEnabled}
+      filter:
+        local-response-cache: 
+          enabled: ${app.caching.enabled}
+          size: ${app.caching.size}
+          time-to-live: ${app.caching.timeToLive}
       routes:
       # entity controller
       - id: createEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities
+        - Path=${app.inbound.baseUri}generic-entities
         - Method=POST
         filters:
         - name: RequestSize
         - name: CheckIfRouteEnabled
           args:
             maxSize: 1KB
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -106,14 +168,14 @@ spring:
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities
+        - Path=${app.inbound.baseUri}generic-entities
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -127,11 +189,11 @@ spring:
       - id: findEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities
+        - Path=${app.inbound.baseUri}generic-entities
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -158,11 +220,11 @@ spring:
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/count
+        - Path=${app.inbound.baseUri}generic-entities/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -177,11 +239,11 @@ spring:
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -191,22 +253,23 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntityById/policy
-        - name: ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -220,14 +283,14 @@ spring:
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}
         - Method=PUT
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -245,11 +308,11 @@ spring:
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/generic-entities, ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}generic-entities, ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -264,7 +327,7 @@ spring:
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}/relations
         - Method=GET
         filters:
         - name: AuthenticateRequest
@@ -276,7 +339,7 @@ spring:
       - id: createRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}/relations
         - Method=POST
         filters:
         - name: AuthenticateRequest
@@ -288,7 +351,7 @@ spring:
       - id: updateRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}/relations
         - Method=PATCH
         filters:
         - name: AuthenticateRequest
@@ -300,7 +363,7 @@ spring:
       - id: deleteRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/generic-entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}generic-entities/{recordId}/relations
         - Method=DELETE
         filters:
         - name: AuthenticateRequest
@@ -313,7 +376,7 @@ spring:
       - id: createRelation
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=/relations
+        - Path=${app.inbound.baseUri}relations
         - Method=POST
         filters:
         - name: RequestSize
@@ -327,7 +390,7 @@ spring:
       - id: updateAllRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=/relations
+        - Path=${app.inbound.baseUri}relations
         - Method=PATCH
         filters:
         - name: RequestSize
@@ -341,7 +404,7 @@ spring:
       - id: findRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=/relations
+        - Path=${app.inbound.baseUri}relations
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -352,7 +415,7 @@ spring:
       - id: countRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations/count
         predicates:
-        - Path=/relations/count
+        - Path=${app.inbound.baseUri}relations/count
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -363,7 +426,7 @@ spring:
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -374,7 +437,7 @@ spring:
       - id: updateRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId}
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -388,7 +451,7 @@ spring:
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId}
         - Method=PUT
         filters:
         - name: RequestRateLimiter
@@ -402,7 +465,7 @@ spring:
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId}
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
@@ -414,7 +477,7 @@ spring:
       - id: explorer
         uri: no://op
         predicates:
-        - Path=/explorer
+        - Path=${app.inbound.baseUri}explorer
         filters:
         - name: SetStatus
           args:
@@ -423,14 +486,14 @@ spring:
       - id: createEntityByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}
+        - Path=${app.inbound.baseUri}{kindPath}
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}generic-entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -452,7 +515,7 @@ spring:
       - id: findAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}
+        - Path=${app.inbound.baseUri}{kindPath}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -462,7 +525,7 @@ spring:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}generic-entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/findEntities/policy
@@ -481,14 +544,14 @@ spring:
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=PUT
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -508,11 +571,11 @@ spring:
       - id: countEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}/count
+        - Path=${app.inbound.baseUri}{kindPath}/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities/count
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}generic-entities/count
         - name: ConvertKindPathToQueryForFindEntities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -528,14 +591,14 @@ spring:
       - id: updateAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}
+        - Path=${app.inbound.baseUri}{kindPath}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*), ${app.backend.baseURI}generic-entities
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}generic-entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -549,11 +612,11 @@ spring:
       - id: findEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -564,20 +627,22 @@ spring:
           args:
             policyName: /policies/auth/routes/findEntityById/policy
         - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
         - name: DropFieldsForFindEntityById
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: 1KB
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -592,11 +657,11 @@ spring:
       - id: deleteEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=/{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=/(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseURI}generic-entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}generic-entities/${recordId}
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -607,3 +672,19 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+  web:
+    resources:
+      chain:
+        enabled: false
+  jmx:
+    enabled: ${app.jmx}
+    default-domain: ${app.shortcode}
+---
+
+#
+management:
+  endpoints:
+    web:
+      exposure:
+        # this section configured automatically according to the value of app.inbound.metricsEnabled value
+        include: ${app.metricsEndpointsMap.${app.inbound.metricsEnabled}:''}
