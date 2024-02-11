@@ -74,10 +74,20 @@ app:
   
   # predefined queriers
   queries:
+
+    # ?q=my
     my: "'sets[owners][userIds]='+#userId"
+
+    # ?q=actives
     actives: "'sets[actives]'"
+
+    # ?q=inactives
     inactives: "'sets[inactives]'"
+
+    # ?q=name&name={name}
     name: "'filter[where][name]=' + #query['name']"
+
+    # ?q=slug&slug={slug}
     slug: "'filter[where][slug]=' + #query['slug']"
 
   # set false if you want to prevent loopback notation in query parameters
@@ -86,16 +96,17 @@ app:
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath
 
-  # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
-
   # base schema used for all managed fields. 
   schemas:
     anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"viewerUsers":{"type":"array","items":{"type":"string"}},"viewerGroups":{"type":"array","items":{"type":"string"}},"viewerUsersCount":{"type":"number"},"viewerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
     
+  # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
+  
   # this map is used as a reference to configure 'management.endpoints.web.exposure.include' value, according to the 'app.inbound.metricsEnabled'
   metricsEndpointsMap:
     "true": gateway,health,metrics
     "false": ""
+
 ---
 
 debug: ${app.debug}
