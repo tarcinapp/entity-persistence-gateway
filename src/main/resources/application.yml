@@ -222,10 +222,7 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsFromResponseForFindEntities
-          args:
-            policyName: /policies/fields/genericentities/policy
-        - name: DropFieldsFromResponseForFindEntities
+        - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: countEntities
@@ -360,6 +357,34 @@ spring:
         - name: ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
+      - id: findLists
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findLists/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
       # relations controller on entity
@@ -577,7 +602,7 @@ spring:
         - name: ApplyFieldsetConfig
         - name: AddSetsToQuery
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsFromResponseForFindEntities
+        - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: replaceEntityByIdKindPath

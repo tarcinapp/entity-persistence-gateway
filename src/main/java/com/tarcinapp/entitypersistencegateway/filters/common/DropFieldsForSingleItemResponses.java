@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.util.ArrayList;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,12 +21,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Component
-public class DropFieldsFromResponseForFindEntities extends
-        AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsFromResponseForFindEntities.PolicyResponse, String, String> {
+public class DropFieldsForMultiItemResponses extends
+        AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForMultiItemResponses.PolicyResponse, String, String> {
 
-    private Logger logger = LogManager.getLogger(DropFieldsFromResponseForFindEntities.class);
+    private Logger logger = LogManager.getLogger(DropFieldsForMultiItemResponses.class);
 
-    public DropFieldsFromResponseForFindEntities() {
+    public DropFieldsForMultiItemResponses() {
         super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class);
     }
 
