@@ -25,9 +25,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,7 +37,7 @@ public class ApplyFieldsetConfig
     private Logger logger = LogManager.getLogger();
 
     @Autowired
-    FieldSetsConfiguration entityKindsConfig;
+    FieldSetsConfiguration fieldSetsConfig;
 
     @Value("${app.defaultFieldset:#{null}}")
     private String defaultFieldset;
@@ -51,7 +48,7 @@ public class ApplyFieldsetConfig
 
     @Override
     public Mono<String> modifyResponsePayload(Config config, ServerWebExchange exchange, String oldPayload) {
-        Map<String, FieldsetProperties> fieldSets = this.entityKindsConfig.getFieldsets();
+        Map<String, FieldsetProperties> fieldSets = this.fieldSetsConfig.getFieldsets();
 
         /*
          * If there is no fieldset configured, there is nothing that this filter can do.
