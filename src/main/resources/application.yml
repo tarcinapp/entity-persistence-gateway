@@ -173,7 +173,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForFindEntityById
+        - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateAllEntities
@@ -267,7 +267,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
-        - name: DropFieldsForFindEntityById
+        - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateEntityById
@@ -359,7 +359,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForFindEntityById
+        - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
       # relations controller on entity
@@ -548,7 +548,7 @@ spring:
         - name: AcquireLockForCreation
         - name: ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForFindEntityById
+        - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: findAllEntitiesByKindPath
@@ -668,7 +668,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
-        - name: DropFieldsForFindEntityById
+        - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
       - id: updateEntityByIdByKindPath

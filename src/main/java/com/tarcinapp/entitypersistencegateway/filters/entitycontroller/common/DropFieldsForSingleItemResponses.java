@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
+package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -20,12 +20,12 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class DropFieldsForFindEntityById extends
-        AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForFindEntityById.PolicyResponse, String, String> {
+public class DropFieldsForSingleItemResponses extends
+        AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForSingleItemResponses.PolicyResponse, String, String> {
 
-    private Logger logger = LogManager.getLogger(DropFieldsForFindEntityById.class);
+    private Logger logger = LogManager.getLogger(DropFieldsForSingleItemResponses.class);
 
-    public DropFieldsForFindEntityById() {
+    public DropFieldsForSingleItemResponses() {
         super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class);
     }
 
