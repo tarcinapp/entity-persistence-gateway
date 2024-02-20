@@ -334,6 +334,34 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+      # list controller
+      - id: createList
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists
+        - Method=POST
+        filters:
+        - name: RequestSize
+        - name: CheckIfRouteEnabled
+          args:
+            maxSize: 1KB
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createList/policy
+        - name: AcquireLockForCreation
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForFindEntityById
+          args:
+            policyName: /policies/fields/lists/policy
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
