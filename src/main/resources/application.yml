@@ -94,7 +94,7 @@ app:
   allowLoopbackQueryNotation: true
   
   routes:
-    disabled: updateAllEntities, updateAllEntitiesByKindPath
+    disabled: updateAllEntities, updateAllEntitiesByKindPath, updateAllLists
 
   # base schema used for all managed fields. 
   schemas:
@@ -359,6 +359,27 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
+      - id: updateAllLists
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllLists/policy
+        - RemoveRequestHeader=Authorization
       - id: findLists
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
