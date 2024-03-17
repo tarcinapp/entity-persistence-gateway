@@ -222,6 +222,8 @@ spring:
             recordType: entities
         - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
+          args:
+            recordType: entities
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/genericentities/policy
@@ -247,6 +249,8 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+          args:
+            recordType: entities
         - RemoveRequestHeader=Authorization
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -411,6 +415,8 @@ spring:
             recordType: lists
         - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
+          args:
+              recordType: lists
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -436,6 +442,8 @@ spring:
           args:
             policyName: /policies/auth/routes/countLists/policy
         - name: AddSetsToQuery
+          args:
+            recordType: lists
         - RemoveRequestHeader=Authorization
       - id: findListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -744,6 +752,8 @@ spring:
           args:
             recordType: entities
         - name: AddSetsToQuery
+          args:
+            recordType: entities
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
@@ -794,6 +804,8 @@ spring:
           args:
             policyName: /policies/auth/routes/countEntities/policy
         - name: AddSetsToQuery
+          args:
+            recordType: entities
         - RemoveRequestHeader=Authorization
       - id: updateAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
