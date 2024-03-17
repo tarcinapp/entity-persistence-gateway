@@ -16,6 +16,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 
@@ -39,8 +40,14 @@ public class ApplyFieldsetConfig
     @Autowired
     FieldSetsConfiguration fieldSetsConfig;
 
-    @Value("${app.defaultFieldset:#{null}}")
-    private String defaultFieldset;
+    @Value("${app.defaultFieldset.entities:}")
+    private String defaultFieldsetEntities;
+
+    @Value("${app.defaultFieldset.lists:}")
+    private String defaultFieldsetLists;
+
+    @Value("${app.defaultFieldset.reactions:}")
+    private String defaultFieldsetReactions;
 
     public ApplyFieldsetConfig() {
         super(Config.class, String.class, String.class);
@@ -61,13 +68,26 @@ public class ApplyFieldsetConfig
 
         List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
-        if (this.defaultFieldset != null) {
+        // get the default field set that is going to be applied to the query
+        String defaultFieldSet = Optional.ofNullable(config.getRecordType())
+            .flatMap(type -> {
+                String value = Map.of(
+                    "entities", defaultFieldsetEntities,
+                    "lists", defaultFieldsetLists,
+                    "reactions", defaultFieldsetReactions
+                ).get(type);
+                
+                return Optional.ofNullable(value);
+            })
+            .orElse(null);
+
+        if (defaultFieldSet != null) {
             logger.debug("A default fieldset is configured.");
 
-            FieldsetProperties fieldsetProperties = fieldSets.get(this.defaultFieldset);
+            FieldsetProperties fieldsetProperties = fieldSets.get(defaultFieldSet);
 
             if (fieldsetProperties == null) {
-                logger.warn("Default fieldset is configured as " + this.defaultFieldset
+                logger.warn("Default fieldset is configured as " + defaultFieldSet
                         + ". However, this fieldset is not defined. Skipping applying any fieldset.");
 
                 return Mono.just(oldPayload);
@@ -178,6 +198,14 @@ public class ApplyFieldsetConfig
     }
 
     public static class Config {
+        private String recordType;
 
+        public String getRecordType() {
+                return this.recordType;
+        }
+
+        public void setRecordType(String recordType) {
+                this.recordType = recordType;
+        }
     }
 }

@@ -172,6 +172,8 @@ spring:
         - name: AcquireLockForCreation
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -216,6 +218,8 @@ spring:
             policyName: /policies/auth/routes/findEntities/policy
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
         - name: PreventQueryByForbiddenFields
@@ -264,6 +268,8 @@ spring:
         - RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
@@ -355,6 +361,8 @@ spring:
         - name: AcquireLockForCreation
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -399,6 +407,8 @@ spring:
             policyName: /policies/auth/routes/findLists/policy
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
         - name: ConvertToLoopbackQuery
         - name: AddSetsToQuery
         - name: PreventQueryByForbiddenFields
@@ -408,6 +418,114 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
+      - id: countLists
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/count
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countLists/policy
+        - name: AddSetsToQuery
+        - RemoveRequestHeader=Authorization
+      - id: findListById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findListById/policy
+        - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
+      - id: updateListById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateListById/policy
+        - RemoveRequestHeader=Authorization
+      - id: replaceEntityById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/replaceListById/policy
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/lists/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
+      - id: deleteListById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteListById/policy
+        - RemoveRequestHeader=Authorization
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -593,6 +711,8 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: AcquireLockForCreation
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -621,6 +741,8 @@ spring:
           args:
             policyName: /policies/fields/genericentities/policy
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - name: AddSetsToQuery
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
@@ -714,6 +836,8 @@ spring:
         - RemoveRequestHeader=Authorization
         - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/genericentities/policy
