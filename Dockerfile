@@ -4,7 +4,7 @@ WORKDIR /workspace
 RUN mvn package -Dmaven.test.skip=true
 
 
-FROM openjdk:17-alpine
+FROM azul/zulu-openjdk:17-jre-headless-latest
 
 COPY --from=builder /workspace/target/*.jar  /opt/app.jar
 WORKDIR /opt
