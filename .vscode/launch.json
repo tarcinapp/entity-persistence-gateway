@@ -10,6 +10,18 @@
             "projectName": "entity-persistence-gateway",
             "args": "--spring.profiles.active=dev",
             "vmArgs": "-Dlog4j2.isThreadContextMapInheritable=true"
+        },
+        {
+            "type": "java",
+            "name": "Debug with Dependencies",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "com.tarcinapp.entitypersistencegateway.EntityPersistenceGatewayApplication",
+            "projectName": "entity-persistence-gateway",
+            "args": "--spring.profiles.active=dev",
+            "vmArgs": "-Dlog4j2.isThreadContextMapInheritable=true",
+            "preLaunchTask": "Start All Dependencies"
         }
     ]
 }
