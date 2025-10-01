@@ -177,7 +177,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -226,11 +226,11 @@ spring:
             recordType: entities
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -276,7 +276,7 @@ spring:
             recordType: entities
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -320,7 +320,7 @@ spring:
             policyName: /policies/auth/routes/replaceEntityById/policy
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
       - id: deleteEntityById
@@ -724,7 +724,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: findAllEntitiesByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -747,7 +747,7 @@ spring:
         - name: ConvertKindPathToQueryForFindEntities
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
@@ -757,7 +757,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: replaceEntityByIdKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -782,7 +782,7 @@ spring:
             policyName: /policies/auth/routes/replaceEntityById/policy
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
       - id: countEntitiesByKindPath
@@ -852,7 +852,7 @@ spring:
             recordType: entities
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/genericentities/policy
+            policyName: /policies/fields/entities/policy
       - id: updateEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
