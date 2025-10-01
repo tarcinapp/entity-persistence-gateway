@@ -91,7 +91,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                     });
 
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-            String creationDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.getCreationDateTime());
+            String creationDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.get_creationDateTime());
             String authSubject = gatewaySecurityContext.getAuthSubject();
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
             
@@ -102,7 +102,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
             fieldsToAdd.stream().forEach(field -> {
 
                 if (field.equals(ManagedField.CREATED_BY) && authSubject != null)
-                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.getCreatedBy());
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.get_createdBy());
 
                 if (field.equals(ManagedField.LAST_UPDATED_BY) && authSubject != null)
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);

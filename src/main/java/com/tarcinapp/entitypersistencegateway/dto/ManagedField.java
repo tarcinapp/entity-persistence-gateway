@@ -1,12 +1,12 @@
 package com.tarcinapp.entitypersistencegateway.dto;
 
 public enum ManagedField {
-    OWNER_USERS("ownerUsers"),
-    VIEWER_USERS("viewerUsers"),
-    CREATED_BY("createdBy"),
-    LAST_UPDATED_BY("lastUpdatedBy"),
-    CREATION_DATE_TIME("creationDateTime"),
-    LAST_UPDATED_DATE_TIME("lastUpdatedDateTime");
+    OWNER_USERS("_ownerUsers"),
+    VIEWER_USERS("_viewerUsers"),
+    CREATED_BY("_createdBy"),
+    LAST_UPDATED_BY("_lastUpdatedBy"),
+    CREATION_DATE_TIME("_creationDateTime"),
+    LAST_UPDATED_DATE_TIME("_lastUpdatedDateTime");
 
     private String fieldName;
 

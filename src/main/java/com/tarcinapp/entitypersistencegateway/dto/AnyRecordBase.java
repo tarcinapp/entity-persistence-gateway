@@ -15,227 +15,227 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class AnyRecordBase {
 
-    private String id;
-    private String kind;
-    private String name;
-    private String slug;
-    private String visibility;
-    private List<String> ownerUsers;
-    private List<String> ownerGroups;
-    private int ownerUsersCount;
-    private int ownerGroupsCount;
-    private List<String> viewerUsers;
-    private List<String> viewerGroups;
-    private int viewerUsersCount;
-    private int viewerGroupsCount;
-    private String lastUpdatedBy;
-    private String createdBy;
-    private Integer version;
-    private String idempotencyKey;
-    private String application;
+    private String _id;
+    private String _kind;
+    private String _name;
+    private String _slug;
+    private String _visibility;
+    private List<String> _ownerUsers;
+    private List<String> _ownerGroups;
+    private int _ownerUsersCount;
+    private int _ownerGroupsCount;
+    private List<String> _viewerUsers;
+    private List<String> _viewerGroups;
+    private int _viewerUsersCount;
+    private int _viewerGroupsCount;
+    private String _lastUpdatedBy;
+    private String _createdBy;
+    private Integer _version;
+    private String _idempotencyKey;
+    private String _application;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    private ZonedDateTime creationDateTime;
+    private ZonedDateTime _creationDateTime;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    private ZonedDateTime validFromDateTime;
+    private ZonedDateTime _validFromDateTime;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    private ZonedDateTime validUntilDateTime;
+    private ZonedDateTime _validUntilDateTime;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    private ZonedDateTime lastUpdatedDateTime;
+    private ZonedDateTime _lastUpdatedDateTime;
 
     @JsonIgnore
-    private Map<String, Object> properties;
+    private Map<String, Object> _properties;
 
     public AnyRecordBase() {
-        properties = new HashMap<>();
+        _properties = new HashMap<>();
     }
 
-    public String getKind() {
-        return this.kind;
+    public String get_kind() {
+        return this._kind;
     }
 
-    public void setKind(String kind) {
-        this.kind = kind;
+    public void set_kind(String _kind) {
+        this._kind = _kind;
     }
 
-    public String getId() {
-        return this.id;
+    public String get_id() {
+        return this._id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
-    public String getName() {
-        return this.name;
+    public String get_name() {
+        return this._name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void set_name(String _name) {
+        this._name = _name;
     }
 
-    public String getSlug() {
-        return this.slug;
+    public String get_slug() {
+        return this._slug;
     }
 
-    public void setSlug(String slug) {
-        this.slug = slug;
+    public void set_slug(String _slug) {
+        this._slug = _slug;
     }
 
-    public List<String> getOwnerUsers() {
-        return this.ownerUsers;
+    public List<String> get_ownerUsers() {
+        return this._ownerUsers;
     }
 
-    public void setOwnerUsers(List<String> ownerUsers) {
-        this.ownerUsers = ownerUsers;
+    public void set_ownerUsers(List<String> _ownerUsers) {
+        this._ownerUsers = _ownerUsers;
     }
 
-    public List<String> getOwnerGroups() {
-        return this.ownerGroups;
+    public List<String> get_ownerGroups() {
+        return this._ownerGroups;
     }
 
-    public void setOwnerGroups(List<String> ownerGroups) {
-        this.ownerGroups = ownerGroups;
+    public void set_ownerGroups(List<String> _ownerGroups) {
+        this._ownerGroups = _ownerGroups;
     }
 
-    public String getVisibility() {
-        return this.visibility;
+    public String get_visibility() {
+        return this._visibility;
     }
 
-    public void setVisibility(String visibility) {
-        this.visibility = visibility;
+    public void set_visibility(String _visibility) {
+        this._visibility = _visibility;
     }
 
-    public ZonedDateTime getCreationDateTime() {
-        return this.creationDateTime;
+    public ZonedDateTime get_creationDateTime() {
+        return this._creationDateTime;
     }
 
-    public ZonedDateTime getValidUntilDateTime() {
-        return this.validUntilDateTime;
+    public ZonedDateTime get_validUntilDateTime() {
+        return this._validUntilDateTime;
     }
 
-    public void setValidUntilDateTime(ZonedDateTime validUntilDateTime) {
-        this.validUntilDateTime = validUntilDateTime;
+    public void set_validUntilDateTime(ZonedDateTime _validUntilDateTime) {
+        this._validUntilDateTime = _validUntilDateTime;
     }
 
-    public void setCreationDateTime(ZonedDateTime creationDateTime) {
-        this.creationDateTime = creationDateTime;
+    public void set_creationDateTime(ZonedDateTime _creationDateTime) {
+        this._creationDateTime = _creationDateTime;
     }
 
-    public ZonedDateTime getValidFromDateTime() {
-        return this.validFromDateTime;
+    public ZonedDateTime get_validFromDateTime() {
+        return this._validFromDateTime;
     }
 
-    public void setValidFromDateTime(ZonedDateTime validFromDateTime) {
-        this.validFromDateTime = validFromDateTime;
+    public void set_validFromDateTime(ZonedDateTime _validFromDateTime) {
+        this._validFromDateTime = _validFromDateTime;
     }
 
-    public ZonedDateTime getLastUpdatedDateTime() {
-        return this.lastUpdatedDateTime;
+    public ZonedDateTime get_lastUpdatedDateTime() {
+        return this._lastUpdatedDateTime;
     }
 
-    public void setLastUpdatedDateTime(ZonedDateTime lastUpdatedDateTime) {
-        this.lastUpdatedDateTime = lastUpdatedDateTime;
+    public void set_lastUpdatedDateTime(ZonedDateTime _lastUpdatedDateTime) {
+        this._lastUpdatedDateTime = _lastUpdatedDateTime;
     }
 
-    public int getOwnerUsersCount() {
-        return this.ownerUsersCount;
+    public int get_ownerUsersCount() {
+        return this._ownerUsersCount;
     }
 
-    public void setOwnerUsersCount(int ownerUsersCount) {
-        this.ownerUsersCount = ownerUsersCount;
+    public void set_ownerUsersCount(int _ownerUsersCount) {
+        this._ownerUsersCount = _ownerUsersCount;
     }
 
-    public int getOwnerGroupsCount() {
-        return this.ownerGroupsCount;
+    public int get_ownerGroupsCount() {
+        return this._ownerGroupsCount;
     }
 
-    public void setOwnerGroupsCount(int ownerGroupsCount) {
-        this.ownerGroupsCount = ownerGroupsCount;
+    public void set_ownerGroupsCount(int _ownerGroupsCount) {
+        this._ownerGroupsCount = _ownerGroupsCount;
     }
 
-    public String getLastUpdatedBy() {
-        return this.lastUpdatedBy;
+    public String get_lastUpdatedBy() {
+        return this._lastUpdatedBy;
     }
 
-    public void setLastUpdatedBy(String lastUpdatedBy) {
-        this.lastUpdatedBy = lastUpdatedBy;
+    public void set_lastUpdatedBy(String _lastUpdatedBy) {
+        this._lastUpdatedBy = _lastUpdatedBy;
     }
 
-    public String getCreatedBy() {
-        return this.createdBy;
+    public String get_createdBy() {
+        return this._createdBy;
     }
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
+    public void set_createdBy(String _createdBy) {
+        this._createdBy = _createdBy;
     }
 
-    public Integer getVersion() {
-        return version;
+    public Integer get_version() {
+        return _version;
     }
 
-    public void setVersion(Integer version) {
-        this.version = version;
+    public void set_version(Integer _version) {
+        this._version = _version;
     }
 
-    public String getIdempotencyKey() {
-        return idempotencyKey;
+    public String get_idempotencyKey() {
+        return _idempotencyKey;
     }
 
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
+    public void set_idempotencyKey(String _idempotencyKey) {
+        this._idempotencyKey = _idempotencyKey;
     }
 
-    public String getApplication() {
-        return application;
+    public String get_application() {
+        return _application;
     }
 
-    public void setApplication(String application) {
-        this.application = application;
+    public void set_application(String _application) {
+        this._application = _application;
     }
 
-        public List<String> getViewerUsers() {
-        return this.viewerUsers;
+        public List<String> get_viewerUsers() {
+        return this._viewerUsers;
     }
 
-    public void setViewerUsers(List<String> viewerUsers) {
-        this.viewerUsers = viewerUsers;
+    public void set_viewerUsers(List<String> _viewerUsers) {
+        this._viewerUsers = _viewerUsers;
     }
 
-    public List<String> getViewerGroups() {
-        return this.viewerGroups;
+    public List<String> get_viewerGroups() {
+        return this._viewerGroups;
     }
 
-    public void setViewerGroups(List<String> viewerGroups) {
-        this.viewerGroups = viewerGroups;
+    public void set_viewerGroups(List<String> _viewerGroups) {
+        this._viewerGroups = _viewerGroups;
     }
 
-    public int getViewerUsersCount() {
-        return viewerUsersCount;
+    public int get_viewerUsersCount() {
+        return _viewerUsersCount;
     }
 
-    public void setViewerUsersCount(int viewerUsersCount) {
-        this.viewerUsersCount = viewerUsersCount;
+    public void set_viewerUsersCount(int _viewerUsersCount) {
+        this._viewerUsersCount = _viewerUsersCount;
     }
 
-    public int getViewerGroupsCount() {
-        return viewerGroupsCount;
+    public int get_viewerGroupsCount() {
+        return _viewerGroupsCount;
     }
 
-    public void setViewerGroupsCount(int viewerGroupsCount) {
-        this.viewerGroupsCount = viewerGroupsCount;
+    public void set_viewerGroupsCount(int _viewerGroupsCount) {
+        this._viewerGroupsCount = _viewerGroupsCount;
     }
 
     @JsonAnySetter
     public void setCustomFields(String property, Object value) {
-        properties.put(property, value);
+        _properties.put(property, value);
     }
 
     @JsonAnyGetter
     public Map<String, Object> getCustomFields() {
-        return this.properties;
+        return this._properties;
     }
 }

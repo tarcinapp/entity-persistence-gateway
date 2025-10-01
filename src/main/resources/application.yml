@@ -68,9 +68,9 @@ app:
   # predefined field sets
   fieldsets:
     managed:
-      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
+      show: _id, _kind, _slug, _visibility, _version, _ownerUsers, _ownerGroups, _creationDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
     unmanaged:
-      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
+      hide: _slug, _visibility, _version, _ownerUsers, _ownerGroups, _creationDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
   
   # predefined queriers
   queries:
@@ -85,10 +85,10 @@ app:
     inactives: "'sets[inactives]'"
 
     # ?q=name&name={name}
-    name: "'filter[where][name]=' + #query['name']"
+    name: "'filter[where][_name]=' + #query['name']"
 
     # ?q=slug&slug={slug}
-    slug: "'filter[where][slug]=' + #query['slug']"
+    slug: "'filter[where][_slug]=' + #query['slug']"
 
   # set false if you want to prevent loopback notation in query parameters
   allowLoopbackQueryNotation: true
@@ -98,7 +98,7 @@ app:
 
   # base schema used for all managed fields. 
   schemas:
-    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"creationDateTime":{"type":"string","format":"date-time"},"lastUpdatedDateTime":{"type":"string","format":"date-time"},"validFromDateTime":{"type":"string","format":"date-time","nullable":true},"validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"visibility":{"type":"string","enum":["public","protected","private"]},"version":{"type":"number"},"lastUpdatedBy":{"type":"string"},"createdBy":{"type":"string"},"ownerUsers":{"type":"array","items":{"type":"string"}},"ownerGroups":{"type":"array","items":{"type":"string"}},"ownerUsersCount":{"type":"number"},"ownerGroupsCount":{"type":"number"},"viewerUsers":{"type":"array","items":{"type":"string"}},"viewerGroups":{"type":"array","items":{"type":"string"}},"viewerUsersCount":{"type":"number"},"viewerGroupsCount":{"type":"number"},"idempotencyKey":{"type":"string"}},"required":["name"]}'
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_slug":{"type":"string"},"_creationDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
     
   # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
   

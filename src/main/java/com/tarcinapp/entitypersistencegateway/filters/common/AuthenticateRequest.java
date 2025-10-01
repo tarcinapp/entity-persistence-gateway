@@ -483,38 +483,38 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         // TODO: If there is a ClassCastException thrown here, it must be returned as a validation exception
 
         // extract managed fields from body
-        String id = (String) payloadJSON.get("id");
-        String kind = (String) payloadJSON.get("kind");
-        String name = (String) payloadJSON.get("name");
-        String slug = (String) payloadJSON.get("slug");
-        String visibility = (String) payloadJSON.get("visibility");
-        String creationDateTime = (String) payloadJSON.get("creationDateTime");
-        String validFromDateTime = (String) payloadJSON.get("validFromDateTime");
-        String validUntilDateTime = (String) payloadJSON.get("validUntilDateTime");
+        String id = (String) payloadJSON.get("_id");
+        String kind = (String) payloadJSON.get("_kind");
+        String name = (String) payloadJSON.get("_name");
+        String slug = (String) payloadJSON.get("_slug");
+        String visibility = (String) payloadJSON.get("_visibility");
+        String creationDateTime = (String) payloadJSON.get("_creationDateTime");
+        String validFromDateTime = (String) payloadJSON.get("_validFromDateTime");
+        String validUntilDateTime = (String) payloadJSON.get("_validUntilDateTime");
 
         @SuppressWarnings("unchecked")
-        List<String> ownerUsers = (List<String>) payloadJSON.get("ownerUsers");
+        List<String> ownerUsers = (List<String>) payloadJSON.get("_ownerUsers");
 
         @SuppressWarnings("unchecked")
-        List<String> ownerGroups = (List<String>) payloadJSON.get("ownerGroups");
+        List<String> ownerGroups = (List<String>) payloadJSON.get("_ownerGroups");
 
-        recordBaseFromPayload.setId(id);
-        recordBaseFromPayload.setKind(kind);
-        recordBaseFromPayload.setName(name);
-        recordBaseFromPayload.setSlug(slug);
-        recordBaseFromPayload.setVisibility(visibility);
+        recordBaseFromPayload.set_id(id);
+        recordBaseFromPayload.set_kind(kind);
+        recordBaseFromPayload.set_name(name);
+        recordBaseFromPayload.set_slug(slug);
+        recordBaseFromPayload.set_visibility(visibility);
 
         if (creationDateTime != null)
-            recordBaseFromPayload.setCreationDateTime(ZonedDateTime.parse(creationDateTime));
+            recordBaseFromPayload.set_creationDateTime(ZonedDateTime.parse(creationDateTime));
 
         if (validFromDateTime != null)
-            recordBaseFromPayload.setValidFromDateTime(ZonedDateTime.parse(validFromDateTime));
+            recordBaseFromPayload.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));
 
         if (validUntilDateTime != null)
-            recordBaseFromPayload.setValidUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
+            recordBaseFromPayload.set_validUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
 
-        recordBaseFromPayload.setOwnerUsers(ownerUsers);
-        recordBaseFromPayload.setOwnerGroups(ownerGroups);
+        recordBaseFromPayload.set_ownerUsers(ownerUsers);
+        recordBaseFromPayload.set_ownerGroups(ownerGroups);
 
         return recordBaseFromPayload;
     }
