@@ -505,7 +505,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         recordBaseFromPayload.set_visibility(visibility);
 
         if (_createdDateTime != null)
-            recordBaseFromPayload.set__createdDateTime(ZonedDateTime.parse(_createdDateTime));
+            recordBaseFromPayload.set_createdDateTime(ZonedDateTime.parse(_createdDateTime));
 
         if (validFromDateTime != null)
             recordBaseFromPayload.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));
