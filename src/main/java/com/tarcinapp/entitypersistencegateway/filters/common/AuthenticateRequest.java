@@ -488,7 +488,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         String name = (String) payloadJSON.get("_name");
         String slug = (String) payloadJSON.get("_slug");
         String visibility = (String) payloadJSON.get("_visibility");
-        String creationDateTime = (String) payloadJSON.get("_creationDateTime");
+        String _createdDateTime = (String) payloadJSON.get("__createdDateTime");
         String validFromDateTime = (String) payloadJSON.get("_validFromDateTime");
         String validUntilDateTime = (String) payloadJSON.get("_validUntilDateTime");
 
@@ -504,8 +504,8 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         recordBaseFromPayload.set_slug(slug);
         recordBaseFromPayload.set_visibility(visibility);
 
-        if (creationDateTime != null)
-            recordBaseFromPayload.set_creationDateTime(ZonedDateTime.parse(creationDateTime));
+        if (_createdDateTime != null)
+            recordBaseFromPayload.set__createdDateTime(ZonedDateTime.parse(_createdDateTime));
 
         if (validFromDateTime != null)
             recordBaseFromPayload.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));

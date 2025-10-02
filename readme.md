@@ -55,7 +55,7 @@ The Tarcinapp suite is a comprehensive and flexible application framework, harmo
   <img src="./doc/img/tarcinapp.png" alt="Tarcinapp Suite Overview">
 </p>
 
-At its core is the **Entity Persistence Service**, an easily adaptable REST-based backend application built on the [Loopback 4](https://loopback.io) framework. This service utilizes on a schemaless MongoDB database to provide a scalable and highly adaptable data persistence layer. Offering a generic data model with predefined fields such as `id`, `name`,  `kind`, `lastUpdateDateTime`, `creationDateTime`, `ownerUsers` and [more](#programming-conventions), it effortlessly adapts to diverse use cases.  
+At its core is the **Entity Persistence Service**, an easily adaptable REST-based backend application built on the [Loopback 4](https://loopback.io) framework. This service utilizes on a schemaless MongoDB database to provide a scalable and highly adaptable data persistence layer. Offering a generic data model with predefined fields such as `id`, `name`,  `kind`, `lastUpdateDateTime`, `_createdDateTime`, `ownerUsers` and [more](#programming-conventions), it effortlessly adapts to diverse use cases.  
 
 The integration with the **Entity Persistence Gateway** empowers users to implement enhanced validation, authentication, authorization, and rate-limiting functionalities. Leveraging the power of **Redis**, the application seamlessly manages distributed locks and rate limiting. Furthermore, the ecosystem includes the [Open Policy Agent (OPA](https://www.openpolicyagent.org)) to enforce policies, safeguarding your application against unauthorized access and ensuring compliance with your security and operational requirements.  
   
@@ -82,7 +82,7 @@ Here's a more structured list of the capabilities provided by the Entity Persist
 
 5. **Authorization Policy Execution**: Leveraging the Open Policy Agent (OPA), the gateway executes authorization policies that determine who can create, update, or query specific records, providing fine-grained access control.
 
-6. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., `ownerUsers`, `ownerGroups`, `creationDateTime`, `createdBy`, `lastUpdatedDateTime`, `lastUpdatedBy`, `viewerUsers`, `viewerGroups`) according to the caller's role, ensuring controlled access and data integrity.  
+6. **Role-Based Field Management**: The gateway dynamically manages certain fields (e.g., `ownerUsers`, `ownerGroups`, `_createdDateTime`, `createdBy`, `lastUpdatedDateTime`, `lastUpdatedBy`, `viewerUsers`, `viewerGroups`) according to the caller's role, ensuring controlled access and data integrity.  
 
 7. **Logging & Tracing Request-Response**: Control of loggers are simplified with Tarcinapp. Switching request response trace logging is as simple as configuring `app.logging.http: TRACE`.
 
@@ -106,7 +106,7 @@ These capabilities collectively empower the Entity Persistence Gateway to delive
 
 ## Managed Fields
 Gateway application is responsible for managing and populating certain fields during the creation and update of entities. These fields are considered as managed fields and are added to the request payload before it is sent to the backend service. Managed fields include:
-* `creationDateTime`
+* `_createdDateTime`
 * `lastUpdatedDateTime`
 * `ownerUsers`
 * `createdBy`
@@ -324,9 +324,9 @@ These are the preconfigured field sets:
 app: 
  fieldsets:
     managed:
-      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
+      show: id, kind, name, slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, _createdDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
     unmanaged:
-      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, creationDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
+      hide: slug, visibility, version, ownerUsers, ownerGroups, ownerUsersCount, ownerGroupsCount, _createdDateTime, lastUpdatedDateTime, lastUpdatedBy, createdBy, validFromDateTime, validUntilDateTime, idempotencyKey, viewerUsers, viewerGroups, viewerUsersCount, viewerGroupsCount
 ```
   
 `app.fieldsets.managed`: Selects only the managed fields from the backend.  

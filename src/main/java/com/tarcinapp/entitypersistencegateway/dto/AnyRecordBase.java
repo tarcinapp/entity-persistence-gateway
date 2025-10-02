@@ -35,7 +35,7 @@ public class AnyRecordBase {
     private String _application;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    private ZonedDateTime _creationDateTime;
+    private ZonedDateTime _createdDateTime;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime _validFromDateTime;
@@ -109,8 +109,8 @@ public class AnyRecordBase {
         this._visibility = _visibility;
     }
 
-    public ZonedDateTime get_creationDateTime() {
-        return this._creationDateTime;
+    public ZonedDateTime get_createdDateTime() {
+        return this._createdDateTime;
     }
 
     public ZonedDateTime get_validUntilDateTime() {
@@ -121,8 +121,8 @@ public class AnyRecordBase {
         this._validUntilDateTime = _validUntilDateTime;
     }
 
-    public void set_creationDateTime(ZonedDateTime _creationDateTime) {
-        this._creationDateTime = _creationDateTime;
+    public void set_createdDateTime(ZonedDateTime _createdDateTime) {
+        this._createdDateTime = _createdDateTime;
     }
 
     public ZonedDateTime get_validFromDateTime() {

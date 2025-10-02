@@ -5,10 +5,10 @@ public enum ManagedField {
     VIEWER_USERS("_viewerUsers"),
     CREATED_BY("_createdBy"),
     LAST_UPDATED_BY("_lastUpdatedBy"),
-    CREATION_DATE_TIME("_creationDateTime"),
+    CREATION_DATE_TIME("_createdDateTime"),
     LAST_UPDATED_DATE_TIME("_lastUpdatedDateTime");
 
-    private String fieldName;
+    private final String fieldName;
 
     ManagedField(String fieldName) {
         this.fieldName = fieldName;

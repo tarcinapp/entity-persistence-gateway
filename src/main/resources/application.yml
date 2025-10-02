@@ -68,9 +68,9 @@ app:
   # predefined field sets
   fieldsets:
     managed:
-      show: _id, _kind, _slug, _visibility, _version, _ownerUsers, _ownerGroups, _creationDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
+      show: _id, _kind, _slug, _visibility, _version, _ownerUsers, _ownerGroups, _createdDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
     unmanaged:
-      hide: _slug, _visibility, _version, _ownerUsers, _ownerGroups, _creationDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
+      hide: _slug, _visibility, _version, _ownerUsers, _ownerGroups, _createdDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
   
   # predefined queriers
   queries:
@@ -98,7 +98,7 @@ app:
 
   # base schema used for all managed fields. 
   schemas:
-    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_slug":{"type":"string"},"_creationDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
     
   # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
   

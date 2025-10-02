@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
  * not exist in payload, backend removes it from the record.
  * 
  * There are some cases where user is unauthorized to send managed fields:
- * createdBy, lastUpdatedBy, creationDateTime, lastUpdatedDateTime
+ * createdBy, lastUpdatedBy, _createdDateTime, lastUpdatedDateTime
  * 
  * To not to lose these parameters, this filter taking values from the original
  * record and modifies the request payload.
@@ -91,7 +91,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                     });
 
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-            String creationDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.get_creationDateTime());
+            String createdDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.get_createdDateTime());
             String authSubject = gatewaySecurityContext.getAuthSubject();
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
             
@@ -108,7 +108,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);
 
                 if (field.equals(ManagedField.CREATION_DATE_TIME))
-                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), creationDateTime);
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), createdDateTime);
 
                 if (field.equals(ManagedField.LAST_UPDATED_DATE_TIME))
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
