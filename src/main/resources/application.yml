@@ -284,7 +284,7 @@ spring:
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}
+        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -309,7 +309,7 @@ spring:
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}
+        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
@@ -330,7 +330,7 @@ spring:
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}
+        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
@@ -355,7 +355,7 @@ spring:
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}
+        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
@@ -570,7 +570,7 @@ spring:
       - id: findListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -595,7 +595,7 @@ spring:
       - id: updateListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
@@ -616,7 +616,7 @@ spring:
       - id: replaceListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
@@ -641,7 +641,7 @@ spring:
       - id: deleteListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}
+        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
@@ -852,7 +852,7 @@ spring:
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -863,7 +863,7 @@ spring:
       - id: updateRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -877,7 +877,7 @@ spring:
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestRateLimiter
@@ -891,7 +891,7 @@ spring:
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId}
+        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
@@ -976,7 +976,7 @@ spring:
       - id: replaceEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
@@ -1046,7 +1046,7 @@ spring:
       - id: findEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -1071,7 +1071,7 @@ spring:
       - id: updateEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
@@ -1093,7 +1093,7 @@ spring:
       - id: deleteEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId}
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
