@@ -341,6 +341,99 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+      - id: findEntityChildren
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}entities/{recordId}/children
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntityChildren/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+          args:
+            recordType: entities
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: createEntityChild
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}entities/{recordId}/children
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createEntityChild/policy
+        - name: AcquireLockForCreation
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: findEntityParents
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}entities/{recordId}/parents
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/parents, ${app.backend.baseUri}entities/${recordId}/parents
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findEntityParents/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+          args:
+            recordType: entities
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
       # list controller
       - id: createList
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -534,6 +627,99 @@ spring:
           args:
             policyName: /policies/auth/routes/deleteListById/policy
         - RemoveRequestHeader=Authorization
+      - id: findListChildren
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}/children
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findListChildren/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+          args:
+            recordType: lists
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
+      - id: createListChild
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}/children
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: 1KB
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createListChild/policy
+        - name: AcquireLockForCreation
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
+      - id: findListParents
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}lists/{recordId}/parents
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/parents, ${app.backend.baseUri}lists/${recordId}/parents
+        - name: AuthenticateRequest
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findListParents/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+          args:
+            recordType: lists
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
       # relations controller on entity
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}

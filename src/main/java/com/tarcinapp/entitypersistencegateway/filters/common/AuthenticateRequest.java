@@ -422,17 +422,23 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
                          * from the backend, we need to know the original resource URL, which is
                          * accessible from the
                          * KindPathConfigAttr.
+                         * 
+                         * POST method is received if we are adding parent or children to a record
                          */
-                        if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH) {
+                        if (request.getMethod() == HttpMethod.PUT || request.getMethod() == HttpMethod.PATCH || request.getMethod() == HttpMethod.POST) {
                             String originalResourceUrl = request.getPath().toString();
 
-                            // check if we have a kindPath configuration
+                            // First, check if we have a kindPath configuration and get the mapped URL
                             KindPathConfigAttr kindPathConfigAttr = exchange.getAttribute("KindPathConfigAttr");
-
                             if (kindPathConfigAttr != null && kindPathConfigAttr.isKindPathConfigured()) {
-
-                                // we have a kindPath configuration
+                                // we have a kindPath configuration, use the original resource URL from it
                                 originalResourceUrl = kindPathConfigAttr.getOriginalResourceUrl();
+                            }
+
+                            // Then, handle relation endpoints by removing /children or /parents if present
+                            if (originalResourceUrl.contains("/children") || originalResourceUrl.contains("/parents")) {
+                                // Remove /children or /parents to get the parent resource URL
+                                originalResourceUrl = originalResourceUrl.replaceAll("/(children|parents)$", "");
                             }
 
                             return this.backendBaseClient.get(originalResourceUrl, AnyRecordBase.class)
