@@ -93,6 +93,35 @@ app:
   # set false if you want to prevent loopback notation in query parameters
   allowLoopbackQueryNotation: true
   
+  # request size limits configuration (only for operations with request bodies)
+  requestSizes:
+    # default sizes for operations that send request bodies
+    default:
+      create: 10KB
+      update: 10KB
+    
+    # entity-specific sizes
+    entities:
+      create: ${app.requestSizes.default.create}
+      update: ${app.requestSizes.default.update}
+      createChild: ${app.requestSizes.default.create}
+      
+    # list-specific sizes  
+    lists:
+      create: ${app.requestSizes.default.create}
+      update: ${app.requestSizes.default.update}
+      createChild: ${app.requestSizes.default.create}
+      
+    # relation-specific sizes
+    relations:
+      create: ${app.requestSizes.default.create}
+      update: ${app.requestSizes.default.update}
+      
+    # reaction-specific sizes (for future implementation)
+    reactions:
+      create: 5KB
+      update: 5KB
+  
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath, updateAllLists
 
@@ -156,9 +185,9 @@ spring:
         - Method=POST
         filters:
         - name: RequestSize
-        - name: CheckIfRouteEnabled
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.create}
+        - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -186,7 +215,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
@@ -285,7 +314,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
@@ -306,7 +335,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
@@ -381,7 +410,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.createChild}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
@@ -442,9 +471,9 @@ spring:
         - Method=POST
         filters:
         - name: RequestSize
-        - name: CheckIfRouteEnabled
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.lists.create}
+        - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
@@ -472,7 +501,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
@@ -571,7 +600,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
@@ -584,7 +613,7 @@ spring:
           args:
             policyName: /policies/auth/routes/updateListById/policy
         - RemoveRequestHeader=Authorization
-      - id: replaceEntityById
+      - id: replaceListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}lists/{recordId}
@@ -592,7 +621,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
@@ -667,7 +696,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.lists.createChild}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequest
@@ -778,7 +807,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.relations.create}
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -792,7 +821,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.relations.update}
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -844,7 +873,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.relations.update}
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -858,7 +887,7 @@ spring:
               burstCapacity: 20
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.relations.update}
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -888,7 +917,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
         - name: PlaceKindNameInRequestForEntityManagement
@@ -944,7 +973,7 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
-      - id: replaceEntityByIdKindPath
+      - id: replaceEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}{kindPath}/{recordId}
@@ -952,7 +981,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
@@ -1001,7 +1030,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
         - name: AuthenticateRequest
@@ -1047,7 +1076,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: 1KB
+            maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequest
