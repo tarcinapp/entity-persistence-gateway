@@ -32,6 +32,14 @@ app:
     port: 8081
     baseUri: /api/v1/
     metricsEnabled: true
+    
+    # controller path prefixes
+    controllerPaths:
+      entities: entities
+      lists: lists
+      relations: relations
+      explorer: explorer
+    
     cors:
       allowedOrigins: "http://localhost:8080"
       allowedMethods: "GET, POST, PUT, PATCH, DELETE"
@@ -181,14 +189,14 @@ spring:
       - id: createEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -210,14 +218,14 @@ spring:
       - id: updateAllEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -231,11 +239,11 @@ spring:
       - id: findEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -263,11 +271,11 @@ spring:
       - id: countEntities
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/count
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -284,11 +292,11 @@ spring:
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -309,14 +317,14 @@ spring:
       - id: updateEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -330,14 +338,14 @@ spring:
       - id: replaceEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -355,11 +363,11 @@ spring:
       - id: deleteEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities, ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -373,11 +381,11 @@ spring:
       - id: findEntityChildren
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/children
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -405,14 +413,14 @@ spring:
       - id: createEntityChild
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/children
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.createChild}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -434,11 +442,11 @@ spring:
       - id: findEntityParents
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/parents
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entities/(?<recordId>.*)/parents, ${app.backend.baseUri}entities/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.backend.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -467,14 +475,14 @@ spring:
       - id: createList
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.lists.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -496,14 +504,14 @@ spring:
       - id: updateAllLists
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -517,11 +525,11 @@ spring:
       - id: findLists
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -549,11 +557,11 @@ spring:
       - id: countLists
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/count
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -570,11 +578,11 @@ spring:
       - id: findListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -595,14 +603,14 @@ spring:
       - id: updateListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -616,14 +624,14 @@ spring:
       - id: replaceListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.lists.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -641,11 +649,11 @@ spring:
       - id: deleteListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists, ${app.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -659,11 +667,11 @@ spring:
       - id: findListChildren
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/children
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -691,14 +699,14 @@ spring:
       - id: createListChild
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/children
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.lists.createChild}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -720,11 +728,11 @@ spring:
       - id: findListParents
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}lists/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/parents
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}lists/(?<recordId>.*)/parents, ${app.backend.baseUri}lists/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.backend.baseUri}lists/${recordId}/parents
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -753,7 +761,7 @@ spring:
       - id: getRelationsOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/relations
         - Method=GET
         filters:
         - name: AuthenticateRequest
@@ -765,7 +773,7 @@ spring:
       - id: createRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/relations
         - Method=POST
         filters:
         - name: AuthenticateRequest
@@ -777,7 +785,7 @@ spring:
       - id: updateRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/relations
         - Method=PATCH
         filters:
         - name: AuthenticateRequest
@@ -789,7 +797,7 @@ spring:
       - id: deleteRelationOnEntity
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}entities/{recordId}/relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/relations
         - Method=DELETE
         filters:
         - name: AuthenticateRequest
@@ -802,7 +810,7 @@ spring:
       - id: createRelation
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=${app.inbound.baseUri}relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=POST
         filters:
         - name: RequestSize
@@ -816,7 +824,7 @@ spring:
       - id: updateAllRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=${app.inbound.baseUri}relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=PATCH
         filters:
         - name: RequestSize
@@ -830,7 +838,7 @@ spring:
       - id: findRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
         predicates:
-        - Path=${app.inbound.baseUri}relations
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -841,7 +849,7 @@ spring:
       - id: countRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations/count
         predicates:
-        - Path=${app.inbound.baseUri}relations/count
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -852,7 +860,7 @@ spring:
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: RequestRateLimiter
@@ -863,7 +871,7 @@ spring:
       - id: updateRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestRateLimiter
@@ -877,7 +885,7 @@ spring:
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestRateLimiter
@@ -891,7 +899,7 @@ spring:
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}relations/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: RequestRateLimiter
@@ -903,7 +911,7 @@ spring:
       - id: explorer
         uri: no://op
         predicates:
-        - Path=${app.inbound.baseUri}explorer
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.explorer}
         filters:
         - name: SetStatus
           args:
