@@ -196,7 +196,10 @@ stop_backend() {
     if [ -f "$BACKEND_PID_FILE" ]; then
         local pid=$(cat "$BACKEND_PID_FILE")
         print_status "Stopping backend (PID: $pid)..."
+        # Kill the process and all its children
         if kill "$pid" 2>/dev/null; then
+            # Also kill any child processes
+            pkill -P "$pid" 2>/dev/null
             rm -f "$BACKEND_PID_FILE"
             print_success "Backend stopped"
         else
@@ -204,7 +207,17 @@ stop_backend() {
             rm -f "$BACKEND_PID_FILE"
         fi
     else
-        print_warning "Backend not running"
+        print_warning "Backend not running (checking for orphaned processes)"
+    fi
+    
+    # Additional cleanup: kill any node processes running from the backend directory
+    local backend_pids=$(lsof -ti :3000 2>/dev/null)
+    if [ -n "$backend_pids" ]; then
+        print_status "Found backend process(es) on port 3000: $backend_pids"
+        for pid in $backend_pids; do
+            print_status "Killing backend process $pid..."
+            kill "$pid" 2>/dev/null && print_success "Killed process $pid" || print_warning "Could not kill process $pid"
+        done
     fi
 }
 
