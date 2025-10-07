@@ -1,12 +1,12 @@
 package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
-import java.nio.file.WatchEvent.Kind;
 import java.util.Map;
 import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -35,6 +35,10 @@ public class PlaceKindNameInRequestForEntityManagement
 
     @Autowired
     private EntityKindsConfig entityKindsConfig;
+    
+    @Value("${app.inbound.controllerPaths.entities:entities}")
+    private String entitiesControllerPath;
+    
     private Logger logger = LogManager.getLogger(PlaceKindNameInRequestForEntityManagement.class);
 
     public PlaceKindNameInRequestForEntityManagement() {
@@ -76,7 +80,7 @@ public class PlaceKindNameInRequestForEntityManagement
         KindPathConfigAttr kindPathConfigAttr = new KindPathConfigAttr();
         kindPathConfigAttr.setKindPathConfigured(true);
         kindPathConfigAttr.setKindName(foundEntityKindConfig.getName());
-        kindPathConfigAttr.setOriginalResourceUrl("/entities/" + recordId);
+        kindPathConfigAttr.setOriginalResourceUrl("/" + entitiesControllerPath + "/" + recordId);
 
         // Place kindPathConfigAttr to the request attributes.
         exchange.getAttributes().put("KindPathConfigAttr", kindPathConfigAttr);
