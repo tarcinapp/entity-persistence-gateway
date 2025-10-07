@@ -90,6 +90,14 @@ public class AddSetsToQuery
                         logger.debug("User roles are: " + roles);
 
                         /**
+                         * For relations, skip adding sets for now (future implementation)
+                         */
+                        if ("relations".equals(recordType)) {
+                                logger.debug("Skipping set addition for relations recordType. Exiting filter without any modification.");
+                                return chain.filter(exchange);
+                        }
+
+                        /**
                          * If user role is any of the following, we do not need to add sets
                          */
                         Stream<String> prefixedRolesStream = Stream.of(

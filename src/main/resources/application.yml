@@ -808,105 +808,212 @@ spring:
               burstCapacity: 20
       # relations controller
       - id: createRelation
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=POST
         filters:
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}list-entity-relations
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.relations.create}
+        - name: CheckIfRouteEnabled
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/createRelation/policy
+        - name: AcquireLockForCreation
+        - name: AddManagedFieldsInCreation
+          args:
+            excludeFields:
+              - OWNER_USERS
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: relations
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/relations/policy
       - id: updateAllRelations
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=PATCH
         filters:
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}list-entity-relations
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.relations.update}
+        - name: CheckIfRouteEnabled
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/updateAllRelations/policy
+        - RemoveRequestHeader=Authorization
       - id: findRelations
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=GET
         filters:
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}list-entity-relations
+        - name: CheckIfRouteEnabled
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findRelations/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: relations
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToQuery
+          args:
+            recordType: relations
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/relations/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/relations/policy
       - id: countRelations
-        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}/relations/count
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count
         - Method=GET
         filters:
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count, ${app.backend.baseUri}list-entity-relations/count
+        - name: CheckIfRouteEnabled
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/countRelations/policy
+        - name: AddSetsToQuery
+          args:
+            recordType: relations
+        - RemoveRequestHeader=Authorization
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
+        - name: CheckIfRouteEnabled
+        - name: RewritePath
+          args:
+            regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
+            replacement: ${app.backend.baseUri}list-entity-relations/${recordId}
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/findRelationById/policy
+        - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: relations
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/relations/policy
       - id: updateRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.relations.update}
+        - name: CheckIfRouteEnabled
+        - name: RewritePath
+          args:
+            regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
+            replacement: ${app.backend.baseUri}list-entity-relations/${recordId}
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: RequestSize
+        - name: AuthorizeRequest
           args:
-            maxSize: ${app.requestSizes.relations.update}
+            policyName: /policies/auth/routes/updateRelationById/policy
+        - RemoveRequestHeader=Authorization
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.relations.update}
+        - name: CheckIfRouteEnabled
+        - name: RewritePath
+          args:
+            regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
+            replacement: ${app.backend.baseUri}list-entity-relations/${recordId}
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
-        - name: RequestSize
+        - name: AuthorizeRequest
           args:
-            maxSize: ${app.requestSizes.relations.update}
+            policyName: /policies/auth/routes/replaceRelationById/policy
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/relations/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
       - id: deleteRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
+        - name: CheckIfRouteEnabled
+        - name: RewritePath
+          args:
+            regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
+            replacement: ${app.backend.baseUri}list-entity-relations/${recordId}
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
               replenishRate: 10
               burstCapacity: 20
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/deleteRelationById/policy
+        - RemoveRequestHeader=Authorization
       #explorer controller
       - id: explorer
         uri: no://op

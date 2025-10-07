@@ -93,16 +93,20 @@ public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFi
         List<ManagedField> fieldsToAdd = new ArrayList<ManagedField>();
 
         // if no include or exclude array specified, this filter adds all managed fields
-        if (config.getIncludeFields() == null && config.getIncludeFields() == null)
+        if (config.getIncludeFields() == null && config.getExcludeFields() == null)
             fieldsToAdd = Arrays.asList(ManagedField.values());
 
         // if we have includeFields, excludeFields is ignored
-        else if (config.getExcludeFields() == null)
+        else if (config.getIncludeFields() != null)
             fieldsToAdd = config.getIncludeFields().stream().map(ManagedField::valueOf).collect(Collectors.toList());
 
         // if we reach here we only have exclude fields is configured
-        else
-            fieldsToAdd = config.getExcludeFields().stream().map(ManagedField::valueOf).collect(Collectors.toList());
+        else {
+            List<String> excludeFieldNames = config.getExcludeFields();
+            fieldsToAdd = Arrays.stream(ManagedField.values())
+                .filter(field -> !excludeFieldNames.contains(field.name()))
+                .collect(Collectors.toList());
+        }
 
         return fieldsToAdd;
     }

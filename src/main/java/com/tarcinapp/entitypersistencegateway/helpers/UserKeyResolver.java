@@ -1,10 +1,10 @@
 package com.tarcinapp.entitypersistencegateway.helpers;
 
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
-
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import reactor.core.publisher.Mono;
 
