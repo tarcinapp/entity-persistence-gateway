@@ -5,7 +5,7 @@ package com.tarcinapp.entitypersistencegateway;
  * - Helps other filters to check if kindPath configured.
  * - Helps other filters to get the entity kind name if kindPath configured.
  * - Helps other filters to get original resource URL if kindPath configured.
- *   For instance, if the kindPath is configured as /users, then the original resource URL is /generic-entities/{id}.
+ *   For instance, if the kindPath is configured as /users, then the original resource URL is /entities/{id}.
  *   Knowing the original resource URL is needed for the authorization logic.
  *   Authorization logic needs to know the original resource URL in order to check if the user is authorized to access the original resource.
  */

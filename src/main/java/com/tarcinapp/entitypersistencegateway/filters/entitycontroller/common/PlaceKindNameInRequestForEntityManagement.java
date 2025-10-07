@@ -76,7 +76,7 @@ public class PlaceKindNameInRequestForEntityManagement
         KindPathConfigAttr kindPathConfigAttr = new KindPathConfigAttr();
         kindPathConfigAttr.setKindPathConfigured(true);
         kindPathConfigAttr.setKindName(foundEntityKindConfig.getName());
-        kindPathConfigAttr.setOriginalResourceUrl("/generic-entities/" + recordId);
+        kindPathConfigAttr.setOriginalResourceUrl("/entities/" + recordId);
 
         // Place kindPathConfigAttr to the request attributes.
         exchange.getAttributes().put("KindPathConfigAttr", kindPathConfigAttr);

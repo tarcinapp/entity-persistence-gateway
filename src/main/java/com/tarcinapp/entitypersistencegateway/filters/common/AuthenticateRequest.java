@@ -58,7 +58,7 @@ import reactor.core.publisher.Mono;
  * 
  * Authentication filter may be used for requests coming over kindPath.
  * For instance, if the kindPath is configured as /users/{id}, then the original
- * resource URL is /generic-entities/{id}.
+ * resource URL is /entities/{id}.
  */
 @Component
 public class AuthenticateRequest extends AbstractGatewayFilterFactory<AuthenticateRequest.Config> {
