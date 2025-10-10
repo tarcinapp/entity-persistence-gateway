@@ -2,12 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.Key;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
-import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +13,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 import reactor.core.publisher.Mono;
 
@@ -54,7 +54,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
             return this.filter(config, exchange, chain)
                 .onErrorResume(e -> {
-                    logger.error(e);
+                    logger.error("Authorization filter error: " + e.getMessage(), e);
         
                     ServerHttpResponse response = exchange.getResponse();
                     response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -90,7 +90,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
                 return response.setComplete();
             }).onErrorResume(e -> {
-                logger.error(e);
+                logger.error("Error during policy execution: " + e.getMessage(), e);
     
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
