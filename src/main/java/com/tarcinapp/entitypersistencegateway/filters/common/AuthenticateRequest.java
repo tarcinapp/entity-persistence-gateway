@@ -486,43 +486,51 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         // it in policyData
         AnyRecordBase recordBaseFromPayload = new AnyRecordBase();
 
-        // TODO: If there is a ClassCastException thrown here, it must be returned as a validation exception
+        try {
+            // extract managed fields from body
+            String id = (String) payloadJSON.get("_id");
+            String kind = (String) payloadJSON.get("_kind");
+            String name = (String) payloadJSON.get("_name");
+            String slug = (String) payloadJSON.get("_slug");
+            String visibility = (String) payloadJSON.get("_visibility");
+            String _createdDateTime = (String) payloadJSON.get("__createdDateTime");
+            String validFromDateTime = (String) payloadJSON.get("_validFromDateTime");
+            String validUntilDateTime = (String) payloadJSON.get("_validUntilDateTime");
 
-        // extract managed fields from body
-        String id = (String) payloadJSON.get("_id");
-        String kind = (String) payloadJSON.get("_kind");
-        String name = (String) payloadJSON.get("_name");
-        String slug = (String) payloadJSON.get("_slug");
-        String visibility = (String) payloadJSON.get("_visibility");
-        String _createdDateTime = (String) payloadJSON.get("__createdDateTime");
-        String validFromDateTime = (String) payloadJSON.get("_validFromDateTime");
-        String validUntilDateTime = (String) payloadJSON.get("_validUntilDateTime");
+            @SuppressWarnings("unchecked")
+            List<String> ownerUsers = (List<String>) payloadJSON.get("_ownerUsers");
 
-        @SuppressWarnings("unchecked")
-        List<String> ownerUsers = (List<String>) payloadJSON.get("_ownerUsers");
+            @SuppressWarnings("unchecked")
+            List<String> ownerGroups = (List<String>) payloadJSON.get("_ownerGroups");
 
-        @SuppressWarnings("unchecked")
-        List<String> ownerGroups = (List<String>) payloadJSON.get("_ownerGroups");
+            recordBaseFromPayload.set_id(id);
+            recordBaseFromPayload.set_kind(kind);
+            recordBaseFromPayload.set_name(name);
+            recordBaseFromPayload.set_slug(slug);
+            recordBaseFromPayload.set_visibility(visibility);
 
-        recordBaseFromPayload.set_id(id);
-        recordBaseFromPayload.set_kind(kind);
-        recordBaseFromPayload.set_name(name);
-        recordBaseFromPayload.set_slug(slug);
-        recordBaseFromPayload.set_visibility(visibility);
+            if (_createdDateTime != null)
+                recordBaseFromPayload.set_createdDateTime(ZonedDateTime.parse(_createdDateTime));
 
-        if (_createdDateTime != null)
-            recordBaseFromPayload.set_createdDateTime(ZonedDateTime.parse(_createdDateTime));
+            if (validFromDateTime != null)
+                recordBaseFromPayload.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));
 
-        if (validFromDateTime != null)
-            recordBaseFromPayload.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));
+            if (validUntilDateTime != null)
+                recordBaseFromPayload.set_validUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
 
-        if (validUntilDateTime != null)
-            recordBaseFromPayload.set_validUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
+            recordBaseFromPayload.set_ownerUsers(ownerUsers);
+            recordBaseFromPayload.set_ownerGroups(ownerGroups);
 
-        recordBaseFromPayload.set_ownerUsers(ownerUsers);
-        recordBaseFromPayload.set_ownerGroups(ownerGroups);
-
-        return recordBaseFromPayload;
+            return recordBaseFromPayload;
+        } catch (java.time.format.DateTimeParseException e) {
+            logger.error("Invalid date format in request payload: " + e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Invalid date format. Dates must be in ISO-8601 format with timezone (e.g., 2022-01-01T00:00:00Z)", e);
+        } catch (ClassCastException e) {
+            logger.error("Invalid field type in request payload: " + e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Invalid field type in request payload", e);
+        }
     }
 
     public static class Config {
