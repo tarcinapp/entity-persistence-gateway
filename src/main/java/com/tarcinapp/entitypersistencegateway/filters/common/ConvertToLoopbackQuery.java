@@ -2,7 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +85,9 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
             List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
             // this variable is defined to pass to the SPEL of saved queries.
+            // Note: Using filtering to handle null values since Collectors.toMap doesn't accept nulls
             Map<String, String> queryMap = query.stream()
+                    .filter(nvp -> nvp.getValue() != null)
                     .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
 
             List<NameValuePair> newQuery = query.stream()
@@ -138,7 +139,7 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
                             // set variables to the spel evaluation context here
 
                             // set gateway security context if we have in hand
-                            if(gatewaySecurityContext == null)
+                            if(gatewaySecurityContext != null)
                                 context.setVariable("userId", gatewaySecurityContext.getAuthSubject());
 
                             // make existing query variables accessible by SPEL saved queries
