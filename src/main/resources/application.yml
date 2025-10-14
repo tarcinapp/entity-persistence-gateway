@@ -882,9 +882,7 @@ spring:
           args:
             recordType: relations
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToQuery
-          args:
-            recordType: relations
+        - name: AddSetsToRelationQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/relations/policy
@@ -909,9 +907,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/countRelations/policy
-        - name: AddSetsToQuery
-          args:
-            recordType: relations
+        - name: AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
