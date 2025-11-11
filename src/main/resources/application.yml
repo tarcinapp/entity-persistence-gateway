@@ -818,6 +818,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
+        - name: AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
       - id: findRelations
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
