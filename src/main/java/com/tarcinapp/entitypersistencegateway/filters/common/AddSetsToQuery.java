@@ -135,7 +135,14 @@ public class AddSetsToQuery
                         }
 
                         URI uri = exchange.getRequest().getURI();
-                        logger.debug("Original URI: " + uri);
+                        if (logger.isDebugEnabled()) {
+                                try {
+                                        String decodedOriginalUri = java.net.URLDecoder.decode(uri.toString(), java.nio.charset.StandardCharsets.UTF_8.name());
+                                        logger.debug("Original URI (decoded): " + decodedOriginalUri);
+                                } catch (Exception e) {
+                                        logger.debug("Original URI: " + uri + " (failed to decode: " + e.getMessage() + ")");
+                                }
+                        }
 
                         List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
 
@@ -241,17 +248,19 @@ public class AddSetsToQuery
                                         .build()
                                         .toUri();
 
-                                                // Log decoded URI for easier reading
-                                                try {
-                                                        String decodedQuery = java.net.URLDecoder.decode(newQueryStr, java.nio.charset.StandardCharsets.UTF_8.name());
-                                                        String decodedUri = newUri.getScheme() + "://" + newUri.getAuthority() + newUri.getPath();
-                                                        if (!decodedQuery.isEmpty()) {
-                                                                decodedUri += "?" + decodedQuery;
-                                                        }
-                                                        logger.debug("New URI (decoded) " + decodedUri);
-                                                } catch (Exception e) {
-                                                        logger.debug("New URI " + newUri + " (failed to decode: " + e.getMessage() + ")");
-                                                }
+                        // Log decoded URI for easier reading
+                        if (logger.isDebugEnabled()) {
+                                try {
+                                        String decodedQuery = java.net.URLDecoder.decode(newQueryStr, java.nio.charset.StandardCharsets.UTF_8.name());
+                                        String decodedUri = newUri.getScheme() + "://" + newUri.getAuthority() + newUri.getPath();
+                                        if (!decodedQuery.isEmpty()) {
+                                                decodedUri += "?" + decodedQuery;
+                                        }
+                                        logger.debug("New URI (decoded): " + decodedUri);
+                                } catch (Exception e) {
+                                        logger.debug("New URI: " + newUri + " (failed to decode: " + e.getMessage() + ")");
+                                }
+                        }
 
                         ServerWebExchange modifiedExchange = exchange.mutate()
                                         .request(originalRequest -> {
