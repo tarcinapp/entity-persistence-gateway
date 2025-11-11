@@ -83,14 +83,15 @@ public class AddSetsToRecordQuery
 
                 return (exchange, chain) -> {
 
-                        logger.debug("AddSetsToRecordQuery filter is started.");
+                        String recordType = config.getRecordType();
+                        logger.debug("AddSetsToRecordQuery filter is started. recordType: " + recordType);
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
                                         .get(GATEWAY_SECURITY_CONTEXT_ATTR);
                         ArrayList<String> roles = gc.getRoles();
                         String userId = gc.getAuthSubject();
                         ArrayList<String> groups = gc.getGroups();
-                        String recordType = config.getRecordType();
+                        
 
                         if (roles == null) {
                                 logger.debug("Authentication information not found. Exiting filter without any modification.");
