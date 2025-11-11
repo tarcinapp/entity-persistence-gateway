@@ -999,7 +999,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: updateAllEntityReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1045,11 +1045,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: countEntityReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1092,7 +1092,7 @@ spring:
             recordType: entity-reactions
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: updateEntityReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1136,7 +1136,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/replaceEntityReactionById/policy
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
       - id: deleteEntityReactionById
@@ -1181,11 +1181,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: createChildEntityReaction
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1214,7 +1214,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: findParentsByEntityReactionId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1239,11 +1239,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       # reactions through entity controller
       - id: createReactionByEntityId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1273,7 +1273,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: updateReactionsByEntityId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1319,11 +1319,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/entity-reactions/policy
+            policyName: /policies/fields/entityReactions/policy
       - id: deleteReactionsByEntityId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1371,7 +1371,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: updateAllListReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1417,11 +1417,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: countListReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1464,7 +1464,7 @@ spring:
             recordType: list-reactions
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: updateListReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1508,7 +1508,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/replaceListReactionById/policy
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
       - id: deleteListReactionById
@@ -1553,11 +1553,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: createChildListReaction
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1586,7 +1586,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: findParentsByListReactionId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1611,11 +1611,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       # reactions through list controller
       - id: createReactionByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1645,7 +1645,7 @@ spring:
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: updateReactionsByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1691,11 +1691,11 @@ spring:
         - name: ConvertToLoopbackQuery
         - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
-            policyName: /policies/fields/list-reactions/policy
+            policyName: /policies/fields/listReactions/policy
       - id: deleteReactionsByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
