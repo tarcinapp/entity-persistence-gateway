@@ -64,17 +64,17 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  * 
  */
 @Component
-public class AddSetsToQuery
-                extends AbstractGatewayFilterFactory<AddSetsToQuery.Config> {
+public class AddSetsToRecordQuery
+                extends AbstractGatewayFilterFactory<AddSetsToRecordQuery.Config> {
 
-        private final Logger logger = LogManager.getLogger(AddSetsToQuery.class);
+        private final Logger logger = LogManager.getLogger(AddSetsToRecordQuery.class);
 
         private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
-        public AddSetsToQuery() {
+        public AddSetsToRecordQuery() {
                 super(Config.class);
         }
 
@@ -83,7 +83,7 @@ public class AddSetsToQuery
 
                 return (exchange, chain) -> {
 
-                        logger.debug("AddSetsToQuery filter is started.");
+                        logger.debug("AddSetsToRecordQuery filter is started.");
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
                                         .get(GATEWAY_SECURITY_CONTEXT_ATTR);

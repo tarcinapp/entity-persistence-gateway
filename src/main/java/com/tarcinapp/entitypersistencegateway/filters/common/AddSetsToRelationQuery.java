@@ -25,7 +25,7 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  * This filter restricts the returned relations based on user permissions.
  * 
  * IMPORTANT: This filter is specifically designed for RELATIONS only.
- * For entities and lists, use AddSetsToQuery filter instead.
+ * For entities and lists, use AddSetsToRecordQuery filter instead.
  * 
  * Relations Security Model:
  * Relations have fundamentally different security dynamics than entities/lists:
