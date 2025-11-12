@@ -1020,6 +1020,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: entityReactions
         - RemoveRequestHeader=Authorization
       - id: findEntityReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1043,6 +1047,9 @@ spring:
           args:
             recordType: entity-reactions
         - name: ConvertToLoopbackQuery
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: entityReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1067,6 +1074,9 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: entityReactions
         - RemoveRequestHeader=Authorization
       - id: findEntityReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1392,6 +1402,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
         - RemoveRequestHeader=Authorization
       - id: findListReactions
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1415,6 +1429,9 @@ spring:
           args:
             recordType: list-reactions
         - name: ConvertToLoopbackQuery
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1439,6 +1456,9 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
         - RemoveRequestHeader=Authorization
       - id: findListReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
