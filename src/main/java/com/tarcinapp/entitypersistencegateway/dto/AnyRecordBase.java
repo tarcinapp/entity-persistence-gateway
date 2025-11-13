@@ -22,12 +22,8 @@ public class AnyRecordBase {
     private String _visibility;
     private List<String> _ownerUsers;
     private List<String> _ownerGroups;
-    private int _ownerUsersCount;
-    private int _ownerGroupsCount;
     private List<String> _viewerUsers;
     private List<String> _viewerGroups;
-    private int _viewerUsersCount;
-    private int _viewerGroupsCount;
     private String _lastUpdatedBy;
     private String _createdBy;
     private Integer _version;
@@ -141,21 +137,9 @@ public class AnyRecordBase {
         this._lastUpdatedDateTime = _lastUpdatedDateTime;
     }
 
-    public int get_ownerUsersCount() {
-        return this._ownerUsersCount;
-    }
+    // ...existing code...
 
-    public void set_ownerUsersCount(int _ownerUsersCount) {
-        this._ownerUsersCount = _ownerUsersCount;
-    }
-
-    public int get_ownerGroupsCount() {
-        return this._ownerGroupsCount;
-    }
-
-    public void set_ownerGroupsCount(int _ownerGroupsCount) {
-        this._ownerGroupsCount = _ownerGroupsCount;
-    }
+    // ...existing code...
 
     public String get_lastUpdatedBy() {
         return this._lastUpdatedBy;
@@ -213,21 +197,9 @@ public class AnyRecordBase {
         this._viewerGroups = _viewerGroups;
     }
 
-    public int get_viewerUsersCount() {
-        return _viewerUsersCount;
-    }
+    // ...existing code...
 
-    public void set_viewerUsersCount(int _viewerUsersCount) {
-        this._viewerUsersCount = _viewerUsersCount;
-    }
-
-    public int get_viewerGroupsCount() {
-        return _viewerGroupsCount;
-    }
-
-    public void set_viewerGroupsCount(int _viewerGroupsCount) {
-        this._viewerGroupsCount = _viewerGroupsCount;
-    }
+    // ...existing code...
 
     @JsonAnySetter
     public void setCustomFields(String property, Object value) {
