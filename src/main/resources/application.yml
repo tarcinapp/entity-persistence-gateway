@@ -236,7 +236,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
@@ -262,7 +262,7 @@ spring:
           args:
             recordType: entities
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - name: PreventQueryByForbiddenFields
@@ -289,7 +289,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
@@ -404,7 +404,7 @@ spring:
           args:
             recordType: entities
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - name: PreventQueryByForbiddenFields
@@ -465,7 +465,7 @@ spring:
           args:
             recordType: entities
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - name: PreventQueryByForbiddenFields
@@ -526,7 +526,7 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
         - RemoveRequestHeader=Authorization
@@ -552,7 +552,7 @@ spring:
           args:
             recordType: lists
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
               recordType: lists
         - name: PreventQueryByForbiddenFields
@@ -579,7 +579,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/countLists/policy
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
         - RemoveRequestHeader=Authorization
@@ -694,7 +694,7 @@ spring:
           args:
             recordType: lists
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
         - name: PreventQueryByForbiddenFields
@@ -755,7 +755,7 @@ spring:
           args:
             recordType: lists
         - name: ConvertToLoopbackQuery
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
         - name: PreventQueryByForbiddenFields
@@ -1310,6 +1310,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
         - RemoveRequestHeader=Authorization
       - id: findReactionsByEntityId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1333,6 +1337,9 @@ spring:
           args:
             recordType: entity-reactions
         - name: ConvertToLoopbackQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1357,6 +1364,9 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
         - RemoveRequestHeader=Authorization
       # list-reactions controller
       - id: createListReaction
@@ -1698,6 +1708,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
+        - name: ConvertToLoopbackQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
         - RemoveRequestHeader=Authorization
       - id: findReactionsByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1721,6 +1735,9 @@ spring:
           args:
             recordType: list-reactions
         - name: ConvertToLoopbackQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1745,6 +1762,9 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
         - RemoveRequestHeader=Authorization
       # entities through list controller
       - id: createEntityByListId
@@ -1956,7 +1976,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
@@ -2008,7 +2028,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
@@ -2034,7 +2054,7 @@ spring:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertToLoopbackQuery
         - name: ConvertKindPathToQueryForFindEntities
-        - name: AddSetsToRecordQuery
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization

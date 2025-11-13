@@ -22,69 +22,54 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 /**
- * This filter restricts the returned records from entity and list queries.
- * 
- * IMPORTANT: This filter is for ENTITIES and LISTS only. 
- * Relations have different security dynamics and should use AddSetsToRelationQuery filter instead.
- * 
+ * This filter restricts the returned records from entity, list, and reactions-through-record queries.
+ *
+ * IMPORTANT: This filter is for ENTITIES, LISTS, and REACTIONS ACCESSED THROUGH AN ENTITY OR LIST ONLY.
+ * It does NOT apply to direct reactions routes. For direct reactions, use AddSetsToReactionsQuery instead.
+ *
  * Restrictions are based on user's role, owners of each record and record's visibility.
- * 
- * What is record's ownership?
- * Each record has ownerGroups and ownerUsers arrays.
- * - If user's id present on ownerUsers array, then this user is the most
- * powerfull user on that specific record.
- * No matter what the record's visibility is.
- * - If user's group name present on ownerGroups array, and, the records
- * visibility is protected, then again user is the owner of the record.
- * --------
+ *
+ * What is record ownership?
+ * Each record (entity, list, or reaction via record) has ownerGroups and ownerUsers arrays.
+ * - If user's id is present in ownerUsers, the user is the most powerful user on that record.
+ * - If user's group is present in ownerGroups and the record's visibility is protected, the user is an owner.
+ *
  * If user is not an editor or an admin, then:
- * - User can see it's own records.
+ * - User can see their own records.
  * - User can see active, public records.
- * 
- * For example;
- * If a record's visibility value is public, but it's validitiy is expired, then
- * this filter prevents this record to return from response.
- * If a record's visibility value is public and validUntilDateTime field is
- * empty whereas validFromDateTime field has a value in past, then this filter
- * let
- * that specific record to return from response.
- * 
- * How this filter works?
- * This filter utilizes the `set` feature of the backend.
- * In order to limit the items in response, this filter adds required sets as
- * the query variable. If user already used `set` in the query,
- * we are and'ing them with those emitted by this filter.
- * 
- * The filter also protects nested queries through:
- * - filter[include][X][set] - for included relations (set is at same level as scope)
- * - filter[lookup][X][set] - for looked-up references (set is at same level as scope)
+ *
+ * This filter uses the set feature of the backend to limit items in the response. It adds required sets as query parameters and merges with any sets provided by the caller.
+ *
+ * The filter also protects nested queries:
+ * - filter[include][X][set] for included relations (set is at same level as scope)
+ * - filter[lookup][X][set] for looked-up references (set is at same level as scope)
  * - Nested combinations of includes and lookups
- * 
- * @see AddSetsToRelationQuery for relation-specific filtering
- * 
+ *
+ *
+ * For relation-specific filtering, see: AddSetsToRelationQuery
+ * For direct reactions filtering, see: AddSetsToReactionsQuery
  */
 @Component
-public class AddSetsToRecordQuery
-                extends AbstractGatewayFilterFactory<AddSetsToRecordQuery.Config> {
+public class AddSetsToEntityListOrReactionViaRecordQuery
+                extends AbstractGatewayFilterFactory<AddSetsToEntityListOrReactionViaRecordQuery.Config> {
 
-        private final Logger logger = LogManager.getLogger(AddSetsToRecordQuery.class);
+        private final Logger logger = LogManager.getLogger(AddSetsToEntityListOrReactionViaRecordQuery.class);
 
         private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
-        public AddSetsToRecordQuery() {
+        public AddSetsToEntityListOrReactionViaRecordQuery() {
                 super(Config.class);
         }
 
         @Override
+
         public GatewayFilter apply(Config config) {
-
                 return (exchange, chain) -> {
-
                         String recordType = config.getRecordType();
-                        logger.debug("AddSetsToRecordQuery filter is started. recordType: " + recordType);
+                        logger.debug("AddSetsToEntityListOrReactionViaRecordQuery filter is started. recordType: " + recordType);
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
                                         .get(GATEWAY_SECURITY_CONTEXT_ATTR);
@@ -523,13 +508,10 @@ public class AddSetsToRecordQuery
         }
 
         public static class Config {
-
                 private String recordType;
-
                 public String getRecordType() {
                         return this.recordType;
                 }
-
                 public void setRecordType(String recordType) {
                         this.recordType = recordType;
                 }

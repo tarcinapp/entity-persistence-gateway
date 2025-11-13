@@ -28,7 +28,7 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  * - entityReactions: Uses entitySet for filtering
  * - listReactions: Uses listSet for filtering
  * 
- * Differences from AddSetsToRecordQuery:
+ * Differences from AddSetsToEntityListOrReactionViaRecordQuery:
  * - Accepts reactionType (not recordType)
  * - Applies audience sets to either entitySet or listSet depending on the reactionType
  * - Does NOT wrap or process filter[include] parameters as reactions do not support includes
