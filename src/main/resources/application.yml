@@ -98,8 +98,8 @@ app:
     # ?q=slug&slug={slug}
     slug: "'filter[where][_slug]=' + #query['slug']"
 
-  # set false if you want to prevent loopback notation in query parameters
-  allowLoopbackQueryNotation: true
+  # set false if you want to prevent backend notation in query parameters
+  allowBackendQueryNotation: true
   
   # request size limits configuration (only for operations with request bodies)
   requestSizes:
@@ -235,7 +235,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -261,7 +261,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -403,7 +403,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -464,7 +464,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -525,7 +525,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
@@ -551,7 +551,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: lists
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
               recordType: lists
@@ -693,7 +693,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: lists
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
@@ -754,7 +754,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: lists
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
@@ -841,7 +841,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: relations
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToRelationQuery
         - name: PreventQueryByForbiddenFields
           args:
@@ -1020,7 +1020,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: entityReactions
@@ -1046,7 +1046,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entity-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: entityReactions
@@ -1188,7 +1188,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entity-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: entityReactions
@@ -1249,7 +1249,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entity-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: entityReactions
@@ -1310,7 +1310,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entity-reactions
@@ -1336,7 +1336,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entity-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entity-reactions
@@ -1418,7 +1418,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: listReactions
@@ -1444,7 +1444,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: list-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: listReactions
@@ -1586,7 +1586,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: list-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: listReactions
@@ -1647,7 +1647,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: list-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
             reactionType: listReactions
@@ -1708,7 +1708,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: list-reactions
@@ -1734,7 +1734,7 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: list-reactions
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: list-reactions
@@ -1816,6 +1816,8 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
       - id: findEntitiesByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1838,7 +1840,8 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -1863,6 +1866,8 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
       # lists through entity controller
       - id: findListsByEntityId
@@ -1886,7 +1891,8 @@ spring:
         - name: ApplyFieldsetConfig
           args:
             recordType: lists
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -1968,7 +1974,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
         - name: PreventStringifiedJsonFilter
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindPathToQueryForFindEntities
         - name: PreventQueryByForbiddenFields
           args:
@@ -2052,7 +2058,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
-        - name: ConvertToLoopbackQuery
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindPathToQueryForFindEntities
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
