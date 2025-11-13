@@ -19,7 +19,7 @@
   - [Saved Field Sets](#saved-field-sets)
     - [Default Field Set](#default-field-set)
   - [Saved Queries](#saved-queries)
-  - [Loopback Query Abstraction](#loopback-query-abstraction)
+  - [Backend Query Abstraction](#backend-query-abstraction)
   - [Rate Limiting](#rate-limiting)
   - [Request Size Limiting](#request-size-limiting)
   - [Routing by Kind Configuration](#routing-by-kind-configuration)
@@ -94,13 +94,13 @@ Here's a more structured list of the capabilities provided by the Entity Persist
 
 11. **Distributed Lock Management**: For CRUD operations, the gateway acquires distributed locks to prevent data conflicts and ensure data consistency in a distributed system.
 
-12. **Query Language Abstraction**: The gateway hides the underlying Loopback data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience. For example, clients can use `?limit=5&skip=10` instead of `?filter[limit]=5&filter[skip]=10`.
+12. **Query Language Abstraction**: The gateway hides the underlying data querying notation from clients, simplifying the API interaction and providing a user-friendly query experience. For example, clients can use `?limit=5&skip=10` instead of `?filter[limit]=5&filter[skip]=10`.
 
 13. **Field Sets for Easier Querying**: It offers the ability to define sets of fields, enhancing the querying process by allowing clients to request specific sets of fields for response data. Field sets are defined at the gateway configuration. This way, clients can make a query like `?fieldset=bookinfo` which only returns `id`, `name` and `author` fields only of the book records.
 
 14. **Predefined Queries**: Clients can utilize predefined queries (e.g., `?q=my-query`) to streamline their data retrieval process by specifying common query conditions. When setting up predefined queries, utilize context variables such as user id and other query parameters. You can leverage advanced Java operations using SPEL to manipulate these variables while constructing the query for the backend.
 
-15. **Route Configuration**: The gateway allows route configuration for the `/generic-entity` endpoint based on the 'kind' of entity. For example, it can route all requests for `kind: book` to the `/generic-entity`, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various kinds, providing semantic endpoints in routing requests to the Entity Persistence Service.
+15. **Route Configuration**: The gateway allows route configuration for the `/entity` endpoint based on the 'kind' of entity. For example, it can route all requests for `kind: book` to the `/entity`, narrowing the scope specifically to book records for all CRUD operations. Multiple routes can be defined for various kinds, providing semantic endpoints in routing requests to the Entity Persistence Service.
 
 These capabilities collectively empower the Entity Persistence Gateway to deliver comprehensive security, access control, data management, and routing features to your application.
 
@@ -122,7 +122,7 @@ To learn more about which fields are forbidden for which roles, see the [forbidd
 ## Field Masking
 In the entity-persistence-gateway, we apply field masking to enhance data security by restricting the exposure of sensitive information. This is achieved based on the results of policy execution, where the policy determines the list of [forbidden fields](https://github.com/tarcinapp/entity-persistence-gateway-policies/blob/main/policies/fields/generic-entities/forbidden_fields.rego). The gateway then applies this list to mask certain fields in the response.  
 
-This field masking is implemented across multiple routes: `createEntity`, `findEntityById` and `findAll` operations. It's important to note that policy application plays a decisive role in determining who can see what. Additionally, unlike the loopback approach, which allows clients to choose fields in the response, the entity-persistence-gateway simplifies the process by unconditionally dropping unwanted fields from the response, ensuring a consistent and secure field masking mechanism at the response flow.
+This field masking is implemented across multiple routes: `createEntity`, `findEntityById` and `findAll` operations. It's important to note that policy application plays a decisive role in determining who can see what. Additionally, unlike the backend's approach, which allows clients to choose fields in the response, the entity-persistence-gateway simplifies the process by unconditionally dropping unwanted fields from the response, ensuring a consistent and secure field masking mechanism at the response flow.
  
 ### Field Masking for Update & Replace Operations
 In the context of the `replaceEntityById` operation, clients are required to send all fields of the entity specified by its ID. This raises a crucial question: how should clients provide new values for fields they are not allowed to see? If a client attempts to set a value for a forbidden field, the gateway responds with a `401 Unauthorized`, preventing the update of restricted information. 
@@ -370,9 +370,9 @@ Usage: `/books?q=by-book-name&book-name=overcoat`
 
 Note that predefined query configuration within entity-persistence-gateway levareges [Spring Expression Language (SPEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html) to let advanced configurations. 
 
-## Loopback Query Abstraction
-Loopback 4 is using a certain notation to enable backend querying as described here: [Querying Data](https://loopback.io/doc/en/lb4/Querying-data.html). While Loopback's approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
-`app.allowLoopbackQueryNotation` configuration can be useful for purpose.
+## Backend Query Abstraction
+The backend is using a certain notation to enable querying. While this approach is very useful, it may be a vulnerability to let your clients know what backend technology you are using.  
+`app.allowBackendQueryNotation` configuration can be useful for this purpose.
 
 **Searching Entities:**  
 **Original**: `?s=foo`  
