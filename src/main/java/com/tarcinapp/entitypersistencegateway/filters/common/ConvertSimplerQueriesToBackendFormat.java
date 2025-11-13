@@ -29,46 +29,46 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
 
 /**
- * Gateway application can allow or prevent clients to send loopback specific
+ * Gateway application can allow or prevent clients to send backend specific
  * query parameters.
- * This behavior controlled by the configuration: app.allowLoopbackQueryNotation
- * In addition, gateway application can help creating loopback query parameters
+ * This behavior controlled by the configuration: app.allowBackendQueryNotation
+ * In addition, gateway application can help creating backend query parameters
  * easier by mapping the given
- * well-known query parameters to loopback specific equivalents. Using this
+ * well-known query parameters to backend specific equivalents. Using this
  * approach, user can hide the underlying technology.
  * This is what this filter does.
  * Mapped query parameters:
  * ?s=foo: This query parameter stands for searching in the names of the
- * entities in the loopback application.
+ * entities in the backend application.
  * Mapped as ?filter[where][name][regexp]=.*foo.*
  * 
- * As of today, preventing loopback specific filters and going with only the
+ * As of today, preventing backend specific filters and going with only the
  * parameters handled by this filter reduces
  * the total querying capability. For instance, client's can order records using
  * multiple fields:
  * ?filter[order][0]=name&filter[order][1]
- * If application is configured to not to allow loopback specific queries, then
+ * If application is configured to not to allow backend specific queries, then
  * they will be able to order using single field only.
  * ?order=name
  */
 @Component
-public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<ConvertToLoopbackQuery.Config> {
+public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterFactory<ConvertSimplerQueriesToBackendFormat.Config> {
 
-    private Logger logger = LogManager.getLogger(ConvertToLoopbackQuery.class);
+    private Logger logger = LogManager.getLogger(ConvertSimplerQueriesToBackendFormat.class);
 
-    // loopback query parameters
+    // backend query parameters
     private static final List<String> filterPrefixes = Arrays.asList("filter[where]", "filter[fields]",
             "filter[include]", "filter[limit]", "filter[order]", "filter[skip]");
 
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
-    @Value("${app.allowLoopbackQueryNotation:true}")
-    private boolean allowLoopbackQueryNotation;
+    @Value("${app.allowBackendQueryNotation:true}")
+    private boolean allowBackendQueryNotation;
 
     @Autowired
     private SavedQueryConfig savedQueries;
 
-    public ConvertToLoopbackQuery() {
+    public ConvertSimplerQueriesToBackendFormat() {
         super(Config.class);
     }
 
@@ -77,7 +77,7 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
 
         return (exchange, chain) -> {
 
-            logger.debug("ConvertToLoopbackQuery filter is started");
+            logger.debug("ConvertSimplerQueriesToBackendFormat filter is started");
 
             URI uri = exchange.getRequest().getURI();
             logger.debug("Original URI: " + uri);
@@ -96,19 +96,19 @@ public class ConvertToLoopbackQuery extends AbstractGatewayFilterFactory<Convert
                         String name = nvp.getName();
                         String value = nvp.getValue();
 
-                        // check if client sent a loopback specific query.
+                        // check if client sent a backend specific query.
                         if (filterPrefixes.stream().anyMatch(name::startsWith)) {
-                            logger.debug("Client sent loopback specific query parameters.");
+                            logger.debug("Client sent backend specific query parameters.");
 
-                            if (this.allowLoopbackQueryNotation) {
+                            if (this.allowBackendQueryNotation) {
                                 // return the query as it is.
-                                logger.debug("Application is configured to allow loopback specific query parameters.");
+                                logger.debug("Application is configured to allow backend specific query parameters.");
 
                                 return Stream.of(nvp);
                             } else {
-                                // do not move loopback specific queries to the new list
+                                // do not move backend specific queries to the new list
                                 logger.debug(
-                                        "Application is configured to prevent loopback specific query parameters.");
+                                        "Application is configured to prevent backend specific query parameters.");
 
                                 return Stream.empty();
                             }
