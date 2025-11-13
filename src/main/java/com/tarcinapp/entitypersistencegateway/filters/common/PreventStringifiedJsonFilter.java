@@ -16,7 +16,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 
 /**
- * Backend loopback is allowing client to query data using stringified JSON.
+ * Backend is allowing client to query data using stringified JSON.
  * Like: GET /api/activities/findOne?filter={"where":{"id":1234}}
  * 
  * This makes queries uncontrolled and makes hard to authorize client based on query parameters.
