@@ -1,3 +1,10 @@
+    /**
+     * Fetches a record by type (entities/lists) and id directly from backend.
+     */
+    public Mono<AnyRecordBase> fetchByTypeAndId(String type, String id) {
+        String path = "/" + type + "/" + id;
+        return backendBaseClient.get(path, AnyRecordBase.class);
+    }
 package com.tarcinapp.entitypersistencegateway.services;
 
 import org.apache.logging.log4j.LogManager;

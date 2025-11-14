@@ -42,6 +42,10 @@ public class PolicyDataBuilderRegistry {
     @Qualifier("policyDataBuilderWithPayloadAndParent")
     private PolicyDataBuilder builderWithPayloadAndParent;
 
+    @Autowired
+    @Qualifier("policyDataBuilderForReactionCreation")
+    private PolicyDataBuilder builderForReactionCreation;
+
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
     private static final Logger logger = LogManager.getLogger(PolicyDataBuilderRegistry.class);
@@ -199,7 +203,7 @@ public class PolicyDataBuilderRegistry {
         // POST /entity-reactions/{parentId}/children
         routeBuilderMap.put("createChildEntityReaction", builderWithPayloadAndParent);
         // POST /entities/{entityId}/reactions
-        routeBuilderMap.put("createReactionByEntityId", builderWithPayloadAndParent);
+        routeBuilderMap.put("createReactionByEntityId", builderForReactionCreation);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entity-reactions/{id}
@@ -241,7 +245,7 @@ public class PolicyDataBuilderRegistry {
         // POST /list-reactions/{parentId}/children
         routeBuilderMap.put("createChildListReaction", builderWithPayloadAndParent);
         // POST /lists/{listId}/reactions
-        routeBuilderMap.put("createReactionByListId", builderWithPayloadAndParent);
+        routeBuilderMap.put("createReactionByListId", builderForReactionCreation);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /list-reactions/{id}
