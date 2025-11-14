@@ -38,6 +38,10 @@ public class PolicyDataBuilderRegistry {
     @Qualifier("basicPolicyDataBuilderWithoutPayloadNoOriginal")
     private BasicPolicyDataBuilderWithoutPayloadNoOriginal builderWithoutPayloadNoOriginal;
 
+    @Autowired
+    @Qualifier("basicPolicyDataBuilderWithPayloadAndParent")
+    private BasicPolicyDataBuilderWithPayloadAndParent builderWithPayloadAndParent;
+
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
     private static final Logger logger = LogManager.getLogger(PolicyDataBuilderRegistry.class);
@@ -71,7 +75,7 @@ public class PolicyDataBuilderRegistry {
         // POST /entities
         routeBuilderMap.put("createEntity", builderWithPayload);
         // POST /entities/{parentId}/children
-        routeBuilderMap.put("createEntityChild", builderWithPayload);
+        routeBuilderMap.put("createEntityChild", builderWithPayloadAndParent);
         // POST /entities/kind/{kindPath}
         routeBuilderMap.put("createEntityByKindPath", builderWithPayload);
 
@@ -121,7 +125,7 @@ public class PolicyDataBuilderRegistry {
         // POST /lists
         routeBuilderMap.put("createList", builderWithPayload);
         // POST /lists/{parentId}/children
-        routeBuilderMap.put("createListChild", builderWithPayload);
+        routeBuilderMap.put("createListChild", builderWithPayloadAndParent);
         // POST /lists/{listId}/entities
         routeBuilderMap.put("createEntityByListId", builderWithPayload);
 
@@ -193,7 +197,7 @@ public class PolicyDataBuilderRegistry {
         // POST /entity-reactions
         routeBuilderMap.put("createEntityReaction", builderWithPayload);
         // POST /entity-reactions/{parentId}/children
-        routeBuilderMap.put("createChildEntityReaction", builderWithPayload);
+        routeBuilderMap.put("createChildEntityReaction", builderWithPayloadAndParent);
         // POST /entities/{entityId}/reactions
         routeBuilderMap.put("createReactionByEntityId", builderWithPayload);
 
@@ -235,7 +239,7 @@ public class PolicyDataBuilderRegistry {
         // POST /list-reactions
         routeBuilderMap.put("createListReaction", builderWithPayload);
         // POST /list-reactions/{parentId}/children
-        routeBuilderMap.put("createChildListReaction", builderWithPayload);
+        routeBuilderMap.put("createChildListReaction", builderWithPayloadAndParent);
         // POST /lists/{listId}/reactions
         routeBuilderMap.put("createReactionByListId", builderWithPayload);
 
@@ -308,6 +312,8 @@ public class PolicyDataBuilderRegistry {
             return builderClass.cast(builderWithPayloadAndOriginal);
         } else if (builderClass.isInstance(builderWithoutPayloadNoOriginal)) {
             return builderClass.cast(builderWithoutPayloadNoOriginal);
+        } else if (builderClass.isInstance(builderWithPayloadAndParent)) {
+            return builderClass.cast(builderWithPayloadAndParent);
         }
         
         throw new IllegalStateException(
