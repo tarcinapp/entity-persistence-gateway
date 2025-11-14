@@ -21,8 +21,8 @@ import reactor.core.publisher.Mono;
  * Policy data builder for hierarchical data creation (e.g., createEntityChild, createListChild).
  * Fetches the parent record and includes it in originalRecord for authorization decisions.
  */
-@Component("basicPolicyDataBuilderWithPayloadAndParent")
-public class BasicPolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder {
+@Component("policyDataBuilderWithPayloadAndParent")
+public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder {
 
     @Autowired
     private OriginalRecordFetcher originalRecordFetcher;
@@ -30,7 +30,7 @@ public class BasicPolicyDataBuilderWithPayloadAndParent implements PolicyDataBui
     @Autowired
     private PayloadExtractor payloadExtractor;
 
-    private static final Logger logger = LogManager.getLogger(BasicPolicyDataBuilderWithPayloadAndParent.class);
+    private static final Logger logger = LogManager.getLogger(PolicyDataBuilderWithPayloadAndParent.class);
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {

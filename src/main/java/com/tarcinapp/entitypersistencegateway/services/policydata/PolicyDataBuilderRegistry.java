@@ -39,8 +39,8 @@ public class PolicyDataBuilderRegistry {
     private BasicPolicyDataBuilderWithoutPayloadNoOriginal builderWithoutPayloadNoOriginal;
 
     @Autowired
-    @Qualifier("basicPolicyDataBuilderWithPayloadAndParent")
-    private BasicPolicyDataBuilderWithPayloadAndParent builderWithPayloadAndParent;
+    @Qualifier("policyDataBuilderWithPayloadAndParent")
+    private PolicyDataBuilder builderWithPayloadAndParent;
 
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
