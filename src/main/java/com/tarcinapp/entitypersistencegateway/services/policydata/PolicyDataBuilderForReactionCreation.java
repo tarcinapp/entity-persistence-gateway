@@ -1,27 +1,42 @@
 package com.tarcinapp.entitypersistencegateway.services.policydata;
 
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
-import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
-import com.tarcinapp.entitypersistencegateway.services.OriginalRecordFetcher;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import reactor.core.publisher.Mono;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
-import java.util.Map;
+import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Policy data builder for reaction creation endpoints.
- * Fetches the target resource (entity or list) and injects its managed fields into _relationMetadata.
+ * Fetches the target resource (entity or list) from _entityId or _listId in the payload,
+ * and embeds its managed fields into _relationMetadata within the request payload.
  */
 @Component("policyDataBuilderForReactionCreation")
 public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
+
     @Autowired
-    private OriginalRecordFetcher originalRecordFetcher;
+    private IBackendClientBase backendBaseClient;
 
     @Autowired
     private PayloadExtractor payloadExtractor;
@@ -31,43 +46,163 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
+
+        // Get security context
         GatewaySecurityContext securityContext = exchange.getAttribute("GatewaySecurityContext");
+
+        // Populate basic policy data
         policyData.setHttpMethod(request.getMethod());
         policyData.setEncodedJwt(securityContext != null ? securityContext.getEncodedJwt() : null);
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        // Step 1: Extract and attach payload
-        return payloadExtractor.extractAndAttachPayload(policyData, exchange, chain)
-            .then(Mono.defer(() -> {
-                AnyRecordBase payload = policyData.getRequestPayload();
-                if (payload == null) {
-                    logger.warn("No payload found in request for reaction creation");
-                    return chain.filter(exchange);
-                }
-                // Step 2: Determine target type and id
-                String targetId = null;
-                String targetType = null;
-                Map<String, Object> properties = payload.getCustomFields();
-                if (properties != null && properties.containsKey("_entityId")) {
-                    targetId = String.valueOf(properties.get("_entityId"));
-                    targetType = "entities";
-                } else if (properties != null && properties.containsKey("_listId")) {
-                    targetId = String.valueOf(properties.get("_listId"));
-                    targetType = "lists";
-                }
-                if (targetId == null || targetType == null) {
-                    logger.warn("Reaction payload missing _entityId or _listId");
-                    return chain.filter(exchange);
-                }
-                // Step 3: Fetch the target resource and inject its managed fields into _relationMetadata
-                return originalRecordFetcher.fetchByTypeAndId(targetType, targetId)
-                    .flatMap(targetResource -> {
-                        if (targetResource != null && payload.getCustomFields() != null) {
-                            payload.getCustomFields().put("_relationMetadata", targetResource);
+        logger.debug("Building policy data for reaction creation: " + request.getMethod() + " " + request.getPath());
+
+        // Extract payload and fetch target resource, then inject _relationMetadata
+        return extractPayloadAndInjectRelationMetadata(policyData, exchange, chain);
+    }
+
+    /**
+     * Extracts the request payload, fetches the target resource (entity/list),
+     * and injects its managed fields into _relationMetadata.
+     */
+    private Mono<Void> extractPayloadAndInjectRelationMetadata(PolicyData policyData, ServerWebExchange exchange,
+                                                                 GatewayFilterChain chain) {
+        ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = 
+            new ModifyRequestBodyGatewayFilterFactory.Config()
+                .setContentType(MediaType.APPLICATION_JSON_VALUE)
+                .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        Map<String, Object> payloadJSON = objectMapper.readValue(
+                            inboundJsonRequestStr,
+                            new TypeReference<Map<String, Object>>() {}
+                        );
+
+                        // Determine target resource ID from payload
+                        String targetResourceId = null;
+                        String resourceType = null;
+                        
+                        if (payloadJSON.containsKey("_entityId")) {
+                            targetResourceId = (String) payloadJSON.get("_entityId");
+                            resourceType = "entities";
+                        } else if (payloadJSON.containsKey("_listId")) {
+                            targetResourceId = (String) payloadJSON.get("_listId");
+                            resourceType = "lists";
                         }
-                        return chain.filter(exchange);
-                    });
-            }));
+
+                        if (targetResourceId == null || resourceType == null) {
+                            logger.error("Reaction payload missing _entityId or _listId");
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                "Reaction must specify either _entityId or _listId");
+                        }
+
+                        final String finalResourceType = resourceType;
+                        final String finalTargetResourceId = targetResourceId;
+
+                        // Fetch the target resource and inject its metadata
+                        return fetchTargetResourceAndInjectMetadata(payloadJSON, finalResourceType, finalTargetResourceId)
+                            .flatMap(updatedPayload -> {
+                                try {
+                                    // Set the payload in policy data
+                                    AnyRecordBase recordBase = prepareRecordBaseFromPayload(updatedPayload);
+                                    policyData.setRequestPayload(recordBase);
+
+                                    // Return the updated JSON string
+                                    String updatedJsonStr = objectMapper.writeValueAsString(updatedPayload);
+                                    logger.debug("Injected _relationMetadata into reaction payload");
+                                    return Mono.just(updatedJsonStr);
+                                } catch (JsonProcessingException e) {
+                                    logger.error("Failed to serialize updated payload", e);
+                                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                        "Failed to process request payload");
+                                }
+                            });
+                    } catch (JsonProcessingException e) {
+                        logger.error("Failed to parse JSON payload", e);
+                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Invalid JSON in request body");
+                    }
+                });
+
+        return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
+    }
+
+    /**
+     * Fetches the target resource and injects its managed fields into _relationMetadata
+     */
+    private Mono<Map<String, Object>> fetchTargetResourceAndInjectMetadata(Map<String, Object> payloadJSON,
+                                                                             String resourceType,
+                                                                             String targetResourceId) {
+        String targetResourcePath = "/" + resourceType + "/" + targetResourceId;
+        logger.debug("Fetching target resource: " + targetResourcePath);
+
+        return backendBaseClient.get(targetResourcePath, AnyRecordBase.class)
+            .map(targetResource -> {
+                // Create _relationMetadata with managed fields from target resource
+                Map<String, Object> relationMetadata = new HashMap<>();
+                relationMetadata.put("_id", targetResource.get_id());
+                relationMetadata.put("_visibility", targetResource.get_visibility());
+                relationMetadata.put("_ownerUsers", targetResource.get_ownerUsers());
+                relationMetadata.put("_ownerGroups", targetResource.get_ownerGroups());
+                relationMetadata.put("_viewerUsers", targetResource.get_viewerUsers());
+                relationMetadata.put("_viewerGroups", targetResource.get_viewerGroups());
+                
+                if (targetResource.get_validFromDateTime() != null) {
+                    relationMetadata.put("_validFromDateTime", targetResource.get_validFromDateTime().toString());
+                }
+                if (targetResource.get_validUntilDateTime() != null) {
+                    relationMetadata.put("_validUntilDateTime", targetResource.get_validUntilDateTime().toString());
+                }
+
+                // Inject _relationMetadata into payload
+                payloadJSON.put("_relationMetadata", relationMetadata);
+
+                return payloadJSON;
+            })
+            .onErrorMap(e -> {
+                logger.error("Failed to fetch target resource: " + targetResourcePath, e);
+                return new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Could not fetch target resource for reaction: " + targetResourceId, e);
+            });
+    }
+
+    /**
+     * Prepares a record base object from the request payload.
+     * Extracts managed fields including _relationMetadata for policy evaluation.
+     */
+    private AnyRecordBase prepareRecordBaseFromPayload(Map<String, Object> payloadJSON) {
+        AnyRecordBase recordBase = new AnyRecordBase();
+
+        try {
+            // Extract managed fields from payload
+            recordBase.set_id((String) payloadJSON.get("_id"));
+            recordBase.set_kind((String) payloadJSON.get("_kind"));
+            recordBase.set_visibility((String) payloadJSON.get("_visibility"));
+            recordBase.set_ownerUsers((java.util.List<String>) payloadJSON.get("_ownerUsers"));
+            recordBase.set_ownerGroups((java.util.List<String>) payloadJSON.get("_ownerGroups"));
+
+            // Extract _relationMetadata if present
+            @SuppressWarnings("unchecked")
+            Map<String, Object> relationMetadata = (Map<String, Object>) payloadJSON.get("_relationMetadata");
+            if (relationMetadata != null) {
+                ManagedField managedField = new ManagedField();
+                managedField.set_id((String) relationMetadata.get("_id"));
+                managedField.set_visibility((String) relationMetadata.get("_visibility"));
+                managedField.set_ownerUsers((java.util.List<String>) relationMetadata.get("_ownerUsers"));
+                managedField.set_ownerGroups((java.util.List<String>) relationMetadata.get("_ownerGroups"));
+                managedField.set_viewerUsers((java.util.List<String>) relationMetadata.get("_viewerUsers"));
+                managedField.set_viewerGroups((java.util.List<String>) relationMetadata.get("_viewerGroups"));
+                
+                recordBase.set_relationMetadata(managedField);
+            }
+
+            return recordBase;
+        } catch (ClassCastException e) {
+            logger.error("Invalid field type in request payload", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Invalid field type in request payload", e);
+        }
     }
 }

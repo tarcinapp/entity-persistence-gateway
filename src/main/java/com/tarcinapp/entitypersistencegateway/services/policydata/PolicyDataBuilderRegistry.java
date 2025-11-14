@@ -318,6 +318,8 @@ public class PolicyDataBuilderRegistry {
             return builderClass.cast(builderWithoutPayloadNoOriginal);
         } else if (builderClass.isInstance(builderWithPayloadAndParent)) {
             return builderClass.cast(builderWithPayloadAndParent);
+        } else if (builderClass.isInstance(builderForReactionCreation)) {
+            return builderClass.cast(builderForReactionCreation);
         }
         
         throw new IllegalStateException(
