@@ -103,9 +103,9 @@ public class PolicyDataBuilderRegistry {
         // GET /entities/{id}
         routeBuilderMap.put("findEntityById", builderWithoutPayload);
         // GET /entities/{id}/children
-        routeBuilderMap.put("findEntityChildren", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findEntityChildren", builderWithoutPayload);
         // GET /entities/{id}/parents
-        routeBuilderMap.put("findEntityParents", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findEntityParents", builderWithoutPayload);
         // GET /entities/kind/{kindPath}
         routeBuilderMap.put("findAllEntitiesByKindPath", builderWithoutPayloadNoOriginal);
         // GET /entities/kind/{kindPath}/count
@@ -149,9 +149,9 @@ public class PolicyDataBuilderRegistry {
         // GET /lists/{id}
         routeBuilderMap.put("findListById", builderWithoutPayload);
         // GET /lists/{id}/children
-        routeBuilderMap.put("findListChildren", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findListChildren", builderWithoutPayload);
         // GET /lists/{id}/parents
-        routeBuilderMap.put("findListParents", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findListParents", builderWithoutPayload);
         // GET /lists/{listId}/entities
         routeBuilderMap.put("findEntitiesByListId", builderWithoutPayloadNoOriginal);
         // GET /entities/{entityId}/lists
@@ -221,9 +221,9 @@ public class PolicyDataBuilderRegistry {
         // GET /entity-reactions/{id}
         routeBuilderMap.put("findEntityReactionById", builderWithoutPayload);
         // GET /entity-reactions/{reactionId}/children
-        routeBuilderMap.put("findChildrenEntityReactionsByReactionId", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findChildrenEntityReactionsByReactionId", builderWithoutPayload);
         // GET /entity-reactions/{id}/parents
-        routeBuilderMap.put("findParentsByEntityReactionId", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findParentsByEntityReactionId", builderWithoutPayload);
         // GET /entities/{entityId}/reactions
         routeBuilderMap.put("findReactionsByEntityId", builderWithoutPayloadNoOriginal);
 
@@ -263,9 +263,9 @@ public class PolicyDataBuilderRegistry {
         // GET /list-reactions/{id}
         routeBuilderMap.put("findListReactionById", builderWithoutPayload);
         // GET /list-reactions/{reactionId}/children
-        routeBuilderMap.put("findChildrenListReactionsByReactionId", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findChildrenListReactionsByReactionId", builderWithoutPayload);
         // GET /list-reactions/{id}/parents
-        routeBuilderMap.put("findParentsByListReactionId", builderWithoutPayloadNoOriginal);
+        routeBuilderMap.put("findParentsByListReactionId", builderWithoutPayload);
         // GET /lists/{listId}/reactions
         routeBuilderMap.put("findReactionsByListId", builderWithoutPayloadNoOriginal);
 
