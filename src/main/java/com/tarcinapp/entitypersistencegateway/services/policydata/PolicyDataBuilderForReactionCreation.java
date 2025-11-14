@@ -23,9 +23,10 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
-import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 
 import reactor.core.publisher.Mono;
+
+import java.time.format.DateTimeFormatter;
 
 /**
  * Policy data builder for reaction creation endpoints.
@@ -150,10 +151,18 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
                 relationMetadata.put("_viewerGroups", targetResource.get_viewerGroups());
                 
                 if (targetResource.get_validFromDateTime() != null) {
-                    relationMetadata.put("_validFromDateTime", targetResource.get_validFromDateTime().toString());
+                    // Format as ISO-8601 without timezone brackets: 2025-10-03T08:32:23.558Z
+                    String formattedDate = targetResource.get_validFromDateTime()
+                        .withZoneSameInstant(java.time.ZoneOffset.UTC)
+                        .format(java.time.format.DateTimeFormatter.ISO_INSTANT);
+                    relationMetadata.put("_validFromDateTime", formattedDate);
                 }
                 if (targetResource.get_validUntilDateTime() != null) {
-                    relationMetadata.put("_validUntilDateTime", targetResource.get_validUntilDateTime().toString());
+                    // Format as ISO-8601 without timezone brackets: 2025-10-03T08:32:23.558Z
+                    String formattedDate = targetResource.get_validUntilDateTime()
+                        .withZoneSameInstant(java.time.ZoneOffset.UTC)
+                        .format(java.time.format.DateTimeFormatter.ISO_INSTANT);
+                    relationMetadata.put("_validUntilDateTime", formattedDate);
                 }
 
                 // Inject _relationMetadata into payload
@@ -187,15 +196,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
             @SuppressWarnings("unchecked")
             Map<String, Object> relationMetadata = (Map<String, Object>) payloadJSON.get("_relationMetadata");
             if (relationMetadata != null) {
-                ManagedField managedField = new ManagedField();
-                managedField.set_id((String) relationMetadata.get("_id"));
-                managedField.set_visibility((String) relationMetadata.get("_visibility"));
-                managedField.set_ownerUsers((java.util.List<String>) relationMetadata.get("_ownerUsers"));
-                managedField.set_ownerGroups((java.util.List<String>) relationMetadata.get("_ownerGroups"));
-                managedField.set_viewerUsers((java.util.List<String>) relationMetadata.get("_viewerUsers"));
-                managedField.set_viewerGroups((java.util.List<String>) relationMetadata.get("_viewerGroups"));
-                
-                recordBase.set_relationMetadata(managedField);
+                recordBase.set_relationMetadata(relationMetadata);
             }
 
             return recordBase;

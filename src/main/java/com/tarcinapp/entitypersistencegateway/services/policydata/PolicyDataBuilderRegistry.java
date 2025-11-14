@@ -199,11 +199,11 @@ public class PolicyDataBuilderRegistry {
     private void mapEntityReactionRoutes() {
         // POST - with payload
         // POST /entity-reactions
-        routeBuilderMap.put("createEntityReaction", builderWithPayload);
+        routeBuilderMap.put("createEntityReaction", builderForReactionCreation);
         // POST /entity-reactions/{parentId}/children
         routeBuilderMap.put("createChildEntityReaction", builderWithPayloadAndParent);
         // POST /entities/{entityId}/reactions
-        routeBuilderMap.put("createReactionByEntityId", builderForReactionCreation);
+        routeBuilderMap.put("createReactionByEntityId", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entity-reactions/{id}
@@ -241,11 +241,11 @@ public class PolicyDataBuilderRegistry {
     private void mapListReactionRoutes() {
         // POST - with payload
         // POST /list-reactions
-        routeBuilderMap.put("createListReaction", builderWithPayload);
+        routeBuilderMap.put("createListReaction", builderForReactionCreation);
         // POST /list-reactions/{parentId}/children
         routeBuilderMap.put("createChildListReaction", builderWithPayloadAndParent);
         // POST /lists/{listId}/reactions
-        routeBuilderMap.put("createReactionByListId", builderForReactionCreation);
+        routeBuilderMap.put("createReactionByListId", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /list-reactions/{id}

@@ -29,6 +29,7 @@ public class AnyRecordBase {
     private Integer _version;
     private String _idempotencyKey;
     private String _application;
+    private Map<String, Object> _relationMetadata;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private ZonedDateTime _createdDateTime;
@@ -137,10 +138,6 @@ public class AnyRecordBase {
         this._lastUpdatedDateTime = _lastUpdatedDateTime;
     }
 
-    // ...existing code...
-
-    // ...existing code...
-
     public String get_lastUpdatedBy() {
         return this._lastUpdatedBy;
     }
@@ -197,9 +194,13 @@ public class AnyRecordBase {
         this._viewerGroups = _viewerGroups;
     }
 
-    // ...existing code...
+    public Map<String, Object> get_relationMetadata() {
+        return this._relationMetadata;
+    }
 
-    // ...existing code...
+    public void set_relationMetadata(Map<String, Object> _relationMetadata) {
+        this._relationMetadata = _relationMetadata;
+    }
 
     @JsonAnySetter
     public void setCustomFields(String property, Object value) {
