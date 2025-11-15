@@ -46,6 +46,10 @@ public class PolicyDataBuilderRegistry {
     @Qualifier("policyDataBuilderForReactionCreation")
     private PolicyDataBuilder builderForReactionCreation;
 
+    @Autowired
+    @Qualifier("policyDataBuilderForRelationCreation")
+    private PolicyDataBuilder builderForRelationCreation;
+
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
     private static final Logger logger = LogManager.getLogger(PolicyDataBuilderRegistry.class);
@@ -171,7 +175,7 @@ public class PolicyDataBuilderRegistry {
     private void mapRelationRoutes() {
         // POST - with payload
         // POST /relations
-        routeBuilderMap.put("createRelation", builderWithPayload);
+        routeBuilderMap.put("createRelation", builderForRelationCreation);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /relations/{id}
@@ -320,6 +324,8 @@ public class PolicyDataBuilderRegistry {
             return builderClass.cast(builderWithPayloadAndParent);
         } else if (builderClass.isInstance(builderForReactionCreation)) {
             return builderClass.cast(builderForReactionCreation);
+        } else if (builderClass.isInstance(builderForRelationCreation)) {
+            return builderClass.cast(builderForRelationCreation);
         }
         
         throw new IllegalStateException(
