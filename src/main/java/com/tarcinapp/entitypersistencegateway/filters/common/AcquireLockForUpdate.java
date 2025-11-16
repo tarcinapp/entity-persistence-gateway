@@ -1,5 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +53,10 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
 
             logger.debug("Acquiring write lock for record: " + recordId);
 
-            return acquireWriteLock(recordId)
+            Duration wait = config.getWaitTime() != null ? config.getWaitTime() : Duration.ofSeconds(3);
+            Duration lease = config.getLeaseTime() != null ? config.getLeaseTime() : Duration.ofSeconds(30);
+
+            return acquireWriteLock(recordId, wait, lease)
                     .then(chain.filter(exchange))
                     .doFinally(signalType -> {
                         releaseWriteLock(recordId).subscribe();
@@ -60,7 +64,7 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
         };
     }
 
-    private Mono<Void> acquireWriteLock(String recordId) {
+    private Mono<Void> acquireWriteLock(String recordId, Duration waitTime, Duration leaseTime) {
         final RReadWriteLockReactive lock = redissonReactiveClient
                 .getReadWriteLock(appShortcode + ":lock-on-record-update:" + recordId);
         final RLockReactive writeLock = lock.writeLock();
@@ -73,7 +77,7 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
                                 "Resource is currently locked by another request: " + recordId);
                     }
 
-                    return writeLock.tryLock(3, 30, TimeUnit.SECONDS)
+                    return writeLock.tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS)
                             .flatMap(lockAcquired -> {
                                 if (!lockAcquired) {
                                     logger.error("Failed to acquire write lock for record: " + recordId);
@@ -104,6 +108,23 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
     }
 
     public static class Config {
-        // Configuration properties can be added here if needed
+        private Duration waitTime;
+        private Duration leaseTime;
+
+        public Duration getWaitTime() {
+            return waitTime;
+        }
+
+        public void setWaitTime(Duration waitTime) {
+            this.waitTime = waitTime;
+        }
+
+        public Duration getLeaseTime() {
+            return leaseTime;
+        }
+
+        public void setLeaseTime(Duration leaseTime) {
+            this.leaseTime = leaseTime;
+        }
     }
 }

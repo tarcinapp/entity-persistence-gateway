@@ -130,6 +130,45 @@ app:
       create: 5KB
       update: 5KB
   
+  locks:
+    default:
+      waitTime: 3s
+      leaseTime: 30s
+    entities:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    lists:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    relations:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    reactions:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+  
   routes:
     disabled: updateAllEntities, updateAllEntitiesByKindPath, updateAllLists
 
@@ -207,6 +246,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -437,6 +479,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.createChild.waitTime}
+            leaseTime: ${app.locks.entities.createChild.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -499,6 +544,9 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/createList/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.lists.create.waitTime}
+            leaseTime: ${app.locks.lists.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -631,6 +679,9 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/updateListById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.lists.update.waitTime}
+            leaseTime: ${app.locks.lists.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: replaceListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -653,6 +704,9 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/replaceListById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.lists.update.waitTime}
+            leaseTime: ${app.locks.lists.update.leaseTime}
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/lists/policy
@@ -729,6 +783,9 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/createListChild/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.lists.createChild.waitTime}
+            leaseTime: ${app.locks.lists.createChild.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -791,6 +848,9 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/createRelation/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.relations.create.waitTime}
+            leaseTime: ${app.locks.relations.create.leaseTime}
         - name: AddManagedFieldsInCreation
           args:
             excludeFields:
@@ -925,6 +985,9 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/updateRelationById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.relations.update.waitTime}
+            leaseTime: ${app.locks.relations.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: replaceRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -950,6 +1013,9 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/replaceRelationById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.relations.update.waitTime}
+            leaseTime: ${app.locks.relations.update.leaseTime}
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/relations/policy
@@ -998,6 +1064,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/createEntityReaction/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1130,6 +1199,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/updateEntityReactionById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: replaceEntityReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1152,6 +1224,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/replaceEntityReactionById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1228,6 +1303,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/createChildEntityReaction/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1290,6 +1368,9 @@ spring:
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1398,6 +1479,9 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/createListReaction/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1530,6 +1614,9 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/updateListReactionById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: replaceListReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1552,6 +1639,9 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/replaceListReactionById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1628,6 +1718,9 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/createChildListReaction/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1690,6 +1783,9 @@ spring:
           args:
             policyName: /policies/auth/routes/reactionsThroughList/createReactionByListId/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1798,6 +1894,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entitiesThroughList/createEntityByListId/policy
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
@@ -1959,6 +2058,9 @@ spring:
             policyName: /policies/auth/routes/entities/createEntity/policy
         - name: AddManagedFieldsInCreation
         - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
@@ -2022,6 +2124,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.entities.update.waitTime}
+            leaseTime: ${app.locks.entities.update.leaseTime}
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/entities/policy
@@ -2122,6 +2227,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
         - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.entities.update.waitTime}
+            leaseTime: ${app.locks.entities.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: deleteEntityByIdByKindPath
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}

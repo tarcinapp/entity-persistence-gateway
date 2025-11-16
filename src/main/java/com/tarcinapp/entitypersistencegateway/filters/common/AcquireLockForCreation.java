@@ -2,7 +2,9 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.redisson.api.RLockReactive;
@@ -18,8 +20,10 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+
 import reactor.core.publisher.Mono;
 
 @Component
@@ -68,8 +72,12 @@ public class AcquireLockForCreation
                                              * }
                                              */
 
-                                            // Pass the request as it is to the filter chain
-                                            return this.lockRecord(payloadHash)
+                                                // Resolve lock timings from config or defaults
+                                                Duration wait = config.getWaitTime() != null ? config.getWaitTime() : Duration.ofSeconds(3);
+                                                Duration lease = config.getLeaseTime() != null ? config.getLeaseTime() : Duration.ofSeconds(30);
+
+                                                // Pass the request as it is to the filter chain
+                                                return this.lockRecord(payloadHash, wait, lease)
                                                     .then(Mono.just(payload));
                                         } catch (JsonProcessingException e) {
                                             logger.error(
@@ -97,7 +105,7 @@ public class AcquireLockForCreation
         };
     }
 
-    private Mono<Void> lockRecord(String payloadHash) {
+        private Mono<Void> lockRecord(String payloadHash, Duration waitTime, Duration leaseTime) {
 
         final long currentThreadId = Thread.currentThread().getId();
         final RReadWriteLockReactive lock = redissonReactiveClient
@@ -112,11 +120,10 @@ public class AcquireLockForCreation
                                 "Resource already locked. payload hash: " + payloadHash);
                     }
 
-                    logger.debug("Lock acquired for the record creation with payload hash: "
-                            + payloadHash);
+                logger.debug("Trying to acquire lock for record creation. payload hash: " + payloadHash);
 
                     return writeLock
-                            .tryLock(3, 30, TimeUnit.SECONDS, currentThreadId)
+                    .tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS, currentThreadId)
                             .flatMap(lockAcquired -> {
 
                                 if (!lockAcquired) {
@@ -165,6 +172,23 @@ public class AcquireLockForCreation
     }
 
     public static class Config {
+        private Duration waitTime;
+        private Duration leaseTime;
 
+        public Duration getWaitTime() {
+            return waitTime;
+        }
+
+        public void setWaitTime(Duration waitTime) {
+            this.waitTime = waitTime;
+        }
+
+        public Duration getLeaseTime() {
+            return leaseTime;
+        }
+
+        public void setLeaseTime(Duration leaseTime) {
+            this.leaseTime = leaseTime;
+        }
     }
 }
