@@ -1,7 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.services.policydata;
 
-import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +16,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import reactor.core.publisher.Mono;
 
@@ -47,8 +44,7 @@ public class PayloadExtractor {
                             new TypeReference<Map<String, Object>>() {}
                         );
 
-                        AnyRecordBase recordBaseFromPayload = prepareRecordBaseFromPayload(payloadJSON);
-                        policyData.setRequestPayload(recordBaseFromPayload);
+                        policyData.setRequestPayload(payloadJSON);
 
                         logger.debug("Request payload attached to policy data");
 
@@ -61,57 +57,5 @@ public class PayloadExtractor {
                 });
 
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
-    }
-
-    /**
-     * Prepares a record base object from the request payload.
-     * Extracts managed fields for policy evaluation.
-     */
-    private AnyRecordBase prepareRecordBaseFromPayload(Map<String, Object> payloadJSON) {
-        AnyRecordBase recordBase = new AnyRecordBase();
-
-        try {
-            // Extract managed fields
-            recordBase.set_id((String) payloadJSON.get("_id"));
-            recordBase.set_kind((String) payloadJSON.get("_kind"));
-            recordBase.set_name((String) payloadJSON.get("_name"));
-            recordBase.set_slug((String) payloadJSON.get("_slug"));
-            recordBase.set_visibility((String) payloadJSON.get("_visibility"));
-
-            // Parse date fields
-            String createdDateTime = (String) payloadJSON.get("_createdDateTime");
-            if (createdDateTime != null) {
-                recordBase.set_createdDateTime(ZonedDateTime.parse(createdDateTime));
-            }
-
-            String validFromDateTime = (String) payloadJSON.get("_validFromDateTime");
-            if (validFromDateTime != null) {
-                recordBase.set_validFromDateTime(ZonedDateTime.parse(validFromDateTime));
-            }
-
-            String validUntilDateTime = (String) payloadJSON.get("_validUntilDateTime");
-            if (validUntilDateTime != null) {
-                recordBase.set_validUntilDateTime(ZonedDateTime.parse(validUntilDateTime));
-            }
-
-            // Extract ownership fields
-            @SuppressWarnings("unchecked")
-            List<String> ownerUsers = (List<String>) payloadJSON.get("_ownerUsers");
-            recordBase.set_ownerUsers(ownerUsers);
-
-            @SuppressWarnings("unchecked")
-            List<String> ownerGroups = (List<String>) payloadJSON.get("_ownerGroups");
-            recordBase.set_ownerGroups(ownerGroups);
-
-            return recordBase;
-        } catch (java.time.format.DateTimeParseException e) {
-            logger.error("Invalid date format in request payload", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid date format. Dates must be in ISO-8601 format with timezone", e);
-        } catch (ClassCastException e) {
-            logger.error("Invalid field type in request payload", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid field type in request payload", e);
-        }
     }
 }

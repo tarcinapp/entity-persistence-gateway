@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.RequestPath;
@@ -19,8 +18,8 @@ public class PolicyData implements Cloneable {
     private RequestPath requestPath;
     private MultiValueMap<String, String> queryParams;
     private String encodedJwt;
-    private AnyRecordBase requestPayload;
-    private AnyRecordBase originalRecord;
+    private Object requestPayload;
+    private Object originalRecord;
 
     public String getPolicyName() {
         return this.policyName;
@@ -38,19 +37,19 @@ public class PolicyData implements Cloneable {
         this.appShortcode = appShortcode;
     }
 
-    public AnyRecordBase getRequestPayload() {
+    public Object getRequestPayload() {
         return this.requestPayload;
     }
 
-    public void setRequestPayload(AnyRecordBase requestPayload) {
+    public void setRequestPayload(Object requestPayload) {
         this.requestPayload = requestPayload;
     }
 
-    public AnyRecordBase getOriginalRecord() {
+    public Object getOriginalRecord() {
         return this.originalRecord;
     }
 
-    public void setOriginalRecord(AnyRecordBase originalRecord) {
+    public void setOriginalRecord(Object originalRecord) {
         this.originalRecord = originalRecord;
     }
 

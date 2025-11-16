@@ -10,7 +10,6 @@ import org.springframework.web.server.ServerWebExchange;
 import com.tarcinapp.entitypersistencegateway.KindPathConfigAttr;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import reactor.core.publisher.Mono;
 
@@ -41,7 +40,7 @@ public class OriginalRecordFetcher {
      * Fetches the original record from the backend based on the request context.
      * Handles kindPath resolution and relation endpoint patterns.
      */
-    public Mono<AnyRecordBase> fetchOriginalRecord(ServerWebExchange exchange) {
+    public Mono<Object> fetchOriginalRecord(ServerWebExchange exchange) {
         ServerHttpRequest request = exchange.getRequest();
         String originalResourceUrl = request.getPath().toString();
 
@@ -57,7 +56,7 @@ public class OriginalRecordFetcher {
 
         logger.debug("Fetching original record from: " + originalResourceUrl);
 
-        return backendBaseClient.get(originalResourceUrl, AnyRecordBase.class);
+        return backendBaseClient.get(originalResourceUrl, Object.class);
     }
 
     /**

@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 
 import org.apache.logging.log4j.LogManager;
@@ -80,7 +79,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
         GatewaySecurityContext gatewaySecurityContext = this.getGatewaySecurityContext(exchange);
 
         try {
-            AnyRecordBase originalRecord = this.getOriginalRecord(exchange);
+            Map<String, Object> originalRecord = this.getOriginalRecord(exchange);
 
             if (originalRecord == null)
                 return Mono.just(inboundJsonRequestStr);
@@ -91,7 +90,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                     });
 
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
-            String createdDateTime = DateTimeFormatter.ISO_INSTANT.format(originalRecord.get_createdDateTime());
+            String createdDateTime = (String) originalRecord.get("_createdDateTime");
             String authSubject = gatewaySecurityContext.getAuthSubject();
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
             
@@ -102,7 +101,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
             fieldsToAdd.stream().forEach(field -> {
 
                 if (field.equals(ManagedField.CREATED_BY) && authSubject != null)
-                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.get_createdBy());
+                    inboundJsonRequestMap.putIfAbsent(field.getFieldName(), originalRecord.get("_createdBy"));
 
                 if (field.equals(ManagedField.LAST_UPDATED_BY) && authSubject != null)
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), authSubject);
@@ -157,9 +156,10 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
      * @return
      * @throws CloneNotSupportedException
      */
-    private AnyRecordBase getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
         PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
-        return policyInquiryData.getOriginalRecord();
+        return (Map<String, Object>) policyInquiryData.getOriginalRecord();
     }
 
     public static class Config {

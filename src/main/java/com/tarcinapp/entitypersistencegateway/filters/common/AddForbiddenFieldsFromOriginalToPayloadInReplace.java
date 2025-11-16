@@ -2,19 +2,19 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.Key;
 import java.util.ArrayList;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
-import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -117,7 +117,7 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     private Mono<Void> takeFieldsFromTheOriginalRecord(ArrayList<String> fields, ServerWebExchange exchange,
             GatewayFilterChain chain) {
 
-        AnyRecordBase originalRecord;
+        Map<String, Object> originalRecord;
 
         try {
             originalRecord = this.getOriginalRecord(exchange);
@@ -132,16 +132,14 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
                     try {
                         ObjectMapper objectMapper = new ObjectMapper()
                             .registerModule(new JavaTimeModule());
-                        AnyRecordBase payloadRecord = objectMapper.readValue(payloadStr, AnyRecordBase.class);
+                        Map<String, Object> payloadRecord = objectMapper.readValue(payloadStr, 
+                            new TypeReference<Map<String, Object>>() {});
 
-                        BeanWrapperImpl originalRecordWrapper = new BeanWrapperImpl(originalRecord);
-                        BeanWrapperImpl payloadRecordWrapper = new BeanWrapperImpl(payloadRecord);
-
-
+                        // Copy forbidden fields from original record to payload
                         fields.stream()
                             .forEach(field -> {
-                                Object propertyValue = originalRecordWrapper.getPropertyValue(field);
-                                payloadRecordWrapper.setPropertyValue(field, propertyValue);
+                                Object propertyValue = originalRecord.get(field);
+                                payloadRecord.put(field, propertyValue);
                             });
                         
                         String outboundJsonRequestStr = objectMapper.writeValueAsString(payloadRecord);
@@ -164,9 +162,10 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
      * @return
      * @throws CloneNotSupportedException
      */
-    private AnyRecordBase getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
         PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
-        return policyInquiryData.getOriginalRecord();
+        return (Map<String, Object>) policyInquiryData.getOriginalRecord();
     }
 
     /**
