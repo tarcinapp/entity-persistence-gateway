@@ -73,12 +73,171 @@ app:
     gateway: INFO
     redisson: INFO
 
-  # predefined field sets
+  # Fieldset configurations for filtering response fields
+  # Fieldsets can be applied globally or per resource type (entities, lists, relations, reactions)
+  # Each fieldset has a mode (show/hide) and a list of field paths
+  # Field paths support JSON path notation: "field", "data.nested.field", "data.array[*].field"
   fieldsets:
-    managed:
-      show: _id, _kind, _slug, _visibility, _version, _ownerUsers, _ownerGroups, _createdDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
-    unmanaged:
-      hide: _slug, _visibility, _version, _ownerUsers, _ownerGroups, _createdDateTime, _lastUpdatedDateTime, _lastUpdatedBy, _createdBy, _validFromDateTime, _validUntilDateTime, _idempotencyKey, _viewerUsers, _viewerGroups
+    # Global fieldsets available for all resources
+    global:
+      # Show ALL fields (no filtering) - useful to override a default fieldset
+      show-all:
+        mode: hide
+        fields: []
+      
+      show-managed-all:
+        mode: show
+        fields:
+          - _id
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+
+      hide-managed-all:
+        mode: hide
+        fields:
+          - _id
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+
+      show-managed-except-id:
+        mode: show
+        fields:
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+
+      hide-managed-except-id:
+        mode: hide
+        fields:
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+
+      show-managed-except-id-kind-name:
+        mode: show
+        fields:
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+
+      hide-managed-except-id-kind-name:
+        mode: hide
+        fields:
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+    
+    # Entity-specific fieldset configurations
+    entities:
+      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
+      defaultFieldset: null
+      # Entity-specific fieldsets (can override global fieldsets)
+      # Example: custom fieldset for entities only
+      # fieldsets:
+      #   minimal:
+      #     mode: show
+      #     fields:
+      #       - _id
+      #       - _kind
+      #       - data.name
+      #       - data.description
+    
+    # List-specific fieldset configurations  
+    lists:
+      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
+      defaultFieldset: null
+    
+    # Relation-specific fieldset configurations
+    relations:
+      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
+      defaultFieldset: null
+    
+    # Reaction-specific fieldset configurations
+    reactions:
+      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
+      defaultFieldset: null
   
   # predefined queriers
   queries:
