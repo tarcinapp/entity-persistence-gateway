@@ -1811,18 +1811,18 @@ spring:
         - name: SetStatus
           args:
             status: 404
-      # kind path mapping
-      - id: createEntityByKindPath
+      # entity kind alias from root mapping
+      - id: createEntityByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}
+        - Path=${app.inbound.baseUri}{kindAlias}
         - Method=POST
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -1846,10 +1846,10 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
-      - id: findAllEntitiesByKindPath
+      - id: findAllEntitiesByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}
+        - Path=${app.inbound.baseUri}{kindAlias}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -1859,13 +1859,13 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.burstCapacity}
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
         - name: PreventStringifiedJsonFilter
         - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindPathToQueryForFindEntities
+        - name: ConvertKindAliasToQueryForFindEntities
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -1879,17 +1879,17 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
-      - id: replaceEntityByIdByKindPath
+      - id: replaceEntityByIdByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -1910,15 +1910,15 @@ spring:
             policyName: /policies/fields/entities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
-      - id: countEntitiesByKindPath
+      - id: countEntitiesByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/count
+        - Path=${app.inbound.baseUri}{kindAlias}/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities/count
-        - name: ConvertKindPathToQueryForFindEntities
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*), ${app.backend.baseUri}entities/count
+        - name: ConvertKindAliasToQueryForFindEntities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -1932,17 +1932,17 @@ spring:
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
-      - id: updateAllEntitiesByKindPath
+      - id: updateAllEntitiesByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}
+        - Path=${app.inbound.baseUri}{kindAlias}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -1953,19 +1953,19 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindPathToQueryForFindEntities
+        - name: ConvertKindAliasToQueryForFindEntities
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
-      - id: findEntityByIdByKindPath
+      - id: findEntityByIdByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -1983,17 +1983,17 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
-      - id: updateEntityByIdByKindPath
+      - id: updateEntityByIdByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -2009,14 +2009,14 @@ spring:
             waitTime: ${app.locks.entities.update.waitTime}
             leaseTime: ${app.locks.entities.update.leaseTime}
         - RemoveRequestHeader=Authorization
-      - id: deleteEntityByIdByKindPath
+      - id: deleteEntityByIdByKindAlias
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
-        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Path=${app.inbound.baseUri}{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}(?<kindAlias>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:

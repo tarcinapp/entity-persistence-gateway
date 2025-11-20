@@ -117,18 +117,18 @@ public class ValidateEntityRequestBody
                             .setRewriteFunction(String.class, String.class, (ex, payload) -> {
                                 Map<String, String> uriVariables = ServerWebExchangeUtils
                                         .getUriTemplateVariables(exchange);
-                                String kindPath = uriVariables.get("kindPath");
+                                String kindAlias = uriVariables.get("kindAlias");
                                 ObjectMapper objectMapper = new ObjectMapper();
 
                                 EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds()
                                         .stream()
-                                        .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
-                                                .equals(Optional.ofNullable(kindPath)))
+                                        .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
+                                                .equals(Optional.ofNullable(kindAlias)))
                                         .findFirst()
                                         .orElse(null);
 
                                 if (foundEntityKindConfig == null) {
-                                    logger.debug("There is no kindPath configuration found for path /" + kindPath);
+                                    logger.debug("There is no kind alias configuration found for path /" + kindAlias);
                                     logger.debug("Exiting ValidateEntityRequestBody filter with 404.");
 
                                     exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);

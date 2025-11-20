@@ -84,24 +84,24 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createEntity", builderWithPayload);
         // POST /entities/{parentId}/children
         routeBuilderMap.put("createEntityChild", builderWithPayloadAndParent);
-        // POST /entities/kind/{kindPath}
-        routeBuilderMap.put("createEntityByKindPath", builderWithPayload);
+        // POST /entities/kind/{kindAlias}
+        routeBuilderMap.put("createEntityByKindAlias", builderWithPayload);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entities/{id}
         routeBuilderMap.put("updateEntityById", builderWithPayloadAndOriginal);
         // PUT /entities/{id}
         routeBuilderMap.put("replaceEntityById", builderWithPayloadAndOriginal);
-        // PATCH /entities/kind/{kindPath}/{id}
-        routeBuilderMap.put("updateEntityByIdByKindPath", builderWithPayloadAndOriginal);
-        // PUT /entities/kind/{kindPath}/{id}
-        routeBuilderMap.put("replaceEntityByIdByKindPath", builderWithPayloadAndOriginal);
+        // PATCH /entities/kind/{kindAlias}/{id}
+        routeBuilderMap.put("updateEntityByIdByKindAlias", builderWithPayloadAndOriginal);
+        // PUT /entities/kind/{kindAlias}/{id}
+        routeBuilderMap.put("replaceEntityByIdByKindAlias", builderWithPayloadAndOriginal);
 
         // PATCH - with payload (bulk update)
         // PATCH /entities
         routeBuilderMap.put("updateAllEntities", builderWithPayload);
-        // PATCH /entities/kind/{kindPath}
-        routeBuilderMap.put("updateAllEntitiesByKindPath", builderWithPayload);
+        // PATCH /entities/kind/{kindAlias}
+        routeBuilderMap.put("updateAllEntitiesByKindAlias", builderWithPayload);
 
         // GET - without payload
         // GET /entities
@@ -114,18 +114,18 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findEntityChildren", builderWithoutPayload);
         // GET /entities/{id}/parents
         routeBuilderMap.put("findEntityParents", builderWithoutPayload);
-        // GET /entities/kind/{kindPath}
-        routeBuilderMap.put("findAllEntitiesByKindPath", builderWithoutPayloadNoOriginal);
-        // GET /entities/kind/{kindPath}/count
-        routeBuilderMap.put("countEntitiesByKindPath", builderWithoutPayloadNoOriginal);
-        // GET /entities/kind/{kindPath}/{id}
-        routeBuilderMap.put("findEntityByIdByKindPath", builderWithoutPayload);
+        // GET /entities/kind/{kindAlias}
+        routeBuilderMap.put("findAllEntitiesByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /entities/kind/{kindAlias}/count
+        routeBuilderMap.put("countEntitiesByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /entities/kind/{kindAlias}/{id}
+        routeBuilderMap.put("findEntityByIdByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /entities/{id}
         routeBuilderMap.put("deleteEntityById", builderWithoutPayload);
-        // DELETE /entities/kind/{kindPath}/{id}
-        routeBuilderMap.put("deleteEntityByIdByKindPath", builderWithoutPayload);
+        // DELETE /entities/kind/{kindAlias}/{id}
+        routeBuilderMap.put("deleteEntityByIdByKindAlias", builderWithoutPayload);
     }
 
     private void mapListRoutes() {

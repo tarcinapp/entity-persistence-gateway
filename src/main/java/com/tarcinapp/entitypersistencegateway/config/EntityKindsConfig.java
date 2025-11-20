@@ -32,7 +32,7 @@ public class EntityKindsConfig {
     public static class EntityKindsSingleConfig {
 
         private String name;
-        private String pathMap;
+        private String alias;
         private String schema;
 
         public String getSchema() {
@@ -51,17 +51,17 @@ public class EntityKindsConfig {
             this.name = name;
         }
 
-        public String getPathMap() {
-            return this.pathMap;
+        public String getAlias() {
+            return this.alias;
         }
 
-        public void setPathMap(String pathMap) {
-            this.pathMap = pathMap;
+        public void setAlias(String alias) {
+            this.alias = alias;
         }
 
         @Override
         public String toString() {
-            return "EntityKindsSingleConfig [name=" + name + ", pathMap=" + pathMap + ", schema=" + schema + "]";
+            return "EntityKindsSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + "]";
         }
     }
 }

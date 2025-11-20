@@ -28,15 +28,15 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
-public class ConvertKindPathToQueryForFindEntities
-        extends AbstractGatewayFilterFactory<ConvertKindPathToQueryForFindEntities.Config> {
+public class ConvertKindAliasToQueryForFindEntities
+        extends AbstractGatewayFilterFactory<ConvertKindAliasToQueryForFindEntities.Config> {
 
     @Autowired
     private EntityKindsConfig entityKindsConfig;
     private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[kind\\].*");
-    private Logger logger = LogManager.getLogger(ConvertKindPathToQueryForFindEntities.class);
+    private Logger logger = LogManager.getLogger(ConvertKindAliasToQueryForFindEntities.class);
 
-    public ConvertKindPathToQueryForFindEntities() {
+    public ConvertKindAliasToQueryForFindEntities() {
         super(Config.class);
     }
 
@@ -44,30 +44,30 @@ public class ConvertKindPathToQueryForFindEntities
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            logger.debug("ConvertKindPathToQuery filter is started.");
+            logger.debug("ConvertKindAliasToQuery filter is started.");
 
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-            String kindPath = uriVariables.get("kindPath");
+            String kindAlias = uriVariables.get("kindAlias");
 
-            logger.debug("Caller requested kindPath '" + kindPath + "'. Checking if " + kindPath
+            logger.debug("Caller requested kind alias '" + kindAlias + "'. Checking if " + kindAlias
                     + " is configured as an entity kind.");
 
             EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
-                    .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
-                            .equals(Optional.ofNullable(kindPath)))
+                    .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
+                            .equals(Optional.ofNullable(kindAlias)))
                     .findFirst()
                     .orElse(null);
 
             if (foundEntityKindConfig == null) {
-                logger.debug("There is no kindPath configuration found for path /" + kindPath);
-                logger.debug("Exiting ConvertKindPathToQuery filter with 404.");
+                logger.debug("There is no kind alias configuration found for path /" + kindAlias);
+                logger.debug("Exiting ConvertKindAliasToQuery filter with 404.");
 
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.NOT_FOUND);
                 return response.setComplete();
             }
 
-            logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+            logger.debug("/" + kindAlias + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
 
             // remove any kind of query variables about kind field
             URI uri = exchange.getRequest().getURI();

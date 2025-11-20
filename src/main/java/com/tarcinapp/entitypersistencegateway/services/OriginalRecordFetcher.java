@@ -7,7 +7,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.tarcinapp.entitypersistencegateway.KindPathConfigAttr;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 
@@ -38,17 +38,17 @@ public class OriginalRecordFetcher {
 
     /**
      * Fetches the original record from the backend based on the request context.
-     * Handles kindPath resolution and relation endpoint patterns.
+     * Handles kind alias resolution and relation endpoint patterns.
      */
     public Mono<Object> fetchOriginalRecord(ServerWebExchange exchange) {
         ServerHttpRequest request = exchange.getRequest();
         String originalResourceUrl = request.getPath().toString();
 
-        // Check if we have a kindPath configuration
-        KindPathConfigAttr kindPathConfigAttr = exchange.getAttribute("KindPathConfigAttr");
-        if (kindPathConfigAttr != null && kindPathConfigAttr.isKindPathConfigured()) {
-            originalResourceUrl = kindPathConfigAttr.getOriginalResourceUrl();
-            logger.debug("Using kind path mapped URL: " + originalResourceUrl);
+        // Check if we have a kind alias configuration
+        KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute("KindAliasConfigAttr");
+        if (kindAliasConfigAttr != null && kindAliasConfigAttr.isKindAliasConfigured()) {
+            originalResourceUrl = kindAliasConfigAttr.getOriginalResourceUrl();
+            logger.debug("Using kind alias mapped URL: " + originalResourceUrl);
         }
 
         // Handle relation endpoints (children/parents)

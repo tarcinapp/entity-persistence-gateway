@@ -275,7 +275,7 @@ To enable JSON schema validation, it is mandatory to configure [Routing by Kind]
 While defining your schema, you are not required to define [Managed Fields](#managed-fields) as they are always validated. Consider  the following sample configuration for schema validation:
 
 ```yaml
-app.entityKinds[0].pathMap=books
+app.entityKinds[0].alias=books
 app.entityKinds[0].name=book
 app.entityKinds[0].schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"},"author":{"type":"integer"}},"required":["name","author"]}
 ```
@@ -314,7 +314,7 @@ You can configure application to disable certain routes by it's name. This way, 
 ```yaml
 app:
   routes: 
-    disabled: updateAllEntities, updateAllEntitiesByKindPath
+    disabled: updateAllEntities, updateAllEntitiesByKindAlias
 ```
 
 ## Saved Field Sets
@@ -447,14 +447,14 @@ To configure entity kind routing, following snippet can be used:
 # Entity Kind Configuration
 app:
   entityKinds:
-    - pathMap: books
+    - alias: books
       name: book
 ```
-In this example, a single entity kind is configured with the name set to "book" and the corresponding pathMap configured as "books." This configuration enables the gateway to route requests coming to `/books` to the generic `/generic-entities` endpoint. For GET requests, the gateway automatically adds `?filter[where][kind]=book` to the query parameters. For create, update, and replace operations, the gateway includes a kind field in the payload with the specified value ("book" in this case) ensuring seamless handling of requests specific to the "book" entity kind.  
+In this example, a single entity kind is configured with the name set to "book" and the corresponding alias configured as "books." This configuration enables the gateway to route requests coming to `/books` to the generic `/generic-entities` endpoint. For GET requests, the gateway automatically adds `?filter[where][kind]=book` to the query parameters. For create, update, and replace operations, the gateway includes a kind field in the payload with the specified value ("book" in this case) ensuring seamless handling of requests specific to the "book" entity kind.  
   
 Same configuration can be done from the environment variables as follows:  
 ```bash
-APP_ENTITYKINDS_0_PATHMAP=books
+APP_ENTITYKINDS_0_ALIAS=books
 APP_ENTITYKINDS_0_NAME=book
 ```
 

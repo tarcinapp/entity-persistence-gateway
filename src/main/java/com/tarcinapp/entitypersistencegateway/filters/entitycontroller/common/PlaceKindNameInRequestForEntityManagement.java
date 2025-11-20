@@ -14,7 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.KindPathConfigAttr;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig;
 import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig.EntityKindsSingleConfig;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 /*
  * This filter is used to place kind name extracted from the path to the request payload for create, update and patch entity requests.
  * 
- * Takes kindPath from URI and checks if it is configured as an entity kind.
+ * Takes kind alias from URI and checks if it is configured as an entity kind.
  * If it is configured as an entity kind, it places kind name to the request payload as kind: "kindName".
  * 
  * Original entity's URL is placed to the request payload as originalUrl: "originalUrl". Because the original URL is needed for the authorization logic.
@@ -51,39 +51,39 @@ public class PlaceKindNameInRequestForEntityManagement
         logger.debug("PlaceKindNameInRequestForEntityManagement filter is started.");
 
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-        String kindPath = uriVariables.get("kindPath");
+        String kindAlias = uriVariables.get("kindAlias");
         String recordId = uriVariables.get("recordId");
         
-        logger.debug("Caller sent POST, PUT or PATCH kindPath '" + kindPath + "'. Checking if " + kindPath
+        logger.debug("Caller sent POST, PUT or PATCH kind alias '" + kindAlias + "'. Checking if " + kindAlias
             + " is configured as an entity kind.");
 
         EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
-            .filter(entityKind -> Optional.ofNullable(entityKind.getPathMap())
-                    .equals(Optional.ofNullable(kindPath)))
+            .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
+                    .equals(Optional.ofNullable(kindAlias)))
             .findFirst()
             .orElse(null);
 
         if (foundEntityKindConfig == null) {
-            logger.debug("There is no kindPath configuration found for path /" + kindPath);
+            logger.debug("There is no kind alias configuration found for path /" + kindAlias);
             logger.debug("Exiting PlaceKindNameInRequestForEntityManagement filter with 404.");
 
             exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
             return Mono.empty();
         }
 
-        logger.debug("/" + kindPath + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+        logger.debug("/" + kindAlias + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
 
         /*
          * Place original resource URL to the request payload as originalUrl: "originalUrl".
          * Because the original URL is needed for the authorization logic.
          */
-        KindPathConfigAttr kindPathConfigAttr = new KindPathConfigAttr();
-        kindPathConfigAttr.setKindPathConfigured(true);
-        kindPathConfigAttr.setKindName(foundEntityKindConfig.getName());
-        kindPathConfigAttr.setOriginalResourceUrl("/" + entitiesControllerPath + "/" + recordId);
+        KindAliasConfigAttr kindAliasConfigAttr = new KindAliasConfigAttr();
+        kindAliasConfigAttr.setKindAliasConfigured(true);
+        kindAliasConfigAttr.setKindName(foundEntityKindConfig.getName());
+        kindAliasConfigAttr.setOriginalResourceUrl("/" + entitiesControllerPath + "/" + recordId);
 
-        // Place kindPathConfigAttr to the request attributes.
-        exchange.getAttributes().put("KindPathConfigAttr", kindPathConfigAttr);
+        // Place kindAliasConfigAttr to the request attributes.
+        exchange.getAttributes().put("KindAliasConfigAttr", kindAliasConfigAttr);
 
         /*
          * Place kind name to the request payload as kind: "kindName".
