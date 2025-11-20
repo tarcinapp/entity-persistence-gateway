@@ -368,6 +368,13 @@ public class FieldsetService {
         // No fieldset name provided, try to use default
         if (resourceFieldsets != null && resourceFieldsets.getDefaultFieldset() != null) {
             String defaultFieldsetName = resourceFieldsets.getDefaultFieldset();
+            
+            // Prevent infinite recursion if default fieldset is empty
+            if (defaultFieldsetName.isEmpty()) {
+                logger.debug("Default fieldset is empty for resource type '{}', returning null", resourceType);
+                return null;
+            }
+            
             logger.debug("Using default fieldset '{}' for resource type '{}'", 
                         defaultFieldsetName, resourceType);
             return resolveFieldset(config, resourceType, defaultFieldsetName);
