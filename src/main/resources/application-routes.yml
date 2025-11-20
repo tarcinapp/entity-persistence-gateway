@@ -1124,3 +1124,906 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+      # reactions through entity controller
+      - id: createReactionByEntityId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entity-reactions
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/entityReactions/policy
+      - id: updateReactionsByEntityId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
+        - RemoveRequestHeader=Authorization
+      - id: findReactionsByEntityId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/findReactionsByEntityId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entity-reactions
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entityReactions/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/entityReactions/policy
+      - id: deleteReactionsByEntityId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entity-reactions
+        - RemoveRequestHeader=Authorization
+      # list-reactions controller
+      - id: createListReaction
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/createListReaction/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: updateAllListReactions
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
+        - RemoveRequestHeader=Authorization
+      - id: findListReactions
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/findListReactions/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: countListReactions
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/count
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/countListReactions/policy
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
+        - RemoveRequestHeader=Authorization
+      - id: findListReactionById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/findListReactionById/policy
+        - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: updateListReactionById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/updateListReactionById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
+        - RemoveRequestHeader=Authorization
+      - id: replaceListReactionById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/replaceListReactionById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.reactions.update.waitTime}
+            leaseTime: ${app.locks.reactions.update.leaseTime}
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/listReactions/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
+      - id: deleteListReactionById
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/deleteListReactionById/policy
+        - RemoveRequestHeader=Authorization
+      - id: findChildrenListReactionsByReactionId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}list-reactions/${recordId}/children
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/findChildrenListReactionsByReactionId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: createChildListReaction
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}list-reactions/${recordId}/children
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/createChildListReaction/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: findParentsByListReactionId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}list-reactions/{recordId}/parents
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.backend.baseUri}list-reactions/${recordId}/parents
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listReactions/findParentsByListReactionId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToReactionsQuery
+          args:
+            reactionType: listReactions
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      # reactions through list controller
+      - id: createReactionByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/createReactionByListId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: updateReactionsByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.reactions.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
+        - RemoveRequestHeader=Authorization
+      - id: findReactionsByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/findReactionsByListId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: list-reactions
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/listReactions/policy
+      - id: deleteReactionsByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.reactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: list-reactions
+        - RemoveRequestHeader=Authorization
+      # entities through list controller
+      - id: createEntityByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/createEntityByListId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: updateEntitiesByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
+        - RemoveRequestHeader=Authorization
+      - id: findEntitiesByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/findEntitiesByListId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: deleteEntitiesByListId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
+        - RemoveRequestHeader=Authorization
+      # lists through entity controller
+      - id: findListsByEntityId
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/lists
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.backend.baseUri}entities/${recordId}/lists
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.lists.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listsThroughEntity/findListsByEntityId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: lists
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: AddSetsToThroughRecordQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/lists/policy
+      # ping controller
+      - id: ping
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}ping
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}ping, ${app.backend.baseUri}ping
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.ping.replenishRate}
+              burstCapacity: ${app.rate-limits.ping.burstCapacity}
+        - RemoveRequestHeader=Authorization
+      #explorer controller
+      - id: explorer
+        uri: no://op
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.explorer}
+        filters:
+        - name: SetStatus
+          args:
+            status: 404
+      # kind path mapping
+      - id: createEntityByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}
+        - Method=POST
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.create}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - name: PlaceKindNameInRequestForEntityManagement
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: ValidateEntityRequestBody
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/createEntity/policy
+        - name: AddManagedFieldsInCreation
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: findAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/findEntities/policy
+        - name: PreventStringifiedJsonFilter
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+        - name: DropFieldsForMultiItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: replaceEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PUT
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - name: PlaceKindNameInRequestForEntityManagement
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: ValidateEntityRequestBody
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/replaceEntityById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.entities.update.waitTime}
+            leaseTime: ${app.locks.entities.update.leaseTime}
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/entities/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - RemoveRequestHeader=Authorization
+      - id: countEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}/count
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities/count
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/countEntities/policy
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+      - id: updateAllEntitiesByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*), ${app.backend.baseUri}entities
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/updateAllEntities/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: ConvertKindPathToQueryForFindEntities
+        - name: AddSetsToEntityListOrReactionViaRecordQuery
+          args:
+            recordType: entities
+        - RemoveRequestHeader=Authorization
+      - id: findEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=GET
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/findEntityById/policy
+        - RemoveRequestHeader=Authorization
+        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: ApplyFieldsetConfig
+          args:
+            recordType: entities
+        - name: DropFieldsForSingleItemResponses
+          args:
+            policyName: /policies/fields/entities/policy
+      - id: updateEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PATCH
+        filters:
+        - name: RequestSize
+          args:
+            maxSize: ${app.requestSizes.entities.update}
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: ValidateEntityRequestBody
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/updateEntityById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.entities.update.waitTime}
+            leaseTime: ${app.locks.entities.update.leaseTime}
+        - RemoveRequestHeader=Authorization
+      - id: deleteEntityByIdByKindPath
+        uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
+        predicates:
+        - Path=${app.inbound.baseUri}{kindPath}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=DELETE
+        filters:
+        - name: CheckIfRouteEnabled
+        - RewritePath=${app.inbound.baseUri}(?<kindPath>/?.*)\/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
+        - name: AuthenticateRequestRefactored
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.entities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/deleteEntityById/policy
+        - RemoveRequestHeader=Authorization
