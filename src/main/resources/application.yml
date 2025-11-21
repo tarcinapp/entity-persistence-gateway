@@ -40,6 +40,14 @@ app:
       relations: relations
       explorer: explorer
     
+  # kind alias configuration - maps custom paths to entities with specific kinds
+    # Example: GET /api/v1/entities/books -> GET /backend/entities?filter[where][_kind]=book
+  # Example: POST /api/v1/entities/books -> POST /backend/entities (with "_kind": "book" added to body)
+  # kindAliasPaths:
+  #   - alias: books        # path segment without leading slash (combined with baseUri and controllerPaths.entities)
+  #     name: book          # kind value to filter by
+  #     schema: '{"type":"object","properties":{"title":{"type":"string"}}}'  # optional JSON schema
+  
     cors:
       allowedOrigins: "http://localhost:8080"
       allowedMethods: "GET, POST, PUT, PATCH, DELETE"
@@ -111,27 +119,6 @@ app:
         mode: hide
         fields:
           - _id
-          - _kind
-          - _name
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-
-      show-managed-except-id:
-        mode: show
-        fields:
           - _kind
           - _name
           - _slug
@@ -350,14 +337,21 @@ app:
       update:
         waitTime: ${app.locks.default.waitTime}
         leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
   
   routes:
     disabled: []
 
   # base schema used for all managed fields. 
+  # This schema allows additionalProperties by default (implicit true).
+  # User schemas can restrict additional properties by setting "additionalProperties": false
+  # in their schema configuration, which will prevent any properties beyond the combined 
+  # base + user schema from being accepted.
   schemas:
-    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
-    
+    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
+
   # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
   
   # this map is used as a reference to configure 'management.endpoints.web.exposure.include' value, according to the 'app.inbound.metricsEnabled'

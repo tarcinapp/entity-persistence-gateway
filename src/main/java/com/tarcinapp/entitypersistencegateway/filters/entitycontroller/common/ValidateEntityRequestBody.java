@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -27,15 +28,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
 import com.networknt.schema.SpecVersion.VersionFlag;
 import com.networknt.schema.ValidationMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig;
-import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig.EntityKindsSingleConfig;
+import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
 
 import reactor.core.publisher.Mono;
@@ -48,7 +47,7 @@ public class ValidateEntityRequestBody
     private String anyRecordBaseSchema;
 
     @Autowired
-    private EntityKindsConfig entityKindsConfig;
+    private KindAliasPathsConfig kindAliasPathsConfig;
 
     private Logger logger = LogManager.getLogger(ValidateEntityRequestBody.class);
 
@@ -68,7 +67,7 @@ public class ValidateEntityRequestBody
 
         // if there is no entity kind configured, there is nothing to do in this
         // operation
-        if (entityKindsConfig.getEntityKinds().size() == 0) {
+        if (kindAliasPathsConfig.getKindAliasPaths().size() == 0) {
             return;
         }
 
@@ -81,23 +80,94 @@ public class ValidateEntityRequestBody
                 baseSchema = this.getJsonSchemaFromStringContent(this.anyRecordBaseSchema);
 
             // merge each given schema with base schema
-            for (EntityKindsSingleConfig entityKinds : entityKindsConfig.getEntityKinds()) {
-                String schema = entityKinds.getSchema();
+            for (KindAliasPathSingleConfig kindAliasPath : kindAliasPathsConfig.getKindAliasPaths()) {
+                String schema = kindAliasPath.getSchema();
 
                 if (schema != null) {
-                    JsonNode entityKindSchema = objectMapper.readTree(schema);
+                    JsonNode kindAliasPathSchema = objectMapper.readTree(schema);
+                    JsonNode baseSchemaNode = baseSchema.getSchemaNode();
 
-                    // create new arraynode
-                    ArrayNode allOfArray = objectMapper.createArrayNode();
-                    allOfArray.add(baseSchema.getSchemaNode());
-                    allOfArray.add(entityKindSchema);
+                    // Check if user schema has additionalProperties set to false
+                    boolean userRestrictsAdditionalProps = false;
+                    if (kindAliasPathSchema.has("additionalProperties")) {
+                        JsonNode additionalPropsNode = kindAliasPathSchema.get("additionalProperties");
+                        if (additionalPropsNode.isBoolean() && !additionalPropsNode.asBoolean()) {
+                            userRestrictsAdditionalProps = true;
+                        }
+                    }
 
+                    // Create a new merged schema by combining properties from both schemas
                     ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
-                    combinedSchemaNode.set("allOf", allOfArray);
+                    
+                    // Copy schema version from user schema or base schema
+                    if (kindAliasPathSchema.has("$schema")) {
+                        combinedSchemaNode.set("$schema", kindAliasPathSchema.get("$schema"));
+                    } else if (baseSchemaNode.has("$schema")) {
+                        combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
+                    }
+                    
+                    combinedSchemaNode.put("type", "object");
+                    
+                    // Merge properties from both schemas
+                    ObjectNode mergedProperties = objectMapper.createObjectNode();
+                    
+                    // Add base schema properties
+                    if (baseSchemaNode.has("properties")) {
+                        JsonNode baseProperties = baseSchemaNode.get("properties");
+                        baseProperties.fields().forEachRemaining(entry -> 
+                            mergedProperties.set(entry.getKey(), entry.getValue())
+                        );
+                    }
+                    
+                    // Add/override with user schema properties
+                    if (kindAliasPathSchema.has("properties")) {
+                        JsonNode userProperties = kindAliasPathSchema.get("properties");
+                        userProperties.fields().forEachRemaining(entry -> 
+                            mergedProperties.set(entry.getKey(), entry.getValue())
+                        );
+                    }
+                    
+                    combinedSchemaNode.set("properties", mergedProperties);
+                    
+                    // Merge required fields from both schemas
+                    ArrayNode mergedRequired = objectMapper.createArrayNode();
+
+                    if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
+                        baseSchemaNode.get("required").forEach(mergedRequired::add);
+                    }
+
+                    if (kindAliasPathSchema.has("required") && kindAliasPathSchema.get("required").isArray()) {
+                        kindAliasPathSchema.get("required").forEach(req -> {
+                            // Avoid duplicates
+                            boolean exists = false;
+
+                            for (JsonNode existing : mergedRequired) {
+
+                                if (existing.equals(req)) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+
+                            if (!exists) {
+                                mergedRequired.add(req);
+                            }
+                        });
+                    }
+                    
+                    if (mergedRequired.size() > 0) {
+                        combinedSchemaNode.set("required", mergedRequired);
+                    }
+                    
+                    // Apply additionalProperties restriction if user schema has it set to false
+                    if (userRestrictsAdditionalProps) {
+                        combinedSchemaNode.put("additionalProperties", false);
+                    }
+                    // Otherwise, additionalProperties defaults to true (allow any extra properties)
 
                     JsonSchema combinedSchema = getJsonSchemaFromJsonNode(combinedSchemaNode);
 
-                    combinedSchemas.put(entityKinds.getName(), combinedSchema);
+                    combinedSchemas.put(kindAliasPath.getName(), combinedSchema);
                 }
             }
 
@@ -120,14 +190,14 @@ public class ValidateEntityRequestBody
                                 String kindAlias = uriVariables.get("kindAlias");
                                 ObjectMapper objectMapper = new ObjectMapper();
 
-                                EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds()
+                                KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig.getKindAliasPaths()
                                         .stream()
                                         .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
                                                 .equals(Optional.ofNullable(kindAlias)))
                                         .findFirst()
                                         .orElse(null);
 
-                                if (foundEntityKindConfig == null) {
+                                if (foundKindAliasPathConfig == null) {
                                     logger.debug("There is no kind alias configuration found for path /" + kindAlias);
                                     logger.debug("Exiting ValidateEntityRequestBody filter with 404.");
 
@@ -139,7 +209,7 @@ public class ValidateEntityRequestBody
                                     // start validation here
                                     JsonNode requestJsonNode = objectMapper.readTree(payload);
                                     Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
-                                    JsonSchema schema = combinedSchemas.get(foundEntityKindConfig.getName());
+                                    JsonSchema schema = combinedSchemas.get(foundKindAliasPathConfig.getName());
 
                                     // for create and replace operations, perform full validation
                                     if (exchange.getRequest().getMethod() == HttpMethod.POST
@@ -148,14 +218,31 @@ public class ValidateEntityRequestBody
                                     }
 
                                     // for update operation, perform validation only over the given properties
+                                    // PATCH allows partial updates, so we only validate the fields that are present
                                     if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
                                         Set<ValidationMessage> patchValidationErrors = schema.validate(requestJsonNode);
 
                                         if(patchValidationErrors.size() > 0) {
-
-                                            // skip errors indicating absence of a root field
+                                            // For PATCH operations, filter out only the "required field missing" errors
+                                            // at root level. We still want to enforce additionalProperties, type validation, etc.
                                             errors = patchValidationErrors.stream()
-                                                .filter(pve -> !("1028".equals(pve.getCode()) && "$".equals(pve.getPath())))
+                                                .filter(pve -> {
+                                                    String code = pve.getCode();
+                                                    String path = pve.getPath();
+                                                    
+                                                    // Skip only "required" field errors at root level (code 1028)
+                                                    // PATCH doesn't require all fields to be present
+                                                    if ("1028".equals(code) && "$".equals(path)) {
+                                                        return false;
+                                                    }
+                                                    
+                                                    // Keep all other errors including:
+                                                    // - additionalProperties violations (code 1001)
+                                                    // - type mismatches
+                                                    // - format violations
+                                                    // - nested validation errors
+                                                    return true;
+                                                })
                                                 .collect(Collectors.toCollection(LinkedHashSet::new));
                                         }
                                     }
@@ -164,8 +251,21 @@ public class ValidateEntityRequestBody
                                     if (errors.size() > 0) {
                                         logger.debug("Validation errors found.");
 
-                                        // Throw an exception with validation errors
-                                        throw new JsonValidationException(errors);
+                                        // Deduplicate errors by creating a unique key from code + path + message
+                                        // This handles the case where allOf causes duplicate error messages
+                                        Set<ValidationMessage> uniqueErrors = errors.stream()
+                                            .collect(Collectors.toMap(
+                                                vm -> vm.getCode() + "|" + vm.getPath() + "|" + vm.getMessage(),
+                                                vm -> vm,
+                                                (existing, replacement) -> existing, // keep first occurrence
+                                                LinkedHashMap::new
+                                            ))
+                                            .values()
+                                            .stream()
+                                            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                                        // Throw an exception with deduplicated validation errors
+                                        throw new JsonValidationException(uniqueErrors);
                                     }
 
                                     logger.debug("No validation error.");

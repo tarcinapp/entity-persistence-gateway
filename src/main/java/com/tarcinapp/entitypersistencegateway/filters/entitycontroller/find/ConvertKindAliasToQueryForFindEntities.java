@@ -24,16 +24,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig;
-import com.tarcinapp.entitypersistencegateway.config.EntityKindsConfig.EntityKindsSingleConfig;
+import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 
 @Component
 public class ConvertKindAliasToQueryForFindEntities
         extends AbstractGatewayFilterFactory<ConvertKindAliasToQueryForFindEntities.Config> {
 
     @Autowired
-    private EntityKindsConfig entityKindsConfig;
-    private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[kind\\].*");
+    private KindAliasPathsConfig kindAliasPathsConfig;
+    private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[_kind\\].*");
     private Logger logger = LogManager.getLogger(ConvertKindAliasToQueryForFindEntities.class);
 
     public ConvertKindAliasToQueryForFindEntities() {
@@ -52,13 +52,13 @@ public class ConvertKindAliasToQueryForFindEntities
             logger.debug("Caller requested kind alias '" + kindAlias + "'. Checking if " + kindAlias
                     + " is configured as an entity kind.");
 
-            EntityKindsSingleConfig foundEntityKindConfig = entityKindsConfig.getEntityKinds().stream()
+            KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig.getKindAliasPaths().stream()
                     .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
                             .equals(Optional.ofNullable(kindAlias)))
                     .findFirst()
                     .orElse(null);
 
-            if (foundEntityKindConfig == null) {
+            if (foundKindAliasPathConfig == null) {
                 logger.debug("There is no kind alias configuration found for path /" + kindAlias);
                 logger.debug("Exiting ConvertKindAliasToQuery filter with 404.");
 
@@ -67,7 +67,7 @@ public class ConvertKindAliasToQueryForFindEntities
                 return response.setComplete();
             }
 
-            logger.debug("/" + kindAlias + " is configured to entity kind: '" + foundEntityKindConfig.getName() + "'.");
+            logger.debug("/" + kindAlias + " is configured to entity kind: '" + foundKindAliasPathConfig.getName() + "'.");
 
             // remove any kind of query variables about kind field
             URI uri = exchange.getRequest().getURI();
@@ -85,9 +85,9 @@ public class ConvertKindAliasToQueryForFindEntities
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(originalRequest -> {
 
-                        logger.debug("Adding where filter for kind.");
+                        logger.debug("Adding where filter for _kind.");
 
-                        query.add(new BasicNameValuePair("filter[where][kind]", foundEntityKindConfig.getName()));
+                        query.add(new BasicNameValuePair("filter[where][_kind]", foundKindAliasPathConfig.getName()));
 
                         String newQueryStr = query.stream()
                                 .map(v -> v.getName() + "=" + v.getValue())

@@ -10,26 +10,26 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "app")
-public class EntityKindsConfig {
+public class KindAliasPathsConfig {
     
-    private List<EntityKindsSingleConfig> entityKinds = new ArrayList<EntityKindsSingleConfig>();
+    private List<KindAliasPathSingleConfig> kindAliasPaths = new ArrayList<>();
 
-    public List<EntityKindsSingleConfig> getEntityKinds() {
-        return this.entityKinds;
+    public List<KindAliasPathSingleConfig> getKindAliasPaths() {
+        return this.kindAliasPaths;
     }
 
-    public void setEntityKinds(List<EntityKindsSingleConfig> entityKinds) {
-        this.entityKinds = entityKinds;
+    public void setKindAliasPaths(List<KindAliasPathSingleConfig> kindAliasPaths) {
+        this.kindAliasPaths = kindAliasPaths;
     }
 
     @Override
     public String toString() {
-        return "EntityKindsConfig [entityKinds=" + entityKinds + "]";
+        return "KindAliasPathsConfig [kindAliasPaths=" + kindAliasPaths + "]";
     }
 
 
 
-    public static class EntityKindsSingleConfig {
+    public static class KindAliasPathSingleConfig {
 
         private String name;
         private String alias;
@@ -61,7 +61,7 @@ public class EntityKindsConfig {
 
         @Override
         public String toString() {
-            return "EntityKindsSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + "]";
+            return "KindAliasPathSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + "]";
         }
     }
 }

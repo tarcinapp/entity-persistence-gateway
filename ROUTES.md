@@ -209,25 +209,25 @@ Routes for managing lists through entity context.
 
 ## Kind Alias Mapping Controller
 
-Routes for entity management using kind-based paths (configurable via `app.entityKinds`).
+Routes for entity management using kind-based paths (configurable via `app.kindAliasPaths`).
 
 ### Collection Operations
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
-| `createEntityByKindAlias` | POST | `/api/v1/{kind alias}` | Create a new entity of a specific kind |
-| `findAllEntitiesByKindAlias` | GET | `/api/v1/{kind alias}` | Find/list all entities of a specific kind |
-| `countEntitiesByKindAlias` | GET | `/api/v1/{kind alias}/count` | Count entities of a specific kind |
-| `updateAllEntitiesByKindAlias` | PATCH | `/api/v1/{kind alias}` | Update multiple entities of a specific kind (disabled by default) |
+| `createEntityByKindAlias` | POST | `/api/v1/entities/{kind alias}` | Create a new entity of a specific kind |
+| `findAllEntitiesByKindAlias` | GET | `/api/v1/entities/{kind alias}` | Find/list all entities of a specific kind |
+| `countEntitiesByKindAlias` | GET | `/api/v1/entities/{kind alias}/count` | Count entities of a specific kind |
+| `updateAllEntitiesByKindAlias` | PATCH | `/api/v1/entities/{kind alias}` | Update multiple entities of a specific kind (disabled by default) |
 
 ### Single Entity Operations by Kind Alias
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
-| `findEntityByIdByKindAlias` | GET | `/api/v1/{kind alias}/{recordId}` | Find a specific entity by ID within a kind alias |
-| `updateEntityByIdByKindAlias` | PATCH | `/api/v1/{kind alias}/{recordId}` | Update a specific entity by ID within a kind alias |
-| `replaceEntityByIdByKindAlias` | PUT | `/api/v1/{kind alias}/{recordId}` | Replace a specific entity by ID within a kind alias |
-| `deleteEntityByIdByKindAlias` | DELETE | `/api/v1/{kind alias}/{recordId}` | Delete a specific entity by ID within a kind alias |
+| `findEntityByIdByKindAlias` | GET | `/api/v1/entities/{kind alias}/{recordId}` | Find a specific entity by ID within a kind alias |
+| `updateEntityByIdByKindAlias` | PATCH | `/api/v1/entities/{kind alias}/{recordId}` | Update a specific entity by ID within a kind alias |
+| `replaceEntityByIdByKindAlias` | PUT | `/api/v1/entities/{kind alias}/{recordId}` | Replace a specific entity by ID within a kind alias |
+| `deleteEntityByIdByKindAlias` | DELETE | `/api/v1/entities/{kind alias}/{recordId}` | Delete a specific entity by ID within a kind alias |
 
 ---
 
@@ -275,7 +275,7 @@ All routes that accept a `{recordId}` parameter expect a UUID in the format:
   - `app.inbound.controllerPaths.relations` (default: `relations`)
   - `app.inbound.controllerPaths.explorer` (default: `explorer`)
 
-- **Kind Alias Mapping** can be configured via `app.entityKinds` to create semantic endpoints for specific entity types (e.g., `/books` for entities with `kind: book`).
+- **Kind Alias Mapping** can be configured via `app.kindAliasPaths` to create semantic endpoints for specific entity types (e.g., `/api/v1/entities/books` for entities with `kind: book`).
 
 ### Common Features
 
