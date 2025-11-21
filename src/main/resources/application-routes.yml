@@ -1834,11 +1834,11 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
-        - name: AddManagedFieldsInCreation
         - name: AcquireLockForCreation
           args:
             waitTime: ${app.locks.entities.create.waitTime}
             leaseTime: ${app.locks.entities.create.leaseTime}
+        - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
