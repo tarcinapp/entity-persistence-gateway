@@ -1071,6 +1071,7 @@ spring:
             maxSize: ${app.requestSizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}entity-reactions/${recordId}/children
+        - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
