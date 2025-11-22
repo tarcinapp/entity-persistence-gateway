@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
  * Takes kind alias from URI and checks if it is configured as an entity kind.
  * If it is configured as an entity kind, it places kind name to the request payload as _kind: "kindName".
  * 
- * Original entity's URL is placed to the request payload as originalUrl: "originalUrl". Because the original URL is needed for the authorization logic.
+ * Original entity's URL is placed in exchange attributes for authorization logic.
  */
 @Component
 public class PlaceKindNameInRequestForEntityManagement
@@ -76,16 +76,18 @@ public class PlaceKindNameInRequestForEntityManagement
         logger.debug("/" + kindAlias + " is configured to alias entity kind: '" + foundKindAliasPathConfig.getName() + "'.");
 
         /*
-         * Place original resource URL to the request payload as originalUrl: "originalUrl".
-         * Because the original URL is needed for the authorization logic.
+         * Place original resource URL in exchange attributes for authorization logic.
+         * Authorization policies need the actual resource path (e.g., /entities/{recordId})
+         * even when the request comes through an alias path (e.g., /entities/books/{recordId}).
          */
         KindAliasConfigAttr kindAliasConfigAttr = new KindAliasConfigAttr();
         kindAliasConfigAttr.setKindAliasConfigured(true);
         kindAliasConfigAttr.setKindName(foundKindAliasPathConfig.getName());
         kindAliasConfigAttr.setOriginalResourceUrl("/" + entitiesControllerPath + "/" + recordId);
 
-        // Place kindAliasConfigAttr to the request attributes.
+        // Place kindAliasConfigAttr to the request attributes for authorization filter
         exchange.getAttributes().put("KindAliasConfigAttr", kindAliasConfigAttr);
+        logger.debug("Stored original resource URL for authorization: " + kindAliasConfigAttr.getOriginalResourceUrl());
 
         /*
          * For PATCH (update) operations, do not add _kind to the payload.
@@ -98,7 +100,7 @@ public class PlaceKindNameInRequestForEntityManagement
         }
 
         /*
-         * Place kind name to the request payload as kind: "kindName" for POST and PUT.
+         * Place kind name to the request payload as _kind: "kindName" for POST and PUT.
          */
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -107,7 +109,6 @@ public class PlaceKindNameInRequestForEntityManagement
 
             payloadMap.put("_kind", foundKindAliasPathConfig.getName());
             logger.debug("Kind name '" + foundKindAliasPathConfig.getName() + "' is placed to the request payload.");
-
 
             String outboundJsonRequestStr = new ObjectMapper().writeValueAsString(payloadMap);
 

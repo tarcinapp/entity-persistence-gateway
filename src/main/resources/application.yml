@@ -275,6 +275,15 @@ app:
     reactions:
       create: ${app.requestSizes.default.create}
       update: ${app.requestSizes.default.update}
+    
+    # kind-specific sizes (indexed by kind name)
+    # These override the default entity sizes for specific kinds
+    # Example: app.requestSizes.book.create=10KB
+    # kinds:
+    #   book:
+    #     create: 10KB
+    #     update: 8KB
+    #     createChild: 5KB
   
   # rate limit configuration (applies to all routes via placeholders)
   rate-limits:

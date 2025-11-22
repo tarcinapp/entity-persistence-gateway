@@ -1819,7 +1819,7 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=POST
         filters:
-        - name: RequestSize
+        - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.requestSizes.entities.create}
         - name: CheckIfRouteEnabled
@@ -1886,7 +1886,7 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
-        - name: RequestSize
+        - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
@@ -1939,7 +1939,7 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=PATCH
         filters:
-        - name: RequestSize
+        - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
@@ -1990,7 +1990,7 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
-        - name: RequestSize
+        - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.requestSizes.entities.update}
         - name: CheckIfRouteEnabled
@@ -2066,9 +2066,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=POST
         filters:
-        - name: RequestSize
+        - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.entities.createChild}
+            maxSize: ${app.requestSizes.kinds.${kindAlias}.createChild:${app.requestSizes.entities.createChild}}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: PlaceKindNameInRequestForEntityManagement

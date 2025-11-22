@@ -4,35 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties
 @ConfigurationProperties(prefix = "app")
 public class KindAliasPathsConfig {
     
     private List<KindAliasPathSingleConfig> kindAliasPaths = new ArrayList<>();
 
     public List<KindAliasPathSingleConfig> getKindAliasPaths() {
-        return this.kindAliasPaths;
+        return kindAliasPaths;
     }
 
     public void setKindAliasPaths(List<KindAliasPathSingleConfig> kindAliasPaths) {
         this.kindAliasPaths = kindAliasPaths;
     }
 
-    @Override
-    public String toString() {
-        return "KindAliasPathsConfig [kindAliasPaths=" + kindAliasPaths + "]";
-    }
-
-
-
     public static class KindAliasPathSingleConfig {
-
-        private String name;
         private String alias;
+        private String name;
         private String schema;
 
         public String getSchema() {
