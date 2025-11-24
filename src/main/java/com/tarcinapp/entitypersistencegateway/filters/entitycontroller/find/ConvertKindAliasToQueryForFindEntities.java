@@ -99,7 +99,17 @@ public class ConvertKindAliasToQueryForFindEntities
                                 .build()
                                 .toUri();
 
-                        logger.debug("New URI: " + newUri);
+                        // Log decoded URI for easier reading
+                        try {
+                                String decodedQuery = java.net.URLDecoder.decode(newQueryStr, java.nio.charset.StandardCharsets.UTF_8.name());
+                                String decodedUri = newUri.getScheme() + "://" + newUri.getAuthority() + newUri.getPath();
+                                if (!decodedQuery.isEmpty()) {
+                                        decodedUri += "?" + decodedQuery;
+                                }
+                                logger.debug("New URI (decoded) " + decodedUri);
+                        } catch (Exception e) {
+                                logger.debug("New URI " + newUri + " (failed to decode: " + e.getMessage() + ")");
+                        }
 
                         originalRequest.uri(newUri);
                     })
