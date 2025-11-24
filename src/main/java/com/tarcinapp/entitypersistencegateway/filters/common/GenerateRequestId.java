@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class GenerateRequestId implements GlobalFilter {
 
-    @Value("${app.requestHeaders.requestId}")
+    @Value("${app.requestId}")
     private String requestIdHeader;
 
     @Value("${app.shortcode}")

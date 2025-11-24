@@ -43,8 +43,8 @@ import reactor.core.publisher.Mono;
 public class ValidateEntityRequestBody
         extends AbstractGatewayFilterFactory<ValidateEntityRequestBody.Config> {
 
-    @Value("${app.schemas.anyRecordBase:#{null}}")
-    private String anyRecordBaseSchema;
+    @Value("${app.commonBaseSchema:#{null}}")
+    private String commonBaseSchema;
 
     @Autowired
     private KindAliasPathsConfig kindAliasPathsConfig;
@@ -76,8 +76,8 @@ public class ValidateEntityRequestBody
 
         try {
             // init the base schema
-            if (this.anyRecordBaseSchema != null)
-                baseSchema = this.getJsonSchemaFromStringContent(this.anyRecordBaseSchema);
+            if (this.commonBaseSchema != null)
+                baseSchema = this.getJsonSchemaFromStringContent(this.commonBaseSchema);
 
             // merge each given schema with base schema
             for (KindAliasPathSingleConfig kindAliasPath : kindAliasPathsConfig.getKindAliasPaths()) {

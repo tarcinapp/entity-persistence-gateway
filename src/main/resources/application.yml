@@ -10,8 +10,12 @@ app:
   shortcode: "tarcinapp"
   debug: false
   jmx: false
-  requestHeaders:
-    requestId: "X-Request-Id"
+
+  # Custom request ID header name used in logging and tracing
+  requestId: "X-Request-Id"
+    
+  commonBaseSchema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
+  
   inbound:
     address: 0.0.0.0
     port: 8081
@@ -43,8 +47,6 @@ app:
     host: entity-persistence-gateway-policies
     port: 443
 
-  schemas:
-    anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
   metricsEndpointsMap:
     "true": gateway,health,metrics
     "false": ""
