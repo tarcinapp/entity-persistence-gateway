@@ -34,7 +34,7 @@ public class DropFieldsForMultiItemResponses extends
     public Mono<String> modifyResponsePayload(PolicyEvaluatingFilterConfig config, ServerWebExchange exchange,
             PolicyResponse policyResult, String payload) {
 
-        if (policyResult.getFields().size() == 0) {
+        if (policyResult.getFields().isEmpty()) {
             logger.debug("There is no field going to be hidden from the response.");
             return Mono.just(payload);
         }
