@@ -24,6 +24,7 @@ public class KindAliasPathsConfig {
         private String alias;
         private String name;
         private String schema;
+        private String recordType;
 
         public String getSchema() {
             return schema;
@@ -49,9 +50,17 @@ public class KindAliasPathsConfig {
             this.alias = alias;
         }
 
+        public String getRecordType() {
+            return recordType;
+        }
+
+        public void setRecordType(String recordType) {
+            this.recordType = recordType;
+        }
+
         @Override
         public String toString() {
-            return "KindAliasPathSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + "]";
+            return "KindAliasPathSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + ", recordType=" + recordType + "]";
         }
     }
 }
