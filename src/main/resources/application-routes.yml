@@ -11,15 +11,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.create}
+            maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
@@ -43,15 +43,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
@@ -72,8 +72,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
@@ -104,8 +104,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.countEntities.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
@@ -125,8 +125,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.findEntityById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
@@ -146,15 +146,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
@@ -168,15 +168,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
@@ -198,8 +198,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
@@ -216,8 +216,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.findEntityChildren.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
@@ -244,15 +244,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.createChild}
+            maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
@@ -280,8 +280,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.findEntityParents.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy
@@ -309,15 +309,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.lists.create}
+            maxSize: ${app.request-sizes.lists.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.createList.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.createList.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/createList/policy
@@ -341,15 +341,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.lists.update}
+            maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.updateAllLists.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.updateAllLists.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
@@ -370,8 +370,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.findLists.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findLists/policy
@@ -402,8 +402,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.countLists.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.countLists.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/countLists/policy
@@ -423,8 +423,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.findListById.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.findListById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListById/policy
@@ -444,15 +444,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.lists.update}
+            maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.updateListById.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.updateListById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateListById/policy
@@ -469,15 +469,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.lists.update}
+            maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.replaceListById.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.replaceListById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/replaceListById/policy
@@ -502,8 +502,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.deleteListById.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.deleteListById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/deleteListById/policy
@@ -520,8 +520,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.findListChildren.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.findListChildren.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListChildren/policy
@@ -548,15 +548,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.lists.createChild}
+            maxSize: ${app.request-sizes.lists.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.createListChild.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.createListChild.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/createListChild/policy
@@ -584,8 +584,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.findListParents.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.findListParents.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListParents/policy
@@ -614,14 +614,14 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}relations
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.relations.create}
+            maxSize: ${app.request-sizes.relations.create}
         - name: CheckIfRouteEnabled
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.createRelation.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.createRelation.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/createRelation/policy
@@ -649,14 +649,14 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}relations
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.relations.update}
+            maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.updateAllRelations.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.updateAllRelations.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
@@ -674,8 +674,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.findRelations.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.findRelations.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/findRelations/policy
@@ -704,8 +704,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.countRelations.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.countRelations.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
@@ -726,8 +726,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.findRelationById.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.findRelationById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/findRelationById/policy
@@ -747,7 +747,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.relations.update}
+            maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
         - name: RewritePath
           args:
@@ -757,8 +757,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.updateRelationById.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.updateRelationById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateRelationById/policy
@@ -775,7 +775,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.relations.update}
+            maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
         - name: RewritePath
           args:
@@ -785,8 +785,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.replaceRelationById.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.replaceRelationById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/replaceRelationById/policy
@@ -814,8 +814,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.relations.replenishRate}
-              burstCapacity: ${app.rate-limits.relations.burstCapacity}
+              replenishRate: ${app.rate-limits.relations.deleteRelationById.replenishRate}
+              burstCapacity: ${app.rate-limits.relations.deleteRelationById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/deleteRelationById/policy
@@ -829,15 +829,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/createEntityReaction/policy
@@ -861,15 +861,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateAllEntityReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
@@ -890,8 +890,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findEntityReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactions/policy
@@ -922,8 +922,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.countEntityReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.countEntityReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
@@ -943,8 +943,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findEntityReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findEntityReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactionById/policy
@@ -964,15 +964,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateEntityReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateEntityReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateEntityReactionById/policy
@@ -989,15 +989,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.replaceEntityReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.replaceEntityReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/replaceEntityReactionById/policy
@@ -1022,8 +1022,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.deleteEntityReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/deleteEntityReactionById/policy
@@ -1040,8 +1040,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findChildrenEntityReactionsByReactionId/policy
@@ -1068,7 +1068,7 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}entity-reactions/${recordId}/children
         - name: PlaceKindNameInRequestForEntityManagement
@@ -1076,8 +1076,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createChildEntityReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createChildEntityReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/createChildEntityReaction/policy
@@ -1105,8 +1105,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findParentsByEntityReactionId.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findParentsByEntityReactionId.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findParentsByEntityReactionId/policy
@@ -1134,15 +1134,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
@@ -1166,15 +1166,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateAllEntityReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
@@ -1195,8 +1195,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findEntityReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/findReactionsByEntityId/policy
@@ -1227,8 +1227,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.deleteEntityReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
@@ -1245,15 +1245,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createListReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/createListReaction/policy
@@ -1277,15 +1277,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateAllListReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
@@ -1306,8 +1306,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findListReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findListReactions/policy
@@ -1338,8 +1338,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.countListReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.countListReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
@@ -1359,8 +1359,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findListReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findListReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findListReactionById/policy
@@ -1380,15 +1380,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateListReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateListReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateListReactionById/policy
@@ -1405,15 +1405,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.replaceListReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.replaceListReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/replaceListReactionById/policy
@@ -1438,8 +1438,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.deleteListReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/deleteListReactionById/policy
@@ -1456,8 +1456,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findChildrenListReactionsByReactionId/policy
@@ -1484,15 +1484,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}list-reactions/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createChildListReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createChildListReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/createChildListReaction/policy
@@ -1520,8 +1520,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findParentsByListReactionId.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findParentsByListReactionId.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findParentsByListReactionId/policy
@@ -1549,15 +1549,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.create}
+            maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.createListReaction.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/createReactionByListId/policy
@@ -1581,15 +1581,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.reactions.update}
+            maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.updateAllListReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
@@ -1610,8 +1610,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.findListReactions.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/findReactionsByListId/policy
@@ -1642,8 +1642,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.reactions.replenishRate}
-              burstCapacity: ${app.rate-limits.reactions.burstCapacity}
+              replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
+              burstCapacity: ${app.rate-limits.reactions.deleteListReactionById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
@@ -1660,15 +1660,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.create}
+            maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/createEntityByListId/policy
@@ -1692,15 +1692,15 @@ spring:
         filters:
         - name: RequestSize
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
@@ -1719,8 +1719,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/findEntitiesByListId/policy
@@ -1749,8 +1749,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+              replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
+              burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
@@ -1770,8 +1770,8 @@ spring:
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
-              replenishRate: ${app.rate-limits.lists.replenishRate}
-              burstCapacity: ${app.rate-limits.lists.burstCapacity}
+              replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
+              burstCapacity: ${app.rate-limits.lists.findLists.burstCapacity}
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listsThroughEntity/findListsByEntityId/policy
@@ -1821,16 +1821,17 @@ spring:
         filters:
         - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.entities.create}
+            maxSize: ${app.request-sizes.entities.create}
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
+            recordType: entities
         - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
@@ -1855,11 +1856,11 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
+            recordType: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: AuthorizeRequest
           args:
@@ -1888,16 +1889,17 @@ spring:
         filters:
         - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
+            recordType: entities
         - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
@@ -1921,11 +1923,11 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities/count
         - name: ConvertKindAliasToQueryForFindEntities
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.countEntities.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
@@ -1941,15 +1943,16 @@ spring:
         filters:
         - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
@@ -1968,11 +1971,11 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.findEntityById.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
@@ -1992,15 +1995,16 @@ spring:
         filters:
         - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.entities.update}
+            maxSize: ${app.request-sizes.entities.update}
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
+            recordType: entities
         - name: ValidateEntityRequestBody
         - name: AuthorizeRequest
           args:
@@ -2019,11 +2023,11 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
@@ -2037,11 +2041,11 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.findEntityChildren.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
@@ -2068,16 +2072,17 @@ spring:
         filters:
         - name: DynamicRequestSizeFilter
           args:
-            maxSize: ${app.requestSizes.kinds.${kindAlias}.createChild:${app.requestSizes.entities.createChild}}
+            maxSize: ${app.request-sizes.entities.create}
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: PlaceKindNameInRequestForEntityManagement
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
@@ -2102,11 +2107,11 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.backend.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequestRefactored
-        - name: RequestRateLimiter
+        - name: DynamicRateLimiter
           args:
-            redis-rate-limiter:
-              replenishRate: ${app.rate-limits.entities.replenishRate}
-              burstCapacity: ${app.rate-limits.entities.burstCapacity}
+            replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.findEntityParents.burstCapacity}
+            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy

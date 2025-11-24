@@ -1,0 +1,21 @@
+app:
+  request-sizes:
+    default:
+      create: 2KB
+      update: 2KB
+    entities:
+      create: ${app.request-sizes.default.create}
+      update: ${app.request-sizes.default.update}
+#      kinds:
+#        book:
+#          create: 10KB
+#          update: 8KB
+    lists:
+      create: ${app.request-sizes.default.create}
+      update: ${app.request-sizes.default.update}
+    relations:
+      create: ${app.request-sizes.default.create}
+      update: ${app.request-sizes.default.update}
+    reactions:
+      create: ${app.request-sizes.default.create}
+      update: ${app.request-sizes.default.update}

@@ -1,0 +1,42 @@
+app:
+  locks:
+    default:
+      waitTime: 3s
+      leaseTime: 30s
+    entities:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    lists:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    relations:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+    reactions:
+      create:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      update:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}
+      createChild:
+        waitTime: ${app.locks.default.waitTime}
+        leaseTime: ${app.locks.default.leaseTime}

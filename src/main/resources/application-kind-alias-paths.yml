@@ -1,0 +1,39 @@
+#app:
+#  kindAliasPaths:
+#    - recordType: entities
+#      alias: books
+#      name: book
+#      schema: |-
+#        {
+#          "$schema": "https://json-schema.org/draft/2020-12/schema",
+#          "type": "object",
+#          "properties": {
+#            "_name": { "type": "string" },
+#            "author": { "type": "string" },
+#            "details": {
+#              "type": "object",
+#              "properties": {
+#                "publishedDate": { "type": "string", "format": "date" },
+#                "genre": { "type": "string" }
+#              },
+#              "required": ["publishedDate", "genre"]
+#            }
+#          },
+#          "required": ["_name", "author", "details"],
+#          "additionalProperties": false
+#        }
+
+# Optional additional example (uncomment to enable)
+# app:
+#   kindAliasPaths:
+#     - alias: articles
+#       name: article
+#       schema: |-
+#         {
+#           "type": "object",
+#           "properties": {
+#             "_name": { "type": "string" },
+#             "content": { "type": "string" }
+#           },
+#           "required": ["_name", "content"]
+#         }

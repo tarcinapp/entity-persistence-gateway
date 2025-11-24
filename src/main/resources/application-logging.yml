@@ -1,0 +1,6 @@
+app:
+  logging:
+    tarcinapp: INFO
+    http: INFO
+    gateway: INFO
+    redisson: INFO

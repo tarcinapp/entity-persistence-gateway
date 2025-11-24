@@ -1,0 +1,16 @@
+app:
+  toggles:
+    routes:
+        off:
+        - route1
+        - route2
+        on:
+        - route3
+        - route4
+    controllers:
+        off:
+        - controller1
+        - controller2
+        on:
+        - controller3
+        - controller4

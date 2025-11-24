@@ -1,0 +1,218 @@
+app:
+  rate-limits:
+    default:
+      replenishRate: 10
+      burstCapacity: 20
+    entities:
+      default:
+        replenishRate: ${app.rate-limits.default.replenishRate}
+        burstCapacity: ${app.rate-limits.default.burstCapacity}
+#     kinds:
+#       book:
+#         default:
+#           replenishRate: 20
+#           burstCapacity: 40
+#         createEntityByKindAlias:
+#           replenishRate: 30
+#           burstCapacity: 60
+#         findAllEntitiesByKindAlias:
+#           replenishRate: 50
+#           burstCapacity: 100
+#         replaceEntityByIdByKindAlias:
+#           replenishRate: 20
+#           burstCapacity: 40
+#         countEntitiesByKindAlias:
+#           replenishRate: 80
+#           burstCapacity: 160
+#         updateAllEntitiesByKindAlias:
+#           replenishRate: 10
+#           burstCapacity: 20
+#         findEntityByIdByKindAlias:
+#           replenishRate: 100
+#           burstCapacity: 200
+#         updateEntityByIdByKindAlias:
+#           replenishRate: 20
+#           burstCapacity: 40
+#         deleteEntityByIdByKindAlias:
+#           replenishRate: 10
+#           burstCapacity: 20
+#         findEntityChildrenByKindAlias:
+#           replenishRate: 50
+#           burstCapacity: 100
+#         createEntityChildByKindAlias:
+#           replenishRate: 30
+#           burstCapacity: 60
+#         findEntityParentsByKindAlias:
+#           replenishRate: 50
+#           burstCapacity: 100
+      createEntity:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      updateAllEntities:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      findEntities:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      countEntities:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      findEntityById:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      updateEntityById:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      replaceEntityById:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      deleteEntityById:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      findEntityChildren:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      createEntityChild:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+      findEntityParents:
+        replenishRate: ${app.rate-limits.entities.default.replenishRate}
+        burstCapacity: ${app.rate-limits.entities.default.burstCapacity}
+    lists:
+      default:
+        replenishRate: ${app.rate-limits.default.replenishRate}
+        burstCapacity: ${app.rate-limits.default.burstCapacity}
+      createList:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      updateAllLists:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      findLists:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      countLists:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      findListById:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      updateListById:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      replaceListById:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      deleteListById:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      findListChildren:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      createListChild:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+      findListParents:
+        replenishRate: ${app.rate-limits.lists.default.replenishRate}
+        burstCapacity: ${app.rate-limits.lists.default.burstCapacity}
+    relations:
+      default:
+        replenishRate: ${app.rate-limits.default.replenishRate}
+        burstCapacity: ${app.rate-limits.default.burstCapacity}
+      createRelation:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      updateAllRelations:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      findRelations:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      countRelations:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      findRelationById:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      updateRelationById:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      replaceRelationById:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+      deleteRelationById:
+        replenishRate: ${app.rate-limits.relations.default.replenishRate}
+        burstCapacity: ${app.rate-limits.relations.default.burstCapacity}
+    reactions:
+      default:
+        replenishRate: ${app.rate-limits.default.replenishRate}
+        burstCapacity: ${app.rate-limits.default.burstCapacity}
+      createEntityReaction:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      updateAllEntityReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findEntityReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      countEntityReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findEntityReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      updateEntityReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      replaceEntityReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      deleteEntityReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findChildrenEntityReactionsByReactionId:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      createChildEntityReaction:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findParentsByEntityReactionId:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      createListReaction:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      updateAllListReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findListReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      countListReactions:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findListReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      updateListReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      replaceListReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      deleteListReactionById:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findChildrenListReactionsByReactionId:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      createChildListReaction:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+      findParentsByListReactionId:
+        replenishRate: ${app.rate-limits.reactions.default.replenishRate}
+        burstCapacity: ${app.rate-limits.reactions.default.burstCapacity}
+    ping:
+      replenishRate: ${app.rate-limits.default.replenishRate}
+      burstCapacity: ${app.rate-limits.default.burstCapacity}

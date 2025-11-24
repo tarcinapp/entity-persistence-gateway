@@ -1,0 +1,5 @@
+app:
+  auth:
+    rs256PublicKey: "false"
+    issuer: keycloak
+    clockSkewSeconds: 60

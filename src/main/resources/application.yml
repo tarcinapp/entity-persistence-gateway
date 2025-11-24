@@ -8,46 +8,20 @@ app:
   # - prefix for the role names (e.g. tarcinapp.member)
   # - jmx domain name, if jmx is enabled
   shortcode: "tarcinapp"
-
   debug: false
-
   jmx: false
-
-  # a request id will be assigned to each http request for the proxied service. request id will be passed within the header you specify below
   requestHeaders:
     requestId: "X-Request-Id"
-
-  auth:
-    #Leave "false" if you dont want to authenticate requests. See .README.
-    rs256PublicKey: "false" 
-
-    # Set issuer name of JWT
-    issuer: keycloak
-
-    # configure the allowable clock skew in seconds for JWT verification
-    clockSkewSeconds: 60
-
   inbound:
     address: 0.0.0.0
     port: 8081
     baseUri: /api/v1/
     metricsEnabled: true
-    
-    # controller path prefixes
     controllerPaths:
       entities: entities
       lists: lists
       relations: relations
       explorer: explorer
-    
-  # kind alias configuration - maps custom paths to entities with specific kinds
-    # Example: GET /api/v1/entities/books -> GET /backend/entities?filter[where][_kind]=book
-  # Example: POST /api/v1/entities/books -> POST /backend/entities (with "_kind": "book" added to body)
-  # kindAliasPaths:
-  #   - alias: books        # path segment without leading slash (combined with baseUri and controllerPaths.entities)
-  #     name: book          # kind value to filter by
-  #     schema: '{"type":"object","properties":{"title":{"type":"string"}}}'  # optional JSON schema
-  
     cors:
       allowedOrigins: "http://localhost:8080"
       allowedMethods: "GET, POST, PUT, PATCH, DELETE"
@@ -55,339 +29,54 @@ app:
       exposedHeaders: "Location, Content-Type"
       allowCredentials: true
       maxAge: 3600
-
   caching:
     enabled: true
     timeToLive: 6h
     size: 50MB
-
-  # configuration of the host which serves the entity-persistence-service or entity-persistence-service. 
   backend:
     protocol: http
     host: entity-persistence-service
     port: 80
     baseUri: '/'
-
-  # configuration of the entity-persistence-gateway-policies
   opa:
     protocol: https
     host: entity-persistence-gateway-policies
     port: 443
-
-  # logging configuration
   logging:
     tarcinapp: INFO
     http: INFO
     gateway: INFO
     redisson: INFO
-
-  # Fieldset configurations for filtering response fields
-  # Fieldsets can be applied globally or per resource type (entities, lists, relations, reactions)
-  # Each fieldset has a mode (show/hide) and a list of field paths
-  # Field paths support JSON path notation: "field", "data.nested.field", "data.array[*].field"
-  fieldsets:
-    # Global fieldsets available for all resources
-    global:
-      # Show ALL fields (no filtering) - useful to override a default fieldset
-      show-all:
-        mode: hide
-        fields: []
-      
-      show-managed-all:
-        mode: show
-        fields:
-          - _id
-          - _kind
-          - _name
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-
-      hide-managed-all:
-        mode: hide
-        fields:
-          - _id
-          - _kind
-          - _name
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-
-      hide-managed-except-id:
-        mode: hide
-        fields:
-          - _kind
-          - _name
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-
-      show-managed-except-id-kind-name:
-        mode: show
-        fields:
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-
-      hide-managed-except-id-kind-name:
-        mode: hide
-        fields:
-          - _slug
-          - _visibility
-          - _version
-          - _ownerUsers
-          - _ownerGroups
-          - _createdDateTime
-          - _lastUpdatedDateTime
-          - _lastUpdatedBy
-          - _createdBy
-          - _validFromDateTime
-          - _validUntilDateTime
-          - _idempotencyKey
-          - _viewerUsers
-          - _viewerGroups
-          - _parents
-    
-    # Entity-specific fieldset configurations
-    entities:
-      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
-      defaultFieldset: null
-      # Entity-specific fieldsets (can override global fieldsets)
-      # Example: custom fieldset for entities only
-      # fieldsets:
-      #   minimal:
-      #     mode: show
-      #     fields:
-      #       - _id
-      #       - _kind
-      #       - data.name
-      #       - data.description
-    
-    # List-specific fieldset configurations  
-    lists:
-      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
-      defaultFieldset: null
-    
-    # Relation-specific fieldset configurations
-    relations:
-      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
-      defaultFieldset: null
-    
-    # Reaction-specific fieldset configurations
-    reactions:
-      # Default fieldset to apply when no fieldset is specified in query (set to null for no default)
-      defaultFieldset: null
-  
-  # predefined queriers
-  queries:
-
-    # ?q=my
-    my: "'sets[owners][userIds]='+#userId"
-
-    # ?q=actives
-    actives: "'sets[actives]'"
-
-    # ?q=inactives
-    inactives: "'sets[inactives]'"
-
-    # ?q=name&name={name}
-    name: "'filter[where][_name]=' + #query['name']"
-
-    # ?q=slug&slug={slug}
-    slug: "'filter[where][_slug]=' + #query['slug']"
-
-  # set false if you want to prevent backend notation in query parameters
-  allowBackendQueryNotation: true
-  
-  # request size limits configuration (only for operations with request bodies)
-  requestSizes:
-    # default sizes for operations that send request bodies
-    default:
-      create: 2KB
-      update: 2KB
-    
-    # entity-specific sizes
-    entities:
-      create: ${app.requestSizes.default.create}
-      update: ${app.requestSizes.default.update}
-      createChild: ${app.requestSizes.default.create}
-      
-    # list-specific sizes  
-    lists:
-      create: ${app.requestSizes.default.create}
-      update: ${app.requestSizes.default.update}
-      createChild: ${app.requestSizes.default.create}
-      
-    # relation-specific sizes
-    relations:
-      create: ${app.requestSizes.default.create}
-      update: ${app.requestSizes.default.update}
-      
-    # reaction-specific sizes
-    reactions:
-      create: ${app.requestSizes.default.create}
-      update: ${app.requestSizes.default.update}
-    
-    # kind-specific sizes (indexed by kind name)
-    # These override the default entity sizes for specific kinds
-    # Example: app.requestSizes.book.create=10KB
-    # kinds:
-    #   book:
-    #     create: 10KB
-    #     update: 8KB
-    #     createChild: 5KB
-  
-  # rate limit configuration (applies to all routes via placeholders)
-  rate-limits:
-    # global defaults
-    default:
-      replenishRate: 10
-      burstCapacity: 20
-    # per-group overrides; inherit from defaults unless explicitly set
-    entities:
-      replenishRate: ${app.rate-limits.default.replenishRate}
-      burstCapacity: ${app.rate-limits.default.burstCapacity}
-    lists:
-      replenishRate: ${app.rate-limits.default.replenishRate}
-      burstCapacity: ${app.rate-limits.default.burstCapacity}
-    relations:
-      replenishRate: ${app.rate-limits.default.replenishRate}
-      burstCapacity: ${app.rate-limits.default.burstCapacity}
-    reactions:
-      replenishRate: ${app.rate-limits.default.replenishRate}
-      burstCapacity: ${app.rate-limits.default.burstCapacity}
-    ping:
-      replenishRate: 50
-      burstCapacity: 100
-
-  locks:
-    default:
-      waitTime: 3s
-      leaseTime: 30s
-    entities:
-      create:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      update:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      createChild:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-    lists:
-      create:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      update:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      createChild:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-    relations:
-      create:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      update:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-    reactions:
-      create:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      update:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-      createChild:
-        waitTime: ${app.locks.default.waitTime}
-        leaseTime: ${app.locks.default.leaseTime}
-  
-  routes:
-    disabled: []
-
-  # base schema used for all managed fields. 
-  # This schema allows additionalProperties by default (implicit true).
-  # User schemas can restrict additional properties by setting "additionalProperties": false
-  # in their schema configuration, which will prevent any properties beyond the combined 
-  # base + user schema from being accepted.
   schemas:
     anyRecordBase: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
-
-  # Configurations beyond this line are rarely modified. Change them only if you fully understand the impact.
-  
-  # this map is used as a reference to configure 'management.endpoints.web.exposure.include' value, according to the 'app.inbound.metricsEnabled'
   metricsEndpointsMap:
     "true": gateway,health,metrics
     "false": ""
-
 ---
-
 debug: ${app.debug}
-
 server:
   port: ${app.inbound.port}
   address: ${app.inbound.address}
-  compression: 
+  compression:
     enabled: true
     mime-types: application/json
-
 ---
-
 spring:
   config:
-    import: classpath:application-routes.yml
-  application: 
+    import:
+      - classpath:application-routes.yml
+      - classpath:application-auth.yml
+      - classpath:application-logging.yml
+      - classpath:application-fieldsets.yml
+      - classpath:application-queries.yml
+      - classpath:application-request-sizes.yml
+      - classpath:application-rate-limits.yml
+      - classpath:application-locks.yml
+      - classpath:application-route-toggles.yml
+  application:
     name: ${app.name}
   data:
-    redis: 
+    redis:
       host: gateway-redis-master
       port: 6379
       database: 0
@@ -406,7 +95,7 @@ spring:
       metrics:
         enabled: ${app.inbound.metricsEnabled}
       filter:
-        local-response-cache: 
+        local-response-cache:
           enabled: ${app.caching.enabled}
           size: ${app.caching.size}
           time-to-live: ${app.caching.timeToLive}

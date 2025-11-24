@@ -1,0 +1,95 @@
+app:
+  fieldsets:
+    global:
+      show-all:
+        mode: hide
+        fields: []
+      show-managed-all:
+        mode: show
+        fields:
+          - _id
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+      hide-managed-all:
+        mode: hide
+        fields:
+          - _id
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+      hide-managed-except-id:
+        mode: hide
+        fields:
+          - _kind
+          - _name
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+     
+      hide-managed-except-id-kind-name:
+        mode: hide
+        fields:
+          - _slug
+          - _visibility
+          - _version
+          - _ownerUsers
+          - _ownerGroups
+          - _createdDateTime
+          - _lastUpdatedDateTime
+          - _lastUpdatedBy
+          - _createdBy
+          - _validFromDateTime
+          - _validUntilDateTime
+          - _idempotencyKey
+          - _viewerUsers
+          - _viewerGroups
+          - _parents
+    entities:
+      defaultFieldset: null
+    lists:
+      defaultFieldset: null
+    relations:
+      defaultFieldset: null
+    reactions:
+      defaultFieldset: null
