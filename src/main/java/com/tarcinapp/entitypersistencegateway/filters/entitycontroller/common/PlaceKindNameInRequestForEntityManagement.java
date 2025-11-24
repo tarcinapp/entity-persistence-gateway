@@ -37,10 +37,10 @@ public class PlaceKindNameInRequestForEntityManagement
 
     @Autowired
     private KindAliasPathsConfig kindAliasPathsConfig;
-    
+
     @Value("${app.inbound.controllerPaths.entities:entities}")
     private String entitiesControllerPath;
-    
+
     private Logger logger = LogManager.getLogger(PlaceKindNameInRequestForEntityManagement.class);
 
     public PlaceKindNameInRequestForEntityManagement() {
@@ -55,15 +55,19 @@ public class PlaceKindNameInRequestForEntityManagement
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
         String kindAlias = uriVariables.get("kindAlias");
         String recordId = uriVariables.get("recordId");
-        
-        logger.debug("Caller sent POST, PUT or PATCH through kind alias path '" + kindAlias + "'. Checking if " + kindAlias
-            + " is configured as an entity kind.");
+
+        logger.debug("Caller sent POST, PUT or PATCH through kind alias path '" + kindAlias
+                + "' for an entity resource. Checking if " + kindAlias
+                + " is configured as an entity kind.");
 
         KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig.getKindAliasPaths().stream()
-            .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
-                    .equals(Optional.ofNullable(kindAlias)))
-            .findFirst()
-            .orElse(null);
+                .filter(entityKind -> entityKind.getAlias() != null
+                        && entityKind.getRecordType() != null
+                        && entityKind.getName() != null
+                        && entityKind.getAlias().equals(kindAlias)
+                        && (entityKind.getRecordType().equals("entity") || entityKind.getRecordType().equals("entities")))
+                .findFirst()
+                .orElse(null);
 
         if (foundKindAliasPathConfig == null) {
             logger.debug("There is no kind alias configuration found for path /" + kindAlias);
@@ -73,12 +77,15 @@ public class PlaceKindNameInRequestForEntityManagement
             return Mono.empty();
         }
 
-        logger.debug("/" + kindAlias + " is configured to alias entity kind: '" + foundKindAliasPathConfig.getName() + "'.");
+        logger.debug(
+                "/" + kindAlias + " is configured to alias entity kind: '" + foundKindAliasPathConfig.getName() + "'.");
 
         /*
          * Place original resource URL in exchange attributes for authorization logic.
-         * Authorization policies need the actual resource path (e.g., /entities/{recordId})
-         * even when the request comes through an alias path (e.g., /entities/books/{recordId}).
+         * Authorization policies need the actual resource path (e.g.,
+         * /entities/{recordId})
+         * even when the request comes through an alias path (e.g.,
+         * /entities/books/{recordId}).
          */
         KindAliasConfigAttr kindAliasConfigAttr = new KindAliasConfigAttr();
         kindAliasConfigAttr.setKindAliasConfigured(true);
