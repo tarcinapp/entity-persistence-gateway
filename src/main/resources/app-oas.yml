@@ -22,22 +22,23 @@ app:
             children: # Can be disabled from routes-toogles if needed
               alias: popular      # a path alias to use instead of '/children' in URLs
               kind: popularBook   # kind should be defined under aliases
-        createEntityByKindAlias:
-          summary: ""
-          description: ""
-          operationId: createBook
-          deprecated: false
-          validationEnabled: true
-          tags: [] # operation-specific tags
-          request:
-            schema: "" # built using specified schema and caller's role
-            headers:
-            examples:
-              - name: sampleBook
-                value: {}
-          response:
-            "201":
-              schema: "" # built using specified schema, base schema and caller's role
+        routes:
+          createEntityByKindAlias:
+            summary: ""
+            description: ""
+            operationId: createBook
+            deprecated: false
+            validationEnabled: true
+            tags: [] # operation-specific tags
+            request:
+              schema: "" # built using specified schema and caller's role
               headers:
               examples:
+                - name: sampleBook
+                  value: {}
+            response:
+              "201":
+                schema: "" # built using specified schema, base schema and caller's role
+                headers:
+                examples:
 # Note: security (e.g. bearer auth), paths, methods, parameters and non-200 responses are handled elsewhere/at generation time.
