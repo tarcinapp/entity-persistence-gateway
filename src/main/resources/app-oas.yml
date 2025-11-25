@@ -19,7 +19,7 @@ app:
             kind: book
             schema: "" # default schema for operations that don't supply one
             validationEnabled: true
-            children:
+            children: # Can be disabled from routes-toogles if needed
               alias: popular      # a path alias to use instead of '/children' in URLs
               kind: popularBook   # kind should be defined under aliases
         createEntityByKindAlias:
