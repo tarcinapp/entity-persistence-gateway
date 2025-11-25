@@ -1,0 +1,43 @@
+app:
+  oas:
+    title: ""
+    version: ""
+    contact: ""
+    summary: ""
+    description: ""
+    externalDocs:
+      description: ""
+      url: ""
+    tags: [] # list of global tags
+    servers:
+      - url: "" # if empty, a default may be added during runtime
+        description: ""
+    controllers:
+      entities:
+        aliases:
+          - alias: books
+            kind: book
+            schema: "" # default schema for operations that don't supply one
+            validationEnabled: true
+            children:
+              alias: popular      # a path alias to use instead of '/children' in URLs
+              kind: popularBook   # kind should be defined under aliases
+        createEntityByKindAlias:
+          summary: ""
+          description: ""
+          operationId: createBook
+          deprecated: false
+          validationEnabled: true
+          tags: [] # operation-specific tags
+          request:
+            schema: "" # built using specified schema and caller's role
+            headers:
+            examples:
+              - name: sampleBook
+                value: {}
+          response:
+            "201":
+              schema: "" # built using specified schema, base schema and caller's role
+              headers:
+              examples:
+# Note: security (e.g. bearer auth), paths, methods, parameters and non-200 responses are handled elsewhere/at generation time.
