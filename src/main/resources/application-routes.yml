@@ -13,6 +13,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -45,6 +47,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -67,6 +71,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -99,6 +105,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -120,6 +128,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -148,6 +158,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -170,6 +182,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -193,6 +207,8 @@ spring:
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -211,6 +227,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -246,6 +264,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -275,6 +295,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.backend.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -311,6 +333,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.lists.create}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -343,6 +367,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -365,6 +391,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -397,6 +425,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -418,6 +448,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -446,6 +478,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -471,6 +505,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.lists.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -497,6 +533,8 @@ spring:
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -515,6 +553,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -550,6 +590,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.lists.create}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
@@ -579,6 +621,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.backend.baseUri}lists/${recordId}/parents
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
