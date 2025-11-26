@@ -1,12 +1,9 @@
 package com.tarcinapp.entitypersistencegateway.clients.opa;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -23,15 +20,15 @@ import com.tarcinapp.entitypersistencegateway.auth.PolicyResult;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import jakarta.annotation.PostConstruct;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
-import reactor.netty.tcp.TcpClient;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public class OpaClient implements IAuthorizationClient {
 
     private WebClient webClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.opa.host:localhost}")
     private String host;
@@ -42,35 +39,55 @@ public class OpaClient implements IAuthorizationClient {
     @Value("${app.opa.protocol:http}")
     private String protocol;
 
-    private String url;
+    // Timeout for TCP handshake
+    @Value("${app.opa.connectTimeoutMs:500}")
+    private int connectTimeoutMs;
 
-    public OpaClient() {
-        
-    }
+    // Hard deadline for the total request-response duration
+    @Value("${app.opa.responseTimeout:500ms}")
+    private Duration responseTimeout;
+
+    // Timeout for idle read connections (no data received from server)
+    @Value("${app.opa.readTimeoutMs:300}")
+    private int readTimeoutMs;
+
+    // Timeout for idle write connections (cannot send data to server)
+    @Value("${app.opa.writeTimeoutMs:300}")
+    private int writeTimeoutMs;
 
     /**
-     * Set the opa url, default timeouts and headers
+     * Dependency Injection for ObjectMapper.
      */
-    @EventListener(ContextRefreshedEvent.class)
+    public OpaClient(ObjectMapper objectMapper) {
+        // Create a copy to avoid side effects on the global mapper
+        this.objectMapper = objectMapper.copy();
+        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    @PostConstruct
     private void initWebClient() {
-        this.url = this.protocol + "://" + this.host + ":" + this.port + "/v1/data/";
-    
-        TcpClient tcpClient = TcpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+        String url = this.protocol + "://" + this.host + ":" + this.port + "/v1/data/";
+
+        HttpClient httpClient = HttpClient.create()
+                // Phase 1: Connection Timeout
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMs)
                 .doOnConnected(connection -> {
-                    connection.addHandlerLast(new ReadTimeoutHandler(2000, TimeUnit.MILLISECONDS));
-                    connection.addHandlerLast(new WriteTimeoutHandler(2000, TimeUnit.MILLISECONDS));
+                    // Phase 2: Socket-level idle timeouts
+                    connection.addHandlerLast(new ReadTimeoutHandler(readTimeoutMs, TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new WriteTimeoutHandler(writeTimeoutMs, TimeUnit.MILLISECONDS));
                 });
 
-        this.webClient = WebClient.builder().baseUrl(url)
+        this.webClient = WebClient.builder()
+                .baseUrl(url)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8")
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
-            .build();
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
     }
 
+    @Override
     public Mono<PolicyResult> executePolicy(PolicyData data) {
-
         PolicyRequest policyInput = new PolicyRequest();
         policyInput.setInput(data);
 
@@ -80,12 +97,12 @@ public class OpaClient implements IAuthorizationClient {
             .body(BodyInserters.fromValue(policyInput))
             .retrieve()
             .bodyToMono(PolicyResponse.class)
-            .map(pr -> {
-                return pr.getResult();
-            });
+            .timeout(responseTimeout)
+            .map(PolicyResponse::getResult);
     }
 
-    public <T> Mono<T> executePolicy(PolicyData data,  Class<T> type) {
+    @Override
+    public <T> Mono<T> executePolicy(PolicyData data, Class<T> type) {
         PolicyRequest policyInput = new PolicyRequest();
         policyInput.setInput(data);
 
@@ -95,11 +112,10 @@ public class OpaClient implements IAuthorizationClient {
             .body(BodyInserters.fromValue(policyInput))
             .retrieve()
             .bodyToMono(GenericPolicyResponse.class)
+            .timeout(responseTimeout)
             .map(gpr -> {
-                ObjectMapper mapper = new ObjectMapper()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 
-                return mapper.convertValue(gpr.getResult(), type);
+                return objectMapper.convertValue(gpr.getResult(), type);
             });
     }
 }

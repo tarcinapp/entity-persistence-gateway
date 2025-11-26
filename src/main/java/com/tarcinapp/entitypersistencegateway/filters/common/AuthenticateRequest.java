@@ -34,7 +34,7 @@ import reactor.core.publisher.Mono;
  * making it easier to test, maintain, and extend with route-specific logic.
  */
 @Component
-public class AuthenticateRequestRefactored extends AbstractGatewayFilterFactory<AuthenticateRequestRefactored.Config> {
+public class AuthenticateRequest extends AbstractGatewayFilterFactory<AuthenticateRequest.Config> {
 
     @Autowired
     private JwtAuthenticationService jwtAuthenticationService;
@@ -49,9 +49,9 @@ public class AuthenticateRequestRefactored extends AbstractGatewayFilterFactory<
     private String appShortcode;
 
     private static final String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-    private static final Logger logger = LogManager.getLogger(AuthenticateRequestRefactored.class);
+    private static final Logger logger = LogManager.getLogger(AuthenticateRequest.class);
 
-    public AuthenticateRequestRefactored() {
+    public AuthenticateRequest() {
         super(Config.class);
     }
 

@@ -16,7 +16,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -50,7 +50,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -74,7 +74,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -108,7 +108,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -131,7 +131,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -161,7 +161,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -185,7 +185,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -210,7 +210,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -230,7 +230,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -267,7 +267,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.backend.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -298,7 +298,7 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.backend.baseUri}entities/${recordId}/parents
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -336,7 +336,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -370,7 +370,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -394,7 +394,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -428,7 +428,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -451,7 +451,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -481,7 +481,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -508,7 +508,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -536,7 +536,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -556,7 +556,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -593,7 +593,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.backend.baseUri}lists/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -624,7 +624,7 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.backend.baseUri}lists/${recordId}/parents
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -662,7 +662,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -699,7 +699,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -720,7 +720,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -752,7 +752,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -776,7 +776,7 @@ spring:
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.backend.baseUri}relations/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -809,7 +809,7 @@ spring:
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.backend.baseUri}relations/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -839,7 +839,7 @@ spring:
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.backend.baseUri}relations/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -870,7 +870,7 @@ spring:
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.backend.baseUri}relations/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -892,7 +892,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -924,7 +924,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -946,7 +946,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -978,7 +978,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -999,7 +999,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1027,7 +1027,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1052,7 +1052,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1078,7 +1078,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.backend.baseUri}entity-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1096,7 +1096,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}entity-reactions/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1132,7 +1132,7 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}entity-reactions/${recordId}/children
         - name: PlaceKindNameInRequestForEntityManagement
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1161,7 +1161,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/parents, ${app.backend.baseUri}entity-reactions/${recordId}/parents
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1197,7 +1197,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1229,7 +1229,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1251,7 +1251,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1283,7 +1283,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.backend.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1308,7 +1308,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1340,7 +1340,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1362,7 +1362,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1394,7 +1394,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1415,7 +1415,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1443,7 +1443,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1468,7 +1468,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1494,7 +1494,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.backend.baseUri}list-reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1512,7 +1512,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}list-reactions/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1547,7 +1547,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.backend.baseUri}list-reactions/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1576,7 +1576,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.backend.baseUri}list-reactions/${recordId}/parents
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1612,7 +1612,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1644,7 +1644,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1666,7 +1666,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1698,7 +1698,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.backend.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1723,7 +1723,7 @@ spring:
             maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1755,7 +1755,7 @@ spring:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1775,7 +1775,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1805,7 +1805,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1826,7 +1826,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.backend.baseUri}entities/${recordId}/lists
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1886,7 +1886,7 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities
         - name: PlaceKindNameInRequestForEntityManagement
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
@@ -1915,7 +1915,7 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
@@ -1954,7 +1954,7 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
         - name: PlaceKindNameInRequestForEntityManagement
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
@@ -1982,7 +1982,7 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities/count
         - name: ConvertKindAliasToQueryForFindEntities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
@@ -2007,7 +2007,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.backend.baseUri}entities
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
@@ -2030,7 +2030,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
@@ -2059,7 +2059,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
@@ -2082,7 +2082,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.backend.baseUri}entities/${recordId}
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
@@ -2100,7 +2100,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.backend.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
@@ -2137,7 +2137,7 @@ spring:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.backend.baseUri}entities/${recordId}/children
         - name: PlaceKindNameInRequestForEntityManagement
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
@@ -2166,7 +2166,7 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.backend.baseUri}entities/${recordId}/parents
-        - name: AuthenticateRequestRefactored
+        - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
