@@ -660,6 +660,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.relations.create}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: relations
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -695,6 +697,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: relations
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -714,6 +718,8 @@ spring:
         filters:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.backend.baseUri}relations
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: relations
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -744,6 +750,8 @@ spring:
         filters:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count, ${app.backend.baseUri}relations/count
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: relations
         - name: AuthenticateRequestRefactored
         - name: RequestRateLimiter
           args:
@@ -762,6 +770,8 @@ spring:
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
+          args:
+            controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
@@ -793,6 +803,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
+          args:
+              controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
@@ -821,6 +833,8 @@ spring:
           args:
             maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
+          args:
+              controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
@@ -850,6 +864,8 @@ spring:
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
+          args:
+              controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
