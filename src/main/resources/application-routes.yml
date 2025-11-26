@@ -678,7 +678,7 @@ spring:
         - name: AddManagedFieldsInCreation
           args:
             excludeFields:
-              - OWNER_USERS
+            - OWNER_USERS
         - name: ApplyFieldsetConfig
           args:
             recordType: relations
