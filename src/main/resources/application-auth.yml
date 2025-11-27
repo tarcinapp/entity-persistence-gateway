@@ -1,5 +1,10 @@
 app:
   auth:
-    rs256PublicKey: "false"
-    issuer: keycloak
-    clockSkewSeconds: 60
+    providers: []
+#      - issuer: "https://securetoken.google.com/proje-id"
+#        jwk-set-uri: "https://www.googleapis.com/service_accounts/v1/jwk/..."
+#        clockSkewSeconds: 60
+#        
+#      - issuer: "tarcinapp-internal"
+#        public-key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..."
+#        clockSkewSeconds: 10
