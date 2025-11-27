@@ -1,0 +1,5 @@
+app:
+  caching:
+    enabled: true
+    timeToLive: 6h
+    size: 50MB

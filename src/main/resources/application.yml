@@ -33,10 +33,6 @@ app:
       exposedHeaders: "Location, Content-Type"
       allowCredentials: true
       maxAge: 3600
-  caching:
-    enabled: true
-    timeToLive: 6h
-    size: 50MB
   backend:
     protocol: http
     host: entity-persistence-service
@@ -77,6 +73,7 @@ spring:
       - classpath:application-rate-limits.yml
       - classpath:application-locks.yml
       - classpath:application-route-toggles.yml
+      - classpath:application-local-caching.yml
   application:
     name: ${app.name}
   data:
