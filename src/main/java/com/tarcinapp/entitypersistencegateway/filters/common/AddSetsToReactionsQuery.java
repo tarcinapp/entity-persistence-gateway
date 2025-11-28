@@ -1,44 +1,42 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 /**
- * Reaction query filter that enforces audience constraints for low authority users.
- * 
- * Valid reactionType values:
- * - entityReactions: Uses entitySet for filtering
- * - listReactions: Uses listSet for filtering
- * 
- * Differences from AddSetsToEntityListOrReactionViaRecordQuery:
- * - Accepts reactionType (not recordType)
- * - Applies audience sets to either entitySet or listSet depending on the reactionType
- * - Does NOT wrap or process filter[include] parameters as reactions do not support includes
- * - Still protects top-level sets and filter[lookup] chains (including nested lookups)
- *
- * Behavior:
- * - If caller does NOT provide the corresponding *Set (entitySet or listSet): add audience set directly
- * - If caller provides *Set already: wrap caller's set + audience set under set[and][0] (audience) & set[and][1] (caller) semantics
- * - Maintains existing role bypass logic (admins/editors bypass audience restriction)
- */
+ * Reaction query filter that enforces audience constraints for low authority users.
+ *  * Valid reactionType values:
+ * - entityReactions: Uses entitySet for filtering
+ * - listReactions: Uses listSet for filtering
+ *  * Differences from AddSetsToEntityListOrReactionViaRecordQuery:
+ * - Accepts reactionType (not recordType)
+ * - Applies audience sets to either entitySet or listSet depending on the reactionType
+ * - Does NOT wrap or process filter[include] parameters as reactions do not support includes
+ * - Still protects top-level sets and filter[lookup] chains (including nested lookups)
+ *
+ * Behavior:
+ * - If caller does NOT provide the corresponding *Set (entitySet or listSet): add audience set directly
+ * - If caller provides *Set already: wrap caller's set + audience set under set[and][0] (audience) & set[and][1] (caller) semantics
+ * - Maintains existing role bypass logic (admins/editors bypass audience restriction)
+ */
 @Component
 public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSetsToReactionsQuery.Config> {
 
@@ -54,13 +52,15 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String reactionType = config.getReactionType();
-            logger.debug("AddSetsToReactionsQuery filter is started. reactionType: " + reactionType);
+            logger.debug("AddSetsToReactionsQuery filter is started. reactionType: {}", reactionType);
 
             GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
+            
             if (gc == null) {
                 logger.debug("Security context missing; skipping modifications.");
                 return chain.filter(exchange);
             }
+            
             ArrayList<String> roles = gc.getRoles();
             String userId = gc.getAuthSubject();
             ArrayList<String> groups = gc.getGroups();
@@ -77,7 +77,7 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
                 return chain.filter(exchange);
             }
 
-            logger.debug("User roles are: " + roles);
+            logger.debug("User roles are: {}", roles);
 
             // Roles with bypass privileges
             Stream<String> privilegedRoles = Stream.of(
@@ -106,22 +106,25 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
             URI uri = exchange.getRequest().getURI();
             if (logger.isDebugEnabled()) {
                 try {
-                    String decodedOriginalUri = java.net.URLDecoder.decode(uri.toString(), java.nio.charset.StandardCharsets.UTF_8.name());
-                    logger.debug("Original URI (decoded): " + decodedOriginalUri);
+                    String decodedOriginalUri = java.net.URLDecoder.decode(uri.toString(), StandardCharsets.UTF_8.name());
+                    logger.debug("Original URI (decoded): {}", decodedOriginalUri);
                 } catch (Exception e) {
-                    logger.debug("Original URI: " + uri + " (failed to decode: " + e.getMessage() + ")");
+                    logger.debug("Original URI: {} (failed to decode: {})", uri, e.getMessage());
                 }
             }
 
-            List<NameValuePair> queryParams = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
+            // Extract original query parameters
+            MultiValueMap<String, String> originalQueryParams = exchange.getRequest().getQueryParams();
+            MultiValueMap<String, String> newQueryParams = new LinkedMultiValueMap<>();
 
             // Check if caller has any top-level set parameters
-            boolean callerHasSets = queryParams.stream().anyMatch(nvp -> nvp.getName().startsWith("set["));
+            boolean callerHasSets = originalQueryParams.keySet().stream().anyMatch(name -> name.startsWith("set["));
             logger.debug("Caller has sets: {}", callerHasSets);
 
             // Transform lookup nested sets and top-level sets if present
-            List<NameValuePair> newParams = queryParams.stream().map(nvp -> {
-                String name = nvp.getName();
+            for (Map.Entry<String, List<String>> entry : originalQueryParams.entrySet()) {
+                String name = entry.getKey();
+                List<String> values = entry.getValue();
                 String newName = name;
                 
                 if (callerHasSets && name.startsWith("set[")) {
@@ -136,8 +139,9 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
                 if (name.matches(".*filter\\[lookup\\]\\[\\d+\\]\\[scope\\]\\[lookup\\]\\[\\d+\\].*\\[set\\]\\[.*") && name.contains("][set][") && !name.contains("][set][and][")) {
                     newName = name.replaceFirst("\\]\\[set\\]\\[", "][set][and][0][");
                 }
-                return new BasicNameValuePair(newName, nvp.getValue());
-            }).collect(Collectors.toList());
+                
+                newQueryParams.addAll(newName, values);
+            }
 
             String groupsStr = groups.stream().collect(Collectors.joining(","));
 
@@ -147,55 +151,53 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
             String primarySetKey = useListSet ? "listSet" : "entitySet";
 
             // Check if caller supplied the primary set already
-            boolean callerProvidedPrimary = queryParams.stream().anyMatch(nvp -> nvp.getName().startsWith(primarySetKey + "["));
+            boolean callerProvidedPrimary = originalQueryParams.keySet().stream().anyMatch(name -> name.startsWith(primarySetKey + "["));
             logger.debug("Caller provided {}: {}", primarySetKey, callerProvidedPrimary);
 
             if (callerProvidedPrimary) {
                 // Wrap existing caller primary set by converting its prefix to primarySet[and][1]...
-                newParams = newParams.stream().map(nvp -> {
-                    String name = nvp.getName();
-                    if (name.startsWith(primarySetKey + "[")) {
-                        return new BasicNameValuePair(name.replaceFirst("^" + primarySetKey + "\\[", primarySetKey + "[and][1]["), nvp.getValue());
-                    }
-                    return nvp;
-                }).collect(Collectors.toList());
+                
                 // Add audience at [and][0]
-                newParams.add(new BasicNameValuePair(primarySetKey + "[and][0][audience][userIds]", userId));
-                newParams.add(new BasicNameValuePair(primarySetKey + "[and][0][audience][groupIds]", groupsStr));
+                newQueryParams.add(primarySetKey + "[and][0][audience][userIds]", userId);
+                newQueryParams.add(primarySetKey + "[and][0][audience][groupIds]", groupsStr);
             } else {
                 // Direct audience
-                newParams.add(new BasicNameValuePair(primarySetKey + "[audience][userIds]", userId));
-                newParams.add(new BasicNameValuePair(primarySetKey + "[audience][groupIds]", groupsStr));
+                newQueryParams.add(primarySetKey + "[audience][userIds]", userId);
+                newQueryParams.add(primarySetKey + "[audience][groupIds]", groupsStr);
             }
 
-            // Add audience to top-level sets
+            // Add audience to top-level sets (This part mirrors the logic in the primary set check above, using [and][0] if callerHasSets)
             if (callerHasSets) {
                 // Wrap under set[and][0] - both userIds and groupIds are part of the same audience set
-                newParams.add(new BasicNameValuePair("set[and][0][audience][userIds]", userId));
-                newParams.add(new BasicNameValuePair("set[and][0][audience][groupIds]", groupsStr));
+                newQueryParams.add("set[and][0][audience][userIds]", userId);
+                newQueryParams.add("set[and][0][audience][groupIds]", groupsStr);
             } else {
                 // Add directly as set[audience][...]
-                newParams.add(new BasicNameValuePair("set[audience][userIds]", userId));
-                newParams.add(new BasicNameValuePair("set[audience][groupIds]", groupsStr));
+                newQueryParams.add("set[audience][userIds]", userId);
+                newQueryParams.add("set[audience][groupIds]", groupsStr);
             }
 
             // Protect lookups similar to records logic
-            addAudienceSetsToLookups(newParams, userId, groupsStr);
+            addAudienceSetsToLookups(newQueryParams, userId, groupsStr);
 
-            String newQueryStr = newParams.stream().map(v -> v.getName() + "=" + v.getValue()).collect(Collectors.joining("&"));
-            URI newUri = UriComponentsBuilder.fromUri(uri).replaceQuery(newQueryStr).encode().build().toUri();
+            URI newUri = UriComponentsBuilder.fromUri(uri)
+                    .replaceQueryParams(newQueryParams) 
+                    .encode(StandardCharsets.UTF_8)
+                    .build()
+                    .toUri();
 
             // Log decoded URI for easier reading
             if (logger.isDebugEnabled()) {
                 try {
-                    String decodedQuery = java.net.URLDecoder.decode(newQueryStr, java.nio.charset.StandardCharsets.UTF_8.name());
+                    // Loglama için URI'ı temizleme
+                    String decodedQuery = UriComponentsBuilder.newInstance().queryParams(newQueryParams).build().encode().getQuery();
                     String decodedUri = newUri.getScheme() + "://" + newUri.getAuthority() + newUri.getPath();
-                    if (!decodedQuery.isEmpty()) {
-                        decodedUri += "?" + decodedQuery;
+                    if (decodedQuery != null && !decodedQuery.isEmpty()) {
+                        decodedUri += "?" + java.net.URLDecoder.decode(decodedQuery, StandardCharsets.UTF_8.name());
                     }
-                    logger.debug("New URI (decoded): " + decodedUri);
+                    logger.debug("New URI (decoded): {}", decodedUri);
                 } catch (Exception e) {
-                    logger.debug("New URI: " + newUri + " (failed to decode: " + e.getMessage() + ")");
+                    logger.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
                 }
             }
 
@@ -204,60 +206,108 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
         };
     }
 
-    private void addAudienceSetsToLookups(List<NameValuePair> params, String userId, String groupsStr) {
-        // Top-level lookups
-        List<Integer> lookupIndices = params.stream().map(NameValuePair::getName)
-            .filter(n -> n.startsWith("filter[lookup]["))
-            .map(name -> {
-                int start = "filter[lookup][".length();
-                int end = name.indexOf(']', start);
-                if (end > start) {
-                    try { return Integer.parseInt(name.substring(start, end)); } catch (NumberFormatException e) { return null; }
-                }
-                return null;
-            })
-            .filter(i -> i != null)
-            .distinct().collect(Collectors.toList());
-
-        for (Integer idx : lookupIndices) {
-            String prefix = "filter[lookup][" + idx + "][set]";
-            boolean hasSets = params.stream().anyMatch(nvp -> nvp.getName().startsWith(prefix + "[and][0]"));
-            if (hasSets) {
-                params.add(new BasicNameValuePair(prefix + "[and][1][audience][userIds]", userId));
-                params.add(new BasicNameValuePair(prefix + "[and][1][audience][groupIds]", groupsStr));
-            } else {
-                params.add(new BasicNameValuePair(prefix + "[audience][userIds]", userId));
-                params.add(new BasicNameValuePair(prefix + "[audience][groupIds]", groupsStr));
-            }
-        }
-
-        // Nested lookups inside lookups: filter[lookup][X][scope][lookup][Y]
-        List<String> nestedPrefixes = params.stream().map(NameValuePair::getName)
-            .filter(n -> n.matches(".*filter\\[lookup\\]\\[\\d+\\]\\[scope\\]\\[lookup\\]\\[\\d+\\].*"))
-            .map(name -> {
-                int idx = name.indexOf("[scope][lookup][");
-                if (idx > 0) {
-                    int start = idx + "[scope][lookup][".length();
+    /**
+     * Adds audience sets to all filter[lookup][X] entries, whether they have a scope or not.
+     * This ensures that looked-up references are also restricted by the same audience visibility rules.
+     * * For each lookup found:
+     * - If NO sets exist: add filter[lookup][X][set][audience][userIds]={userId} and [groupIds]={groupIds}
+     * - If sets exist: add filter[lookup][X][set][and][1][audience][userIds]={userId} and [groupIds]={groupIds}
+     *   (caller's sets are at [and][0], audience is at [and][1], both userIds and groupIds under same [and][1])
+     * * CRITICAL: If a lookup does NOT have a set, we create one automatically.
+     * This prevents security bypass where users query filter[lookup][X][prop]=... without set.
+     * * Also handles nested lookups within lookups.
+     * * @param queryParams The MultiValueMap of query parameters to modify
+     * @param userId The user ID to inject
+     * @param groupsStr Comma-separated group IDs to inject
+     */
+    private void addAudienceSetsToLookups(MultiValueMap<String, String> queryParams, String userId, String groupsStr) {
+        // Find ALL top-level lookup indices (not nested within includes, which reactions queries don't have)
+        // We look for base prefixes like filter[lookup][X]...
+        List<String> allLookupPrefixes = queryParams.keySet().stream()
+                .filter(name -> name.startsWith("filter[lookup]["))
+                .map(name -> {
+                    // Extract index from filter[lookup][X][...] -> returns filter[lookup][X]
+                    int start = "filter[lookup][".length();
                     int end = name.indexOf(']', start);
                     if (end > start) {
-                        // Extract up to ...[lookup][Y]
                         return name.substring(0, end + 1);
                     }
-                }
-                return null;
-            })
-            .filter(s -> s != null)
-            .distinct().collect(Collectors.toList());
+                    return null;
+                })
+                .filter(idx -> idx != null)
+                .distinct()
+                .collect(Collectors.toList());
 
-        for (String prefix : nestedPrefixes) {
-            String setPrefix = prefix + "[set]";
-            boolean hasSets = params.stream().anyMatch(nvp -> nvp.getName().startsWith(setPrefix + "[and][0]"));
-            if (hasSets) {
-                params.add(new BasicNameValuePair(setPrefix + "[and][1][audience][userIds]", userId));
-                params.add(new BasicNameValuePair(setPrefix + "[and][1][audience][groupIds]", groupsStr));
+        logger.debug("Found {} top-level lookup(s) to protect: {}", allLookupPrefixes.size(), allLookupPrefixes);
+
+        // For each lookup, check if it has existing sets and add audience accordingly
+        for (String prefix : allLookupPrefixes) {
+            String lookupSetPrefix = prefix + "[set]";
+            
+            // Check if this lookup already has sets (after our transformation they'd be under [and][0])
+            boolean lookupHasSets = queryParams.keySet().stream()
+                    .anyMatch(name -> name.startsWith(lookupSetPrefix + "[and][0]"));
+            
+            if (lookupHasSets) {
+                // Lookup has sets - add audience at [and][1] 
+                String audiencePrefix = lookupSetPrefix + "[and][1][audience]";
+                queryParams.add(audiencePrefix + "[userIds]", userId);
+                queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
+                logger.debug("Added audience set to lookup {} with existing sets (wrapped under [and])", prefix);
             } else {
-                params.add(new BasicNameValuePair(setPrefix + "[audience][userIds]", userId));
-                params.add(new BasicNameValuePair(setPrefix + "[audience][groupIds]", groupsStr));
+                // No sets - add audience directly
+                String audiencePrefix = lookupSetPrefix + "[audience]";
+                queryParams.add(audiencePrefix + "[userIds]", userId);
+                queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
+                logger.debug("Added audience set to lookup {} without existing sets", prefix);
+            }
+        }
+        
+        // --- Nested Lookups within Lookups ---
+        // Pattern: filter[lookup][X][scope][lookup][Y]
+        List<String> nestedLookupPrefixes = queryParams.keySet().stream()
+                .filter(name -> name.startsWith("filter[lookup]["))
+                .filter(name -> name.contains("[scope][lookup]"))
+                .map(name -> {
+                    // Extract up to filter[lookup][X][scope][lookup][Y]
+                    int firstLookupEnd = name.indexOf(']', "[lookup]".length());
+                    int secondLookupStart = name.indexOf("[lookup]", firstLookupEnd);
+                    if (secondLookupStart > 0) {
+                        int secondLookupIndexStart = secondLookupStart + "[lookup][".length();
+                        int secondLookupIndexEnd = name.indexOf(']', secondLookupIndexStart);
+                        if (secondLookupIndexEnd > secondLookupIndexStart) {
+                            // Extract the full prefix: filter[lookup][X][scope][lookup][Y]
+                            return name.substring(0, secondLookupIndexEnd + 1);
+                        }
+                    }
+                    return null;
+                })
+                .filter(prefix -> prefix != null)
+                .distinct()
+                .collect(Collectors.toList());
+
+        logger.debug("Found {} nested lookup(s) within lookups to protect: {}", 
+                        nestedLookupPrefixes.size(), nestedLookupPrefixes);
+
+        for (String prefix : nestedLookupPrefixes) {
+            String lookupSetPrefix = prefix + "[set]";
+            
+            // Check if this nested lookup has sets (after transformation they'd be under [and][0])
+            boolean nestedHasSets = queryParams.keySet().stream()
+                    .anyMatch(name -> name.startsWith(lookupSetPrefix + "[and][0]"));
+            
+            if (nestedHasSets) {
+                // Has sets - add audience at [and][1]
+                String audiencePrefix = lookupSetPrefix + "[and][1][audience]";
+                queryParams.add(audiencePrefix + "[userIds]", userId);
+                queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
+                logger.debug("Added audience set to nested lookup: {} (with existing sets)", prefix);
+            } else {
+                // No sets - add directly
+                String audiencePrefix = lookupSetPrefix + "[audience]";
+                queryParams.add(audiencePrefix + "[userIds]", userId);
+                queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
+                logger.debug("Added audience set to nested lookup: {} (without sets)", prefix);
             }
         }
     }

@@ -1,16 +1,13 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,35 +19,35 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
 
 /**
- * Gateway application can allow or prevent clients to send backend specific
- * query parameters.
- * This behavior controlled by the configuration: app.allowBackendQueryNotation
- * In addition, gateway application can help creating backend query parameters
- * easier by mapping the given
- * well-known query parameters to backend specific equivalents. Using this
- * approach, user can hide the underlying technology.
- * This is what this filter does.
- * Mapped query parameters:
- * ?s=foo: This query parameter stands for searching in the names of the
- * entities in the backend application.
- * Mapped as ?filter[where][name][regexp]=.*foo.*
- * 
- * As of today, preventing backend specific filters and going with only the
- * parameters handled by this filter reduces
- * the total querying capability. For instance, client's can order records using
- * multiple fields:
- * ?filter[order][0]=name&filter[order][1]
- * If application is configured to not to allow backend specific queries, then
- * they will be able to order using single field only.
- * ?order=name
- */
+ * Gateway application can allow or prevent clients to send backend specific
+ * query parameters.
+ * This behavior controlled by the configuration: app.allowBackendQueryNotation
+ * In addition, gateway application can help creating backend query parameters
+ * easier by mapping the given
+ * well-known query parameters to backend specific equivalents. Using this
+ * approach, user can hide the underlying technology.
+ * This is what this filter does.
+ * Mapped query parameters:
+ * ?s=foo: This query parameter stands for searching in the names of the
+ * entities in the backend application.
+ * Mapped as ?filter[where][name][regexp]=.*foo.*
+ *  * As of today, preventing backend specific filters and going with only the
+ * parameters handled by this filter reduces
+ * the total querying capability. For instance, client's can order records using
+ * multiple fields:
+ * ?filter[order][0]=name&filter[order][1]
+ * If application is configured to not to allow backend specific queries, then
+ * they will be able to order using single field only.
+ * ?order=name
+ */
 @Component
 public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterFactory<ConvertSimplerQueriesToBackendFormat.Config> {
 
@@ -67,10 +64,39 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
 
     @Autowired
     private SavedQueryConfig savedQueries;
+    
+    // SpEL Parser is created only once
+    private final ExpressionParser spelParser = new SpelExpressionParser();
 
     public ConvertSimplerQueriesToBackendFormat() {
         super(Config.class);
     }
+
+
+    
+    private static class QueryParam {
+        public final String name;
+        public final String value;
+
+        public QueryParam(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+        public String getName() { return name; }
+        public String getValue() { return value; }
+    }
+
+
+    /**
+     * Replaces the logic of URLEncodedUtils.parse and NameValuePair iteration.
+     * Takes a MultiValueMap and returns a flat stream of QueryParam objects.
+     */
+    private Stream<QueryParam> flattenQueryParams(MultiValueMap<String, String> multiMap) {
+        return multiMap.entrySet().stream()
+            .flatMap(entry -> entry.getValue().stream()
+                .map(value -> new QueryParam(entry.getKey(), value)));
+    }
+
 
     @Override
     public GatewayFilter apply(Config config) {
@@ -80,21 +106,26 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
             logger.debug("ConvertSimplerQueriesToBackendFormat filter is started");
 
             URI uri = exchange.getRequest().getURI();
-            logger.debug("Original URI: " + uri);
+            logger.debug("Original URI: {}", uri);
 
-            List<NameValuePair> query = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
+            
+            MultiValueMap<String, String> originalQueryParams = exchange.getRequest().getQueryParams();
+            
+            
+            List<QueryParam> flatQueryParams = flattenQueryParams(originalQueryParams).collect(Collectors.toList());
 
             // this variable is defined to pass to the SPEL of saved queries.
             // Note: Using filtering to handle null values since Collectors.toMap doesn't accept nulls
-            Map<String, String> queryMap = query.stream()
-                    .filter(nvp -> nvp.getValue() != null)
-                    .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+            Map<String, String> queryMap = flatQueryParams.stream()
+                    .filter(qp -> qp.getValue() != null)
+                    .collect(Collectors.toMap(QueryParam::getName, QueryParam::getValue));
 
-            List<NameValuePair> newQuery = query.stream()
-                    .flatMap(nvp -> {
+            
+            List<QueryParam> newQuery = flatQueryParams.stream()
+                    .flatMap(qp -> {
 
-                        String name = nvp.getName();
-                        String value = nvp.getValue();
+                        String name = qp.getName();
+                        String value = qp.getValue();
 
                         // check if client sent a backend specific query.
                         if (filterPrefixes.stream().anyMatch(name::startsWith)) {
@@ -104,7 +135,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                                 // return the query as it is.
                                 logger.debug("Application is configured to allow backend specific query parameters.");
 
-                                return Stream.of(nvp);
+                                return Stream.of(qp);
                             } else {
                                 // do not move backend specific queries to the new list
                                 logger.debug(
@@ -116,7 +147,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
 
                         // if client asked for a search operation
                         if ("s".equals(name) || "search".equals(name)) {
-                            return this.createSearchQuery(nvp);
+                            return this.createSearchQuery(name, value);
                         }
 
                         // if client is asked for a saved query
@@ -125,8 +156,8 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                             String savedQuery = savedQueries.getQueries().get(value);
 
                             if (savedQuery == null) {
-                                logger.warn("Client requested a saved query: " + savedQuery
-                                        + ". But there is no such query defined in application config.");
+                                logger.warn("Client requested a saved query: {}"
+                                        + ". But there is no such query defined in application config.", value);
                                 return Stream.empty();
                             }
 
@@ -145,54 +176,57 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                             // make existing query variables accessible by SPEL saved queries
                             context.setVariable("query", queryMap);
 
-                            ExpressionParser parser = new SpelExpressionParser();
-                            Expression expression = parser.parseExpression(savedQuery);
+                            // ExpressionParser parser = new SpelExpressionParser();
+                            Expression expression = spelParser.parseExpression(savedQuery);
                             String resolvedQuery = (String) expression.getValue(context);
-                            List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(resolvedQuery,
-                                    Charset.forName("UTF-8"));
-
-                            return nameValuePairs.stream();
+                            
+                            
+                            MultiValueMap<String, String> parsedParams = UriComponentsBuilder.fromUriString("?" + resolvedQuery).build().getQueryParams();
+                            
+                            
+                            return flattenQueryParams(parsedParams);
                         }
 
                         if ("fields".equals(name)) {
-                            return this.createFieldsQuery(nvp);
+                            return this.createFieldsQuery(value);
                         }
 
                         if ("limit".equals(name)) {
-                            NameValuePair newNvp = new BasicNameValuePair("filter[limit]", value);
-                            return Stream.of(newNvp);
+                            QueryParam newQp = new QueryParam("filter[limit]", value);
+                            return Stream.of(newQp);
                         }
 
                         if ("skip".equals(name)) {
-                            NameValuePair newNvp = new BasicNameValuePair("filter[skip]", value);
-                            return Stream.of(newNvp);
+                            QueryParam newQp = new QueryParam("filter[skip]", value);
+                            return Stream.of(newQp);
                         }
 
                         if ("order".equals(name)) {
-                            NameValuePair newNvp = new BasicNameValuePair("filter[order]", value);
-                            return Stream.of(newNvp);
+                            QueryParam newQp = new QueryParam("filter[order]", value);
+                            return Stream.of(newQp);
                         }
 
-                        return Stream.of(nvp);
+                        return Stream.of(qp);
                     })
                     .collect(Collectors.toList());
+
+            
+            MultiValueMap<String, String> finalQueryParams = new LinkedMultiValueMap<>();
+            newQuery.forEach(qp -> finalQueryParams.add(qp.getName(), qp.getValue()));
 
             // as we built new query string, now we can go ahead and change the query from
             // the original request
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(originalRequest -> {
 
-                        String newQueryStr = newQuery.stream()
-                                .map(v -> v.getName() + "=" + v.getValue())
-                                .collect(Collectors.joining("&"));
-
+                        // URI Rebuild: Now using MultiValueMap. No need for String joining.
                         URI newUri = UriComponentsBuilder.fromUri(uri)
-                                .replaceQuery(newQueryStr)
-                                .encode()
+                                .replaceQueryParams(finalQueryParams)
+                                .encode(StandardCharsets.UTF_8)
                                 .build()
                                 .toUri();
 
-                        logger.debug("New URI " + newUri);
+                        logger.debug("New URI {}", newUri);
 
                         originalRequest
                                 .uri(newUri);
@@ -203,21 +237,22 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
         };
     }
 
-    private Stream<NameValuePair> createFieldsQuery(NameValuePair nvp) {
-        String value = nvp.getValue();
-
+    
+    
+    private Stream<QueryParam> createFieldsQuery(String value) {
+        
         return Arrays.stream(value.split(","))
                 .map(fieldName -> {
                     String newKey = "filter[fields]";
-                    return new BasicNameValuePair(newKey, fieldName);
+                    return new QueryParam(newKey, fieldName);
                 });
     }
 
-    private Stream<NameValuePair> createSearchQuery(NameValuePair nvp) {
-        String value = nvp.getValue();
-        NameValuePair newNvp = new BasicNameValuePair("filter[where][name][regexp]", ".*" + value + ".*");
+    private Stream<QueryParam> createSearchQuery(String name, String value) {
+        
+        QueryParam newQp = new QueryParam("filter[where][name][regexp]", ".*" + value + ".*");
 
-        return Stream.of(newNvp);
+        return Stream.of(newQp);
     }
 
     public static class Config {

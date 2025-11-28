@@ -98,37 +98,35 @@ public class ValidateEntityRequestBody
 
                     // Create a new merged schema by combining properties from both schemas
                     ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
-                    
+
                     // Copy schema version from user schema or base schema
-                    if (kindAliasPathSchema.has("$schema")) {
-                        combinedSchemaNode.set("$schema", kindAliasPathSchema.get("$schema"));
-                    } else if (baseSchemaNode.has("$schema")) {
-                        combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
+                    if (kindAliasPathSchema.has("")) {
+                        combinedSchemaNode.set("", kindAliasPathSchema.get(""));
+                    } else if (baseSchemaNode.has("")) {
+                        combinedSchemaNode.set("", baseSchemaNode.get(""));
                     }
-                    
+
                     combinedSchemaNode.put("type", "object");
-                    
+
                     // Merge properties from both schemas
                     ObjectNode mergedProperties = objectMapper.createObjectNode();
-                    
+
                     // Add base schema properties
                     if (baseSchemaNode.has("properties")) {
                         JsonNode baseProperties = baseSchemaNode.get("properties");
-                        baseProperties.fields().forEachRemaining(entry -> 
-                            mergedProperties.set(entry.getKey(), entry.getValue())
-                        );
+                        baseProperties.fields()
+                                .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
                     }
-                    
+
                     // Add/override with user schema properties
                     if (kindAliasPathSchema.has("properties")) {
                         JsonNode userProperties = kindAliasPathSchema.get("properties");
-                        userProperties.fields().forEachRemaining(entry -> 
-                            mergedProperties.set(entry.getKey(), entry.getValue())
-                        );
+                        userProperties.fields()
+                                .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
                     }
-                    
+
                     combinedSchemaNode.set("properties", mergedProperties);
-                    
+
                     // Merge required fields from both schemas
                     ArrayNode mergedRequired = objectMapper.createArrayNode();
 
@@ -154,11 +152,11 @@ public class ValidateEntityRequestBody
                             }
                         });
                     }
-                    
+
                     if (mergedRequired.size() > 0) {
                         combinedSchemaNode.set("required", mergedRequired);
                     }
-                    
+
                     // Apply additionalProperties restriction if user schema has it set to false
                     if (userRestrictsAdditionalProps) {
                         combinedSchemaNode.put("additionalProperties", false);
@@ -190,7 +188,8 @@ public class ValidateEntityRequestBody
                                 String kindAlias = uriVariables.get("kindAlias");
                                 ObjectMapper objectMapper = new ObjectMapper();
 
-                                KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig.getKindAliasPaths()
+                                KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig
+                                        .getKindAliasPaths()
                                         .stream()
                                         .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
                                                 .equals(Optional.ofNullable(kindAlias)))
@@ -222,28 +221,29 @@ public class ValidateEntityRequestBody
                                     if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
                                         Set<ValidationMessage> patchValidationErrors = schema.validate(requestJsonNode);
 
-                                        if(patchValidationErrors.size() > 0) {
+                                        if (patchValidationErrors.size() > 0) {
                                             // For PATCH operations, filter out only the "required field missing" errors
-                                            // at root level. We still want to enforce additionalProperties, type validation, etc.
+                                            // at root level. We still want to enforce additionalProperties, type
+                                            // validation, etc.
                                             errors = patchValidationErrors.stream()
-                                                .filter(pve -> {
-                                                    String code = pve.getCode();
-                                                    String path = pve.getPath();
-                                                    
-                                                    // Skip only "required" field errors at root level (code 1028)
-                                                    // PATCH doesn't require all fields to be present
-                                                    if ("1028".equals(code) && "$".equals(path)) {
-                                                        return false;
-                                                    }
-                                                    
-                                                    // Keep all other errors including:
-                                                    // - additionalProperties violations (code 1001)
-                                                    // - type mismatches
-                                                    // - format violations
-                                                    // - nested validation errors
-                                                    return true;
-                                                })
-                                                .collect(Collectors.toCollection(LinkedHashSet::new));
+                                                    .filter(pve -> {
+                                                        String code = pve.getCode();
+                                                        String path = pve.getEvaluationPath().toString();
+
+                                                        // Skip only "required" field errors at root level (code 1028)
+                                                        // PATCH doesn't require all fields to be present
+                                                        if ("1028".equals(code) && "$".equals(path)) {
+                                                            return false;
+                                                        }
+
+                                                        // Keep all other errors including:
+                                                        // - additionalProperties violations (code 1001)
+                                                        // - type mismatches
+                                                        // - format violations
+                                                        // - nested validation errors
+                                                        return true;
+                                                    })
+                                                    .collect(Collectors.toCollection(LinkedHashSet::new));
                                         }
                                     }
 
@@ -253,16 +253,20 @@ public class ValidateEntityRequestBody
 
                                         // Deduplicate errors by creating a unique key from code + path + message
                                         // This handles the case where allOf causes duplicate error messages
-                                        Set<ValidationMessage> uniqueErrors = errors.stream()
-                                            .collect(Collectors.toMap(
-                                                vm -> vm.getCode() + "|" + vm.getPath() + "|" + vm.getMessage(),
-                                                vm -> vm,
-                                                (existing, replacement) -> existing, // keep first occurrence
-                                                LinkedHashMap::new
-                                            ))
-                                            .values()
-                                            .stream()
-                                            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                                        Map<String, ValidationMessage> uniqueErrorsMap = errors.stream()
+                                                .collect(Collectors
+                                                        .<ValidationMessage, String, ValidationMessage, LinkedHashMap<String, ValidationMessage>>toMap(
+                                                                vm -> vm.getCode() + "|" + vm.getEvaluationPath().toString() + "|"
+                                                                        + vm.getMessage(),
+                                                                vm -> vm,
+                                                                (existing, replacement) -> existing, // keep first
+                                                                                                     // occurrence
+                                                                LinkedHashMap::new));
+
+                                        Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values()
+                                                .stream()
+                                                .collect(Collectors.toCollection(LinkedHashSet::new));
 
                                         // Throw an exception with deduplicated validation errors
                                         throw new JsonValidationException(uniqueErrors);
@@ -292,7 +296,7 @@ public class ValidateEntityRequestBody
                             for (ValidationMessage validationMessage : jve.getErrors()) {
                                 ObjectNode detailNode = objectMapper.createObjectNode();
                                 detailNode.put("code", validationMessage.getCode());
-                                detailNode.put("field", validationMessage.getPath());
+                                detailNode.put("field", validationMessage.getEvaluationPath().toString());
                                 detailNode.put("message", validationMessage.getMessage());
                                 // You can add more details if needed
 
