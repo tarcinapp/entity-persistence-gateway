@@ -1,0 +1,11 @@
+app:
+  inbound:
+    address: 0.0.0.0
+    port: 8081
+    baseUri: /api/v1/
+    metricsEnabled: true
+    controllerPaths:
+      entities: entities
+      lists: lists
+      relations: relations
+      explorer: explorer
