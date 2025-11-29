@@ -91,5 +91,7 @@ app:
       defaultFieldset: null
     relations:
       defaultFieldset: null
-    reactions:
+    entityReactions:
+      defaultFieldset: null
+    listReactions:
       defaultFieldset: null

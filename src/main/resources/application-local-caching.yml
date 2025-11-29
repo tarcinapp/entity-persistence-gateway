@@ -1,5 +1,130 @@
 app:
-  caching:
-    enabled: true
-    timeToLive: 6h
-    size: 50MB
+  local-cache:
+
+    global-total-size-mb: null  # null means no global limit, otherwise set total max size in MB for all caches combined
+
+    heap-usage-percentage: 0.25 # percentage of heap memory to be used for local caches
+
+    stats-enabled: false        # control Caffeine stats collection
+
+    default:
+      size: 0MB           # practically disabled
+      timeToLive: 30s     # purpose of the local cache is caching the responses for very short time to prevent meaningless repeated calls to reach backend
+
+    entities:
+      default:
+        size: ${app.local-cache.default.size}
+        timeToLive: ${app.local-cache.default.timeToLive}
+      findEntities:
+        size: ${app.local-cache.entities.default.size}
+        timeToLive: ${app.local-cache.entities.default.timeToLive}
+      findEntityById:
+        size: ${app.local-cache.entities.default.size}
+        timeToLive: ${app.local-cache.entities.default.timeToLive}
+      findEntityChildren:
+        size: ${app.local-cache.entities.default.size}
+        timeToLive: ${app.local-cache.entities.default.timeToLive}
+      countEntities:
+        size: ${app.local-cache.entities.default.size}
+        timeToLive: ${app.local-cache.entities.default.timeToLive}
+      findEntityParents:
+        size: ${app.local-cache.entities.default.size}
+        timeToLive: ${app.local-cache.entities.default.timeToLive}
+
+#     kinds:
+#       book:
+#         default:
+#           size: 10MB
+#           timeToLive: 1h
+#         # Only listing for this kind should be cached
+#         findAllEntitiesByKindAlias:
+#           size: ${app.local-cache.kinds.book.default.size}
+#           timeToLive: ${app.local-cache.kinds.book.default.timeToLive}
+#         # But detail query should not be cached (Override)
+#         findEntityByIdByKindAlias:
+#           size: 0B
+#           timeToLive: 5m
+#         findEntityChildrenByKindAlias:
+#           size: ${app.local-cache.kinds.book.default.size}
+#           timeToLive: ${app.local-cache.kinds.book.default.timeToLive}
+#         countEntitiesByKindAlias:
+#           size: ${app.local-cache.kinds.book.default.size}
+#           timeToLive: ${app.local-cache.kinds.book.default.timeToLive}
+#         findEntityParentsByKindAlias:
+#           size: ${app.local-cache.kinds.book.default.size}
+#           timeToLive: ${app.local-cache.kinds.book.default.timeToLive}
+
+    lists:
+      default:
+        size: ${app.local-cache.default.size}
+        timeToLive: ${app.local-cache.default.timeToLive}
+      findLists:
+        size: ${app.local-cache.lists.default.size}
+        timeToLive: ${app.local-cache.lists.default.timeToLive}
+      findListById:
+        size: ${app.local-cache.lists.default.size}
+        timeToLive: ${app.local-cache.lists.default.timeToLive}
+      countLists:
+        size: ${app.local-cache.lists.default.size}
+        timeToLive: ${app.local-cache.lists.default.timeToLive}
+      findListChildren:
+        size: ${app.local-cache.lists.default.size}
+        timeToLive: ${app.local-cache.lists.default.timeToLive}
+      findListParents:
+        size: ${app.local-cache.lists.default.size}
+        timeToLive: ${app.local-cache.lists.default.timeToLive}
+
+    relations:
+      default:
+        size: ${app.local-cache.default.size}
+        timeToLive: ${app.local-cache.default.timeToLive}
+      findRelations:
+        size: ${app.local-cache.relations.default.size}
+        timeToLive: ${app.local-cache.relations.default.timeToLive}
+      countRelations:
+        size: ${app.local-cache.relations.default.size}
+        timeToLive: ${app.local-cache.relations.default.timeToLive}
+      findRelationById:
+        size: ${app.local-cache.relations.default.size}
+        timeToLive: ${app.local-cache.relations.default.timeToLive}
+
+    entityReactions:
+      default:
+        size: ${app.local-cache.default.size}
+        timeToLive: ${app.local-cache.default.timeToLive}
+      findEntityReactions:
+        size: ${app.local-cache.entityReactions.default.size}
+        timeToLive: ${app.local-cache.entityReactions.default.timeToLive}
+      countEntityReactions:
+        size: ${app.local-cache.entityReactions.default.size}
+        timeToLive: ${app.local-cache.entityReactions.default.timeToLive}
+      findEntityReactionById:
+        size: ${app.local-cache.entityReactions.default.size}
+        timeToLive: ${app.local-cache.entityReactions.default.timeToLive}
+      findChildrenEntityReactionsByReactionId:
+        size: ${app.local-cache.entityReactions.default.size}
+        timeToLive: ${app.local-cache.entityReactions.default.timeToLive}
+      findParentsByEntityReactionId:
+        size: ${app.local-cache.entityReactions.default.size}
+        timeToLive: ${app.local-cache.entityReactions.default.timeToLive}
+      
+    listReactions:
+      default:
+        size: ${app.local-cache.default.size}
+        timeToLive: ${app.local-cache.default.timeToLive}
+      findListReactions:
+        size: ${app.local-cache.listReactions.default.size}
+        timeToLive: ${app.local-cache.listReactions.default.timeToLive}
+      countListReactions:
+        size: ${app.local-cache.listReactions.default.size}
+        timeToLive: ${app.local-cache.listReactions.default.timeToLive}
+      findListReactionById:
+        size: ${app.local-cache.listReactions.default.size}
+        timeToLive: ${app.local-cache.listReactions.default.timeToLive}
+      findChildrenListReactionsByReactionId:
+        size: ${app.local-cache.listReactions.default.size}
+        timeToLive: ${app.local-cache.listReactions.default.timeToLive}
+      findParentsByListReactionId:
+        size: ${app.local-cache.listReactions.default.size}
+        timeToLive: ${app.local-cache.listReactions.default.timeToLive}
+

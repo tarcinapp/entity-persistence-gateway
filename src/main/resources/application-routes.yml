@@ -95,6 +95,10 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
+            size: ${app.local-cache.entities.findEntities.size}
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -121,6 +125,11 @@ spring:
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.countEntities.timeToLive}
+            size: ${app.local-cache.entities.countEntities.size}
+            recordType: entities
       - id: findEntityById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -141,7 +150,11 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
+            size: ${app.local-cache.entities.findEntityById.size}
+            recordType: entities
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
@@ -251,6 +264,11 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
+            size: ${app.local-cache.entities.findEntityChildren.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -319,6 +337,11 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
+            size: ${app.local-cache.entities.findEntityParents.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -415,6 +438,11 @@ spring:
           args:
             policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findLists.timeToLive}
+            size: ${app.local-cache.lists.findLists.size}
+            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
@@ -441,6 +469,11 @@ spring:
           args:
             recordType: lists
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.countLists.timeToLive}
+            size: ${app.local-cache.lists.countLists.size}
+            recordType: lists
       - id: findListById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -461,7 +494,11 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/findListById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findListById.timeToLive}
+            size: ${app.local-cache.lists.findListById.size}
+            recordType: lists
         - name: ApplyFieldsetConfig
           args:
             recordType: lists
@@ -577,6 +614,11 @@ spring:
           args:
             policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findListChildren.timeToLive}
+            size: ${app.local-cache.lists.findListChildren.size}
+            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
@@ -645,6 +687,11 @@ spring:
           args:
             policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
+            size: ${app.local-cache.lists.findListParents.size}
+            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
@@ -739,6 +786,11 @@ spring:
           args:
             policyName: /policies/fields/relations/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
+            size: ${app.local-cache.relations.findRelations.size}
+            recordType: relations
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/relations/policy
@@ -762,6 +814,10 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
         - name: AddSetsToRelationQuery
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.countRelations.timeToLive}
+            size: ${app.local-cache.relations.countRelations.size}
         - RemoveRequestHeader=Authorization
       - id: findRelationById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -786,7 +842,11 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/findRelationById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
+            size: ${app.local-cache.relations.findRelationById.size}
+            recordType: relations
         - name: ApplyFieldsetConfig
           args:
             recordType: relations
@@ -908,7 +968,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -958,7 +1018,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -967,6 +1027,11 @@ spring:
           args:
             policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
+            size: ${app.local-cache.entityReactions.findEntityReactions.size}
+            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -991,6 +1056,11 @@ spring:
           args:
             reactionType: entityReactions
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.countEntityReactions.timeToLive}
+            size: ${app.local-cache.entityReactions.countEntityReactions.size}
+            recordType: entityReactions
       - id: findEntityReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1009,10 +1079,13 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactionById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
+            size: ${app.local-cache.entityReactions.findEntityReactionById.size}
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1108,7 +1181,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -1117,6 +1190,11 @@ spring:
           args:
             policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
+            size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
+            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1148,7 +1226,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -1173,7 +1251,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -1182,6 +1260,11 @@ spring:
           args:
             policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
+            size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
+            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1213,7 +1296,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -1263,15 +1346,20 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
+            size: ${app.local-cache.entityReactions.findEntityReactions.size}
+            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1294,7 +1382,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
       # list-reactions controller
       - id: createListReaction
@@ -1324,7 +1412,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -1374,7 +1462,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -1383,6 +1471,11 @@ spring:
           args:
             policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
+            size: ${app.local-cache.listReactions.findListReactions.size}
+            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1407,6 +1500,11 @@ spring:
           args:
             reactionType: listReactions
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.countListReactions.timeToLive}
+            size: ${app.local-cache.listReactions.countListReactions.size}
+            recordType: listReactions
       - id: findListReactionById
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
         predicates:
@@ -1425,10 +1523,14 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/findListReactionById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
+            size: ${app.local-cache.listReactions.findListReactionById.size}
+            recordType: listReactions
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1524,7 +1626,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -1533,6 +1635,11 @@ spring:
           args:
             policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
+            size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
+            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1563,7 +1670,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -1588,7 +1695,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
@@ -1597,6 +1704,11 @@ spring:
           args:
             policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
+            size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
+            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1628,7 +1740,7 @@ spring:
         - name: AddManagedFieldsInCreation
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
@@ -1656,7 +1768,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
       - id: findReactionsByListId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1678,7 +1790,7 @@ spring:
         - name: PreventStringifiedJsonFilter
         - name: ApplyFieldsetConfig
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
@@ -1687,6 +1799,11 @@ spring:
           args:
             policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
+            size: ${app.local-cache.listReactions.findListReactions.size}
+            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1709,7 +1826,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
       # entities through list controller
       - id: createEntityByListId
@@ -1754,7 +1871,9 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.backend.baseUri}lists/${recordId}/entities
+          args:
+            controllerName: entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.backend.baseUri}lists
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -1794,6 +1913,11 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
+            size: ${app.local-cache.entities.findEntities.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -1844,6 +1968,11 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findLists.timeToLive}
+            size: ${app.local-cache.lists.findLists.size}
+            recordType: lists
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
@@ -2040,7 +2169,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
         - RemoveRequestHeader=Authorization
-        - LocalResponseCache=${app.caching.timeToLive},${app.caching.size}
         - name: ApplyFieldsetConfig
           args:
             recordType: entities

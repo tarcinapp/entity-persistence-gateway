@@ -74,6 +74,16 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                         @Override
                         public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
 
+                            HttpHeaders headers = getDelegate().getHeaders();
+
+                            // If response is from cache, skip modification
+                            if (headers.containsKey("X-Cache-Status") &&
+                                    "HIT".equals(headers.getFirst("X-Cache-Status"))) {
+
+                                logger.debug("Response is served from Cache (HIT). Skipping modification.");
+                                return super.writeWith(body);
+                            }
+
                             if (originalResponse.getStatusCode().is2xxSuccessful()) {
 
                                 logger.debug("Asking PEP for response modification filter.");
@@ -117,7 +127,6 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                                                         Mono<DataBuffer> messageBody = writeBody(getDelegate(),
                                                                 outputMessage,
                                                                 outClass);
-                                                        HttpHeaders headers = getDelegate().getHeaders();
 
                                                         if (!headers.containsKey(HttpHeaders.TRANSFER_ENCODING)
                                                                 || headers.containsKey(HttpHeaders.CONTENT_LENGTH)) {
@@ -172,7 +181,8 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
 
             return chain.filter(exchangeDecorator);
 
-        // this is placed here to perform response payload modifications after retrieving the data from cache
+            // this is placed here to perform response payload modifications after
+            // retrieving the data from cache
         }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 10);
     }
 

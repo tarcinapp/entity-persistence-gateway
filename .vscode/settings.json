@@ -1,4 +1,10 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.configuration.runtimes": [{
+        "name": "JavaSE-21",
+        "path": "/usr/lib/jvm/java-21-openjdk-amd64",
+        "default": true
+    }],
+    "java.jdt.ls.vmargs": "-javaagent:/home/kdrkrst/.m2/repository/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar -noverify -Dfile.encoding=UTF-8"
 }

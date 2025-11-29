@@ -100,6 +100,4 @@ spring:
         enabled: ${app.inbound.metricsEnabled}
       filter:
         local-response-cache:
-          enabled: ${app.caching.enabled}
-          size: ${app.caching.size}
-          time-to-live: ${app.caching.timeToLive}
+          enabled: false # we use our custom local cache filter implementation
