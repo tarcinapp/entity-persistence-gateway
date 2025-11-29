@@ -1324,7 +1324,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: entity-reactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
       - id: findReactionsByEntityId
         uri: ${app.backend.protocol}://${app.backend.host}:${app.backend.port}
@@ -1794,7 +1794,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
-            recordType: list-reactions
+            recordType: listReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
