@@ -1,0 +1,29 @@
+app:
+  inbound:
+    cors:
+      allowedOrigins: 
+      - "http://localhost:8080"
+      allowedMethods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      allowedHeaders:
+      - "Accept"
+      - "Authorization"
+      - "Cache-Control"
+      - "Connection"
+      - "Content-Type"
+      - "Host"
+      - "Origin"
+      - "Referer"
+      - "User-Agent"
+      - "Vary"
+      - "X-Geolocation"
+      - "X-Requested-With"
+      exposedHeaders:
+      - "Location"
+      - "Content-Type"
+      allowCredentials: true
+      maxAge: 3600

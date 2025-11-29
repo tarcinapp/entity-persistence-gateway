@@ -26,13 +26,6 @@ app:
       lists: lists
       relations: relations
       explorer: explorer
-    cors:
-      allowedOrigins: "http://localhost:8080"
-      allowedMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-      allowedHeaders: "Accept, Authorization, Cache-Control, Connection, Content-Type, Host, Origin, Referer, User-Agent, Vary, X-Geolocation, X-Requested-With"
-      exposedHeaders: "Location, Content-Type"
-      allowCredentials: true
-      maxAge: 3600
   backend:
     protocol: http
     host: entity-persistence-service
@@ -74,6 +67,7 @@ spring:
       - classpath:application-locks.yml
       - classpath:application-route-toggles.yml
       - classpath:application-local-caching.yml
+      - classpath:application-cors.yml
   application:
     name: ${app.name}
   data:
