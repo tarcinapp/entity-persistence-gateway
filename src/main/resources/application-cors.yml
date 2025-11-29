@@ -22,8 +22,10 @@ app:
       - "Vary"
       - "X-Geolocation"
       - "X-Requested-With"
+      - ${app.requestId}
       exposedHeaders:
       - "Location"
       - "Content-Type"
+      - ${app.requestId}
       allowCredentials: true
       maxAge: 3600

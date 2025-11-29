@@ -20,9 +20,9 @@ metadata:
   namespace: tarcinapp-test
 data:
   app.auth.rs256PublicKey: "your-jwts-public-key-here no-line-breaks"
-  app.backend.protocol: "http"
-  app.backend.host: "entity-persistence-service"
-  app.backend.port: "80"
+  app.outbound.backend.protocol: "http"
+  app.outbound.backend.host: "entity-persistence-service"
+  app.outbound.backend.port: "80"
   app.opa.protocol: "http"
   app.opa.host: "entity-persistence-gateway-policies-service"
   app.opa.port: "8181"

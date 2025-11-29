@@ -27,13 +27,13 @@ public class BackendClientBase implements IBackendClientBase {
     
     private WebClient webClient;
 
-    @Value("${app.backend.host:entity-persistence-service}")
+    @Value("${app.outbound.backend.host:entity-persistence-service}")
     private String host;
 
-    @Value("${app.backend.port:80}")
+    @Value("${app.outbound.backend.port:80}")
     private String port;
 
-    @Value("${app.backend.protocol:http}")
+    @Value("${app.outbound.backend.protocol:http}")
     private String protocol;
 
     private String url;
