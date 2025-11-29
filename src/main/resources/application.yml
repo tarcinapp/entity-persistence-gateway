@@ -8,7 +8,11 @@ app:
   # - prefix for the role names (e.g. tarcinapp.member)
   # - jmx domain name, if jmx is enabled
   shortcode: "tarcinapp"
+
+  # spring.debug flag
   debug: false
+
+  # enable/disable jmx monitoring
   jmx: false
 
   # Custom request ID header name used in logging and tracing
