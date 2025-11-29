@@ -82,10 +82,10 @@ spring:
     name: ${app.name}
   data:
     redis:
-      host: gateway-redis-master
-      port: 6379
-      database: 0
-      password: your-password-from-k8s-secret #Override this field with a value from Kubernetes secret. See .README.
+      host: ${app.outbound.redis.host}
+      port: ${app.outbound.redis.port}
+      database: ${app.outbound.redis.database}
+      password: ${app.outbound.redis.password} #Override this field with a value from Kubernetes secret. See .README.
   cloud:
     gateway:
       httpclient:
