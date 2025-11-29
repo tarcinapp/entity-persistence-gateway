@@ -1,0 +1,24 @@
+app:
+  outbound:
+    backend:
+      protocol: http
+      host: entity-persistence-service
+      port: 80
+      baseUri: '/'
+      connectTimeoutMs: 2000
+      responseTimeout: 5s
+
+    opa:
+      protocol: https
+      host: entity-persistence-gateway-policies
+      port: 443
+      connectTimeoutMs: 500
+      readTimeoutMs: 300
+      writeTimeoutMs: 300
+      responseTimeout: 500ms  
+
+    redis:
+      host: gateway-redis-master
+      port: 6379
+      database: 0
+      password: your-password-from-k8s-secret

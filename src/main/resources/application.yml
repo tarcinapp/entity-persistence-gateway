@@ -19,31 +19,6 @@ app:
   requestId: "X-Request-Id"
     
   commonBaseSchema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
-  
-  outbound:
-  
-    backend:
-      protocol: http
-      host: entity-persistence-service
-      port: 80
-      baseUri: '/'
-      connectTimeoutMs: 2000
-      responseTimeout: 5s
-
-    opa:
-      protocol: https
-      host: entity-persistence-gateway-policies
-      port: 443
-      connectTimeoutMs: 500
-      readTimeoutMs: 300
-      writeTimeoutMs: 300
-      responseTimeout: 500ms  
-    
-    redis:
-      host: gateway-redis-master
-      port: 6379
-      database: 0
-      password: your-password-from-k8s-secret
 
   metricsEndpointsMap:
     "true": gateway,health,metrics
@@ -62,6 +37,7 @@ spring:
     import:
       - classpath:application-auth.yml
       - classpath:app-inbound.yml
+      - classpath:app-outbound.yml
       - classpath:application-cors.yml
       - classpath:application-routes.yml
       - classpath:application-route-toggles.yml
