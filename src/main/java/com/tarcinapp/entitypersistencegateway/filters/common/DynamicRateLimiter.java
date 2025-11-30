@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -13,11 +11,15 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 /**
  * Dynamic rate limiter filter that resolves kind-specific rate limits at
@@ -37,9 +39,8 @@ import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAl
  * - If found, uses those; otherwise uses group or default
  */
 @Component
+@Slf4j
 public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRateLimiter.Config> {
-
-    private Logger logger = LogManager.getLogger(DynamicRateLimiter.class);
 
     @Autowired
     private Environment environment;
@@ -60,29 +61,26 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
         return (exchange, chain) -> {
 
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-            String kindAlias = uriVariables.get("kindAlias");
             String recordType = config.getRecordType();
 
             if (recordType == null || recordType.isEmpty()) {
-                logger.error("DynamicRateLimiter filter requires recordType to be set in config.");
+                log.error("DynamicRateLimiter filter requires recordType to be set in config.");
 
                 exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
                 return exchange.getResponse().setComplete();
             }
 
-            String kindName = null;
+            KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 
-            if (kindAlias != null && kindAliasPathsConfig != null) {
-                kindName = kindAliasPathsConfig.getKindAliasPaths().stream()
-                        .filter(singleKindAliasConfig -> singleKindAliasConfig.getAlias() != null
-                                && singleKindAliasConfig.getRecordType() != null
-                                && singleKindAliasConfig.getAlias().equals(kindAlias)
-                                && (singleKindAliasConfig.getRecordType().equals(recordType)))
-                        .map(KindAliasPathSingleConfig::getName)
-                        .findFirst()
-                        .orElse(null);
+            // Defensive check: If attribute is missing or kind is not configured, skip
+            // logic.
+            if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
+                log.debug("No kind alias configuration found in attributes. Skipping payload modification.");
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Kind configuration not found for the provided alias"));
             }
 
+            String kindName = kindAliasConfigAttr.getKindName();
             String operation = resolveOperationFromRoute(exchange);
 
             int replenishRate = -1;
@@ -91,8 +89,10 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
             // 1) Try kind+operation (dynamic config from
             // app.rate-limits.kinds.{kind}.{operation})
             if (kindName != null && operation != null) {
-                String replenishKey = "app.rate-limits." + recordType + ".kinds." + kindName + "." + operation + ".replenishRate";
-                String burstKey = "app.rate-limits." + recordType + ".kinds." + kindName + "." + operation + ".burstCapacity";
+                String replenishKey = "app.rate-limits." + recordType + ".kinds." + kindName + "." + operation
+                        + ".replenishRate";
+                String burstKey = "app.rate-limits." + recordType + ".kinds." + kindName + "." + operation
+                        + ".burstCapacity";
                 String replenishVal = environment.getProperty(replenishKey);
                 String burstVal = environment.getProperty(burstKey);
 
@@ -113,7 +113,8 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
             // 1b) If operation-specific not found, try kind-level default:
             // app.rate-limits.kinds.{kindName}.default.*
             if (kindName != null && (replenishRate < 0 || burstCapacity < 0)) {
-                String defReplenishKey = "app.rate-limits." + recordType + ".kinds." + kindName + ".default.replenishRate";
+                String defReplenishKey = "app.rate-limits." + recordType + ".kinds." + kindName
+                        + ".default.replenishRate";
                 String defBurstKey = "app.rate-limits." + recordType + ".kinds." + kindName + ".default.burstCapacity";
                 String defReplenishVal = environment.getProperty(defReplenishKey);
                 String defBurstVal = environment.getProperty(defBurstKey);
@@ -164,19 +165,19 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
             // uses these values
             // (RedisRateLimiter exposes a config map; add/override the entry for our
             // dynamicRouteId)
-            
+
             try {
                 RedisRateLimiter.Config rlConfig = new RedisRateLimiter.Config();
                 rlConfig.setReplenishRate(replenishRate);
                 rlConfig.setBurstCapacity(burstCapacity);
                 redisRateLimiter.getConfig().put(dynamicRouteId, rlConfig);
             } catch (Exception e) {
-                logger.warn(
+                log.warn(
                         "Failed to register dynamic rate limiter config; proceeding with available redisRateLimiter defaults",
                         e);
             }
 
-            logger.debug("DynamicRateLimiter: key=" + key + ", replenishRate=" + replenishRate + ", burstCapacity="
+            log.debug("DynamicRateLimiter: key=" + key + ", replenishRate=" + replenishRate + ", burstCapacity="
                     + burstCapacity + ", routeId=" + dynamicRouteId);
 
             return redisRateLimiter.isAllowed(dynamicRouteId, key)
@@ -201,7 +202,8 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
     }
 
     private String resolveKey(ServerWebExchange exchange, String kindName, String operation) {
-        GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
+        GatewaySecurityContext gc = (GatewaySecurityContext) exchange
+                .getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
         // normalize kind/op
         String kind = kindName != null ? kindName : "unknown";
@@ -239,33 +241,10 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
         return kind + ":" + op + ":" + ip;
     }
 
+    @Data
     public static class Config {
         private int replenishRate = 10; // fallback default
         private int burstCapacity = 20; // fallback default
         private String recordType;
-
-        public int getReplenishRate() {
-            return replenishRate;
-        }
-
-        public void setReplenishRate(int replenishRate) {
-            this.replenishRate = replenishRate;
-        }
-
-        public int getBurstCapacity() {
-            return burstCapacity;
-        }
-
-        public void setBurstCapacity(int burstCapacity) {
-            this.burstCapacity = burstCapacity;
-        }
-
-        public String getRecordType() {
-            return recordType;
-        }
-
-        public void setRecordType(String recordType) {
-            this.recordType = recordType;
-        }
     }
 }

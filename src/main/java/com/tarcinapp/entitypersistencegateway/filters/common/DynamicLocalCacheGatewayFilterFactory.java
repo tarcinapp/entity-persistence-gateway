@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.unit.DataSize;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Flux;
@@ -89,20 +91,27 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
             boolean clientSaysNoCache = cacheControlValues != null && cacheControlValues.stream().anyMatch(v -> v.contains("no-cache"));
 
             // Config resolution
-
             String recordType = config.getRecordType();
             if (recordType == null || recordType.isEmpty()) {
                 log.warn("DynamicLocalCache filter requires 'recordType' arg.");
             }
-            
+
+            KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
+
+            // Defensive check: If attribute is missing or kind is not configured, skip logic.
+            if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
+                log.debug("No kind alias configuration found in attributes. Skipping payload modification.");
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Kind configuration not found for the provided alias"));
+            }
+
+            String kindName = kindAliasConfigAttr.getKindName();
+                
             // Default values from route arguments
             DataSize size = config.getSize(); 
             Duration ttl = config.getTimeToLive();
 
             // Resolve kind alias and operation for dynamic overrides
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-            String kindAlias = uriVariables.get("kindAlias");
-            String kindName = resolveKindName(kindAlias, recordType);
             String operation = resolveOperationFromRoute(exchange);
             
             // Apply dynamic configuration overrides from application.yml if available
@@ -250,19 +259,6 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
     }
 
     // Helper Methods
-
-    private String resolveKindName(String kindAlias, String recordType) {
-        if (kindAlias != null && kindAliasPathsConfig != null && recordType != null) {
-            return kindAliasPathsConfig.getKindAliasPaths().stream()
-                    .filter(k -> k.getAlias() != null && k.getAlias().equals(kindAlias) 
-                            && k.getRecordType() != null && k.getRecordType().equals(recordType))
-                    .map(KindAliasPathSingleConfig::getName)
-                    .findFirst()
-                    .orElse(null);
-        }
-        return null;
-    }
-
     private String resolveOperationFromRoute(ServerWebExchange exchange) {
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         return (route != null) ? route.getId() : "unknown";
