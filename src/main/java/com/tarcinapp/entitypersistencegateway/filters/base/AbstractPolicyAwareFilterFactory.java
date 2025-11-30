@@ -117,14 +117,10 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
     protected PolicyData getPolicyInquriyData(ServerWebExchange exchange) {
         PolicyData policyInquiryDataClone = null;
 
-        try {
-            PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
 
-            if (policyInquiryData != null) {
-                policyInquiryDataClone = (PolicyData) policyInquiryData.clone();
-            }
-        } catch (CloneNotSupportedException e) {
-            logger.debug("Cloning policy inquiry data is failed.", e);
+        if (policyInquiryData != null) {
+            policyInquiryDataClone = (PolicyData) policyInquiryData.clone();
         }
 
         return policyInquiryDataClone;

@@ -5,91 +5,35 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
+import lombok.Data;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.RequestPath;
 import org.springframework.util.MultiValueMap;
 
+@Data
 @JsonInclude(Include.NON_NULL)
 public class PolicyData implements Cloneable {
 
     private String policyName;
     private String appShortcode;
+    
+    @JsonSerialize(using = ToStringSerializer.class)
     private HttpMethod httpMethod;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private RequestPath requestPath;
+
     private MultiValueMap<String, String> queryParams;
     private String encodedJwt;
     private Object requestPayload;
     private Object originalRecord;
 
-    public String getPolicyName() {
-        return this.policyName;
-    }
-
-    public void setPolicyName(String policyName) {
-        this.policyName = policyName;
-    }
-
-    public String getAppShortcode() {
-        return this.appShortcode;
-    }
-
-    public void setAppShortcode(String appShortcode) {
-        this.appShortcode = appShortcode;
-    }
-
-    public Object getRequestPayload() {
-        return this.requestPayload;
-    }
-
-    public void setRequestPayload(Object requestPayload) {
-        this.requestPayload = requestPayload;
-    }
-
-    public Object getOriginalRecord() {
-        return this.originalRecord;
-    }
-
-    public void setOriginalRecord(Object originalRecord) {
-        this.originalRecord = originalRecord;
-    }
-
-    @JsonSerialize(using = ToStringSerializer.class)
-    public HttpMethod getHttpMethod() {
-        return this.httpMethod;
-    }
-
-    public void setHttpMethod(HttpMethod httpMethod) {
-        this.httpMethod = httpMethod;
-    }
-
-    @JsonSerialize(using = ToStringSerializer.class)
-    public RequestPath getRequestPath() {
-        return this.requestPath;
-    }
-
-    public void setRequestPath(RequestPath requestPath) {
-        this.requestPath = requestPath;
-    }
-
-    public MultiValueMap<String, String> getQueryParams() {
-        return queryParams;
-    }
-
-    public void setQueryParams(MultiValueMap<String, String> queryParams) {
-        this.queryParams = queryParams;
-    }
-
-    public String getEncodedJwt() {
-        return this.encodedJwt;
-    }
-
-    public void setEncodedJwt(String encodedJwt) {
-        this.encodedJwt = encodedJwt;
-    }
-
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return (PolicyData) super.clone();
+    public PolicyData clone() {
+        try {
+            return (PolicyData) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // Should not happen since we implement Cloneable
+        }
     }
-
 }
