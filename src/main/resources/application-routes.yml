@@ -1326,7 +1326,7 @@ spring:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}entity-reactions/${recordId}/children
-        - name: PlaceKindNameInRequestForEntityManagement
+        - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: RequestRateLimiter
           args:
@@ -2215,7 +2215,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities
-        - name: PlaceKindNameInRequestForEntityManagement
+        - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
@@ -2289,7 +2289,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
-        - name: PlaceKindNameInRequestForEntityManagement
+        - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:
@@ -2492,7 +2492,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
-        - name: PlaceKindNameInRequestForEntityManagement
+        - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: DynamicRateLimiter
           args:

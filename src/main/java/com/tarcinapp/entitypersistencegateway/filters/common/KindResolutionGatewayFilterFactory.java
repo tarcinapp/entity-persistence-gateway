@@ -4,20 +4,25 @@ import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
 @Slf4j
-public class KindResolutionGatewayFilterFactory extends AbstractGatewayFilterFactory<KindResolutionGatewayFilterFactory.Config> {
+public class KindResolutionGatewayFilterFactory
+        extends AbstractGatewayFilterFactory<KindResolutionGatewayFilterFactory.Config> {
 
-    // Public constant for other filters to access the resolved kind configuration attribute.
+    // Public constant for other filters to access the resolved kind configuration
+    // attribute.
     public static final String KIND_ALIAS_CONFIG_ATTR = "KindAliasConfigAttr";
 
     @Autowired(required = false)
@@ -30,7 +35,8 @@ public class KindResolutionGatewayFilterFactory extends AbstractGatewayFilterFac
     @Override
     public GatewayFilter apply(Config config) {
         // Order: -100
-        // This filter must run before other business logic filters (Cache, Timeout, Auth).
+        // This filter must run before other business logic filters (Cache, Timeout,
+        // Auth).
         // This ensures others can use the pre-resolved kind configuration.
         return new OrderedGatewayFilter((exchange, chain) -> {
 
@@ -48,7 +54,7 @@ public class KindResolutionGatewayFilterFactory extends AbstractGatewayFilterFac
 
             // 2. Perform Lookup if Alias exists and Config is loaded
             if (kindAlias != null && kindAliasPathsConfig != null) {
-                
+
                 // O(1) access via HashMap to get the Kind Name
                 String kindName = kindAliasPathsConfig.getDefaultKindPathAliasToKindMap().get(kindAlias);
 
@@ -56,18 +62,23 @@ public class KindResolutionGatewayFilterFactory extends AbstractGatewayFilterFac
                     // 3. Populate the attribute object
                     kindAliasConfigAttr.setKindAliasConfigured(true);
                     kindAliasConfigAttr.setKindName(kindName);
-                    
+
                     // Construct Original Resource URL if recordType and recordId are present
-                    // This is crucial for Authorization logic to know the actual resource being accessed.
+                    // This is crucial for Authorization logic to know the actual resource being
+                    // accessed.
                     if (config.getRecordType() != null && !config.getRecordType().isEmpty() && recordId != null) {
                         String originalResourceUrl = "/" + config.getRecordType() + "/" + recordId;
                         kindAliasConfigAttr.setOriginalResourceUrl(originalResourceUrl);
                     }
 
-                    log.debug("Kind Resolution: Alias '{}' resolved to Kind '{}'. Original URL: {}", 
-                        kindAlias, kindName, kindAliasConfigAttr.getOriginalResourceUrl());
+                    log.debug("Kind Resolution: Alias '{}' resolved to Kind '{}'. Original URL: {}",
+                            kindAlias, kindName, kindAliasConfigAttr.getOriginalResourceUrl());
                 } else {
                     log.debug("Kind Resolution: Alias '{}' could not be resolved to any kind.", kindAlias);
+                    log.debug("Exiting route with 404.");
+
+                    exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+                    return Mono.empty();
                 }
             }
 
