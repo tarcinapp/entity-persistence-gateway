@@ -2206,6 +2206,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=POST
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
@@ -2241,6 +2244,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=GET
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - name: AuthenticateRequest
         - name: DynamicRateLimiter
@@ -2274,6 +2280,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
@@ -2306,6 +2315,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/count
         - Method=GET
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities/count
         - name: ConvertKindAliasToQueryForFindEntities
@@ -2328,6 +2340,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=PATCH
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
@@ -2355,6 +2370,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequest
@@ -2379,6 +2397,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
@@ -2406,6 +2427,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
         - name: AuthenticateRequest
@@ -2424,6 +2448,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=GET
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
@@ -2456,6 +2483,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=POST
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
@@ -2490,6 +2520,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/parents
         - Method=GET
         filters:
+        - name: KindResolution
+          args:
+            recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.backend.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequest
