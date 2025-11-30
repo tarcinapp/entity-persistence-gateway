@@ -2206,6 +2206,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=POST
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.createEntity.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.createEntity.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2244,6 +2249,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=GET
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.findEntities.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.findEntities.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2280,6 +2290,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2315,6 +2330,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/count
         - Method=GET
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.countEntities.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.countEntities.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2340,6 +2360,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=PATCH
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2370,6 +2395,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2397,6 +2427,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2427,6 +2462,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2448,6 +2488,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=GET
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2483,6 +2528,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=POST
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
@@ -2520,6 +2570,11 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/parents
         - Method=GET
         filters:
+        - name: DynamicTimeout
+          args:
+            recordType: entities
+            connectTimeoutMs: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
         - name: KindResolution
           args:
             recordType: entities
