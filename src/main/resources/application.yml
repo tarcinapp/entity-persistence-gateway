@@ -39,6 +39,7 @@ spring:
       - classpath:app-inbound.yml
       - classpath:app-outbound.yml
       - classpath:application-cors.yml
+      - classpath:application-timeouts.yml
       - classpath:application-routes.yml
       - classpath:application-route-toggles.yml
       - classpath:application-logging.yml
@@ -56,6 +57,7 @@ spring:
       port: ${app.outbound.redis.port}
       database: ${app.outbound.redis.database}
       password: ${app.outbound.redis.password} #Override this field with a value from Kubernetes secret. See .README.
+      
   cloud:
     gateway:
       httpclient:

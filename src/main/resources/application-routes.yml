@@ -37,6 +37,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.createEntity.responseTimeoutMs}
       - id: updateAllEntities
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -64,6 +67,9 @@ spring:
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
       - id: findEntities
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -102,6 +108,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findEntities.responseTimeoutMs}
       - id: countEntities
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -130,6 +139,9 @@ spring:
             timeToLive: ${app.local-cache.entities.countEntities.timeToLive}
             size: ${app.local-cache.entities.countEntities.size}
             recordType: entities
+        metadata:
+          connect-timeout: ${app.timeouts.entities.countEntities.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.countEntities.responseTimeoutMs}
       - id: findEntityById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -161,6 +173,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
       - id: updateEntityById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -185,6 +200,9 @@ spring:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
         - name: AcquireLockForUpdate
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
       - id: replaceEntityById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -213,6 +231,9 @@ spring:
             policyName: /policies/fields/entities/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
       - id: deleteEntityById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -233,6 +254,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
       - id: findEntityChildren
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -272,6 +296,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
       - id: createEntityChild
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -306,6 +333,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
       - id: findEntityParents
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -345,6 +375,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
       # list controller
       - id: createList
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -380,6 +413,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.createList.responseTimeoutMs}
       - id: updateAllLists
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -407,6 +443,9 @@ spring:
           args:
             recordType: lists
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.updateAllLists.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.updateAllLists.responseTimeoutMs}
       - id: findLists
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -446,6 +485,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findLists.responseTimeoutMs}
       - id: countLists
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -474,6 +516,9 @@ spring:
             timeToLive: ${app.local-cache.lists.countLists.timeToLive}
             size: ${app.local-cache.lists.countLists.size}
             recordType: lists
+        metadata:
+          connect-timeout: ${app.timeouts.lists.countLists.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.countLists.responseTimeoutMs}
       - id: findListById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -505,6 +550,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findListById.responseTimeoutMs}
       - id: updateListById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -532,6 +580,9 @@ spring:
             waitTime: ${app.locks.lists.update.waitTime}
             leaseTime: ${app.locks.lists.update.leaseTime}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.updateListById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.updateListById.responseTimeoutMs}
       - id: replaceListById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -563,6 +614,9 @@ spring:
             policyName: /policies/fields/lists/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.replaceListById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.replaceListById.responseTimeoutMs}
       - id: deleteListById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -583,6 +637,9 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/deleteListById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.deleteListById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.deleteListById.responseTimeoutMs}
       - id: findListChildren
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -622,6 +679,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findListChildren.responseTimeoutMs}
       - id: createListChild
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -656,6 +716,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.createListChild.responseTimeoutMs}
       - id: findListParents
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -695,6 +758,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findListParents.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findListParents.responseTimeoutMs}
       # relations controller
       - id: createRelation
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -733,6 +799,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/relations/policy
+        metadata:
+          connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.createRelation.responseTimeoutMs}
       - id: updateAllRelations
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -757,6 +826,9 @@ spring:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
         - name: AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.relations.updateAllRelations.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.updateAllRelations.responseTimeoutMs}
       - id: findRelations
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -794,6 +866,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/relations/policy
+        metadata:
+          connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.findRelations.responseTimeoutMs}
       - id: countRelations
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -819,6 +894,9 @@ spring:
             timeToLive: ${app.local-cache.relations.countRelations.timeToLive}
             size: ${app.local-cache.relations.countRelations.size}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.relations.countRelations.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.countRelations.responseTimeoutMs}
       - id: findRelationById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -853,6 +931,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/relations/policy
+        metadata:
+          connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.findRelationById.responseTimeoutMs}
       - id: updateRelationById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -883,6 +964,9 @@ spring:
             waitTime: ${app.locks.relations.update.waitTime}
             leaseTime: ${app.locks.relations.update.leaseTime}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.relations.updateRelationById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.updateRelationById.responseTimeoutMs}
       - id: replaceRelationById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -917,6 +1001,9 @@ spring:
             policyName: /policies/fields/relations/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.relations.replaceRelationById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.replaceRelationById.responseTimeoutMs}
       - id: deleteRelationById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -940,6 +1027,9 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/deleteRelationById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.relations.deleteRelationById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.relations.deleteRelationById.responseTimeoutMs}
       # entity-reactions controller
       - id: createEntityReaction
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -973,6 +1063,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.createEntityReaction.responseTimeoutMs}
       - id: updateAllEntityReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -998,6 +1091,9 @@ spring:
           args:
             reactionType: entityReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.updateAllEntityReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.updateAllEntityReactions.responseTimeoutMs}
       - id: findEntityReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1035,6 +1131,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findEntityReactions.responseTimeoutMs}
       - id: countEntityReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1061,6 +1160,9 @@ spring:
             timeToLive: ${app.local-cache.entityReactions.countEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.countEntityReactions.size}
             recordType: entityReactions
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.countEntityReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.countEntityReactions.responseTimeoutMs}
       - id: findEntityReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1089,6 +1191,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findEntityReactionById.responseTimeoutMs}
       - id: updateEntityReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1114,6 +1219,9 @@ spring:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.updateEntityReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.updateEntityReactionById.responseTimeoutMs}
       - id: replaceEntityReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1143,6 +1251,9 @@ spring:
             policyName: /policies/fields/entityReactions/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.replaceEntityReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.replaceEntityReactionById.responseTimeoutMs}
       - id: deleteEntityReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1161,6 +1272,9 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/deleteEntityReactionById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.deleteEntityReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.deleteEntityReactionById.responseTimeoutMs}
       - id: findChildrenEntityReactionsByReactionId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1198,6 +1312,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.responseTimeoutMs}
       - id: createChildEntityReaction
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1231,6 +1348,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.createChildEntityReaction.responseTimeoutMs}
       - id: findParentsByEntityReactionId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1268,6 +1388,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.responseTimeoutMs}
       # reactions through entity controller
       - id: createReactionByEntityId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1301,6 +1424,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.createReactionByEntityId.responseTimeoutMs}
       - id: updateReactionsByEntityId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1326,6 +1452,9 @@ spring:
           args:
             recordType: entityReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.updateReactionsByEntityId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.updateReactionsByEntityId.responseTimeoutMs}
       - id: findReactionsByEntityId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1363,6 +1492,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findReactionsByEntityId.responseTimeoutMs}
       - id: deleteReactionsByEntityId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1384,6 +1516,9 @@ spring:
           args:
             recordType: entityReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.responseTimeoutMs}
       # list-reactions controller
       - id: createListReaction
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1417,6 +1552,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.createListReaction.responseTimeoutMs}
       - id: updateAllListReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1442,6 +1580,9 @@ spring:
           args:
             reactionType: listReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.updateAllListReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.updateAllListReactions.responseTimeoutMs}
       - id: findListReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1479,6 +1620,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findListReactions.responseTimeoutMs}
       - id: countListReactions
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1505,6 +1649,9 @@ spring:
             timeToLive: ${app.local-cache.listReactions.countListReactions.timeToLive}
             size: ${app.local-cache.listReactions.countListReactions.size}
             recordType: listReactions
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.countListReactions.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.countListReactions.responseTimeoutMs}
       - id: findListReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1534,6 +1681,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findListReactionById.responseTimeoutMs}
       - id: updateListReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1559,6 +1709,9 @@ spring:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.updateListReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.updateListReactionById.responseTimeoutMs}
       - id: replaceListReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1588,6 +1741,9 @@ spring:
             policyName: /policies/fields/listReactions/policy
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.replaceListReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.replaceListReactionById.responseTimeoutMs}
       - id: deleteListReactionById
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1606,6 +1762,9 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/deleteListReactionById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.deleteListReactionById.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.deleteListReactionById.responseTimeoutMs}
       - id: findChildrenListReactionsByReactionId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1643,6 +1802,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.responseTimeoutMs}
       - id: createChildListReaction
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1675,6 +1837,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.createChildListReaction.responseTimeoutMs}
       - id: findParentsByListReactionId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1712,6 +1877,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.reactions.findParentsByListReactionId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.reactions.findParentsByListReactionId.responseTimeoutMs}
       # reactions through list controller
       - id: createReactionByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1745,6 +1913,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.createReactionByListId.responseTimeoutMs}
       - id: updateReactionsByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1770,6 +1941,9 @@ spring:
           args:
             recordType: listReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.updateReactionsByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.updateReactionsByListId.responseTimeoutMs}
       - id: findReactionsByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1807,6 +1981,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findReactionsByListId.responseTimeoutMs}
       - id: deleteReactionsByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1828,6 +2005,9 @@ spring:
           args:
             recordType: listReactions
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.deleteReactionsByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.deleteReactionsByListId.responseTimeoutMs}
       # entities through list controller
       - id: createEntityByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1861,6 +2041,9 @@ spring:
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.createEntityByListId.responseTimeoutMs}
       - id: updateEntitiesByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1886,6 +2069,9 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.updateEntitiesByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.updateEntitiesByListId.responseTimeoutMs}
       - id: findEntitiesByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1921,6 +2107,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.findEntitiesByListId.responseTimeoutMs}
       - id: deleteEntitiesByListId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -1941,6 +2130,9 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.lists.deleteEntitiesByListId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.lists.deleteEntitiesByListId.responseTimeoutMs}
       # lists through entity controller
       - id: findListsByEntityId
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1977,6 +2169,9 @@ spring:
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
+        metadata:
+          connect-timeout: ${app.timeouts.entities.findListsByEntityId.connectTimeoutMs}
+          response-timeout: ${app.timeouts.entities.findListsByEntityId.responseTimeoutMs}
       # ping controller
       - id: ping
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
@@ -1992,6 +2187,9 @@ spring:
               replenishRate: ${app.rate-limits.ping.replenishRate}
               burstCapacity: ${app.rate-limits.ping.burstCapacity}
         - RemoveRequestHeader=Authorization
+        metadata:
+          connect-timeout: ${app.timeouts.ping.ping.connectTimeoutMs}
+          response-timeout: ${app.timeouts.ping.ping.responseTimeoutMs}
       #explorer controller
       - id: explorer
         uri: no://op

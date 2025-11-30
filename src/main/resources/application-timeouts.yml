@@ -1,0 +1,235 @@
+# HIERARCHICAL TIMEOUT CONFIGURATION
+#
+# This configuration follows a hierarchical structure to ensure flexibility and ease of management.
+#
+# Hierarchy Levels:
+# 1. Global Defaults: app.timeouts.default
+#    - Base values for the entire application.
+#
+# 2. Controller Defaults: app.timeouts.<controller>.default
+#    - Inherits from Global Defaults.
+#    - Can be overridden to set specific baselines for a controller (e.g., entities, lists).
+#
+# 3. Kind Defaults (Optional): app.timeouts.entities.kinds.<kindName>.default
+#    - Specific defaults for a business domain object (e.g., 'book').
+#    - Useful when specific kinds require different performance characteristics.
+#
+# 4. Route Definitions: app.timeouts.<controller>.<routeId>
+#    - The most specific level.
+#    - Inherits from the relevant default (Kind Default if applicable, otherwise Controller Default).
+#    - Users can override these specific values to fine-tune a single operation.
+#
+# Usage:
+# - Connect Timeout: Time to establish a TCP connection with the backend.
+# - Response Timeout: Time to wait for the backend to send a response after the connection is established.
+
+app:
+  timeouts:
+    # LEVEL 1: GLOBAL DEFAULTS
+    default:
+      connectTimeoutMs: 3000     # 3 Seconds
+      responseTimeoutMs: 30000   # 30 Seconds
+
+    # LEVEL 2: CONTROLLER DEFAULTS & ROUTES
+    entities:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+
+      # LEVEL 3: KIND BASED CONFIGURATION (SAMPLE: book)
+      # This section allows overriding timeouts for specific kinds accessed via Alias Routes.
+#      kinds:
+#        book:
+#          default:
+#            connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+#            responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+#          
+#          findEntitiesByKindAlias:
+#            connectTimeoutMs: ${app.timeouts.entities.kinds.book.default.connectTimeoutMs}
+#            responseTimeoutMs: ${app.timeouts.entities.kinds.book.default.responseTimeoutMs}
+#          findEntityByIdByKindAlias:
+#            connectTimeoutMs: ${app.timeouts.entities.kinds.book.default.connectTimeoutMs}
+#            responseTimeoutMs: ${app.timeouts.entities.kinds.book.default.responseTimeoutMs}
+#          createEntityByKindAlias:
+#            connectTimeoutMs: ${app.timeouts.entities.kinds.book.default.connectTimeoutMs}
+#            responseTimeoutMs: ${app.timeouts.entities.kinds.book.default.responseTimeoutMs}
+      
+      # Standard Route Specific Overrides (Inherits from Controller Default)
+      createEntity:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      updateAllEntities:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      findEntities:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      countEntities:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      findEntityById:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      updateEntityById:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      replaceEntityById:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      deleteEntityById:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      findEntityChildren:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      createEntityChild:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+      findEntityParents:
+        connectTimeoutMs: ${app.timeouts.entities.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entities.default.responseTimeoutMs}
+
+    lists:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      createList:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      updateAllLists:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      findLists:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      countLists:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      findListById:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      updateListById:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      replaceListById:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      deleteListById:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      findListChildren:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      createListChild:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+      findListParents:
+        connectTimeoutMs: ${app.timeouts.lists.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.lists.default.responseTimeoutMs}
+
+    relations:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      createRelation:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      updateAllRelations:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      findRelations:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      countRelations:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      findRelationById:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      updateRelationById:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      replaceRelationById:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+      deleteRelationById:
+        connectTimeoutMs: ${app.timeouts.relations.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.relations.default.responseTimeoutMs}
+
+    reactions:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+
+      createEntityReaction:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      updateAllEntityReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findEntityReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      countEntityReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findEntityReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      updateEntityReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      replaceEntityReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      deleteEntityReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findChildrenEntityReactionsByReactionId:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      createChildEntityReaction:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findParentsByEntityReactionId:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      createListReaction:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      updateAllListReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findListReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      countListReactions:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findListReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      updateListReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      replaceListReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      deleteListReactionById:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findChildrenListReactionsByReactionId:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      createChildListReaction:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+      findParentsByListReactionId:
+        connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
+
+    ping:
+      connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+      responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
