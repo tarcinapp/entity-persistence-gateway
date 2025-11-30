@@ -7,6 +7,8 @@ app:
       baseUri: '/'
       connectTimeoutMs: 2000
       responseTimeout: 5s
+      maxConnections: 500
+      acquireTimeoutMs: 3000
 
     opa:
       protocol: https

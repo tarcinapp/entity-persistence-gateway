@@ -61,6 +61,10 @@ spring:
       httpclient:
         connect-timeout: ${app.outbound.backend.connectTimeoutMs}
         response-timeout: ${app.outbound.backend.responseTimeout}
+        pool:
+          type: fixed
+          max-connections: ${app.outbound.backend.maxConnections}
+          acquire-timeout: ${app.outbound.backend.acquireTimeoutMs}
       globalcors:
         cors-configurations:
           '[/**]':
