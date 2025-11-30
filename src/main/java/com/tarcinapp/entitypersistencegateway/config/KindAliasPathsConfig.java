@@ -1,66 +1,36 @@
 package com.tarcinapp.entitypersistencegateway.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import jakarta.annotation.PostConstruct;
+import lombok.Data;
+
 @Configuration
 @ConfigurationProperties(prefix = "app")
+@Data
 public class KindAliasPathsConfig {
     
     private List<KindAliasPathSingleConfig> kindAliasPaths = new ArrayList<>();
+    private Map<String, String> defaultKindPathAliasToKindMap = new HashMap<>();
 
-    public List<KindAliasPathSingleConfig> getKindAliasPaths() {
-        return kindAliasPaths;
+    @PostConstruct
+    public void init() {
+        kindAliasPaths.forEach(config -> {
+            defaultKindPathAliasToKindMap.put(config.getAlias(), config.getName());
+        });
     }
 
-    public void setKindAliasPaths(List<KindAliasPathSingleConfig> kindAliasPaths) {
-        this.kindAliasPaths = kindAliasPaths;
-    }
-
+    @Data
     public static class KindAliasPathSingleConfig {
         private String alias;
         private String name;
         private String schema;
         private String recordType;
-
-        public String getSchema() {
-            return schema;
-        }
-
-        public void setSchema(String schema) {
-            this.schema = schema;
-        }
-
-        public String getName() {
-            return this.name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getAlias() {
-            return this.alias;
-        }
-
-        public void setAlias(String alias) {
-            this.alias = alias;
-        }
-
-        public String getRecordType() {
-            return recordType;
-        }
-
-        public void setRecordType(String recordType) {
-            this.recordType = recordType;
-        }
-
-        @Override
-        public String toString() {
-            return "KindAliasPathSingleConfig [name=" + name + ", alias=" + alias + ", schema=" + schema + ", recordType=" + recordType + "]";
-        }
     }
 }

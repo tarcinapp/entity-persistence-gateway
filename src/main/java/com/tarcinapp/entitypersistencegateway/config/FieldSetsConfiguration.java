@@ -3,6 +3,8 @@ package com.tarcinapp.entitypersistencegateway.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.Map;
  */
 @Component
 @ConfigurationProperties("app.fieldsets")
+@Data
 public class FieldSetsConfiguration {
     
     /**
@@ -34,46 +37,6 @@ public class FieldSetsConfiguration {
     private ResourceFieldsets lists = new ResourceFieldsets();
     private ResourceFieldsets relations = new ResourceFieldsets();
     private ResourceFieldsets reactions = new ResourceFieldsets();
-
-    public Map<String, FieldsetDefinition> getGlobal() {
-        return global;
-    }
-
-    public void setGlobal(Map<String, FieldsetDefinition> global) {
-        this.global = global;
-    }
-
-    public ResourceFieldsets getEntities() {
-        return entities;
-    }
-
-    public void setEntities(ResourceFieldsets entities) {
-        this.entities = entities;
-    }
-
-    public ResourceFieldsets getLists() {
-        return lists;
-    }
-
-    public void setLists(ResourceFieldsets lists) {
-        this.lists = lists;
-    }
-
-    public ResourceFieldsets getRelations() {
-        return relations;
-    }
-
-    public void setRelations(ResourceFieldsets relations) {
-        this.relations = relations;
-    }
-
-    public ResourceFieldsets getReactions() {
-        return reactions;
-    }
-
-    public void setReactions(ResourceFieldsets reactions) {
-        this.reactions = reactions;
-    }
 
     /**
      * Get the appropriate resource fieldsets based on resource type
@@ -100,6 +63,7 @@ public class FieldSetsConfiguration {
     /**
      * Resource-specific fieldset configuration
      */
+    @Data
     public static class ResourceFieldsets {
         /**
          * Default fieldset to apply when no fieldset is specified in the query
@@ -110,27 +74,12 @@ public class FieldSetsConfiguration {
          * Fieldset definitions specific to this resource
          */
         private Map<String, FieldsetDefinition> fieldsets = new HashMap<>();
-
-        public String getDefaultFieldset() {
-            return defaultFieldset;
-        }
-
-        public void setDefaultFieldset(String defaultFieldset) {
-            this.defaultFieldset = defaultFieldset;
-        }
-
-        public Map<String, FieldsetDefinition> getFieldsets() {
-            return fieldsets;
-        }
-
-        public void setFieldsets(Map<String, FieldsetDefinition> fieldsets) {
-            this.fieldsets = fieldsets;
-        }
     }
 
     /**
      * Definition of a fieldset with mode and field paths
      */
+    @Data
     public static class FieldsetDefinition {
         /**
          * Mode: 'show' to only include listed fields, 'hide' to exclude listed fields
@@ -145,22 +94,6 @@ public class FieldSetsConfiguration {
          * - "data.users[*].address" (array elements)
          */
         private List<String> fields;
-
-        public FieldsetMode getMode() {
-            return mode;
-        }
-
-        public void setMode(FieldsetMode mode) {
-            this.mode = mode;
-        }
-
-        public List<String> getFields() {
-            return fields;
-        }
-
-        public void setFields(List<String> fields) {
-            this.fields = fields;
-        }
 
         public boolean isShowMode() {
             return mode == FieldsetMode.SHOW;
