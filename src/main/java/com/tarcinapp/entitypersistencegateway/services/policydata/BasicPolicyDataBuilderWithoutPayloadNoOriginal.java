@@ -26,7 +26,7 @@ public class BasicPolicyDataBuilderWithoutPayloadNoOriginal implements PolicyDat
         ServerHttpRequest request = exchange.getRequest();
 
         // Get security context
-        GatewaySecurityContext securityContext = exchange.getAttribute("GatewaySecurityContext");
+        GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
         // Populate basic policy data
         policyData.setHttpMethod(request.getMethod());

@@ -45,7 +45,6 @@ import reactor.core.publisher.Mono;
 public class AddManagedFieldsFromOriginalToPayloadInReplace
         extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
     Logger logger = LogManager.getLogger(AddManagedFieldsFromOriginalToPayloadInReplace.class);
@@ -145,7 +144,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
     }
 
     private GatewaySecurityContext getGatewaySecurityContext(ServerWebExchange exchange) {
-        return (GatewaySecurityContext) exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
+        return (GatewaySecurityContext) exchange.getAttributes().get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
     }
 
     /**

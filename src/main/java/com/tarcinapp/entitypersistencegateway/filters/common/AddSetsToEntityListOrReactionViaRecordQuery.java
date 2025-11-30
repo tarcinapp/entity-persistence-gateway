@@ -67,8 +67,6 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
 
         private final Logger logger = LogManager.getLogger(AddSetsToEntityListOrReactionViaRecordQuery.class);
 
-        private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
@@ -84,7 +82,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                         recordType);
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
-                                        .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+                                        .get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
                         // Null safety check for gc and roles
                         if (gc == null || gc.getRoles() == null) {

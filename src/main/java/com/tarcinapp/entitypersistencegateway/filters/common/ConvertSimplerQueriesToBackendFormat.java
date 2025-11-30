@@ -57,8 +57,6 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
     private static final List<String> filterPrefixes = Arrays.asList("filter[where]", "filter[fields]",
             "filter[include]", "filter[limit]", "filter[order]", "filter[skip]");
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
     @Value("${app.allowBackendQueryNotation:true}")
     private boolean allowBackendQueryNotation;
 
@@ -162,7 +160,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                             }
 
                             GatewaySecurityContext gatewaySecurityContext = exchange
-                                    .getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+                                    .getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
                             // Create a StandardEvaluationContext
                             StandardEvaluationContext context = new StandardEvaluationContext();

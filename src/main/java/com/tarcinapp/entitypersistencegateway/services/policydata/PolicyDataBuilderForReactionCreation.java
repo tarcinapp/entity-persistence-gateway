@@ -50,7 +50,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
 
         // Get security context
-        GatewaySecurityContext securityContext = exchange.getAttribute("GatewaySecurityContext");
+        GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
         // Populate basic policy data
         policyData.setHttpMethod(request.getMethod());

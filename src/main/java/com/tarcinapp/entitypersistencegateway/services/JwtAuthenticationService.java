@@ -66,7 +66,7 @@ public class JwtAuthenticationService {
 
             logger.debug("JWT token validated for issuer: {}", issuer);
 
-            GatewaySecurityContext securityContext = exchange.getAttribute("GatewaySecurityContext");
+            GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             if (securityContext != null) {
                 securityContext.setEncodedJwt(jwt);
             }

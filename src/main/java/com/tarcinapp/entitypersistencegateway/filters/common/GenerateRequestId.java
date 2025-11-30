@@ -31,7 +31,6 @@ public class GenerateRequestId implements GlobalFilter {
     @Value("${app.shortcode}")
     private String requestIdPrefix;
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final static String REQUEST_ID_ATTR = "RequestId";
 
     private Logger logger = LogManager.getLogger(GenerateRequestId.class);
@@ -40,7 +39,7 @@ public class GenerateRequestId implements GlobalFilter {
     }
 
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        GatewaySecurityContext gc = exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+        GatewaySecurityContext gc = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
         StringBuilder sb = new StringBuilder();
 

@@ -13,12 +13,10 @@ import reactor.core.publisher.Mono;
 @Component
 public class UserKeyResolver implements KeyResolver {
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
     @Override
     public Mono<String> resolve(ServerWebExchange exchange) {
-        GatewaySecurityContext gc = (GatewaySecurityContext)exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
-
+        GatewaySecurityContext gc = (GatewaySecurityContext)exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
+        
         // safe subject extraction
         String subject = null;
         

@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilterFactory<DynamicLocalCacheGatewayFilterFactory.Config> {
 
     private final DynamicLocalCacheService cacheService;
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     // Regex to safely parse max-age from Cache-Control header
     // Captures max-age value ignoring spaces and other directives
@@ -146,7 +145,7 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
 
             // Always include User ID in the cache key if authenticated
             String userId = "public";
-            GatewaySecurityContext gc = exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+            GatewaySecurityContext gc = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             if (gc != null && gc.getAuthSubject() != null) {
                 userId = gc.getAuthSubject();
             }

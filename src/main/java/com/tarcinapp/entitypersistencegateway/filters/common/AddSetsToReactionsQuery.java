@@ -40,7 +40,6 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 @Component
 public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSetsToReactionsQuery.Config> {
 
-    private static final String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private final Logger logger = LogManager.getLogger(AddSetsToReactionsQuery.class);
 
     @Value("${app.shortcode:#{tarcinapp}}")
@@ -54,7 +53,7 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
             String reactionType = config.getReactionType();
             logger.debug("AddSetsToReactionsQuery filter is started. reactionType: {}", reactionType);
 
-            GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes().get(GATEWAY_SECURITY_CONTEXT_ATTR);
+            GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes().get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             
             if (gc == null) {
                 logger.debug("Security context missing; skipping modifications.");

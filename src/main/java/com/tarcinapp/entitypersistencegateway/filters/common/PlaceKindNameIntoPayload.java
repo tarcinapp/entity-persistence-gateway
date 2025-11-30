@@ -43,7 +43,7 @@ public class PlaceKindNameIntoPayload
 
         log.debug("PlaceKindNameInRequestForEntityManagement filter started.");
 
-        KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindResolutionGatewayFilterFactory.KIND_ALIAS_CONFIG_ATTR);
+        KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 
         // Defensive check: If attribute is missing or kind is not configured, skip logic.
         if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {

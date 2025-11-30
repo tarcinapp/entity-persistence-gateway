@@ -13,6 +13,7 @@ import lombok.Data;
  */
 @Data
 public class KindAliasConfigAttr {
+    public static final String KIND_ALIAS_CONFIG_ATTR = "KindAliasConfigAttr";
     boolean isKindAliasConfigured;
     String kindName;
     String originalResourceUrl;

@@ -13,6 +13,7 @@ import lombok.Data;
  */
 @Data
 public class GatewaySecurityContext {
+    public static final String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
     private String authSubject;
     private String authParty;
     private String encodedJwt;

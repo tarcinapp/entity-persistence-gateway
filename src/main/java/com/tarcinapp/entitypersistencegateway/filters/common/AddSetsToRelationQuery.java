@@ -86,8 +86,6 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
 
         private final Logger logger = LogManager.getLogger(AddSetsToRelationQuery.class);
 
-        private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
@@ -103,7 +101,7 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                         logger.debug("AddSetsToRelationQuery filter is started.");
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
-                                        .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+                                        .get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
                         if (gc == null) {
                                 logger.debug("Security context missing; skipping modifications.");

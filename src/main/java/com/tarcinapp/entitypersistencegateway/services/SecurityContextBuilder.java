@@ -20,13 +20,12 @@ import io.jsonwebtoken.Claims;
 public class SecurityContextBuilder {
 
     private static final Logger logger = LogManager.getLogger(SecurityContextBuilder.class);
-    private static final String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
 
     /**
      * Initializes a new security context in the exchange attributes
      */
     public void initializeSecurityContext(ServerWebExchange exchange) {
-        exchange.getAttributes().put(GATEWAY_SECURITY_CONTEXT_ATTR, new GatewaySecurityContext());
+        exchange.getAttributes().put(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR, new GatewaySecurityContext());
     }
 
     /**
@@ -72,6 +71,6 @@ public class SecurityContextBuilder {
      * Retrieves the security context from exchange attributes
      */
     public GatewaySecurityContext getSecurityContext(ServerWebExchange exchange) {
-        return exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+        return exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
     }
 }

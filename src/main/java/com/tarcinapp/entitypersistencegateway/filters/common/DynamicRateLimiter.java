@@ -50,8 +50,6 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
     @Autowired
     private RedisRateLimiter redisRateLimiter;
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
     public DynamicRateLimiter() {
         super(Config.class);
     }
@@ -203,7 +201,7 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
     }
 
     private String resolveKey(ServerWebExchange exchange, String kindName, String operation) {
-        GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
+        GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
         // normalize kind/op
         String kind = kindName != null ? kindName : "unknown";

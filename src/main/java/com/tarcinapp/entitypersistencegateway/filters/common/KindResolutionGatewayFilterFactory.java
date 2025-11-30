@@ -21,10 +21,6 @@ import java.util.Map;
 public class KindResolutionGatewayFilterFactory
         extends AbstractGatewayFilterFactory<KindResolutionGatewayFilterFactory.Config> {
 
-    // Public constant for other filters to access the resolved kind configuration
-    // attribute.
-    public static final String KIND_ALIAS_CONFIG_ATTR = "KindAliasConfigAttr";
-
     @Autowired(required = false)
     private KindAliasPathsConfig kindAliasPathsConfig;
 
@@ -45,7 +41,7 @@ public class KindResolutionGatewayFilterFactory
             kindAliasConfigAttr.setKindAliasConfigured(false);
 
             // Put it into attributes immediately so downstream filters can always find it
-            exchange.getAttributes().put(KIND_ALIAS_CONFIG_ATTR, kindAliasConfigAttr);
+            exchange.getAttributes().put(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR, kindAliasConfigAttr);
 
             // 1. Extract Alias and Record ID from URL
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);

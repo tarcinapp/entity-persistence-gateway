@@ -51,8 +51,6 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
 
     private final Logger logger = LogManager.getLogger(AddSetsToThroughRecordQuery.class);
 
-    private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
-
     @Value("${app.shortcode:#{tarcinapp}}")
     private String appShortcode;
 
@@ -68,7 +66,7 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
             logger.debug("AddSetsToThroughRecordQuery filter is started.");
 
             GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
-                    .get(GATEWAY_SECURITY_CONTEXT_ATTR);
+                    .get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             
             if (gc == null || gc.getRoles() == null) {
                 logger.debug("Authentication information not found. Exiting filter without any modification.");
