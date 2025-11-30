@@ -4,6 +4,7 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.convert.DurationStyle;
@@ -24,6 +25,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -33,6 +35,9 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -40,6 +45,10 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
 
     private final DynamicLocalCacheService cacheService;
     private final static String GATEWAY_SECURITY_CONTEXT_ATTR = "GatewaySecurityContext";
+
+    // Regex to safely parse max-age from Cache-Control header
+    // Captures max-age value ignoring spaces and other directives
+    private static final Pattern MAX_AGE_PATTERN = Pattern.compile("max-age\\s*=\\s*(\\d+)");
 
     @Autowired
     private Environment environment;
@@ -55,19 +64,20 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
     @Override
     public GatewayFilter apply(Config config) {
         
-        // WRITE_RESPONSE_FILTER'dan hemen önce çalışmalı (-1)
+        // This filter must run before NettyWriteResponseFilter to capture the response body
+        // Order -20 ensures it runs before most other write filters
         return new OrderedGatewayFilter((exchange, chain) -> {
             
             ServerHttpRequest request = exchange.getRequest();
 
-            // --- 0. ERKEN ÇIKIŞ KONTROLLERİ ---
+            // Early exit checks
 
-            // Sadece GET isteklerini cache'le
+            // Only cache GET requests
             if (request.getMethod() != HttpMethod.GET) {
                 return chain.filter(exchange);
             }
 
-            // Client "no-store" diyorsa (Sakın kaydetme)
+            // Check if client requested no-store
             List<String> cacheControlValues = request.getHeaders().get(HttpHeaders.CACHE_CONTROL);
             boolean clientSaysNoStore = cacheControlValues != null && cacheControlValues.stream().anyMatch(v -> v.contains("no-store"));
             
@@ -76,84 +86,81 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
                 return chain.filter(exchange);
             }
 
-            // Client "no-cache" diyorsa (Git backend'den tazele)
+            // Check if client requested no-cache (force refresh)
             boolean clientSaysNoCache = cacheControlValues != null && cacheControlValues.stream().anyMatch(v -> v.contains("no-cache"));
 
-            // --- 1. CONFIG RESOLUTION (ORİJİNAL MANTIK + YENİ ÖZELLİKLER) ---
-            
+            // Config resolution
+
             String recordType = config.getRecordType();
             if (recordType == null || recordType.isEmpty()) {
                 log.warn("DynamicLocalCache filter requires 'recordType' arg.");
-                // recordType yoksa devam edebiliriz ama dinamik kind override çalışmaz.
             }
             
-            // Route Args'dan gelen varsayılan değerler
+            // Default values from route arguments
             DataSize size = config.getSize(); 
             Duration ttl = config.getTimeToLive();
 
-            // Kind Alias Resolution
+            // Resolve kind alias and operation for dynamic overrides
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String kindAlias = uriVariables.get("kindAlias");
             String kindName = resolveKindName(kindAlias, recordType);
             String operation = resolveOperationFromRoute(exchange);
             
-            // Dynamic configuration selection.
-            // Priority:
-            // 1. Kind + Operation Specific (books.findAll.size)
-            // 2. Kind Default (books.default.size)
-            // 3. Route Args Default (comes from YAML)
+            // Apply dynamic configuration overrides from application.yml if available
+            // Priority: Operation Specific > Kind Default > Route Args
             if (kindName != null && recordType != null) {
                 String kindBaseKey = "app.local-cache." + recordType + ".kinds." + kindName;
                 
-                // 1. Operation Specific Overrides
                 String specificSizeVal = environment.getProperty(kindBaseKey + "." + operation + ".size");
                 String specificTtlVal = environment.getProperty(kindBaseKey + "." + operation + ".timeToLive");
                 
-                // Size Resolution
+                // Size override
                 if (specificSizeVal != null) {
                     DataSize parsed = parseSize(specificSizeVal);
                     if (parsed != null) size = parsed;
                 } else {
-                    // 2. Kind Default Size
                     String defaultSizeVal = environment.getProperty(kindBaseKey + ".default.size");
                     DataSize parsedDefault = parseSize(defaultSizeVal);
                     if (parsedDefault != null) size = parsedDefault;
                 }
 
-                // TTL Resolution
+                // TTL override
                 if (specificTtlVal != null) {
                     Duration parsed = parseDuration(specificTtlVal);
                     if (parsed != null) ttl = parsed;
                 } else {
-                    // 2. Kind Default TTL
                     String defaultTtlVal = environment.getProperty(kindBaseKey + ".default.timeToLive");
                     Duration parsedDefault = parseDuration(defaultTtlVal);
                     if (parsedDefault != null) ttl = parsedDefault;
                 }
             }
 
-            // 0B veya null ise Cache DISABLED
+            // If size is 0 or null, caching is disabled for this route
             if (size == null || size.toBytes() <= 0) {
                 return chain.filter(exchange);
             }
 
             final Duration finalConfigTtl = ttl != null ? ttl : Duration.ofMinutes(5);
 
-            // --- 2. CACHE KEY GENERATION ---
+            // Cache Key Generation
 
-            // GÜVENLİK: User ID'yi anahtara ekle.
+            // Always include User ID in the cache key if authenticated
             String userId = "public";
             GatewaySecurityContext gc = exchange.getAttribute(GATEWAY_SECURITY_CONTEXT_ATTR);
             if (gc != null && gc.getAuthSubject() != null) {
                 userId = gc.getAuthSubject();
             }
 
-            // Key: METHOD : PATH : QUERY : USER_ID
+            // Canonicalize query string to ensure order independence
+            // e.g., ?a=1&b=2 should be same as ?b=2&a=1
+            String sortedQuery = getSortedQueryString(request.getQueryParams());
+
+            // Construct Cache Key: METHOD : PATH : SORTED_QUERY : USER_ID
             String cacheKey = request.getMethod().name() + ":" + request.getURI().getPath() +
-                    (request.getURI().getQuery() != null ? "?" + request.getURI().getQuery() : "") +
+                    (sortedQuery.isEmpty() ? "" : "?" + sortedQuery) +
                     ":" + userId;
 
-            // --- 3. READ CACHE (Client no-cache demediyse) ---
+            // Read from Cache
             
             if (!clientSaysNoCache) {
                 DynamicLocalCacheService.CachedResponse cached = cacheService.get(cacheKey);
@@ -161,7 +168,7 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
 
                 if (cached != null) {
                     
-                    // ETag Check (304 Not Modified)
+                    // Check ETag for 304 Not Modified
                     if (ifNoneMatch != null && ifNoneMatch.equals(cached.getEtag())) {
                         log.debug("Local Cache HIT (304): {}", cacheKey);
                         exchange.getResponse().setStatusCode(HttpStatus.NOT_MODIFIED);
@@ -171,7 +178,7 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
                         return exchange.getResponse().setComplete();
                     }
                     
-                    // Tam Veri Dönüşü (200 OK)
+                    // Return cached response (200 OK)
                     log.debug("Local Cache HIT (200): {}", cacheKey);
                     return writeResponse(exchange, cached, true, finalConfigTtl);
                 }
@@ -181,44 +188,44 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
 
             log.debug("Local Cache MISS: {}", cacheKey);
 
-            // Write cache (Capture Backend Response and Cache)
+            // Write to Cache (Capture Backend Response)
+
             ServerHttpResponse originalResponse = exchange.getResponse();
             ServerHttpResponseDecorator responseDecorator = new ServerHttpResponseDecorator(originalResponse) {
                 
                 @Override
                 public Mono<Void> writeWith(org.reactivestreams.Publisher<? extends DataBuffer> body) {
                     
-                    // Only cache 200 OK responses.
+                    // Only cache 200 OK responses
                     if (getStatusCode() != HttpStatus.OK) {
                         return super.writeWith(body);
                     }
 
-                    // Join body stream
+                    // Join the response body stream
                     return DataBufferUtils.join(Flux.from(body))
                         .flatMap(dataBuffer -> {
                             byte[] content = new byte[dataBuffer.readableByteCount()];
                             dataBuffer.read(content);
                             DataBufferUtils.release(dataBuffer); // Prevent memory leak
 
+                            // Check if backend forbids caching via headers
                             List<String> backendCacheControl = getHeaders().get(HttpHeaders.CACHE_CONTROL);
                             boolean backendSaysNoCache = backendCacheControl != null && 
                                 backendCacheControl.stream().anyMatch(v -> v.contains("no-store") || v.contains("private"));
 
-                            // If backend says no-store or private, do not cache
                             if (backendSaysNoCache) {
                                 log.debug("Backend sent private/no-store. Skipping cache write for key: {}", cacheKey);
-                                // Return data directly, do not write to cache.
                                 return getDelegate().writeWith(Mono.just(
                                     exchange.getResponse().bufferFactory().wrap(content)));
                             }
 
-                            // Consider Cache-Control from backend if present, otherwise use config TTL
+                            // Calculate TTL respecting backend's max-age
                             Duration finalTtl = calculateTtl(getHeaders(), finalConfigTtl);
                             
-                            // Calculate ETag (MD5)
+                            // Generate ETag using MD5 (Fixed 32 chars length)
                             String etag = "\"" + DigestUtils.md5DigestAsHex(content) + "\"";
                             
-                            // Write to cache
+                            // Store in cache
                             cacheService.put(cacheKey, new DynamicLocalCacheService.CachedResponse(
                                 getStatusCode().value(),
                                 getHeaders(), 
@@ -230,7 +237,6 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
                             // Update Response Headers
                             getHeaders().add("X-Cache-Status", "MISS");
                             getHeaders().setETag(etag);
-                            // Inform client how long to cache this response
                             getHeaders().setCacheControl("public, max-age=" + finalTtl.getSeconds());
 
                             return getDelegate().writeWith(Mono.just(
@@ -244,7 +250,8 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
         }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 20);
     }
 
-    // --- HELPER METHODS ---
+    // Helper Methods
+
     private String resolveKindName(String kindAlias, String recordType) {
         if (kindAlias != null && kindAliasPathsConfig != null && recordType != null) {
             return kindAliasPathsConfig.getKindAliasPaths().stream()
@@ -277,48 +284,58 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
         response.setStatusCode(HttpStatus.valueOf(cached.getStatusCode()));
         response.getHeaders().putAll(cached.getHeaders());
         
-        // Standard headers to indicate cache status and control
         response.getHeaders().add("X-Cache-Status", hit ? "HIT" : "MISS");
         if(cached.getEtag() != null) {
             response.getHeaders().setETag(cached.getEtag());
         }
-        // Inform client how long to cache this response
         response.getHeaders().setCacheControl("public, max-age=" + ttl.getSeconds());
 
         DataBuffer buffer = response.bufferFactory().wrap(cached.getBody());
         return response.writeWith(Mono.just(buffer));
     }
 
+    // Safely extract max-age using Regex
     private Duration calculateTtl(HttpHeaders headers, Duration configTtl) {
-        // Is there a 'Cache-Control: max-age=...' from the backend?
         String cacheControl = headers.getFirst(HttpHeaders.CACHE_CONTROL);
-
-        if (cacheControl != null && cacheControl.contains("max-age=")) {
-
-            try {
-                String val = cacheControl.substring(cacheControl.indexOf("max-age=") + 8).split(",")[0];
-                long seconds = Long.parseLong(val);
-                Duration backendTtl = Duration.ofSeconds(seconds);
-                
-                // Use backend TTL if it is shorter than config TTL
-                if (backendTtl.compareTo(configTtl) < 0) return backendTtl;
-            } catch (Exception e) {
-                // Use config TTL if parsing fails
+        
+        if (cacheControl != null) {
+            Matcher matcher = MAX_AGE_PATTERN.matcher(cacheControl.toLowerCase()); 
+            
+            if (matcher.find()) {
+                try {
+                    String val = matcher.group(1); 
+                    long seconds = Long.parseLong(val);
+                    Duration backendTtl = Duration.ofSeconds(seconds);
+                    
+                    // Gateway protects itself: Use min(backendTtl, configTtl)
+                    if (backendTtl.compareTo(configTtl) < 0) {
+                        return backendTtl;
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse max-age from header: {}", cacheControl);
+                }
             }
         }
         return configTtl;
     }
 
+    // Sort query parameters to ensure cache hit regardless of parameter order
+    private String getSortedQueryString(MultiValueMap<String, String> queryParams) {
+        if (queryParams == null || queryParams.isEmpty()) {
+            return "";
+        }
+        return queryParams.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .flatMap(entry -> entry.getValue().stream()
+                        .sorted()
+                        .map(value -> entry.getKey() + "=" + value))
+                .collect(Collectors.joining("&"));
+    }
+
+    @Data
     public static class Config {
         private DataSize size; 
         private Duration timeToLive;
         private String recordType;
-
-        public DataSize getSize() { return size; }
-        public void setSize(DataSize size) { this.size = size; }
-        public Duration getTimeToLive() { return timeToLive; }
-        public void setTimeToLive(Duration timeToLive) { this.timeToLive = timeToLive; }
-        public String getRecordType() { return recordType; }
-        public void setRecordType(String recordType) { this.recordType = recordType; }
     }
 }
