@@ -3,7 +3,7 @@ app:
 
     global-total-size-mb: null  # null means no global limit, otherwise set total max size in MB for all caches combined
 
-    heap-usage-percentage: 0.25 # percentage of heap memory to be used for local caches
+    heap-usage-percentage: 0.20 # percentage of heap memory to be used for local caches
 
     stats-enabled: false        # control Caffeine stats collection
 
