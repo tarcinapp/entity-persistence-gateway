@@ -2,14 +2,18 @@ package com.tarcinapp.entitypersistencegateway.clients.opa;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,16 +22,21 @@ import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyResult;
 
 import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
+import reactor.util.retry.Retry;
 
 @Component
+@Slf4j
 public class OpaClient implements IAuthorizationClient {
 
     private WebClient webClient;
+    
     private final ObjectMapper objectMapper;
 
     @Value("${app.opa.host:localhost}")
@@ -39,29 +48,22 @@ public class OpaClient implements IAuthorizationClient {
     @Value("${app.opa.protocol:http}")
     private String protocol;
 
-    // Timeout for TCP handshake
     @Value("${app.opa.connectTimeoutMs:500}")
     private int connectTimeoutMs;
 
-    // Hard deadline for the total request-response duration
     @Value("${app.opa.responseTimeout:500ms}")
     private Duration responseTimeout;
 
-    // Timeout for idle read connections (no data received from server)
     @Value("${app.opa.readTimeoutMs:300}")
     private int readTimeoutMs;
 
-    // Timeout for idle write connections (cannot send data to server)
     @Value("${app.opa.writeTimeoutMs:300}")
     private int writeTimeoutMs;
 
-    /**
-     * Dependency Injection for ObjectMapper.
-     */
     public OpaClient(ObjectMapper objectMapper) {
-        // Create a copy to avoid side effects on the global mapper
-        this.objectMapper = objectMapper.copy();
-        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Create a dedicated mapper derived from the main one but with specific config
+        this.objectMapper = objectMapper.copy()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @PostConstruct
@@ -69,10 +71,8 @@ public class OpaClient implements IAuthorizationClient {
         String url = this.protocol + "://" + this.host + ":" + this.port + "/v1/data/";
 
         HttpClient httpClient = HttpClient.create()
-                // Phase 1: Connection Timeout
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMs)
                 .doOnConnected(connection -> {
-                    // Phase 2: Socket-level idle timeouts
                     connection.addHandlerLast(new ReadTimeoutHandler(readTimeoutMs, TimeUnit.MILLISECONDS));
                     connection.addHandlerLast(new WriteTimeoutHandler(writeTimeoutMs, TimeUnit.MILLISECONDS));
                 });
@@ -98,7 +98,10 @@ public class OpaClient implements IAuthorizationClient {
             .retrieve()
             .bodyToMono(PolicyResponse.class)
             .timeout(responseTimeout)
-            .map(PolicyResponse::getResult);
+            .map(PolicyResponse::getResult)
+            .retryWhen(Retry.backoff(2, Duration.ofMillis(50))
+                .filter(this::isRetryableException)) 
+            .onErrorMap(this::handleError);
     }
 
     @Override
@@ -113,9 +116,32 @@ public class OpaClient implements IAuthorizationClient {
             .retrieve()
             .bodyToMono(GenericPolicyResponse.class)
             .timeout(responseTimeout)
-            .map(gpr -> {
-                
-                return objectMapper.convertValue(gpr.getResult(), type);
-            });
+            .map(gpr -> objectMapper.convertValue(gpr.getResult(), type))
+            .retryWhen(Retry.backoff(2, Duration.ofMillis(50))
+                .filter(this::isRetryableException))
+            .onErrorMap(this::handleError);
+    }
+
+    private boolean isRetryableException(Throwable ex) {
+        if (ex instanceof WebClientRequestException) {
+            // ReadTimeoutException bir WebClientRequestException içinde saklanır
+            return ex.getCause() instanceof ReadTimeoutException;
+        }
+        return ex instanceof TimeoutException;
+    }
+    
+    private Throwable handleError(Throwable ex) {
+        if (ex instanceof WebClientRequestException && ex.getCause() instanceof ReadTimeoutException) {
+            log.warn("OPA Read Timeout: {}", ex.getMessage());
+            return new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Authorization service timed out");
+        }
+        
+        if (ex instanceof TimeoutException) {
+             log.warn("OPA Global Timeout: {}", ex.getMessage());
+             return new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Authorization service timed out");
+        }
+
+        log.error("OPA execution failed", ex);
+        return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Authorization check failed");
     }
 }

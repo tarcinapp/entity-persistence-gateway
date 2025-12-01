@@ -14,6 +14,8 @@ import org.springframework.util.MultiValueMap;
 @JsonInclude(Include.NON_NULL)
 public class PolicyData implements Cloneable {
 
+    public static final String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
+
     private String policyName;
     private String appShortcode;
     

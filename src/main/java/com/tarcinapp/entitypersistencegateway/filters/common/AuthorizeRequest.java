@@ -1,7 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.security.Key;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -9,26 +7,28 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
 
-import reactor.core.publisher.Mono;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
 public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequest.Config> {
 
     @Autowired
-    IAuthorizationClient authorizationClient;
+    private JwtAuthenticationService jwtAuthenticationService;
 
-    @Autowired(required = false)
-    private Key key;
-    private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
+    @Autowired
+    IAuthorizationClient authorizationClient;
 
     private final ObjectMapper objectMapper;
 
@@ -40,25 +40,17 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
     @Override
     public GatewayFilter apply(Config config) {
 
-        // implement in seperate method in order to reduce nesting
         return (exchange, chain) -> {
 
-            log.debug("Authorization filter is started. Policy name: " + config.getPolicyName());
+            log.debug("Authorization filter is started. Policy name: {}", config.getPolicyName());
 
-            if (this.key == null) {
-                log.warn("RS256 key is not configured. This request won't be authorized.");
+            // If auth provider is not configured, the firewall is open; allow the request
+            if (!jwtAuthenticationService.isConfigured()) {
+                log.warn("Authentication provider is not configured. This request won't be authorized.");
                 return chain.filter(exchange);
             }
 
-            return this.filter(config, exchange, chain)
-                .onErrorResume(e -> {
-                    log.error("Authorization filter error: " + e.getMessage(), e);
-        
-                    ServerHttpResponse response = exchange.getResponse();
-                    response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        
-                    return response.setComplete();
-            });
+            return this.filter(config, exchange, chain);
         };
     }
 
@@ -67,91 +59,69 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
         try {
             policyInquiryData = getPolicyInquriyData(exchange);
-        } catch (CloneNotSupportedException e1) {
-            return Mono.error(new Exception("An error occured while trying to clone the policy data"));
+        } catch (CloneNotSupportedException e) {
+            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Policy data cloning failed"));
         }
 
         policyInquiryData.setPolicyName(config.getPolicyName());
 
         return this.executePolicy(policyInquiryData)
-            .flatMap(result -> {
+            .flatMap(authorized -> {
 
-                if(result.equals(true)) {
-                    log.debug("PEP authorized our request.");
+                if (Boolean.TRUE.equals(authorized)) {
+                    log.debug("PEP authorized the request.");
                     return chain.filter(exchange);
                 }
                                     
-                log.debug("PEP did't authorized the request. Throwing unauthorized exception.");
+                log.debug("PEP denied the request. Returning 403 Forbidden.");
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied by Policy"));
+            })
+            .onErrorResume(e -> {
+                // If the error is already a ResponseStatusException (e.g., 504 Timeout, 403 Forbidden)
+                // forward it to the client as is.
+                if (e instanceof ResponseStatusException) {
+                    ServerHttpResponse response = exchange.getResponse();
+                    response.setStatusCode(((ResponseStatusException) e).getStatusCode());
+                    return response.setComplete();
+                }
 
+                // For other unexpected errors, return 500 Internal Server Error
+                log.error("Unexpected authorization error: {}", e.getMessage(), e);
                 ServerHttpResponse response = exchange.getResponse();
-                response.setStatusCode(HttpStatus.UNAUTHORIZED);
-
-                return response.setComplete();
-            }).onErrorResume(e -> {
-                log.error("Error during policy execution: " + e.getMessage(), e);
-    
-                ServerHttpResponse response = exchange.getResponse();
-                response.setStatusCode(HttpStatus.UNAUTHORIZED);
-    
+                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
                 return response.setComplete();
             });
     }
 
-    /**
-     * An in-class wrapper on AuthorizationClient's execute policy.
-     * The only functionality we add here by wrapping is DEBUG logging.
-     * @param policyData
-     * @return
-     */
     private Mono<Boolean> executePolicy(PolicyData policyData) {
 
         if (log.isDebugEnabled()) {
-            log.debug("Policy data is prepared.");
-
+            
             try {
                 String policyDataStr = objectMapper.writeValueAsString(policyData);
-                log.debug("Policy data: {}", policyDataStr);
+                log.debug("Policy data prepared: {}", policyDataStr);
             } catch (JsonProcessingException e) {
-                log.debug("Unable to serialize policy data to JSON string.");
+                log.debug("Unable to serialize policy data to JSON string.", e);
             }
         }
 
         log.debug("Sending policy data to the PEP.");
 
         return authorizationClient.executePolicy(policyData)
-            .flatMap(result -> {
-
-                if (result.isAllow()) {
-                    return Mono.just(Boolean.TRUE);
-                }
-
-                return Mono.just(Boolean.FALSE);
-        });
+            .map(result -> result.isAllow());
     }
 
-    /**
-     * A shorthand method for accessing the PolicyInquriyData
-     * 
-     * @param exchange
-     * @return
-     * @throws CloneNotSupportedException
-     */
     private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
-        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        PolicyData policyInquiryData = exchange.getAttribute(PolicyData.POLICY_INQUIRY_DATA_ATTR);
+        if (policyInquiryData == null) {
+            // Should not happen if AuthenticateRequest runs first, but defensive coding :)
+            throw new CloneNotSupportedException("Policy data not found in attributes");
+        }
         return (PolicyData) policyInquiryData.clone();
     }
 
+    @Data
     public static class Config {
-
-        String policyName;
-
-        public String getPolicyName() {
-            return this.policyName;
-        }
-
-        public void setPolicyName(String policyName) {
-            this.policyName = policyName;
-        }
-
+        private String policyName;
     }
 }

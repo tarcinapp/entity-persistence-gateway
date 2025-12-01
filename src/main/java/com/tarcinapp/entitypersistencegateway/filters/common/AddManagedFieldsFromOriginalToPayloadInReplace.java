@@ -47,7 +47,6 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
-    private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
     private final ObjectMapper objectMapper;
 
     public AddManagedFieldsFromOriginalToPayloadInReplace(ObjectMapper objectMapper) {
@@ -156,7 +155,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> getOriginalRecord(ServerWebExchange exchange) throws CloneNotSupportedException {
-        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        PolicyData policyInquiryData = exchange.getAttribute(PolicyData.POLICY_INQUIRY_DATA_ATTR);
         return (Map<String, Object>) policyInquiryData.getOriginalRecord();
     }
 

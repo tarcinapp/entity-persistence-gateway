@@ -39,8 +39,6 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
     @Autowired
     IAuthorizationClient authorizationClient;
 
-    private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-
     private Class<PR> policyResultClass;
 
     private final ObjectMapper objectMapper;
@@ -116,7 +114,7 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
     protected PolicyData getPolicyInquriyData(ServerWebExchange exchange) {
         PolicyData policyInquiryDataClone = null;
 
-        PolicyData policyInquiryData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        PolicyData policyInquiryData = exchange.getAttribute(PolicyData.POLICY_INQUIRY_DATA_ATTR);
 
         if (policyInquiryData != null) {
             policyInquiryDataClone = (PolicyData) policyInquiryData.clone();

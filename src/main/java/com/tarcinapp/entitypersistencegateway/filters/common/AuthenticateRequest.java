@@ -48,8 +48,6 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     @Value("${app.shortcode:#{tarcinapp}}")
     private String appShortcode;
 
-    private static final String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-
     public AuthenticateRequest() {
         super(Config.class);
     }
@@ -80,7 +78,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
         PolicyData policyData = new PolicyData();
         policyData.setAppShortcode(this.appShortcode);
-        exchange.getAttributes().put(POLICY_INQUIRY_DATA_ATTR, policyData);
+        exchange.getAttributes().put(PolicyData.POLICY_INQUIRY_DATA_ATTR, policyData);
     }
 
     /**
@@ -105,7 +103,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
         securityContextBuilder.buildFromClaims(claims, exchange);
 
         // Prepare policy data using the appropriate builder
-        PolicyData policyData = exchange.getAttribute(POLICY_INQUIRY_DATA_ATTR);
+        PolicyData policyData = exchange.getAttribute(PolicyData.POLICY_INQUIRY_DATA_ATTR);
         var policyDataBuilder = policyDataBuilderRegistry.selectBuilder(exchange);
 
         return policyDataBuilder.buildPolicyData(policyData, exchange, chain);
