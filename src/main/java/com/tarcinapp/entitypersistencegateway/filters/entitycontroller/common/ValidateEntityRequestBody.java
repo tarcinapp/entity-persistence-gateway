@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -24,24 +22,26 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion.VersionFlag;
+import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Component
-public class ValidateEntityRequestBody
-        extends AbstractGatewayFilterFactory<ValidateEntityRequestBody.Config> {
+@Slf4j
+public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<ValidateEntityRequestBody.Config> {
 
     @Value("${app.commonBaseSchema:#{null}}")
     private String commonBaseSchema;
@@ -49,16 +49,22 @@ public class ValidateEntityRequestBody
     @Autowired
     private KindAliasPathsConfig kindAliasPathsConfig;
 
-    private Logger logger = LogManager.getLogger(ValidateEntityRequestBody.class);
-
     private static JsonSchema baseSchema;
 
-    private HashMap<String, JsonSchema> combinedSchemas;
+    // Stores schemas with "required" fields enforced (for POST/PUT)
+    private Map<String, JsonSchema> combinedSchemas;
+
+    // Stores schemas with root-level "required" fields removed (for PATCH)
+    private Map<String, JsonSchema> patchSchemas;
 
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
 
     private final ObjectMapper objectMapper;
+
+    // Use a static factory instance to avoid recreating it per request.
+    // V7 corresponds to Draft-07 which matches your schema definition.
+    private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
 
     public ValidateEntityRequestBody(ObjectMapper objectMapper) {
         super(ValidateEntityRequestBody.Config.class);
@@ -66,22 +72,22 @@ public class ValidateEntityRequestBody
     }
 
     @EventListener(ContextRefreshedEvent.class)
-    private void createCombinedSchemas() {
+    public void createCombinedSchemas() {
 
-        // if there is no entity kind configured, there is nothing to do in this
-        // operation
-        if (kindAliasPathsConfig.getKindAliasPaths().size() == 0) {
+        if (kindAliasPathsConfig.getKindAliasPaths().isEmpty()) {
             return;
         }
 
-        combinedSchemas = new HashMap<String, JsonSchema>();
+        combinedSchemas = new HashMap<>();
+        patchSchemas = new HashMap<>();
 
         try {
-            // init the base schema
-            if (this.commonBaseSchema != null)
-                baseSchema = this.getJsonSchemaFromStringContent(this.commonBaseSchema);
+            // Init the base schema
+            if (this.commonBaseSchema != null) {
+                baseSchema = SCHEMA_FACTORY.getSchema(this.commonBaseSchema);
+            }
 
-            // merge each given schema with base schema
+            // Merge each given schema with base schema
             for (KindAliasPathSingleConfig kindAliasPath : kindAliasPathsConfig.getKindAliasPaths()) {
                 String schema = kindAliasPath.getSchema();
 
@@ -101,35 +107,30 @@ public class ValidateEntityRequestBody
                     // Create a new merged schema by combining properties from both schemas
                     ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
 
-                    // Copy schema version from user schema or base schema
-                    if (kindAliasPathSchema.has("")) {
-                        combinedSchemaNode.set("", kindAliasPathSchema.get(""));
-                    } else if (baseSchemaNode.has("")) {
-                        combinedSchemaNode.set("", baseSchemaNode.get(""));
-                    }
+                    // Copy meta fields
+                    if (kindAliasPathSchema.has("$schema"))
+                        combinedSchemaNode.set("$schema", kindAliasPathSchema.get("$schema"));
+                    else if (baseSchemaNode.has("$schema"))
+                        combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
 
                     combinedSchemaNode.put("type", "object");
 
-                    // Merge properties from both schemas
+                    // Merge properties
                     ObjectNode mergedProperties = objectMapper.createObjectNode();
 
-                    // Add base schema properties
                     if (baseSchemaNode.has("properties")) {
-                        JsonNode baseProperties = baseSchemaNode.get("properties");
-                        baseProperties.fields()
+                        baseSchemaNode.get("properties").fields()
                                 .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
                     }
 
-                    // Add/override with user schema properties
                     if (kindAliasPathSchema.has("properties")) {
-                        JsonNode userProperties = kindAliasPathSchema.get("properties");
-                        userProperties.fields()
+                        kindAliasPathSchema.get("properties").fields()
                                 .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
                     }
 
                     combinedSchemaNode.set("properties", mergedProperties);
 
-                    // Merge required fields from both schemas
+                    // Merge required fields
                     ArrayNode mergedRequired = objectMapper.createArrayNode();
 
                     if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
@@ -138,17 +139,13 @@ public class ValidateEntityRequestBody
 
                     if (kindAliasPathSchema.has("required") && kindAliasPathSchema.get("required").isArray()) {
                         kindAliasPathSchema.get("required").forEach(req -> {
-                            // Avoid duplicates
                             boolean exists = false;
-
                             for (JsonNode existing : mergedRequired) {
-
                                 if (existing.equals(req)) {
                                     exists = true;
                                     break;
                                 }
                             }
-
                             if (!exists) {
                                 mergedRequired.add(req);
                             }
@@ -159,20 +156,27 @@ public class ValidateEntityRequestBody
                         combinedSchemaNode.set("required", mergedRequired);
                     }
 
-                    // Apply additionalProperties restriction if user schema has it set to false
                     if (userRestrictsAdditionalProps) {
                         combinedSchemaNode.put("additionalProperties", false);
                     }
-                    // Otherwise, additionalProperties defaults to true (allow any extra properties)
 
-                    JsonSchema combinedSchema = getJsonSchemaFromJsonNode(combinedSchemaNode);
-
+                    // 1. Create and Store Full Schema (POST/PUT)
+                    JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(combinedSchemaNode);
                     combinedSchemas.put(kindAliasPath.getName(), combinedSchema);
+
+                    // 2. Create and Store Patch Schema (PATCH)
+                    // We clone the node (or just verify we can modify it since we just created it)
+                    // Removing "required" at the root level allows partial updates
+                    ObjectNode patchSchemaNode = combinedSchemaNode.deepCopy();
+                    patchSchemaNode.remove("required");
+
+                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+                    patchSchemas.put(kindAliasPath.getName(), patchSchema);
                 }
             }
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to initialize schemas", e);
         }
     }
 
@@ -180,109 +184,76 @@ public class ValidateEntityRequestBody
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            logger.debug("ValidateEntityRequestBody filter is started.");
+            log.debug("ValidateEntityRequestBody filter started.");
 
             return modifyRequestBodyFilterFactory
                     .apply(new ModifyRequestBodyGatewayFilterFactory.Config()
                             .setRewriteFunction(String.class, String.class, (ex, payload) -> {
-                                Map<String, String> uriVariables = ServerWebExchangeUtils
-                                        .getUriTemplateVariables(exchange);
-                                String kindAlias = uriVariables.get("kindAlias");
 
-                                KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig
-                                        .getKindAliasPaths()
-                                        .stream()
-                                        .filter(entityKind -> Optional.ofNullable(entityKind.getAlias())
-                                                .equals(Optional.ofNullable(kindAlias)))
-                                        .findFirst()
-                                        .orElse(null);
+                                KindAliasConfigAttr kindAliasConfigAttr = exchange
+                                        .getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 
-                                if (foundKindAliasPathConfig == null) {
-                                    logger.debug("There is no kind alias configuration found for path /" + kindAlias);
-                                    logger.debug("Exiting ValidateEntityRequestBody filter with 404.");
-
-                                    exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
-                                    return Mono.empty();
+                                if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
+                                    log.debug(
+                                            "No kind alias configuration found in attributes. Skipping payload modification.");
+                                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                            "Kind configuration not found for the provided alias"));
                                 }
 
-                                try {
-                                    // start validation here
-                                    JsonNode requestJsonNode = objectMapper.readTree(payload);
-                                    Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
-                                    JsonSchema schema = combinedSchemas.get(foundKindAliasPathConfig.getName());
+                                String kindName = kindAliasConfigAttr.getKindName();
 
-                                    // for create and replace operations, perform full validation
-                                    if (exchange.getRequest().getMethod() == HttpMethod.POST
-                                            || exchange.getRequest().getMethod() == HttpMethod.PUT) {
+                                try {
+                                    JsonNode requestJsonNode = objectMapper.readTree(payload);
+                                    Set<ValidationMessage> errors;
+
+                                    HttpMethod method = exchange.getRequest().getMethod();
+
+                                    // SELECT SCHEMA BASED ON METHOD
+                                    if (method == HttpMethod.PATCH) {
+                                        // Use the schema where root-level 'required' is removed
+                                        JsonSchema schema = patchSchemas.get(kindName);
+                                        if (schema == null) {
+                                            // Fallback if no schema (shouldn't happen if initialized correctly)
+                                            return Mono.just(payload);
+                                        }
+                                        errors = schema.validate(requestJsonNode);
+                                    } else {
+                                        // POST / PUT: Use full schema
+                                        JsonSchema schema = combinedSchemas.get(kindName);
+                                        if (schema == null) {
+                                            return Mono.just(payload);
+                                        }
                                         errors = schema.validate(requestJsonNode);
                                     }
 
-                                    // for update operation, perform validation only over the given properties
-                                    // PATCH allows partial updates, so we only validate the fields that are present
-                                    if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
-                                        Set<ValidationMessage> patchValidationErrors = schema.validate(requestJsonNode);
+                                    // If validation errors exist
+                                    if (!errors.isEmpty()) {
+                                        log.debug("Validation errors found for kind: {}", kindName);
 
-                                        if (patchValidationErrors.size() > 0) {
-                                            // For PATCH operations, filter out only the "required field missing" errors
-                                            // at root level. We still want to enforce additionalProperties, type
-                                            // validation, etc.
-                                            errors = patchValidationErrors.stream()
-                                                    .filter(pve -> {
-                                                        String code = pve.getCode();
-                                                        String path = pve.getEvaluationPath().toString();
-
-                                                        // Skip only "required" field errors at root level (code 1028)
-                                                        // PATCH doesn't require all fields to be present
-                                                        if ("1028".equals(code) && "$".equals(path)) {
-                                                            return false;
-                                                        }
-
-                                                        // Keep all other errors including:
-                                                        // - additionalProperties violations (code 1001)
-                                                        // - type mismatches
-                                                        // - format violations
-                                                        // - nested validation errors
-                                                        return true;
-                                                    })
-                                                    .collect(Collectors.toCollection(LinkedHashSet::new));
-                                        }
-                                    }
-
-                                    // throw exception if validation error found
-                                    if (errors.size() > 0) {
-                                        logger.debug("Validation errors found.");
-
-                                        // Deduplicate errors by creating a unique key from code + path + message
-                                        // This handles the case where allOf causes duplicate error messages
-
+                                        // Deduplicate errors
                                         Map<String, ValidationMessage> uniqueErrorsMap = errors.stream()
-                                                .collect(Collectors
-                                                        .<ValidationMessage, String, ValidationMessage, LinkedHashMap<String, ValidationMessage>>toMap(
-                                                                vm -> vm.getCode() + "|" + vm.getEvaluationPath().toString() + "|"
-                                                                        + vm.getMessage(),
-                                                                vm -> vm,
-                                                                (existing, replacement) -> existing, // keep first
-                                                                                                     // occurrence
-                                                                LinkedHashMap::new));
+                                                .collect(Collectors.toMap(
+                                                        vm -> vm.getCode() + "|" + vm.getEvaluationPath().toString()
+                                                                + "|" + vm.getMessage(),
+                                                        vm -> vm,
+                                                        (existing, replacement) -> existing,
+                                                        LinkedHashMap::new));
 
-                                        Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values()
-                                                .stream()
+                                        Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values().stream()
                                                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-                                        // Throw an exception with deduplicated validation errors
                                         throw new JsonValidationException(uniqueErrors);
                                     }
 
-                                    logger.debug("No validation error.");
-
+                                    log.debug("No validation error.");
                                     return Mono.just(payload);
+
                                 } catch (JsonProcessingException e) {
                                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON body", e);
                                 }
                             }))
                     .filter(exchange, chain)
                     .onErrorResume(e -> {
-
                         ServerHttpResponse response = exchange.getResponse();
 
                         if (e instanceof ResponseStatusException) {
@@ -290,44 +261,21 @@ public class ValidateEntityRequestBody
                         } else if (e instanceof JsonValidationException) {
                             JsonValidationException jve = (JsonValidationException) e;
 
-                            // Prepare a response JSON with the validation errors
-                            ArrayNode detailsArray = objectMapper.createArrayNode();
-
-                            for (ValidationMessage validationMessage : jve.getErrors()) {
-                                ObjectNode detailNode = objectMapper.createObjectNode();
-                                detailNode.put("code", validationMessage.getCode());
-                                detailNode.put("field", validationMessage.getEvaluationPath().toString());
-                                detailNode.put("message", validationMessage.getMessage());
-                                // You can add more details if needed
-
-                                detailsArray.add(detailNode);
-                            }
-
-                            ObjectNode errorNode = objectMapper.createObjectNode();
-                            errorNode.put("name", "ValidationError");
-                            errorNode.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
-                            errorNode.put("message", "The request is not valid.");
-                            errorNode.set("details", detailsArray);
-
-                            ObjectNode responseJson = objectMapper.createObjectNode();
-                            responseJson.set("error", errorNode);
-
-                            response.setStatusCode(HttpStatus.UNPROCESSABLE_ENTITY);
-                            response.getHeaders().add("Content-Type", "application/json");
-
-                            // Write the response body
                             try {
-                                return response.writeWith(Mono.just(response.bufferFactory()
-                                        .wrap(objectMapper.writeValueAsString(responseJson).getBytes())));
-                            } catch (JsonProcessingException e1) {
+                                ObjectNode errorResponse = createErrorResponse(jve);
+                                byte[] bytes = objectMapper.writeValueAsBytes(errorResponse);
+
+                                response.setStatusCode(HttpStatus.UNPROCESSABLE_ENTITY);
+                                response.getHeaders().add("Content-Type", "application/json");
+
+                                return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+                            } catch (JsonProcessingException ex) {
                                 response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                                // Handle the internal server error case appropriately
                                 return response.setComplete();
                             }
-
                         } else {
                             response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                            logger.error(e);
+                            log.error("Unexpected error in validation filter", e);
                         }
 
                         return response.setComplete();
@@ -335,18 +283,29 @@ public class ValidateEntityRequestBody
         };
     }
 
-    protected JsonSchema getJsonSchemaFromStringContent(String schemaContent) {
-        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(VersionFlag.V4);
-        return factory.getSchema(schemaContent);
+    private ObjectNode createErrorResponse(JsonValidationException jve) {
+        ArrayNode detailsArray = objectMapper.createArrayNode();
+
+        for (ValidationMessage validationMessage : jve.getErrors()) {
+            ObjectNode detailNode = objectMapper.createObjectNode();
+            detailNode.put("code", validationMessage.getCode());
+            detailNode.put("field", validationMessage.getEvaluationPath().toString());
+            detailNode.put("message", validationMessage.getMessage());
+            detailsArray.add(detailNode);
+        }
+
+        ObjectNode errorNode = objectMapper.createObjectNode();
+        errorNode.put("name", "ValidationError");
+        errorNode.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        errorNode.put("message", "The request is not valid.");
+        errorNode.set("details", detailsArray);
+
+        ObjectNode responseJson = objectMapper.createObjectNode();
+        responseJson.set("error", errorNode);
+
+        return responseJson;
     }
 
-    protected JsonSchema getJsonSchemaFromJsonNode(JsonNode jsonNode) {
-        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(VersionFlag.V4);
-        return factory.getSchema(jsonNode);
+    public static class Config {
     }
-
-    static class Config {
-
-    }
-
 }
