@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -63,16 +64,9 @@ public class DropFieldsForSingleItemResponses extends
     /**
      * This POJO is used to map PDP response of inquiry of forbidden fields.
      */
+    @Data
     static class PolicyResponse {
         @JsonProperty(value="which_fields_forbidden_for_finding")
         ArrayList<String> fields;
-
-        public ArrayList<String> getFields() {
-            return this.fields;
-        }
-
-        public void setFields(ArrayList<String> fields) {
-            this.fields = fields;
-        }
     }
 }

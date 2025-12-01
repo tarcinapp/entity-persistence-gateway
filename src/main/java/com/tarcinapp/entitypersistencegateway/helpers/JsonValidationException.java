@@ -4,24 +4,17 @@ import java.util.Set;
 
 import com.networknt.schema.ValidationMessage;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
 public class JsonValidationException extends RuntimeException {
 
     private Set<ValidationMessage> errors;
 
     public JsonValidationException() {
-    }
-
-    public JsonValidationException(Set<ValidationMessage> errors) {
-        this.errors = errors;
-    }
-    
-    public Set<ValidationMessage> getErrors() {
-        return errors;
-    }
-
-    public void setErrors(Set<ValidationMessage> errors) {
-        this.errors = errors;
-    }
-
-    
+    } 
 }

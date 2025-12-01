@@ -16,6 +16,7 @@ import com.tarcinapp.entitypersistencegateway.filters.base.AbstractResponsePaylo
 import com.tarcinapp.entitypersistencegateway.services.FieldsetService;
 
 import reactor.core.publisher.Mono;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -120,18 +121,11 @@ public class ApplyFieldsetConfig
     /**
      * Configuration for the ApplyFieldsetConfig filter
      */
+    @Data
     public static class Config {
         /**
          * The resource type for this route (entities, lists, relations, reactions)
          */
         private String recordType;
-
-        public String getRecordType() {
-            return this.recordType;
-        }
-
-        public void setRecordType(String recordType) {
-            this.recordType = recordType;
-        }
     }
 }

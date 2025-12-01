@@ -18,6 +18,8 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -308,9 +310,8 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
         }
     }
 
+    @Data
     public static class Config {
         private String reactionType; // determines entitySet vs listSet usage
-        public String getReactionType() { return reactionType; }
-        public void setReactionType(String reactionType) { this.reactionType = reactionType; }
     }
 }

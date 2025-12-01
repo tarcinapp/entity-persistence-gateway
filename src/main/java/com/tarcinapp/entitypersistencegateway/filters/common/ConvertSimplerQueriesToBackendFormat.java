@@ -23,6 +23,8 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -68,7 +70,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
     }
 
 
-    
+    @Data
     private static class QueryParam {
         public final String name;
         public final String value;
@@ -77,8 +79,6 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
             this.name = name;
             this.value = value;
         }
-        public String getName() { return name; }
-        public String getValue() { return value; }
     }
 
 

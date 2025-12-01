@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import reactor.core.publisher.Mono;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -168,24 +169,9 @@ public class AcquireLockForCreation
         return result.toString();
     }
 
+    @Data
     public static class Config {
         private Duration waitTime;
         private Duration leaseTime;
-
-        public Duration getWaitTime() {
-            return waitTime;
-        }
-
-        public void setWaitTime(Duration waitTime) {
-            this.waitTime = waitTime;
-        }
-
-        public Duration getLeaseTime() {
-            return leaseTime;
-        }
-
-        public void setLeaseTime(Duration leaseTime) {
-            this.leaseTime = leaseTime;
-        }
     }
 }
