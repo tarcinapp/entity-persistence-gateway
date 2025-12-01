@@ -461,3 +461,57 @@ APP_KINDALIASPATHS_0_NAME=book
 # Local Development
 Configure vscode to start application with -Dspring.profiles.active=dev
 Make local configurations under src/main/resources/application-dev.yaml
+
+## Logging
+This application’s logging is controlled by three pieces working together:
+
+- **Spring debug flag (`app.debug`)**
+  - Defined in [src/main/resources/application.yml](src/main/resources/application.yml) and wired into Spring via `debug: ${app.debug}`.
+  - When set to `true`, Spring Boot emits additional auto-configuration and condition evaluation logs. It does not change specific package log levels by itself.
+
+- **App-scoped log levels (`application-logging.yml`)**
+  - See [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml). Provides knobs under `app.logging.*`:
+    - `tarcinapp`: maps to logs under `com.tarcinapp.*` (application code).
+    - `http`: maps to `org.springframework.web.HttpLogging` (request/response trace logging from Spring).
+    - `gateway`: maps to `org.springframework.cloud.gateway` (route and filter lifecycle logs).
+    - `redisson`: maps to `org.redisson` (Redis client logs).
+  - Supported levels include `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`. Defaults are `INFO`.
+
+- **Logback configuration (`logback-spring.xml`)**
+  - See [src/main/resources/logback-spring.xml](src/main/resources/logback-spring.xml).
+  - Binds Spring properties to Logback via `<springProperty>`:
+    - `tarcinappLoggingLevel` ← `app.logging.tarcinapp`
+    - `httpLoggingLevel` ← `app.logging.http`
+    - `gatewayLoggingLevel` ← `app.logging.gateway`
+    - `redissonLoggingLevel` ← `app.logging.redisson`
+  - Declares corresponding `<logger>` elements for these packages, and sets the root logger to `INFO`.
+  - Log pattern includes the request id from MDC: `[%d{ISO8601}][%level][%t][%C{1}][%X{RequestId}]: %msg`. The MDC key `RequestId` is expected to be populated by filters using the inbound header name configured by `app.requestId` (default `X-Request-Id`).
+
+### How they interact
+- `app.debug: true` increases Spring Boot diagnostic output globally but does not override the specific package loggers configured in Logback.
+- Changing values in `application-logging.yml` directly affects the specific mapped categories in `logback-spring.xml`.
+- The root logger remains `INFO` unless changed in `logback-spring.xml`.
+
+### Common adjustments
+- Increase Spring Cloud Gateway verbosity:
+  - Set `app.logging.gateway: DEBUG` in [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml).
+- Enable HTTP request/response tracing:
+  - Set `app.logging.http: TRACE` in [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml).
+- Increase application logs:
+  - Set `app.logging.tarcinapp: DEBUG` in [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml).
+- Reduce Redis client noise:
+  - Set `app.logging.redisson: WARN` in [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml).
+- Turn on broad Spring debug (very verbose):
+  - Set `app.debug: true` in [src/main/resources/application.yml](src/main/resources/application.yml).
+
+### Adding new Spring-level categories
+If you want finer control over other Spring packages (e.g., `org.springframework`, `org.springframework.web`, `org.springframework.security`):
+1. Add a property to [src/main/resources/application-logging.yml](src/main/resources/application-logging.yml), e.g. `app.logging.spring: INFO`.
+2. Bind it in [src/main/resources/logback-spring.xml](src/main/resources/logback-spring.xml):
+   - `<springProperty scope="context" name="springLoggingLevel" source="app.logging.spring" defaultValue="info" />`
+3. Add a matching logger block:
+   - `<logger name="org.springframework" level="${springLoggingLevel}" additivity="false"><appender-ref ref="Console"/></logger>`
+
+### Troubleshooting
+- If `%X{RequestId}` is empty in logs, ensure the MDC is populated by the inbound filters from the header name configured by `app.requestId`.
+- If level changes don’t apply, verify the keys in `application-logging.yml` match the `source` attributes in `<springProperty>` inside `logback-spring.xml`, and confirm `application-logging.yml` is imported via `spring.config.import` in `application.yml`.
