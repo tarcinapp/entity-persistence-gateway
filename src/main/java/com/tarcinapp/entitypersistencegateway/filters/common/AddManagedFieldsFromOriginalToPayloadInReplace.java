@@ -45,12 +45,17 @@ import reactor.core.publisher.Mono;
 public class AddManagedFieldsFromOriginalToPayloadInReplace
         extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
     Logger logger = LogManager.getLogger(AddManagedFieldsFromOriginalToPayloadInReplace.class);
 
-    public AddManagedFieldsFromOriginalToPayloadInReplace() {
+    private final ObjectMapper objectMapper;
+
+    public AddManagedFieldsFromOriginalToPayloadInReplace(ObjectMapper objectMapper) {
         super(Config.class);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -82,10 +87,8 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
             if (originalRecord == null)
                 return Mono.just(inboundJsonRequestStr);
 
-            ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(inboundJsonRequestStr,
-                    new TypeReference<Map<String, Object>>() {
-                    });
+                    MAP_TYPE_REFERENCE);
 
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             String createdDateTime = (String) originalRecord.get("_createdDateTime");

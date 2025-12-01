@@ -34,10 +34,18 @@ import reactor.util.function.Tuple2;
 @Component("policyDataBuilderForRelationCreation")
 public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     @Autowired
     private IBackendClientBase backendBaseClient;
 
     private static final Logger logger = LogManager.getLogger(PolicyDataBuilderForRelationCreation.class);
+
+    private final ObjectMapper objectMapper;
+
+    public PolicyDataBuilderForRelationCreation(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -69,10 +77,9 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
                     try {
-                        ObjectMapper objectMapper = new ObjectMapper();
                         Map<String, Object> payloadJSON = objectMapper.readValue(
                             inboundJsonRequestStr,
-                            new TypeReference<Map<String, Object>>() {}
+                            MAP_TYPE_REFERENCE
                         );
 
                         // Extract entity and list IDs from payload

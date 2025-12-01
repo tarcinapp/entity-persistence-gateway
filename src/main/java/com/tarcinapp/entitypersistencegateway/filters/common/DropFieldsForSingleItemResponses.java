@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
@@ -23,10 +22,15 @@ import reactor.core.publisher.Mono;
 public class DropFieldsForSingleItemResponses extends
         AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForSingleItemResponses.PolicyResponse, String, String> {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     private Logger logger = LogManager.getLogger(DropFieldsForSingleItemResponses.class);
 
-    public DropFieldsForSingleItemResponses() {
-        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class);
+    private final ObjectMapper objectMapper;
+
+    public DropFieldsForSingleItemResponses(ObjectMapper objectMapper) {
+        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class, objectMapper);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -39,13 +43,9 @@ public class DropFieldsForSingleItemResponses extends
         }
 
         logger.debug("Following fields going to be hidden by the response drop filter: " + pr.getFields());
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
         
         try {
-            Map<String, Object> payloadMap = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {
-            });
+            Map<String, Object> payloadMap = objectMapper.readValue(payload, MAP_TYPE_REFERENCE);
 
             pr.getFields().forEach(f -> {
                 payloadMap.remove(f);

@@ -29,8 +29,8 @@ public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFact
 
     private Logger logger = LogManager.getLogger(PreventQueryByForbiddenFields.class);
 
-    public PreventQueryByForbiddenFields() {
-        super(PolicyEvaluatingFilterConfig.class, PreventQueryByForbiddenFields.PolicyResponse.class);
+    public PreventQueryByForbiddenFields(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        super(PolicyEvaluatingFilterConfig.class, PreventQueryByForbiddenFields.PolicyResponse.class, objectMapper);
     }
 
     @Override

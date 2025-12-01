@@ -4,7 +4,6 @@ import java.security.Key;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
@@ -47,10 +46,13 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
 
     private Class<PR> policyResultClass;
 
-    public AbstractPolicyAwareFilterFactory(Class<C> configClass, Class<PR> policyResultClass) {
+    private final ObjectMapper objectMapper;
+
+    public AbstractPolicyAwareFilterFactory(Class<C> configClass, Class<PR> policyResultClass, ObjectMapper objectMapper) {
         super(configClass);
 
         this.policyResultClass = policyResultClass;
+        this.objectMapper = objectMapper;
     }
 
     public abstract GatewayFilter apply(C config, PR policyResult);
@@ -127,11 +129,8 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
     }
 
     private String serializeObjectAsJsonForLogging(Object o) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-
         try {
-            return mapper.writeValueAsString(o);
+            return objectMapper.writeValueAsString(o);
         } catch (JsonProcessingException e) {
             return "Unable to serialize object to JSON.";
         }

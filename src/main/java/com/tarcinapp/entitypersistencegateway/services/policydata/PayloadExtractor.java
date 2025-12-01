@@ -26,7 +26,15 @@ import reactor.core.publisher.Mono;
 @Service
 public class PayloadExtractor {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     private static final Logger logger = LogManager.getLogger(PayloadExtractor.class);
+
+    private final ObjectMapper objectMapper;
+
+    public PayloadExtractor(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Extracts the request payload and attaches it to policy data.
@@ -38,10 +46,9 @@ public class PayloadExtractor {
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
                     try {
-                        ObjectMapper objectMapper = new ObjectMapper();
                         Map<String, Object> payloadJSON = objectMapper.readValue(
                             inboundJsonRequestStr,
-                            new TypeReference<Map<String, Object>>() {}
+                            MAP_TYPE_REFERENCE
                         );
 
                         policyData.setRequestPayload(payloadJSON);

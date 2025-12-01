@@ -36,6 +36,8 @@ import java.time.format.DateTimeFormatter;
 @Component("policyDataBuilderForReactionCreation")
 public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     @Autowired
     private IBackendClientBase backendBaseClient;
 
@@ -43,6 +45,12 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
     private PayloadExtractor payloadExtractor;
 
     private static final Logger logger = LogManager.getLogger(PolicyDataBuilderForReactionCreation.class);
+
+    private final ObjectMapper objectMapper;
+
+    public PolicyDataBuilderForReactionCreation(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -75,10 +83,9 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class, (exchange1, inboundJsonRequestStr) -> {
                     try {
-                        ObjectMapper objectMapper = new ObjectMapper();
                         Map<String, Object> payloadJSON = objectMapper.readValue(
                             inboundJsonRequestStr,
-                            new TypeReference<Map<String, Object>>() {}
+                            MAP_TYPE_REFERENCE
                         );
 
                         // Determine target resource ID from payload

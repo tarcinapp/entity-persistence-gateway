@@ -30,6 +30,8 @@ public class PlaceKindNameIntoPayload
         extends
         AbstractRequestPayloadModifierFilterFactory<PlaceKindNameIntoPayload.Config, String, String> {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     private final ObjectMapper objectMapper;
 
     // Inject the shared ObjectMapper via constructor (Performance optimization)
@@ -73,7 +75,7 @@ public class PlaceKindNameIntoPayload
             }
 
             // Use the injected objectMapper instance
-            Map<String, Object> payloadMap = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> payloadMap = objectMapper.readValue(payload, MAP_TYPE_REFERENCE);
 
             payloadMap.put("_kind", kindName);
             

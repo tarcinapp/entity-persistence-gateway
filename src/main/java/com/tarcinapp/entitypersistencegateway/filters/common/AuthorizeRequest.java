@@ -16,7 +16,6 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
@@ -35,8 +34,11 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
-    public AuthorizeRequest() {
+    private final ObjectMapper objectMapper;
+
+    public AuthorizeRequest(ObjectMapper objectMapper) {
         super(Config.class);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -109,11 +111,9 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
         if (logger.getLevel().compareTo(Level.DEBUG) >= 0) {
             logger.debug("Policy data is prepared.");
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
 
             try {
-                String policyDataStr = mapper.writeValueAsString(policyData);
+                String policyDataStr = objectMapper.writeValueAsString(policyData);
                 logger.debug("Policy data: {}", policyDataStr);
             } catch (JsonProcessingException e) {
                 logger.debug("Unable to serialize policy data to JSON string.");

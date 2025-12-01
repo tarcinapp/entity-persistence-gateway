@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
@@ -54,6 +53,8 @@ import reactor.core.publisher.Mono;
 public class AddForbiddenFieldsFromOriginalToPayloadInReplace
         extends AbstractGatewayFilterFactory<AddForbiddenFieldsFromOriginalToPayloadInReplace.Config> {
 
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     @Autowired
     IAuthorizationClient authorizationClient;
 
@@ -64,8 +65,11 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
 
     private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayloadInReplace.class);
 
-    public AddForbiddenFieldsFromOriginalToPayloadInReplace() {
+    private final ObjectMapper objectMapper;
+
+    public AddForbiddenFieldsFromOriginalToPayloadInReplace(ObjectMapper objectMapper) {
         super(Config.class);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -130,10 +134,7 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
                 .setRewriteFunction(String.class, String.class, (exchange1, payloadStr) -> {
 
                     try {
-                        ObjectMapper objectMapper = new ObjectMapper()
-                            .registerModule(new JavaTimeModule());
-                        Map<String, Object> payloadRecord = objectMapper.readValue(payloadStr, 
-                            new TypeReference<Map<String, Object>>() {});
+                        Map<String, Object> payloadRecord = objectMapper.readValue(payloadStr, MAP_TYPE_REFERENCE);
 
                         // Copy forbidden fields from original record to payload
                         fields.stream()

@@ -4,6 +4,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.O
 
 import java.security.Key;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
@@ -48,8 +49,8 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
     private Class<PR> policyResultClass;
 
     public AbstractPolicyAwareResponsePayloadModifierFilterFactory(Class<C> configClass, Class<PR> policyResultClass,
-            Class<I> inClass, Class<O> outClass) {
-        super(configClass, policyResultClass);
+            Class<I> inClass, Class<O> outClass, ObjectMapper objectMapper) {
+        super(configClass, policyResultClass, objectMapper);
 
         this.inClass = inClass;
         this.outClass = outClass;

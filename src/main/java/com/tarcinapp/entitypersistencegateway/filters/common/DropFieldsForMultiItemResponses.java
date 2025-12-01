@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
@@ -24,10 +23,15 @@ import org.apache.logging.log4j.Logger;
 public class DropFieldsForMultiItemResponses extends
         AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForMultiItemResponses.PolicyResponse, String, String> {
 
+    private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE_REFERENCE = new TypeReference<>() {};
+
     private Logger logger = LogManager.getLogger(DropFieldsForMultiItemResponses.class);
 
-    public DropFieldsForMultiItemResponses() {
-        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class);
+    private final ObjectMapper objectMapper;
+
+    public DropFieldsForMultiItemResponses(ObjectMapper objectMapper) {
+        super(PolicyEvaluatingFilterConfig.class, PolicyResponse.class, String.class, String.class, objectMapper);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -41,16 +45,8 @@ public class DropFieldsForMultiItemResponses extends
 
         logger.debug("Following fields going to be hidden by the response drop filter: " + policyResult.getFields());
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        // We need to register JavaTimeModule explicitly to be able to
-        // serialize/deserialize java.time.* classes
-        objectMapper.registerModule(new JavaTimeModule());
-
         try {
-            List<Map<String, Object>> payloadMap = objectMapper.readValue(payload,
-                    new TypeReference<List<Map<String, Object>>>() {
-                    });
+            List<Map<String, Object>> payloadMap = objectMapper.readValue(payload, LIST_MAP_TYPE_REFERENCE);
 
             policyResult.fields.forEach(f -> {
                 payloadMap.forEach(m -> {

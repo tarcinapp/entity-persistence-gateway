@@ -1,7 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
-import com.tarcinapp.entitypersistencegateway.filters.common.KindResolutionGatewayFilterFactory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,13 +108,13 @@ public class DynamicTimeoutGatewayFilterFactory extends AbstractGatewayFilterFac
             if (finalConnectTimeout != null) {
                 // Use local constant
                 exchange.getAttributes().put(CONNECT_TIMEOUT_ATTR, finalConnectTimeout);
-                log.trace("Applied Connect Timeout: {} ms for route: {}", finalConnectTimeout, operation);
+                log.debug("Applied Connect Timeout: {} ms for route: {}", finalConnectTimeout, operation);
             }
 
             if (finalResponseTimeout != null) {
                 // Use local constant
                 exchange.getAttributes().put(RESPONSE_TIMEOUT_ATTR, Duration.ofMillis(finalResponseTimeout));
-                log.trace("Applied Response Timeout: {} ms for route: {}", finalResponseTimeout, operation);
+                log.debug("Applied Response Timeout: {} ms for route: {}", finalResponseTimeout, operation);
             }
 
             return chain.filter(exchange);

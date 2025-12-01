@@ -58,8 +58,11 @@ public class ValidateEntityRequestBody
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
 
-    public ValidateEntityRequestBody() {
+    private final ObjectMapper objectMapper;
+
+    public ValidateEntityRequestBody(ObjectMapper objectMapper) {
         super(ValidateEntityRequestBody.Config.class);
+        this.objectMapper = objectMapper;
     }
 
     @EventListener(ContextRefreshedEvent.class)
@@ -71,7 +74,6 @@ public class ValidateEntityRequestBody
             return;
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         combinedSchemas = new HashMap<String, JsonSchema>();
 
         try {
@@ -186,7 +188,6 @@ public class ValidateEntityRequestBody
                                 Map<String, String> uriVariables = ServerWebExchangeUtils
                                         .getUriTemplateVariables(exchange);
                                 String kindAlias = uriVariables.get("kindAlias");
-                                ObjectMapper objectMapper = new ObjectMapper();
 
                                 KindAliasPathSingleConfig foundKindAliasPathConfig = kindAliasPathsConfig
                                         .getKindAliasPaths()
@@ -288,7 +289,6 @@ public class ValidateEntityRequestBody
                             response.setStatusCode(((ResponseStatusException) e).getStatusCode());
                         } else if (e instanceof JsonValidationException) {
                             JsonValidationException jve = (JsonValidationException) e;
-                            ObjectMapper objectMapper = new ObjectMapper();
 
                             // Prepare a response JSON with the validation errors
                             ArrayNode detailsArray = objectMapper.createArrayNode();

@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -36,9 +35,8 @@ public class FieldsetService {
     private final ObjectMapper objectMapper;
     private final Configuration jsonPathConfig;
 
-    public FieldsetService() {
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
+    public FieldsetService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         
         // Configure JsonPath to use Jackson for JSON processing
         this.jsonPathConfig = Configuration.builder()
