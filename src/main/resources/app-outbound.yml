@@ -6,6 +6,8 @@ app:
       port: 80
       baseUri: '/'
       connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+      readTimeoutMs: 300
+      writeTimeoutMs: 300
       responseTimeout: ${app.timeouts.default.responseTimeoutMs}
       maxConnections: 500
       acquireTimeoutMs: 3000
