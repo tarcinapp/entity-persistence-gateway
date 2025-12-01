@@ -31,8 +31,24 @@ server:
   compression:
     enabled: true
     mime-types: application/json
----
+  
+  # CRITICAL: Graceful shutdown ensures in-flight requests are completed before killing the pod
+  shutdown: graceful
+
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # CRITICAL: Configures the shared ObjectMapper bean used in our filters
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false # Forces ISO-8601 date format (e.g., "2023-12-01T10:00:00Z")
+
+  # CRITICAL: Increases the buffer size for request bodies. 
+  # Since ValidateEntityRequestBody reads the whole body, we need more than the default 256KB.
+  codec:
+    max-in-memory-size: 10MB 
+
   config:
     import:
       - classpath:application-auth.yml
@@ -51,6 +67,7 @@ spring:
       - classpath:application-local-caching.yml
   application:
     name: ${app.name}
+  
   data:
     redis:
       host: ${app.outbound.redis.host}
@@ -67,6 +84,8 @@ spring:
           type: fixed
           max-connections: ${app.outbound.backend.maxConnections}
           acquire-timeout: ${app.outbound.backend.acquireTimeoutMs}
+          # Recommended setting to prevent stale connection issues in cloud environments
+          max-life-time: 45000 
       globalcors:
         cors-configurations:
           '[/**]':
@@ -81,3 +100,7 @@ spring:
       filter:
         local-response-cache:
           enabled: false # we use our custom local cache filter implementation
+  
+  jmx:
+    enabled: ${app.jmx}
+    default-domain: ${app.shortcode}
