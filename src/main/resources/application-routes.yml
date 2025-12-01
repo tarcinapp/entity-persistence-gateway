@@ -105,6 +105,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -889,11 +890,12 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
         - name: AddSetsToRelationQuery
+        - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.relations.countRelations.timeToLive}
             size: ${app.local-cache.relations.countRelations.size}
-        - RemoveRequestHeader=Authorization
+            recordType: relations
         metadata:
           connect-timeout: ${app.timeouts.relations.countRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.countRelations.responseTimeoutMs}
@@ -1185,6 +1187,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
+            recordType: entityReactions
         - name: ApplyFieldsetConfig
           args:
             recordType: entityReactions
@@ -2160,12 +2163,12 @@ spring:
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
+        - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
             recordType: lists
-        - RemoveRequestHeader=Authorization
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
@@ -2281,6 +2284,11 @@ spring:
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
+            size: ${app.local-cache.entities.findEntities.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -2354,6 +2362,11 @@ spring:
           args:
             recordType: entities
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.countEntities.timeToLive}
+            size: ${app.local-cache.entities.countEntities.size}
+            recordType: entities
       - id: updateAllEntitiesByKindAlias
         uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
         predicates:
@@ -2415,6 +2428,11 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
+            size: ${app.local-cache.entities.findEntityById.size}
+            recordType: entities
         - name: ApplyFieldsetConfig
           args:
             recordType: entities
@@ -2519,6 +2537,11 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
+            size: ${app.local-cache.entities.findEntityChildren.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
@@ -2601,6 +2624,11 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
+            size: ${app.local-cache.entities.findEntityParents.size}
+            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy

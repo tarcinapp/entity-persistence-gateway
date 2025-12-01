@@ -5,8 +5,8 @@ app:
       host: entity-persistence-service
       port: 80
       baseUri: '/'
-      connectTimeoutMs: 2000
-      responseTimeout: 5s
+      connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+      responseTimeout: ${app.timeouts.default.responseTimeoutMs}
       maxConnections: 500
       acquireTimeoutMs: 3000
 
@@ -14,10 +14,10 @@ app:
       protocol: https
       host: entity-persistence-gateway-policies
       port: 443
-      connectTimeoutMs: 500
+      connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
       readTimeoutMs: 300
       writeTimeoutMs: 300
-      responseTimeout: 500ms  
+      responseTimeout: ${app.timeouts.default.responseTimeoutMs}
 
     redis:
       host: gateway-redis-master
