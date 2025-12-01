@@ -3,7 +3,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -54,9 +53,6 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
     @Autowired
     private Environment environment;
 
-    @Autowired(required = false)
-    private KindAliasPathsConfig kindAliasPathsConfig;
-
     public DynamicLocalCacheGatewayFilterFactory(DynamicLocalCacheService cacheService) {
         super(Config.class);
         this.cacheService = cacheService;
@@ -98,20 +94,19 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
 
             KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 
-            // Defensive check: If attribute is missing or kind is not configured, skip logic.
-            if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
-                log.debug("No kind alias configuration found in attributes. Skipping payload modification.");
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Kind configuration not found for the provided alias"));
-            }
+            String kindName = null;
 
-            String kindName = kindAliasConfigAttr.getKindName();
-                
+            if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
+                log.debug("No kind alias configuration found in attributes. Controller configuration will be used.");
+            } else {
+                kindName = kindAliasConfigAttr.getKindName();
+            }
+   
             // Default values from route arguments
             DataSize size = config.getSize(); 
             Duration ttl = config.getTimeToLive();
 
             // Resolve kind alias and operation for dynamic overrides
-            Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String operation = resolveOperationFromRoute(exchange);
             
             // Apply dynamic configuration overrides from application.yml if available
@@ -172,15 +167,64 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
             
             if (!clientSaysNoCache) {
                 DynamicLocalCacheService.CachedResponse cached = cacheService.get(cacheKey);
-                String ifNoneMatch = request.getHeaders().getFirst(HttpHeaders.IF_NONE_MATCH);
 
                 if (cached != null) {
+                    HttpHeaders requestHeaders = request.getHeaders();
+                    HttpHeaders cachedHeaders = cached.getHeaders();
+
+                    long cachedLastModified = cachedHeaders.getLastModified();
+                    long ifUnmodifiedSince = requestHeaders.getIfUnmodifiedSince();
+
+                    // 1. CHECK: If-Unmodified-Since (Precondition Failed)
+                    // If the resource has been modified *after* the date specified by client, fail.
+                    if (ifUnmodifiedSince != -1 && cachedLastModified != -1) {
+                        // Compare seconds (HTTP dates don't have millis)
+                        if (cachedLastModified / 1000 > ifUnmodifiedSince / 1000) {
+                            log.debug("Local Cache Precondition Failed (412): {}", cacheKey);
+                            exchange.getResponse().setStatusCode(HttpStatus.PRECONDITION_FAILED);
+                            return exchange.getResponse().setComplete();
+                        }
+                    }
+
+                    // 2. CHECK: If-None-Match (ETag) & If-Modified-Since (304 Not Modified)
+                    String ifNoneMatch = requestHeaders.getFirst(HttpHeaders.IF_NONE_MATCH);
+                    long ifModifiedSince = requestHeaders.getIfModifiedSince();
                     
-                    // Check ETag for 304 Not Modified
-                    if (ifNoneMatch != null && ifNoneMatch.equals(cached.getEtag())) {
+                    boolean etagMatches = false;
+                    boolean dateMatches = false;
+                    boolean hasEtagCondition = (ifNoneMatch != null);
+                    boolean hasDateCondition = (ifModifiedSince != -1);
+
+                    // Check ETag
+                    if (hasEtagCondition) {
+                        // ETag matching logic (Weak/Strong comparison usually handled by equality here)
+                        // Note: A simple string equals is mostly sufficient for strong ETags.
+                        etagMatches = ifNoneMatch.equals(cached.getEtag());
+                    }
+
+                    // Check Date
+                    if (hasDateCondition && cachedLastModified != -1) {
+                        // If cached content is older or equal to client's date -> Not Modified
+                        dateMatches = (cachedLastModified / 1000 <= ifModifiedSince / 1000);
+                    }
+
+                    // Decision Logic for 304
+                    // RFC 7232: If both provided, both must match.
+                    boolean shouldReturn304 = false;
+
+                    if (hasEtagCondition && hasDateCondition) {
+                        shouldReturn304 = etagMatches && dateMatches;
+                    } else if (hasEtagCondition) {
+                        shouldReturn304 = etagMatches;
+                    } else if (hasDateCondition) {
+                        shouldReturn304 = dateMatches;
+                    }
+
+                    if (shouldReturn304) {
                         log.debug("Local Cache HIT (304): {}", cacheKey);
                         exchange.getResponse().setStatusCode(HttpStatus.NOT_MODIFIED);
-                        exchange.getResponse().getHeaders().setETag(cached.getEtag());
+                        if (cached.getEtag() != null) exchange.getResponse().getHeaders().setETag(cached.getEtag());
+                        if (cachedLastModified != -1) exchange.getResponse().getHeaders().setLastModified(cachedLastModified);
                         exchange.getResponse().getHeaders().setCacheControl("public, max-age=" + finalConfigTtl.getSeconds());
                         exchange.getResponse().getHeaders().add("X-Cache-Status", "HIT");
                         return exchange.getResponse().setComplete();
@@ -214,7 +258,7 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
                         .flatMap(dataBuffer -> {
                             byte[] content = new byte[dataBuffer.readableByteCount()];
                             dataBuffer.read(content);
-                            DataBufferUtils.release(dataBuffer); // Prevent memory leak
+                            DataBufferUtils.release(dataBuffer);
 
                             // Check if backend forbids caching via headers
                             List<String> backendCacheControl = getHeaders().get(HttpHeaders.CACHE_CONTROL);
