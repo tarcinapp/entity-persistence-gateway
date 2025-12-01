@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
@@ -24,6 +22,7 @@ import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import java.time.format.DateTimeFormatter;
@@ -33,6 +32,7 @@ import java.time.format.DateTimeFormatter;
  * Fetches the target resource (entity or list) from _entityId or _listId in the payload,
  * and embeds its managed fields into _relationMetadata within the request payload.
  */
+@Slf4j
 @Component("policyDataBuilderForReactionCreation")
 public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
@@ -43,8 +43,6 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
     @Autowired
     private PayloadExtractor payloadExtractor;
-
-    private static final Logger logger = LogManager.getLogger(PolicyDataBuilderForReactionCreation.class);
 
     private final ObjectMapper objectMapper;
 
@@ -66,7 +64,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        logger.debug("Building policy data for reaction creation: " + request.getMethod() + " " + request.getPath());
+        log.debug("Building policy data for reaction creation: " + request.getMethod() + " " + request.getPath());
 
         // Extract payload and fetch target resource, then inject _relationMetadata
         return extractPayloadAndInjectRelationMetadata(policyData, exchange, chain);
@@ -101,7 +99,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
                         }
 
                         if (targetResourceId == null || resourceType == null) {
-                            logger.error("Reaction payload missing _entityId or _listId");
+                            log.error("Reaction payload missing _entityId or _listId");
                             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                 "Reaction must specify either _entityId or _listId");
                         }
@@ -119,16 +117,16 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
                                     // Return the updated JSON string
                                     String updatedJsonStr = objectMapper.writeValueAsString(updatedPayload);
-                                    logger.debug("Injected _relationMetadata into reaction payload");
+                                    log.debug("Injected _relationMetadata into reaction payload");
                                     return Mono.just(updatedJsonStr);
                                 } catch (JsonProcessingException e) {
-                                    logger.error("Failed to serialize updated payload", e);
+                                    log.error("Failed to serialize updated payload", e);
                                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                                         "Failed to process request payload");
                                 }
                             });
                     } catch (JsonProcessingException e) {
-                        logger.error("Failed to parse JSON payload", e);
+                        log.error("Failed to parse JSON payload", e);
                         throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                             "Invalid JSON in request body");
                     }
@@ -144,7 +142,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
                                                                              String resourceType,
                                                                              String targetResourceId) {
         String targetResourcePath = "/" + resourceType + "/" + targetResourceId;
-        logger.debug("Fetching target resource: " + targetResourcePath);
+        log.debug("Fetching target resource: " + targetResourcePath);
 
         return backendBaseClient.get(targetResourcePath, AnyRecordBase.class)
             .map(targetResource -> {
@@ -178,7 +176,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
                 return payloadJSON;
             })
             .onErrorMap(e -> {
-                logger.error("Failed to fetch target resource: " + targetResourcePath, e);
+                log.error("Failed to fetch target resource: " + targetResourcePath, e);
                 return new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Could not fetch target resource for reaction: " + targetResourceId, e);
             });
@@ -208,7 +206,7 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
             return recordBase;
         } catch (ClassCastException e) {
-            logger.error("Invalid field type in request payload", e);
+            log.error("Invalid field type in request payload", e);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Invalid field type in request payload", e);
         }

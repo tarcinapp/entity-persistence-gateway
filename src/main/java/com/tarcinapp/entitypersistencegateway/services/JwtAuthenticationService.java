@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.services;
 
 import java.util.Base64;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
@@ -13,13 +11,14 @@ import com.tarcinapp.entitypersistencegateway.helpers.TokenParserRegistry;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class JwtAuthenticationService {
 
     private final TokenParserRegistry tokenParserRegistry;
-    private static final Logger logger = LogManager.getLogger(JwtAuthenticationService.class);
 
     // ObjectMapper for simple decoding
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -64,7 +63,7 @@ public class JwtAuthenticationService {
             // Validate the signature and claims
             Claims claims = parser.parseClaimsJws(jwt).getBody();
 
-            logger.debug("JWT token validated for issuer: {}", issuer);
+            log.debug("JWT token validated for issuer: {}", issuer);
 
             GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             if (securityContext != null) {
@@ -74,7 +73,7 @@ public class JwtAuthenticationService {
             return Mono.just(claims);
 
         } catch (Exception e) {
-            logger.error("JWT validation failed: " + e.getMessage());
+            log.error("JWT validation failed: " + e.getMessage());
             return Mono.error(new JwtAuthenticationException("Invalid token", e));
         }
     }

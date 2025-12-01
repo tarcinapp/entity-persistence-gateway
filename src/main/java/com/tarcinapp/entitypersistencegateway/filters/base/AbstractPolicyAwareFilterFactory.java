@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -18,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
@@ -31,6 +29,7 @@ import reactor.core.publisher.Mono;
  * If authentication key is not configured, filter is not get executed but gives
  * it's order to the next filter without doing anything
  */
+@Slf4j
 public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatingFilterConfig, PR>
         extends AbstractGatewayFilterFactory<C> {
 
@@ -39,8 +38,6 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
 
     @Autowired
     IAuthorizationClient authorizationClient;
-
-    private Logger logger = LogManager.getLogger(AbstractPolicyAwareFilterFactory.class);
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
@@ -63,12 +60,12 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
         return (exchange, chain) -> {
 
             if (key == null) {
-                logger.warn("Policy evaluation is skipped as security key is not configured.");
+                log.warn("Policy evaluation is skipped as security key is not configured.");
                 return chain.filter(exchange);
             }
 
             return this.filter(config, exchange, chain).onErrorResume(e -> {
-                logger.error("An error occured while evaluating the policy.", e);
+                log.error("An error occured while evaluating the policy.", e);
 
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -85,17 +82,17 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
      * This is the first method where the logic begins.
      */
     private Mono<Void> filter(C config, ServerWebExchange exchange, GatewayFilterChain chain) {
-        logger.info("Policy inquiry is started for policy name: " + config.getPolicyName());
+        log.info("Policy inquiry is started for policy name: " + config.getPolicyName());
 
         PolicyData policyInquiryData = this.getPolicyInquriyData(exchange);
         policyInquiryData.setPolicyName(config.getPolicyName());
         
         return this.executePolicy(policyInquiryData).flatMap(pr -> {
 
-            logger.debug("Policy evaluation is completed.");
+            log.debug("Policy evaluation is completed.");
 
-            if (logger.getLevel() == Level.DEBUG)
-                logger.trace("Policy response is: ", this.serializeObjectAsJsonForLogging(pr));
+            if (log.isDebugEnabled())
+                log.trace("Policy response is: ", this.serializeObjectAsJsonForLogging(pr));
 
             return this.apply(config, pr).filter(exchange, chain);
         });
@@ -103,8 +100,8 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
 
     protected Mono<PR> executePolicy(PolicyData policyInquiryData) {
 
-        if (logger.getLevel() == Level.DEBUG) {
-            logger.trace("Policy inquiry data is: ", this.serializeObjectAsJsonForLogging(policyInquiryData));
+        if (log.isDebugEnabled()) {
+            log.trace("Policy inquiry data is: ", this.serializeObjectAsJsonForLogging(policyInquiryData));
         }
 
         return this.authorizationClient.executePolicy(policyInquiryData, policyResultClass);

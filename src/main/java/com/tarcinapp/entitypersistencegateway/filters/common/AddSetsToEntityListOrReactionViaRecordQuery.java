@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -20,6 +18,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *  * This filter restricts the returned records from entity, list, and
@@ -62,11 +61,9 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  *  
  */
 @Component
+@Slf4j
 public class AddSetsToEntityListOrReactionViaRecordQuery
                 extends AbstractGatewayFilterFactory<AddSetsToEntityListOrReactionViaRecordQuery.Config> {
-
-        private final Logger logger = LogManager.getLogger(AddSetsToEntityListOrReactionViaRecordQuery.class);
-
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
@@ -78,7 +75,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
         public GatewayFilter apply(Config config) {
                 return (exchange, chain) -> {
                         String recordType = config.getRecordType();
-                        logger.debug("AddSetsToEntityListOrReactionViaRecordQuery filter is started. recordType: {}",
+                        log.debug("AddSetsToEntityListOrReactionViaRecordQuery filter is started. recordType: {}",
                                         recordType);
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
@@ -86,7 +83,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
 
                         // Null safety check for gc and roles
                         if (gc == null || gc.getRoles() == null) {
-                                logger.debug("Authentication information not found. Exiting filter without any modification.");
+                                log.debug("Authentication information not found. Exiting filter without any modification.");
                                 return chain.filter(exchange);
                         }
 
@@ -97,11 +94,11 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                         // Null safety checks for userId and groups
                         if (userId == null || groups == null) {
                                 // TODO: Any risk here?!
-                                logger.warn("User ID or groups not found in security context. Exiting filter without any modification.");
+                                log.warn("User ID or groups not found in security context. Exiting filter without any modification.");
                                 return chain.filter(exchange);
                         }
 
-                        logger.debug("User roles are: {}", roles);
+                        log.debug("User roles are: {}", roles);
 
                         /**
                          * If user role is any of the following, we do not need to add sets
@@ -126,19 +123,19 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                          * This filter only applies when user has lower authority then editor user.
                          */
                         if (prefixedRolesStream.anyMatch(roles::contains)) {
-                                logger.debug(
+                                log.debug(
                                                 "No need to limit response items for these roles. Exiting filter withouth any modification.");
                                 return chain.filter(exchange);
                         }
 
                         URI uri = exchange.getRequest().getURI();
-                        if (logger.isDebugEnabled()) {
+                        if (log.isDebugEnabled()) {
                                 try {
                                         String decodedOriginalUri = java.net.URLDecoder.decode(uri.toString(),
                                                         StandardCharsets.UTF_8.name());
-                                        logger.debug("Original URI (decoded): {}", decodedOriginalUri);
+                                        log.debug("Original URI (decoded): {}", decodedOriginalUri);
                                 } catch (Exception e) {
-                                        logger.debug("Original URI: {} (failed to decode: {})", uri, e.getMessage());
+                                        log.debug("Original URI: {} (failed to decode: {})", uri, e.getMessage());
                                 }
                         }
 
@@ -175,7 +172,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                         boolean callerHasSets = originalQueryParams.keySet().stream()
                                         .anyMatch(name -> name.startsWith("set["));
 
-                        logger.debug("Caller has sets: {}", callerHasSets);
+                        log.debug("Caller has sets: {}", callerHasSets);
 
                         // Transform the query parameters
                         for (Map.Entry<String, List<String>> entry : originalQueryParams.entrySet()) {
@@ -248,7 +245,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                         .toUri();
 
                         // Log decoded URI for easier reading
-                        if (logger.isDebugEnabled()) {
+                        if (log.isDebugEnabled()) {
                                 try {
                                         // replaceQueryParams otomatik olarak boş sorgu dizesini kaldırır
                                         String decodedQuery = UriComponentsBuilder.newInstance()
@@ -259,9 +256,9 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                                 decodedUri += "?" + java.net.URLDecoder.decode(decodedQuery,
                                                                 StandardCharsets.UTF_8.name());
                                         }
-                                        logger.debug("New URI (decoded): {}", decodedUri);
+                                        log.debug("New URI (decoded): {}", decodedUri);
                                 } catch (Exception e) {
-                                        logger.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
+                                        log.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
                                 }
                         }
 
@@ -318,7 +315,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 .distinct()
                                 .collect(Collectors.toList());
 
-                logger.debug("Found {} include(s) to protect: {}", allIncludePrefixes.size(), allIncludePrefixes);
+                log.debug("Found {} include(s) to protect: {}", allIncludePrefixes.size(), allIncludePrefixes);
 
                 // For each include, check if it has existing sets and add audience accordingly
                 for (String prefix : allIncludePrefixes) {
@@ -336,14 +333,14 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 String audiencePrefix = setKeyPrefix + "[and][1][audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to include {} with existing sets (wrapped under [and])",
+                                log.debug("Added audience set to include {} with existing sets (wrapped under [and])",
                                                 prefix);
                         } else {
                                 // No sets - add audience directly
                                 String audiencePrefix = setKeyPrefix + "[audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to include {} without existing sets", prefix);
+                                log.debug("Added audience set to include {} without existing sets", prefix);
                         }
                 }
 
@@ -368,7 +365,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 .distinct()
                                 .collect(Collectors.toList());
 
-                logger.debug("Found {} nested lookup(s) within includes to protect: {}", nestedLookupPrefixes.size(),
+                log.debug("Found {} nested lookup(s) within includes to protect: {}", nestedLookupPrefixes.size(),
                                 nestedLookupPrefixes);
 
                 for (String prefix : nestedLookupPrefixes) {
@@ -384,13 +381,13 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 String audiencePrefix = lookupSetPrefix + "[and][1][audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to nested lookup: {} (with existing sets)", prefix);
+                                log.debug("Added audience set to nested lookup: {} (with existing sets)", prefix);
                         } else {
                                 // No sets - add directly
                                 String audiencePrefix = lookupSetPrefix + "[audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to nested lookup: {} (without sets)", prefix);
+                                log.debug("Added audience set to nested lookup: {} (without sets)", prefix);
                         }
                 }
         }
@@ -437,7 +434,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 .distinct()
                                 .collect(Collectors.toList());
 
-                logger.debug("Found {} top-level lookup(s) to protect: {}", allLookupPrefixes.size(),
+                log.debug("Found {} top-level lookup(s) to protect: {}", allLookupPrefixes.size(),
                                 allLookupPrefixes);
 
                 // For each lookup, check if it has existing sets and add audience accordingly
@@ -454,14 +451,14 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 String audiencePrefix = lookupSetPrefix + "[and][1][audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to lookup {} with existing sets (wrapped under [and])",
+                                log.debug("Added audience set to lookup {} with existing sets (wrapped under [and])",
                                                 prefix);
                         } else {
                                 // No sets - add audience directly
                                 String audiencePrefix = lookupSetPrefix + "[audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to lookup {} without existing sets", prefix);
+                                log.debug("Added audience set to lookup {} without existing sets", prefix);
                         }
                 }
 
@@ -491,7 +488,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 .distinct()
                                 .collect(Collectors.toList());
 
-                logger.debug("Found {} nested lookup(s) within lookups to protect: {}",
+                log.debug("Found {} nested lookup(s) within lookups to protect: {}",
                                 nestedLookupPrefixes.size(), nestedLookupPrefixes);
 
                 for (String prefix : nestedLookupPrefixes) {
@@ -507,13 +504,13 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                 String audiencePrefix = lookupSetPrefix + "[and][1][audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to nested lookup: {} (with existing sets)", prefix);
+                                log.debug("Added audience set to nested lookup: {} (with existing sets)", prefix);
                         } else {
                                 // No sets - add directly
                                 String audiencePrefix = lookupSetPrefix + "[audience]";
                                 queryParams.add(audiencePrefix + "[userIds]", userId);
                                 queryParams.add(audiencePrefix + "[groupIds]", groupsStr);
-                                logger.debug("Added audience set to nested lookup: {} (without sets)", prefix);
+                                log.debug("Added audience set to nested lookup: {} (without sets)", prefix);
                         }
                 }
         }

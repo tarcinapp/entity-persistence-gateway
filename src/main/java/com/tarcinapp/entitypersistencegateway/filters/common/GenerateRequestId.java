@@ -8,8 +8,6 @@ import java.util.Date;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -21,8 +19,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class GenerateRequestId implements GlobalFilter {
 
     @Value("${app.requestId}")
@@ -32,9 +32,6 @@ public class GenerateRequestId implements GlobalFilter {
     private String requestIdPrefix;
 
     private final static String REQUEST_ID_ATTR = "RequestId";
-
-    private Logger logger = LogManager.getLogger(GenerateRequestId.class);
-
     public GenerateRequestId() {
     }
 
@@ -78,7 +75,7 @@ public class GenerateRequestId implements GlobalFilter {
 
         ThreadContext.put(REQUEST_ID_ATTR, requestId);
 
-        logger.debug("Request id is generated: " + requestId);
+        log.debug("Request id is generated: " + requestId);
 
         return chain.filter(exchange.mutate().request(request).build());
     }

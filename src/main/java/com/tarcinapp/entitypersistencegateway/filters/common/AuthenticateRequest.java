@@ -1,7 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -20,6 +18,7 @@ import com.tarcinapp.entitypersistencegateway.services.SecurityContextBuilder;
 import com.tarcinapp.entitypersistencegateway.services.policydata.PolicyDataBuilderRegistry;
 
 import io.jsonwebtoken.Claims;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
@@ -33,6 +32,7 @@ import reactor.core.publisher.Mono;
  * The filter has been decomposed to follow Single Responsibility Principle,
  * making it easier to test, maintain, and extend with route-specific logic.
  */
+@Slf4j
 @Component
 public class AuthenticateRequest extends AbstractGatewayFilterFactory<AuthenticateRequest.Config> {
 
@@ -49,7 +49,6 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     private String appShortcode;
 
     private static final String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-    private static final Logger logger = LogManager.getLogger(AuthenticateRequest.class);
 
     public AuthenticateRequest() {
         super(Config.class);
@@ -58,14 +57,14 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            logger.debug("Authentication filter started");
+            log.debug("Authentication filter started");
 
             // Initialize security context and policy data
             initializeContexts(exchange);
 
             // Check if JWT authentication is configured
             if (!jwtAuthenticationService.isConfigured()) {
-                logger.warn("RS256 key not configured. Requests won't be authenticated!");
+                log.warn("RS256 key not configured. Requests won't be authenticated!");
                 return chain.filter(exchange);
             }
 
@@ -88,7 +87,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      * Performs JWT authentication and continues the filter chain
      */
     private Mono<Void> performAuthentication(ServerWebExchange exchange, GatewayFilterChain chain) {
-        logger.debug("RS256 public key configured. Authenticating request...");
+        log.debug("RS256 public key configured. Authenticating request...");
 
         return jwtAuthenticationService.authenticate(exchange)
                 .flatMap(claims -> onAuthenticationSuccess(claims, exchange, chain))
@@ -100,7 +99,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      */
     private Mono<Void> onAuthenticationSuccess(Claims claims, ServerWebExchange exchange, 
                                                  GatewayFilterChain chain) {
-        logger.debug("Authentication successful for user: " + claims.getSubject());
+        log.debug("Authentication successful for user: " + claims.getSubject());
 
         // Build security context from JWT claims
         securityContextBuilder.buildFromClaims(claims, exchange);
@@ -129,7 +128,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
             response.setStatusCode(((ResponseStatusException) e).getStatusCode());
         } else {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            logger.error("Authentication failed", e);
+            log.error("Authentication failed", e);
         }
 
         return response.setComplete();

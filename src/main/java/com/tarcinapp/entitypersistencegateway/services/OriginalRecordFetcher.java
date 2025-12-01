@@ -1,7 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.services;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
@@ -11,19 +9,19 @@ import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
  * Service responsible for fetching original records from the backend
  * for policy evaluation purposes.
  */
+@Slf4j
 @Service
 public class OriginalRecordFetcher {
 
     @Autowired
     private IBackendClientBase backendBaseClient;
-
-    private static final Logger logger = LogManager.getLogger(OriginalRecordFetcher.class);
 
     /**
      * Fetches the original record and attaches it to policy data
@@ -48,13 +46,13 @@ public class OriginalRecordFetcher {
         KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute("KindAliasConfigAttr");
         if (kindAliasConfigAttr != null && kindAliasConfigAttr.isKindAliasConfigured()) {
             originalResourceUrl = kindAliasConfigAttr.getOriginalResourceUrl();
-            logger.debug("Using kind alias mapped URL: " + originalResourceUrl);
+            log.debug("Using kind alias mapped URL: " + originalResourceUrl);
         }
 
         // Handle relation endpoints (children/parents)
         originalResourceUrl = resolveRelationEndpoint(originalResourceUrl);
 
-        logger.debug("Fetching original record from: " + originalResourceUrl);
+        log.debug("Fetching original record from: " + originalResourceUrl);
 
         return backendBaseClient.get(originalResourceUrl, Object.class);
     }

@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
@@ -23,6 +21,7 @@ import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
@@ -31,6 +30,7 @@ import reactor.util.function.Tuple2;
  * Fetches both the entity (_entityId) and list (_listId) from the payload in parallel,
  * and maps them to _toMetadata and _fromMetadata in the request payload.
  */
+@Slf4j
 @Component("policyDataBuilderForRelationCreation")
 public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
@@ -38,8 +38,6 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
     @Autowired
     private IBackendClientBase backendBaseClient;
-
-    private static final Logger logger = LogManager.getLogger(PolicyDataBuilderForRelationCreation.class);
 
     private final ObjectMapper objectMapper;
 
@@ -60,7 +58,7 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        logger.debug("Building policy data for relation creation: " + request.getMethod() + " " + request.getPath());
+        log.debug("Building policy data for relation creation: " + request.getMethod() + " " + request.getPath());
 
         // Extract payload and fetch both entity and list, then inject metadata
         return extractPayloadAndInjectRelationMetadata(policyData, exchange, chain);
@@ -87,7 +85,7 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
                         String listId = (String) payloadJSON.get("_listId");
 
                         if (entityId == null || listId == null) {
-                            logger.error("Relation payload missing _entityId or _listId");
+                            log.error("Relation payload missing _entityId or _listId");
                             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                 "Relation must specify both _entityId and _listId");
                         }
@@ -102,16 +100,16 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
                                     // Return the updated JSON string
                                     String updatedJsonStr = objectMapper.writeValueAsString(updatedPayload);
-                                    logger.debug("Injected _toMetadata and _fromMetadata into relation payload");
+                                    log.debug("Injected _toMetadata and _fromMetadata into relation payload");
                                     return Mono.just(updatedJsonStr);
                                 } catch (JsonProcessingException e) {
-                                    logger.error("Failed to serialize updated payload", e);
+                                    log.error("Failed to serialize updated payload", e);
                                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                                         "Failed to process request payload");
                                 }
                             });
                     } catch (JsonProcessingException e) {
-                        logger.error("Failed to parse JSON payload", e);
+                        log.error("Failed to parse JSON payload", e);
                         throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                             "Invalid JSON in request body");
                     }
@@ -130,19 +128,19 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
         String entityPath = "/entities/" + entityId;
         String listPath = "/lists/" + listId;
         
-        logger.debug("Fetching entity and list in parallel: {} and {}", entityPath, listPath);
+        log.debug("Fetching entity and list in parallel: {} and {}", entityPath, listPath);
 
         // Fetch both resources in parallel
         Mono<AnyRecordBase> entityMono = backendBaseClient.get(entityPath, AnyRecordBase.class)
             .onErrorMap(e -> {
-                logger.warn("Failed to fetch entity for relation: " + entityId, e);
+                log.warn("Failed to fetch entity for relation: " + entityId, e);
                 return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "Could not fetch entity for relation: " + entityId, e);
             });
 
         Mono<AnyRecordBase> listMono = backendBaseClient.get(listPath, AnyRecordBase.class)
             .onErrorMap(e -> {
-                logger.warn("Failed to fetch list for relation: " + listId, e);
+                log.warn("Failed to fetch list for relation: " + listId, e);
                 return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "Could not fetch list for relation: " + listId, e);
             });
@@ -226,7 +224,7 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
             return recordBase;
         } catch (ClassCastException e) {
-            logger.error("Invalid field type in request payload", e);
+            log.error("Invalid field type in request payload", e);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Invalid field type in request payload", e);
         }

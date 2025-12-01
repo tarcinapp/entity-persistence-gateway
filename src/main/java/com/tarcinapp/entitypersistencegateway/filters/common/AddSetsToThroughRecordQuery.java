@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -20,6 +18,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This filter restricts the returned entities or lists based on user permissions.
@@ -47,10 +46,8 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  * setThrough[audience][userIds/groupIds] - Direct through-record visibility check
  *  */
 @Component
+@Slf4j
 public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<AddSetsToThroughRecordQuery.Config> {
-
-    private final Logger logger = LogManager.getLogger(AddSetsToThroughRecordQuery.class);
-
     @Value("${app.shortcode:#{tarcinapp}}")
     private String appShortcode;
 
@@ -63,13 +60,13 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
 
         return (exchange, chain) -> {
 
-            logger.debug("AddSetsToThroughRecordQuery filter is started.");
+            log.debug("AddSetsToThroughRecordQuery filter is started.");
 
             GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
                     .get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             
             if (gc == null || gc.getRoles() == null) {
-                logger.debug("Authentication information not found. Exiting filter without any modification.");
+                log.debug("Authentication information not found. Exiting filter without any modification.");
                 return chain.filter(exchange);
             }
 
@@ -79,11 +76,11 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
 
             // Null safety checks for userId and groups
             if (userId == null || groups == null) {
-                logger.warn("User ID or groups not found in security context. Exiting filter without any modification.");
+                log.warn("User ID or groups not found in security context. Exiting filter without any modification.");
                 return chain.filter(exchange);
             }
 
-            logger.debug("User roles are: {}", roles);
+            log.debug("User roles are: {}", roles);
 
             /**
              * If user role is any of the following, we do not need to add sets
@@ -105,13 +102,13 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
              */
             if (prefixedRolesStream.anyMatch(roles::contains)) {
 
-                logger.debug(
+                log.debug(
                         "No need to limit response items for these roles. Exiting filter without any modification.");
                 return chain.filter(exchange);
             }
 
             URI uri = exchange.getRequest().getURI();
-            logger.debug("Original URI: {}", uri);
+            log.debug("Original URI: {}", uri);
 
             
             MultiValueMap<String, String> originalQueryParams = exchange.getRequest().getQueryParams();
@@ -126,7 +123,7 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
             boolean callerHasSetThrough = originalQueryParams.keySet().stream()
                     .anyMatch(name -> name.startsWith("setThrough["));
             
-            logger.debug("Caller has - set: {}, setThrough: {}", callerHasSet, callerHasSetThrough);
+            log.debug("Caller has - set: {}, setThrough: {}", callerHasSet, callerHasSetThrough);
 
             /**
              * Transform user's existing queries by wrapping them under [and][1] only if they exist.
@@ -164,7 +161,7 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
                 newQueryParams.add("set[audience][groupIds]", groupsStr);
             }
 
-            logger.debug("Added set audience - userIds: {}, groupIds: {}", userId, groupsStr);
+            log.debug("Added set audience - userIds: {}, groupIds: {}", userId, groupsStr);
 
             /**
              * Add setThrough audience to check visibility of the intermediary record (list or entity).
@@ -180,7 +177,7 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
                 newQueryParams.add("setThrough[audience][groupIds]", groupsStr);
             }
 
-            logger.debug("Added setThrough audience - userIds: {}, groupIds: {}", userId, groupsStr);
+            log.debug("Added setThrough audience - userIds: {}, groupIds: {}", userId, groupsStr);
 
             // Build new URI
             URI newUri = UriComponentsBuilder.fromUri(uri)
@@ -190,16 +187,16 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
                     .toUri();
 
             // Log decoded URI for easier reading
-            if (logger.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
                 try {
                     String decodedQuery = UriComponentsBuilder.newInstance().queryParams(newQueryParams).build().encode().getQuery();
                     String decodedUri = newUri.getScheme() + "://" + newUri.getAuthority() + newUri.getPath();
                     if (decodedQuery != null && !decodedQuery.isEmpty()) {
                         decodedUri += "?" + java.net.URLDecoder.decode(decodedQuery, StandardCharsets.UTF_8.name());
                     }
-                    logger.debug("New URI (decoded): {}", decodedUri);
+                    log.debug("New URI (decoded): {}", decodedUri);
                 } catch (Exception e) {
-                    logger.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
+                    log.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
                 }
             }
 

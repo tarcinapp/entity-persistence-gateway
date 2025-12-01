@@ -7,19 +7,18 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class PublicKeyFactory {
 
     @Value("${app.auth.rs256PublicKey:#{null}}")
     private String rs256PublicKey;
-
-    Logger logger = LogManager.getLogger(PublicKeyFactory.class);
 
     @Bean
     public Key loadPublicKey() {
@@ -38,7 +37,7 @@ public class PublicKeyFactory {
             /*
              * This log can't contain request id because it is not generated yet.
              */
-			logger.error("An error occured while trying to load public key for authentication.", e);
+			log.error("An error occured while trying to load public key for authentication.", e);
 		}
         
         return null;

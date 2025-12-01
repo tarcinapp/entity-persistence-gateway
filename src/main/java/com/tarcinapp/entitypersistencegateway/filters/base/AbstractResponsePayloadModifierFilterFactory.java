@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.base;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
@@ -26,15 +24,15 @@ import org.springframework.web.server.ServerWebExchangeDecorator;
 
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 public abstract class AbstractResponsePayloadModifierFilterFactory<C, I, O> extends AbstractGatewayFilterFactory<C> {
 
     private Class<I> inClass;
     private Class<O> outClass;
-
-    private Logger logger = LogManager.getLogger(AbstractResponsePayloadModifierFilterFactory.class);
 
     public AbstractResponsePayloadModifierFilterFactory(Class<C> configClass, Class<I> inClass, Class<O> outClass) {
         super(configClass);

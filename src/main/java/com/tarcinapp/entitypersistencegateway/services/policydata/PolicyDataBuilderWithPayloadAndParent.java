@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -15,12 +13,14 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.services.OriginalRecordFetcher;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
  * Policy data builder for hierarchical data creation (e.g., createEntityChild, createListChild).
  * Fetches the parent record and includes it in originalRecord for authorization decisions.
  */
+@Slf4j
 @Component("policyDataBuilderWithPayloadAndParent")
 public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder {
 
@@ -29,8 +29,6 @@ public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder 
 
     @Autowired
     private PayloadExtractor payloadExtractor;
-
-    private static final Logger logger = LogManager.getLogger(PolicyDataBuilderWithPayloadAndParent.class);
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -47,7 +45,7 @@ public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder 
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        logger.debug("Building policy data with payload and parent for " + request.getMethod() + " " + request.getPath());
+        log.debug("Building policy data with payload and parent for " + request.getMethod() + " " + request.getPath());
 
         // Fetch parent record first (it will be in originalRecord), then extract payload
         return originalRecordFetcher.fetchAndAttach(policyData, exchange, recordId)

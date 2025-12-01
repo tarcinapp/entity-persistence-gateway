@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -26,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This filter is meant to be used in replaceById operations. replaceById
@@ -50,6 +49,7 @@ import reactor.core.publisher.Mono;
  * authorization logic. Please apply this filter after the authorization filter.
  */
 @Component
+@Slf4j
 public class AddForbiddenFieldsFromOriginalToPayloadInReplace
         extends AbstractGatewayFilterFactory<AddForbiddenFieldsFromOriginalToPayloadInReplace.Config> {
 
@@ -62,9 +62,6 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     private Key key;
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-
-    private Logger logger = LogManager.getLogger(AddForbiddenFieldsFromOriginalToPayloadInReplace.class);
-
     private final ObjectMapper objectMapper;
 
     public AddForbiddenFieldsFromOriginalToPayloadInReplace(ObjectMapper objectMapper) {
@@ -76,17 +73,17 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
 
-            logger.debug("AddForbiddenFieldsFromOriginalToPayloadInReplace filter is started. Policy name: "
+            log.debug("AddForbiddenFieldsFromOriginalToPayloadInReplace filter is started. Policy name: "
                     + config.getPolicyName());
 
             if (this.key == null) {
-                logger.warn("RS256 key is not configured. We can't query for forbidden fields. This request won't be authorized.");
+                log.warn("RS256 key is not configured. We can't query for forbidden fields. This request won't be authorized.");
                 return chain.filter(exchange);
             }
 
             return this.filter(config, exchange, chain)
                 .onErrorResume(e -> {
-                    logger.error(e);
+                    log.error("Error in AddForbiddenFieldsFromOriginalToPayloadInReplace filter", e);
 
                     ServerHttpResponse response = exchange.getResponse();
                     response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -112,7 +109,7 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
             if (pr.fields.size() > 0)
                 return this.takeFieldsFromTheOriginalRecord(pr.fields, exchange, chain);
 
-            logger.debug("No field found as forbidden. Exiting from filter.");
+            log.debug("No field found as forbidden. Exiting from filter.");
             return chain.filter(exchange);
         });
 

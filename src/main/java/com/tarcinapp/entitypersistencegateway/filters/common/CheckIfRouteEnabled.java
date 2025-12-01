@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -15,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This filter reads app.routes.disabled configuration.
@@ -22,11 +21,9 @@ import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
  * Otherwise, it does not do anything.
  */
 @Component
+@Slf4j
 public class CheckIfRouteEnabled
-    extends AbstractGatewayFilterFactory<CheckIfRouteEnabled.Config>  {
-
-    private Logger logger = LogManager.getLogger(CheckIfRouteEnabled.class);
-    
+    extends AbstractGatewayFilterFactory<CheckIfRouteEnabled.Config>  {    
     @Autowired
     private TogglesProperties toggles;
 
@@ -38,7 +35,7 @@ public class CheckIfRouteEnabled
     public GatewayFilter apply(Config config) {
         
         return (exchange, chain) -> {
-            logger.debug("CheckIfRouteEnabled filter is started");
+            log.debug("CheckIfRouteEnabled filter is started");
             Route route = (Route)exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
             String routeId = route != null ? route.getId() : null;
 
@@ -64,7 +61,7 @@ public class CheckIfRouteEnabled
                 }
 
                 if (controllerDecidesDisabled) {
-                    logger.warn("Controller '" + controllerName + "' is disabled by controller toggles. Returning 404 Not Found for route " + routeId);
+                    log.warn("Controller '" + controllerName + "' is disabled by controller toggles. Returning 404 Not Found for route " + routeId);
                     exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
                     return exchange.getResponse().setComplete();
                 }
@@ -85,7 +82,7 @@ public class CheckIfRouteEnabled
             }
 
             if (routeDisabled) {
-                logger.warn("Route " + routeId + " is disabled by route toggles. Returning 404 Not Found");
+                log.warn("Route " + routeId + " is disabled by route toggles. Returning 404 Not Found");
                 exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
                 return exchange.getResponse().setComplete();
             }

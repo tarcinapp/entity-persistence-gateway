@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Registry service that manages and selects appropriate PolicyDataBuilder
@@ -19,6 +18,7 @@ import jakarta.annotation.PostConstruct;
  * 
  * Uses a switch-case-like mechanism for predictable, deterministic builder selection.
  */
+@Slf4j
 @Service
 public class PolicyDataBuilderRegistry {
 
@@ -52,8 +52,6 @@ public class PolicyDataBuilderRegistry {
 
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
-    private static final Logger logger = LogManager.getLogger(PolicyDataBuilderRegistry.class);
-
     /**
      * Initialize the route to builder mapping.
      * This method is called after dependency injection.
@@ -75,7 +73,7 @@ public class PolicyDataBuilderRegistry {
         // List-reaction routes
         mapListReactionRoutes();
         
-        logger.info("Initialized route mappings for " + routeBuilderMap.size() + " routes");
+        log.info("Initialized route mappings for " + routeBuilderMap.size() + " routes");
     }
 
     private void mapEntityRoutes() {
@@ -296,7 +294,7 @@ public class PolicyDataBuilderRegistry {
         
         PolicyDataBuilder builder = routeBuilderMap.getOrDefault(routeId, builderWithoutPayload);
         
-        logger.debug("Route: " + routeId + " -> Builder: " + builder.getClass().getSimpleName());
+        log.debug("Route: " + routeId + " -> Builder: " + builder.getClass().getSimpleName());
         return builder;
     }
 
@@ -337,6 +335,6 @@ public class PolicyDataBuilderRegistry {
      */
     public void registerBuilder(String routeId, PolicyDataBuilder builder) {
         routeBuilderMap.put(routeId, builder);
-        logger.info("Registered custom builder for route: " + routeId);
+        log.info("Registered custom builder for route: " + routeId);
     }
 }

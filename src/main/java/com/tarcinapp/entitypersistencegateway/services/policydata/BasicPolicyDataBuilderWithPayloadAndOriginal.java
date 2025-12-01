@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -15,12 +13,14 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.services.OriginalRecordFetcher;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
  * Basic policy data builder for routes that have request payloads and also
  * require fetching the original record (e.g., updateById, replaceById).
  */
+@Slf4j
 @Component("basicPolicyDataBuilderWithPayloadAndOriginal")
 public class BasicPolicyDataBuilderWithPayloadAndOriginal implements PolicyDataBuilder {
 
@@ -29,8 +29,6 @@ public class BasicPolicyDataBuilderWithPayloadAndOriginal implements PolicyDataB
 
     @Autowired
     private PayloadExtractor payloadExtractor;
-
-    private static final Logger logger = LogManager.getLogger(BasicPolicyDataBuilderWithPayloadAndOriginal.class);
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -47,7 +45,7 @@ public class BasicPolicyDataBuilderWithPayloadAndOriginal implements PolicyDataB
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        logger.debug("Building policy data with payload and original for " + request.getMethod() + " " + request.getPath());
+        log.debug("Building policy data with payload and original for " + request.getMethod() + " " + request.getPath());
 
         // Fetch original record first, then extract payload
         return originalRecordFetcher.fetchAndAttach(policyData, exchange, recordId)

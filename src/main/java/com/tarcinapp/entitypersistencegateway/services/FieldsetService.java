@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,15 +21,16 @@ import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration;
 import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration.FieldsetDefinition;
 import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration.ResourceFieldsets;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Service for applying fieldset configurations to JSON responses.
  * Supports JSON path-based field filtering with show/hide modes.
  * Uses Jayway JsonPath library for efficient path-based operations.
  */
+@Slf4j
 @Service
 public class FieldsetService {
-
-    private static final Logger logger = LogManager.getLogger(FieldsetService.class);
     private final ObjectMapper objectMapper;
     private final Configuration jsonPathConfig;
 
@@ -58,7 +57,7 @@ public class FieldsetService {
         
         if (fieldsetDefinition == null || fieldsetDefinition.getFields() == null 
                 || fieldsetDefinition.getFields().isEmpty()) {
-            logger.debug("No fieldset definition or empty fields list, returning original payload");
+            log.debug("No fieldset definition or empty fields list, returning original payload");
             return payload;
         }
 
@@ -85,11 +84,11 @@ public class FieldsetService {
             String jsonPath = convertToJsonPath(fieldPath, isRootArray);
             try {
                 doc.delete(jsonPath);
-                logger.debug("Deleted field at path: {}", jsonPath);
+                log.debug("Deleted field at path: {}", jsonPath);
             } catch (PathNotFoundException e) {
-                logger.debug("Path not found, skipping: {}", jsonPath);
+                log.debug("Path not found, skipping: {}", jsonPath);
             } catch (Exception e) {
-                logger.warn("Error deleting path {}: {}", jsonPath, e.getMessage());
+                log.warn("Error deleting path {}: {}", jsonPath, e.getMessage());
             }
         }
         return doc.jsonString();
@@ -112,14 +111,14 @@ public class FieldsetService {
             }
             
             if (root != null) {
-                logger.warn("Unsupported root type for show mode: {}", root.getClass().getName());
+                log.warn("Unsupported root type for show mode: {}", root.getClass().getName());
             }
             return doc.jsonString();
         } catch (JsonProcessingException e) {
-            logger.error("Error processing JSON in show mode: {}", e.getMessage(), e);
+            log.error("Error processing JSON in show mode: {}", e.getMessage(), e);
             return doc.jsonString();
         } catch (PathNotFoundException e) {
-            logger.error("Path not found in show mode: {}", e.getMessage(), e);
+            log.error("Path not found in show mode: {}", e.getMessage(), e);
             return doc.jsonString();
         }
     }
@@ -344,7 +343,7 @@ public class FieldsetService {
             if (resourceFieldsets != null && resourceFieldsets.getFieldsets() != null) {
                 FieldsetDefinition fieldset = resourceFieldsets.getFieldsets().get(fieldsetName);
                 if (fieldset != null) {
-                    logger.debug("Found resource-specific fieldset '{}' for resource type '{}'", 
+                    log.debug("Found resource-specific fieldset '{}' for resource type '{}'", 
                                 fieldsetName, resourceType);
                     return fieldset;
                 }
@@ -354,12 +353,12 @@ public class FieldsetService {
             if (config.getGlobal() != null) {
                 FieldsetDefinition fieldset = config.getGlobal().get(fieldsetName);
                 if (fieldset != null) {
-                    logger.debug("Found global fieldset '{}'", fieldsetName);
+                    log.debug("Found global fieldset '{}'", fieldsetName);
                     return fieldset;
                 }
             }
             
-            logger.warn("Fieldset '{}' not found for resource type '{}'", fieldsetName, resourceType);
+            log.warn("Fieldset '{}' not found for resource type '{}'", fieldsetName, resourceType);
             return null;
         }
         
@@ -369,16 +368,16 @@ public class FieldsetService {
             
             // Prevent infinite recursion if default fieldset is empty
             if (defaultFieldsetName.isEmpty()) {
-                logger.debug("Default fieldset is empty for resource type '{}', returning null", resourceType);
+                log.debug("Default fieldset is empty for resource type '{}', returning null", resourceType);
                 return null;
             }
             
-            logger.debug("Using default fieldset '{}' for resource type '{}'", 
+            log.debug("Using default fieldset '{}' for resource type '{}'", 
                         defaultFieldsetName, resourceType);
             return resolveFieldset(config, resourceType, defaultFieldsetName);
         }
         
-        logger.debug("No fieldset specified and no default configured for resource type '{}'", resourceType);
+        log.debug("No fieldset specified and no default configured for resource type '{}'", resourceType);
         return null;
     }
 }

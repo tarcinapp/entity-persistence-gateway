@@ -5,8 +5,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -25,13 +23,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class AcquireLockForCreation
         extends AbstractGatewayFilterFactory<AcquireLockForCreation.Config> {
-
-    private Logger logger = LogManager.getLogger(AcquireLockForCreation.class);
-
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
 
@@ -49,7 +46,7 @@ public class AcquireLockForCreation
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            logger.debug("AcquireLockForCreation filter is started.");
+            log.debug("AcquireLockForCreation filter is started.");
 
             return modifyRequestBodyFilterFactory
                     .apply(
@@ -59,7 +56,7 @@ public class AcquireLockForCreation
                                         try {
 
                                             String payloadHash = calculatePayloadhHash(ex, payload);
-                                            logger.debug("Payload hash is calculated as: " + payloadHash);
+                                            log.debug("Payload hash is calculated as: " + payloadHash);
 
                                             /*
                                              * if (true) {
@@ -80,7 +77,7 @@ public class AcquireLockForCreation
                                                 return this.lockRecord(payloadHash, wait, lease)
                                                     .then(Mono.just(payload));
                                         } catch (JsonProcessingException e) {
-                                            logger.error(
+                                            log.error(
                                                     "An error occured while parsing the request payload for hash calculation.",
                                                     e);
 
@@ -97,7 +94,7 @@ public class AcquireLockForCreation
                             response.setStatusCode(((ResponseStatusException) e).getStatusCode());
                         } else {
                             response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                            logger.error(e);
+                            log.error("Error in AcquireLockForCreation filter", e);
                         }
 
                         return response.setComplete();
@@ -120,7 +117,7 @@ public class AcquireLockForCreation
                                 "Resource already locked. payload hash: " + payloadHash);
                     }
 
-                logger.debug("Trying to acquire lock for record creation. payload hash: " + payloadHash);
+                log.debug("Trying to acquire lock for record creation. payload hash: " + payloadHash);
 
                     return writeLock
                     .tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS, currentThreadId)
@@ -132,7 +129,7 @@ public class AcquireLockForCreation
                                                     + payloadHash);
                                 }
 
-                                logger.debug("Lock acquired for the record creation with payload hash: " + payloadHash);
+                                log.debug("Lock acquired for the record creation with payload hash: " + payloadHash);
 
                                 return Mono.<Void>empty();
                             })

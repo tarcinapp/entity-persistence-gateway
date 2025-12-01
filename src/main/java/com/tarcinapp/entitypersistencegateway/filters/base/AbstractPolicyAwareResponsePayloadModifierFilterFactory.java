@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -30,9 +28,11 @@ import org.springframework.web.reactive.function.server.HandlerStrategies;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebExchangeDecorator;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C extends PolicyEvaluatingFilterConfig, PR, I, O>
         extends AbstractPolicyAwareFilterFactory<C, PR> {
 
@@ -41,8 +41,6 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
 
     @Autowired
     IAuthorizationClient authorizationClient;
-
-    private Logger logger = LogManager.getLogger(AbstractPolicyAwareResponsePayloadModifierFilterFactory.class);
 
     private Class<I> inClass;
     private Class<O> outClass;
@@ -81,13 +79,13 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                             if (headers.containsKey("X-Cache-Status") &&
                                     "HIT".equals(headers.getFirst("X-Cache-Status"))) {
 
-                                logger.debug("Response is served from Cache (HIT). Skipping modification.");
+                                log.debug("Response is served from Cache (HIT). Skipping modification.");
                                 return super.writeWith(body);
                             }
 
                             if (originalResponse.getStatusCode().is2xxSuccessful()) {
 
-                                logger.debug("Asking PEP for response modification filter.");
+                                log.debug("Asking PEP for response modification filter.");
 
                                 PolicyData policyInquiryData = AbstractPolicyAwareResponsePayloadModifierFilterFactory.super.getPolicyInquriyData(
                                         exchange);
@@ -96,7 +94,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                                 return authorizationClient.executePolicy(policyInquiryData, policyResultClass)
                                         .flatMap(pr -> {
 
-                                            logger.debug("PEP returned response modification filter." + pr.toString());
+                                            log.debug("PEP returned response modification filter." + pr.toString());
 
                                             String originalResponseContentType = exchange
                                                     .getAttribute(ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR);
@@ -141,7 +139,7 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
                                         });
                             }
 
-                            logger.debug("Response is not 2xx successful. Skipping response modification filter.");
+                            log.debug("Response is not 2xx successful. Skipping response modification filter.");
 
                             return super.writeWith(body);
                         }

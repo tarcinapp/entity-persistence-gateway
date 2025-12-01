@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -18,6 +16,7 @@ import com.tarcinapp.entitypersistencegateway.filters.base.AbstractResponsePaylo
 import com.tarcinapp.entitypersistencegateway.services.FieldsetService;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *  * Gateway filter that applies fieldset configurations to response payloads.
@@ -30,11 +29,9 @@ import reactor.core.publisher.Mono;
  *  
  */
 @Component
+@Slf4j
 public class ApplyFieldsetConfig
-        extends AbstractResponsePayloadModifierFilterFactory<ApplyFieldsetConfig.Config, String, String> {
-
-    private static final Logger logger = LogManager.getLogger(ApplyFieldsetConfig.class);
-    private static final String FIELDSET_QUERY_PARAM = "fieldset";
+        extends AbstractResponsePayloadModifierFilterFactory<ApplyFieldsetConfig.Config, String, String> {    private static final String FIELDSET_QUERY_PARAM = "fieldset";
     private static final String FIELDSETS_TOGGLE_PARAM = "fieldsets"; // accepts false|0|no|off to disable
 
     @Autowired
@@ -52,19 +49,19 @@ public class ApplyFieldsetConfig
 
         // Check if fieldsets are configured at all
         if (fieldSetsConfig == null) {
-            logger.debug("No fieldset configuration found, returning original payload");
+            log.debug("No fieldset configuration found, returning original payload");
             return Mono.just(payload);
         }
 
         String resourceType = config.getRecordType();
         if (resourceType == null || resourceType.isEmpty()) {
-            logger.warn("No resource type specified in filter configuration, cannot apply fieldsets");
+            log.warn("No resource type specified in filter configuration, cannot apply fieldsets");
             return Mono.just(payload);
         }
 
         // Parse query parameters
         URI uri = exchange.getRequest().getURI();
-        logger.debug("Processing request URI: {}", uri);
+        log.debug("Processing request URI: {}", uri);
 
         
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
@@ -77,7 +74,7 @@ public class ApplyFieldsetConfig
                         .anyMatch(v -> v.equals("false") || v.equals("0") || v.equals("no") || v.equals("off"));
 
         if (fieldsetsDisabled) {
-            logger.debug("Fieldsets explicitly disabled via query ({}=false). Returning original payload.",
+            log.debug("Fieldsets explicitly disabled via query ({}=false). Returning original payload.",
                     FIELDSETS_TOGGLE_PARAM);
             return Mono.just(payload);
         }
@@ -93,10 +90,10 @@ public class ApplyFieldsetConfig
 
         if (fieldsetDefinition == null) {
             if (requestedFieldset != null) {
-                logger.warn("Requested fieldset '{}' not found for resource type '{}', returning original payload",
+                log.warn("Requested fieldset '{}' not found for resource type '{}', returning original payload",
                         requestedFieldset, resourceType);
             } else {
-                logger.debug("No fieldset to apply for resource type '{}', returning original payload", resourceType);
+                log.debug("No fieldset to apply for resource type '{}', returning original payload", resourceType);
             }
             return Mono.just(payload);
         }
@@ -105,14 +102,14 @@ public class ApplyFieldsetConfig
         try {
             String modifiedPayload = fieldsetService.applyFieldset(payload, fieldsetDefinition);
 
-            logger.debug("Successfully applied fieldset for resource type '{}' with mode '{}'",
+            log.debug("Successfully applied fieldset for resource type '{}' with mode '{}'",
                     resourceType, fieldsetDefinition.getMode());
-            logger.trace("Modified payload: {}", modifiedPayload);
+            log.trace("Modified payload: {}", modifiedPayload);
 
             return Mono.just(modifiedPayload);
 
         } catch (JsonProcessingException e) {
-            logger.error("Failed to apply fieldset due to JSON processing error", e);
+            log.error("Failed to apply fieldset due to JSON processing error", e);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Failed to apply fieldset configuration",

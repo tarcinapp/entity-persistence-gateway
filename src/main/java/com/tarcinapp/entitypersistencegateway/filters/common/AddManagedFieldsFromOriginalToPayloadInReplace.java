@@ -16,8 +16,6 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -27,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Replace operations requires the record's all parameters. If a parameter does
@@ -42,15 +41,13 @@ import reactor.core.publisher.Mono;
  * used.
  */
 @Component
+@Slf4j
 public class AddManagedFieldsFromOriginalToPayloadInReplace
         extends AbstractGatewayFilterFactory<AddManagedFieldsFromOriginalToPayloadInReplace.Config> {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
-
-    Logger logger = LogManager.getLogger(AddManagedFieldsFromOriginalToPayloadInReplace.class);
-
     private final ObjectMapper objectMapper;
 
     public AddManagedFieldsFromOriginalToPayloadInReplace(ObjectMapper objectMapper) {
@@ -63,7 +60,7 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
 
         return (exchange, chain) -> {
 
-            logger.debug("AddManagedFieldsInReplace filter is started");
+            log.debug("AddManagedFieldsInReplace filter is started");
 
             return this.filter(config, exchange, chain);
         };

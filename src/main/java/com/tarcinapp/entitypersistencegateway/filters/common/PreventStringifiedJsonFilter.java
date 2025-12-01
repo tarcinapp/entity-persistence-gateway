@@ -1,14 +1,13 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *  * Backend is allowing client to query data using stringified JSON.
@@ -20,9 +19,8 @@ import org.springframework.util.MultiValueMap;
  *  
  */
 @Component
+@Slf4j
 public class PreventStringifiedJsonFilter extends AbstractGatewayFilterFactory<PreventStringifiedJsonFilter.Config> {
-    private Logger logger = LogManager.getLogger(PreventStringifiedJsonFilter.class);
-
     public PreventStringifiedJsonFilter() {
         super(Config.class);
     }
@@ -32,10 +30,10 @@ public class PreventStringifiedJsonFilter extends AbstractGatewayFilterFactory<P
 
         return (exchange, chain) -> {
 
-            logger.debug("PreventStringifiedJsonFilter filter is started.");
+            log.debug("PreventStringifiedJsonFilter filter is started.");
 
             URI uri = exchange.getRequest().getURI();
-            logger.debug("Original URI: {}", uri);
+            log.debug("Original URI: {}", uri);
 
             
             MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
@@ -45,7 +43,7 @@ public class PreventStringifiedJsonFilter extends AbstractGatewayFilterFactory<P
 
             if (filterValue != null) {
                 if (filterValue.startsWith("{")) {
-                    logger.warn("Client tried to query with stringified JSON. Returning UNAUTHORIZED");
+                    log.warn("Client tried to query with stringified JSON. Returning UNAUTHORIZED");
 
                     // Return an unauthorized response
                     ServerHttpResponse response = exchange.getResponse();

@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -19,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *  * This filter restricts the returned relations based on user permissions.
@@ -82,10 +81,8 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
  *  *  
  */
 @Component
+@Slf4j
 public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSetsToRelationQuery.Config> {
-
-        private final Logger logger = LogManager.getLogger(AddSetsToRelationQuery.class);
-
         @Value("${app.shortcode:#{tarcinapp}}")
         private String appShortcode;
 
@@ -98,13 +95,13 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
 
                 return (exchange, chain) -> {
 
-                        logger.debug("AddSetsToRelationQuery filter is started.");
+                        log.debug("AddSetsToRelationQuery filter is started.");
 
                         GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes()
                                         .get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
 
                         if (gc == null) {
-                                logger.debug("Security context missing; skipping modifications.");
+                                log.debug("Security context missing; skipping modifications.");
                                 return chain.filter(exchange);
                         }
 
@@ -113,17 +110,17 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                         ArrayList<String> groups = gc.getGroups();
 
                         if (roles == null) {
-                                logger.debug("Authentication information not found. Exiting filter without any modification.");
+                                log.debug("Authentication information not found. Exiting filter without any modification.");
                                 return chain.filter(exchange);
                         }
 
                         // Null safety checks for userId and groups
                         if (userId == null || groups == null) {
-                                logger.warn("User ID or groups not found in security context. Exiting filter without any modification.");
+                                log.warn("User ID or groups not found in security context. Exiting filter without any modification.");
                                 return chain.filter(exchange);
                         }
 
-                        logger.debug("User roles are: {}", roles);
+                        log.debug("User roles are: {}", roles);
 
                         /**
                          * If user role is any of the following, we do not need to add sets
@@ -142,13 +139,13 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                          */
                         if (prefixedRolesStream.anyMatch(roles::contains)) {
 
-                                logger.debug(
+                                log.debug(
                                                 "No need to limit response items for these roles. Exiting filter without any modification.");
                                 return chain.filter(exchange);
                         }
 
                         URI uri = exchange.getRequest().getURI();
-                        logger.debug("Original URI: {}", uri);
+                        log.debug("Original URI: {}", uri);
 
                         // Extract original query parameters
                         MultiValueMap<String, String> originalQueryParams = exchange.getRequest().getQueryParams();
@@ -165,7 +162,7 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                         boolean callerHasEntitySet = originalQueryParams.keySet().stream()
                                         .anyMatch(name -> name.startsWith("entitySet["));
 
-                        logger.debug("Caller has - set: {}, listSet: {}, entitySet: {}",
+                        log.debug("Caller has - set: {}, listSet: {}, entitySet: {}",
                                         callerHasSet, callerHasListSet, callerHasEntitySet);
 
                         /**
@@ -223,7 +220,7 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                                 newQueryParams.add("set[or][1][pendings]", "");
                         }
 
-                        logger.debug("Added relation status filter (actives OR pendings)");
+                        log.debug("Added relation status filter (actives OR pendings)");
 
                         /**
                          * Add list and entity audience sets to restrict relations.
@@ -255,7 +252,7 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                                 newQueryParams.add("entitySet[audience][groupIds]", groupsStr);
                         }
 
-                        logger.debug("Added listSet and entitySet audience - userIds: {}, groupIds: {}", userId,
+                        log.debug("Added listSet and entitySet audience - userIds: {}, groupIds: {}", userId,
                                         groupsStr);
 
                         addAudienceSetsToLookups(newQueryParams, userId, groupsStr);
@@ -268,7 +265,7 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                                         .toUri();
 
                         // Log decoded URI for easier reading
-                        if (logger.isDebugEnabled()) {
+                        if (log.isDebugEnabled()) {
                                 try {
                                         String decodedQuery = UriComponentsBuilder.newInstance()
                                                         .queryParams(newQueryParams).build().encode().getQuery();
@@ -278,9 +275,9 @@ public class AddSetsToRelationQuery extends AbstractGatewayFilterFactory<AddSets
                                                 decodedUri += "?" + java.net.URLDecoder.decode(decodedQuery,
                                                                 StandardCharsets.UTF_8.name());
                                         }
-                                        logger.debug("New URI (decoded): {}", decodedUri);
+                                        log.debug("New URI (decoded): {}", decodedUri);
                                 } catch (Exception e) {
-                                        logger.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
+                                        log.debug("New URI: {} (failed to decode: {})", newUri, e.getMessage());
                                 }
                         }
 

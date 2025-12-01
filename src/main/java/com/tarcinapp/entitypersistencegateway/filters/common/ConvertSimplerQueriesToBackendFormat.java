@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -25,6 +23,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Gateway application can allow or prevent clients to send backend specific
@@ -49,10 +48,8 @@ import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
  * ?order=name
  */
 @Component
+@Slf4j
 public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterFactory<ConvertSimplerQueriesToBackendFormat.Config> {
-
-    private Logger logger = LogManager.getLogger(ConvertSimplerQueriesToBackendFormat.class);
-
     // backend query parameters
     private static final List<String> filterPrefixes = Arrays.asList("filter[where]", "filter[fields]",
             "filter[include]", "filter[limit]", "filter[order]", "filter[skip]");
@@ -101,10 +98,10 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
 
         return (exchange, chain) -> {
 
-            logger.debug("ConvertSimplerQueriesToBackendFormat filter is started");
+            log.debug("ConvertSimplerQueriesToBackendFormat filter is started");
 
             URI uri = exchange.getRequest().getURI();
-            logger.debug("Original URI: {}", uri);
+            log.debug("Original URI: {}", uri);
 
             
             MultiValueMap<String, String> originalQueryParams = exchange.getRequest().getQueryParams();
@@ -127,16 +124,16 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
 
                         // check if client sent a backend specific query.
                         if (filterPrefixes.stream().anyMatch(name::startsWith)) {
-                            logger.debug("Client sent backend specific query parameters.");
+                            log.debug("Client sent backend specific query parameters.");
 
                             if (this.allowBackendQueryNotation) {
                                 // return the query as it is.
-                                logger.debug("Application is configured to allow backend specific query parameters.");
+                                log.debug("Application is configured to allow backend specific query parameters.");
 
                                 return Stream.of(qp);
                             } else {
                                 // do not move backend specific queries to the new list
-                                logger.debug(
+                                log.debug(
                                         "Application is configured to prevent backend specific query parameters.");
 
                                 return Stream.empty();
@@ -154,7 +151,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                             String savedQuery = savedQueries.getQueries().get(value);
 
                             if (savedQuery == null) {
-                                logger.warn("Client requested a saved query: {}"
+                                log.warn("Client requested a saved query: {}"
                                         + ". But there is no such query defined in application config.", value);
                                 return Stream.empty();
                             }
@@ -224,7 +221,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                                 .build()
                                 .toUri();
 
-                        logger.debug("New URI {}", newUri);
+                        log.debug("New URI {}", newUri);
 
                         originalRequest
                                 .uri(newUri);

@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +13,7 @@ import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareFi
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * If client is not allowed to see a field, they are unable to query by that field.
@@ -25,10 +24,8 @@ import reactor.core.publisher.Mono;
  * When a client queries backend with a field that does not exist, backend return emtpy array.
  */
 @Component
+@Slf4j
 public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFactory<PolicyEvaluatingFilterConfig, PreventQueryByForbiddenFields.PolicyResponse> {
-
-    private Logger logger = LogManager.getLogger(PreventQueryByForbiddenFields.class);
-
     public PreventQueryByForbiddenFields(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         super(PolicyEvaluatingFilterConfig.class, PreventQueryByForbiddenFields.PolicyResponse.class, objectMapper);
     }
@@ -44,7 +41,7 @@ public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFact
 
             if (shouldReturnEmptyResponse) {
 
-                logger.warn("Client used a field name in it's query which it is not allowed to see! Returning an empty array.");
+                log.warn("Client used a field name in it's query which it is not allowed to see! Returning an empty array.");
 
                 // Modify the response to return an empty JSON array
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);

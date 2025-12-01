@@ -16,17 +16,14 @@ import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareRe
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
 import reactor.core.publisher.Mono;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class DropFieldsForMultiItemResponses extends
         AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForMultiItemResponses.PolicyResponse, String, String> {
 
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE_REFERENCE = new TypeReference<>() {};
-
-    private Logger logger = LogManager.getLogger(DropFieldsForMultiItemResponses.class);
-
     private final ObjectMapper objectMapper;
 
     public DropFieldsForMultiItemResponses(ObjectMapper objectMapper) {
@@ -39,11 +36,11 @@ public class DropFieldsForMultiItemResponses extends
             PolicyResponse policyResult, String payload) {
 
         if (policyResult.getFields().isEmpty()) {
-            logger.debug("There is no field going to be hidden from the response.");
+            log.debug("There is no field going to be hidden from the response.");
             return Mono.just(payload);
         }
 
-        logger.debug("Following fields going to be hidden by the response drop filter: " + policyResult.getFields());
+        log.debug("Following fields going to be hidden by the response drop filter: " + policyResult.getFields());
 
         try {
             List<Map<String, Object>> payloadMap = objectMapper.readValue(payload, LIST_MAP_TYPE_REFERENCE);
@@ -53,12 +50,12 @@ public class DropFieldsForMultiItemResponses extends
                     m.remove(f);
                 });
 
-                logger.debug("Field '" + f + "' is dropped from all the items in the response.");
+                log.debug("Field '" + f + "' is dropped from all the items in the response.");
             });
 
             String modifiedPayload = objectMapper.writeValueAsString(payloadMap);
 
-            logger.debug("Modified payload: " + modifiedPayload);
+            log.debug("Modified payload: " + modifiedPayload);
 
             return Mono.just(modifiedPayload);
         } catch (JsonMappingException e) {

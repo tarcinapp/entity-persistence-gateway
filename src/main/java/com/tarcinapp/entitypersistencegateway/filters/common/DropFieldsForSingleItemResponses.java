@@ -11,21 +11,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.base.PolicyEvaluatingFilterConfig;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class DropFieldsForSingleItemResponses extends
         AbstractPolicyAwareResponsePayloadModifierFilterFactory<PolicyEvaluatingFilterConfig, DropFieldsForSingleItemResponses.PolicyResponse, String, String> {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
-
-    private Logger logger = LogManager.getLogger(DropFieldsForSingleItemResponses.class);
-
     private final ObjectMapper objectMapper;
 
     public DropFieldsForSingleItemResponses(ObjectMapper objectMapper) {
@@ -38,11 +35,11 @@ public class DropFieldsForSingleItemResponses extends
             PolicyResponse pr, String payload) {
                 
         if (pr.getFields().size() == 0) {
-            logger.debug("There is no field going to be hidden from the response.");
+            log.debug("There is no field going to be hidden from the response.");
             return Mono.just(payload);
         }
 
-        logger.debug("Following fields going to be hidden by the response drop filter: " + pr.getFields());
+        log.debug("Following fields going to be hidden by the response drop filter: " + pr.getFields());
         
         try {
             Map<String, Object> payloadMap = objectMapper.readValue(payload, MAP_TYPE_REFERENCE);
@@ -50,7 +47,7 @@ public class DropFieldsForSingleItemResponses extends
             pr.getFields().forEach(f -> {
                 payloadMap.remove(f);
 
-                logger.debug("Field '" + f + "' is dropped from the response.");
+                log.debug("Field '" + f + "' is dropped from the response.");
             });
 
             String modifiedPayload = objectMapper.writeValueAsString(payloadMap);

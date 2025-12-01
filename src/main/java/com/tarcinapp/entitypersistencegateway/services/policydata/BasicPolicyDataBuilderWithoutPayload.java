@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.services.policydata;
 
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -15,6 +13,7 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.services.OriginalRecordFetcher;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
@@ -22,13 +21,12 @@ import reactor.core.publisher.Mono;
  * Handles GET, DELETE requests. For requests targeting a specific record (recordId present),
  * fetches the original record for authorization decisions.
  */
+@Slf4j
 @Component("basicPolicyDataBuilderWithoutPayload")
 public class BasicPolicyDataBuilderWithoutPayload implements PolicyDataBuilder {
 
     @Autowired
     private OriginalRecordFetcher originalRecordFetcher;
-
-    private static final Logger logger = LogManager.getLogger(BasicPolicyDataBuilderWithoutPayload.class);
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -45,11 +43,11 @@ public class BasicPolicyDataBuilderWithoutPayload implements PolicyDataBuilder {
         policyData.setQueryParams(request.getQueryParams());
         policyData.setRequestPath(request.getPath());
 
-        logger.debug("Building policy data without payload for " + request.getMethod() + " " + request.getPath());
+        log.debug("Building policy data without payload for " + request.getMethod() + " " + request.getPath());
 
         // If targeting a specific record, fetch the original record for policy evaluation
         if (recordId != null) {
-            logger.debug("Fetching original record for policy evaluation: " + recordId);
+            log.debug("Fetching original record for policy evaluation: " + recordId);
             return originalRecordFetcher.fetchAndAttach(policyData, exchange, recordId)
                     .then(chain.filter(exchange));
         }

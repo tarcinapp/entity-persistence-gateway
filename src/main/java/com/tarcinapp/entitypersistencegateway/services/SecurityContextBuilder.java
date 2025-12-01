@@ -3,23 +3,21 @@ package com.tarcinapp.entitypersistencegateway.services;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 
 import io.jsonwebtoken.Claims;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service responsible for building and managing the GatewaySecurityContext.
  * Extracts user information from JWT claims and populates the security context.
  */
+@Slf4j
 @Service
 public class SecurityContextBuilder {
-
-    private static final Logger logger = LogManager.getLogger(SecurityContextBuilder.class);
 
     /**
      * Initializes a new security context in the exchange attributes
@@ -39,12 +37,12 @@ public class SecurityContextBuilder {
         GatewaySecurityContext gc = getSecurityContext(exchange);
 
         if (gc == null) {
-            logger.warn("Security context not initialized. Initializing now.");
+            log.warn("Security context not initialized. Initializing now.");
             initializeSecurityContext(exchange);
             gc = getSecurityContext(exchange);
         }
 
-        logger.debug("Building security context from claims: " + claims.getSubject());
+        log.debug("Building security context from claims: " + claims.getSubject());
 
         // Extract data from claims
         String subject = claims.getSubject();
@@ -64,7 +62,7 @@ public class SecurityContextBuilder {
         gc.setRoles(roles);
         gc.setAuthParty(authParty);
 
-        logger.debug("Security context built successfully for user: " + subject);
+        log.debug("Security context built successfully for user: " + subject);
     }
 
     /**

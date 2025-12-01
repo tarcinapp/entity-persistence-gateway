@@ -2,9 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.security.Key;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -20,8 +17,10 @@ import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequest.Config> {
 
     @Autowired
@@ -29,9 +28,6 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
 
     @Autowired(required = false)
     private Key key;
-
-    private Logger logger = LogManager.getLogger(AuthorizeRequest.class);
-
     private final static String POLICY_INQUIRY_DATA_ATTR = "PolicyInquiryData";
 
     private final ObjectMapper objectMapper;
@@ -47,16 +43,16 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         // implement in seperate method in order to reduce nesting
         return (exchange, chain) -> {
 
-            logger.debug("Authorization filter is started. Policy name: " + config.getPolicyName());
+            log.debug("Authorization filter is started. Policy name: " + config.getPolicyName());
 
             if (this.key == null) {
-                logger.warn("RS256 key is not configured. This request won't be authorized.");
+                log.warn("RS256 key is not configured. This request won't be authorized.");
                 return chain.filter(exchange);
             }
 
             return this.filter(config, exchange, chain)
                 .onErrorResume(e -> {
-                    logger.error("Authorization filter error: " + e.getMessage(), e);
+                    log.error("Authorization filter error: " + e.getMessage(), e);
         
                     ServerHttpResponse response = exchange.getResponse();
                     response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -81,18 +77,18 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             .flatMap(result -> {
 
                 if(result.equals(true)) {
-                    logger.debug("PEP authorized our request.");
+                    log.debug("PEP authorized our request.");
                     return chain.filter(exchange);
                 }
                                     
-                logger.debug("PEP did't authorized the request. Throwing unauthorized exception.");
+                log.debug("PEP did't authorized the request. Throwing unauthorized exception.");
 
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
 
                 return response.setComplete();
             }).onErrorResume(e -> {
-                logger.error("Error during policy execution: " + e.getMessage(), e);
+                log.error("Error during policy execution: " + e.getMessage(), e);
     
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -109,18 +105,18 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
      */
     private Mono<Boolean> executePolicy(PolicyData policyData) {
 
-        if (logger.getLevel().compareTo(Level.DEBUG) >= 0) {
-            logger.debug("Policy data is prepared.");
+        if (log.isDebugEnabled()) {
+            log.debug("Policy data is prepared.");
 
             try {
                 String policyDataStr = objectMapper.writeValueAsString(policyData);
-                logger.debug("Policy data: {}", policyDataStr);
+                log.debug("Policy data: {}", policyDataStr);
             } catch (JsonProcessingException e) {
-                logger.debug("Unable to serialize policy data to JSON string.");
+                log.debug("Unable to serialize policy data to JSON string.");
             }
         }
 
-        logger.debug("Sending policy data to the PEP.");
+        log.debug("Sending policy data to the PEP.");
 
         return authorizationClient.executePolicy(policyData)
             .flatMap(result -> {

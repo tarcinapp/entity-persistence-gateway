@@ -4,8 +4,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Gateway filter that acquires a distributed write lock for update operations on specific records.
@@ -26,10 +25,8 @@ import reactor.core.publisher.Mono;
  * The lock is automatically released after the request completes.
  */
 @Component
+@Slf4j
 public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLockForUpdate.Config> {
-
-    private Logger logger = LogManager.getLogger(AcquireLockForUpdate.class);
-
     @Autowired
     RedissonReactiveClient redissonReactiveClient;
 
@@ -47,11 +44,11 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
             String recordId = uriVariables.get("recordId");
 
             if (recordId == null || recordId.isEmpty()) {
-                logger.warn("No recordId found in URI variables, skipping lock acquisition");
+                log.warn("No recordId found in URI variables, skipping lock acquisition");
                 return chain.filter(exchange);
             }
 
-            logger.debug("Acquiring write lock for record: " + recordId);
+            log.debug("Acquiring write lock for record: " + recordId);
 
             Duration wait = config.getWaitTime() != null ? config.getWaitTime() : Duration.ofSeconds(3);
             Duration lease = config.getLeaseTime() != null ? config.getLeaseTime() : Duration.ofSeconds(30);
@@ -72,7 +69,7 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
         return writeLock.isLocked()
                 .flatMap(locked -> {
                     if (locked) {
-                        logger.warn("Record already locked: " + recordId);
+                        log.warn("Record already locked: " + recordId);
                         throw new ResponseStatusException(HttpStatus.LOCKED,
                                 "Resource is currently locked by another request: " + recordId);
                     }
@@ -80,12 +77,12 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
                     return writeLock.tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS)
                             .flatMap(lockAcquired -> {
                                 if (!lockAcquired) {
-                                    logger.error("Failed to acquire write lock for record: " + recordId);
+                                    log.error("Failed to acquire write lock for record: " + recordId);
                                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                                             "Failed to acquire write lock for record: " + recordId);
                                 }
 
-                                logger.debug("Write lock acquired for record: " + recordId);
+                                log.debug("Write lock acquired for record: " + recordId);
                                 return Mono.<Void>empty();
                             });
                 })
@@ -101,8 +98,8 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
         final RLockReactive writeLock = lock.writeLock();
 
         return writeLock.forceUnlock()
-                .doOnSuccess(v -> logger.debug("Write lock released for record: " + recordId))
-                .doOnError(e -> logger.error("Error releasing write lock for record: " + recordId, e))
+                .doOnSuccess(v -> log.debug("Write lock released for record: " + recordId))
+                .doOnError(e -> log.error("Error releasing write lock for record: " + recordId, e))
                 .then()
                 .onErrorResume(e -> Mono.empty()); // Ignore unlock errors
     }
