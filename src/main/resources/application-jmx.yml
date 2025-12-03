@@ -1,0 +1,18 @@
+app:
+  # enable/disable jmx monitoring
+  jmx: 
+    enabled: true
+
+    default-domain: ${app.shortcode}.jmx
+
+    unique-names: false
+
+    jolokia:
+      # enable/disable jolokia agent
+      enabled: true
+      # jolokia server host
+      host: "0.0.0.0"
+      # jolokia server port
+      port: 8778
+      # enable/disable discovery for Hawtio
+      discoveryEnabled: true
