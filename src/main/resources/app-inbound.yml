@@ -3,9 +3,62 @@ app:
     address: 0.0.0.0
     port: 8081
     baseUri: /api/v1/
+    
+    # STABILITY FIX: We define the list explicitly here.
+    # To disable metrics, set metricsEnabled: false AND exposedEndpoints: "none"
     metricsEnabled: true
+    exposedEndpoints: "gateway,health,metrics,prometheus,jolokia,env,info"
+    
+    # Generic Controller Paths used by routing logic
     controllerPaths:
       entities: entities
       lists: lists
       relations: relations
       explorer: explorer
+      
+    cors:
+      allowedOrigins:
+        - "http://localhost:8080"
+      allowedMethods:
+        - "GET"
+        - "POST"
+        - "PUT"
+        - "PATCH"
+        - "DELETE"
+        - "OPTIONS"
+        - "HEAD"
+      allowedHeaders:
+        - "Accept"
+        - "Accept-Language"
+        - "Authorization"
+        - "Cache-Control"
+        - "Connection"
+        - "Content-Type"
+        - "Host"
+        - "Origin"
+        - "Pragma"
+        - "Referer"
+        - "User-Agent"
+        - "If-Match"
+        - "If-None-Match"
+        - "If-Modified-Since"
+        - "If-Unmodified-Since"
+        - "X-Requested-With"
+        - "X-XSRF-TOKEN"
+        - "X-Geolocation"
+        - ${app.requestId}
+      exposedHeaders:
+        - "Date"
+        - "Content-Type"
+        - "Content-Length"
+        - "Content-Disposition"
+        - "Location"
+        - "ETag"
+        - "Link"
+        - "X-Total-Count"
+        - "X-Page-Count"
+        - "Retry-After"
+        - "X-Cache-Status"
+        - ${app.requestId}
+      allowCredentials: true
+      maxAge: 3600
