@@ -8,7 +8,7 @@
 
     <appender name="Console"
         class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="ch.qos.logback.classic.PatternLayout">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <!-- 
                 Log pattern includes two request IDs from MDC:
                 - SpringRequestId: The original Spring WebFlux request ID (always available)
@@ -19,10 +19,8 @@
                 
                 Format: [timestamp][level][thread][class][springRequestId][requestId]: message
             -->
-            <Pattern>
-                [%d{ISO8601}][%level][%t][%C{1}][%X{SpringRequestId:-NO_REQUEST}][%X{RequestId:-NO_REQUEST}]: %msg%n%throwable
-            </Pattern>
-        </layout>
+            <pattern>[%d{ISO8601}][%level][%t][%C{1}][%X{SpringRequestId:-NO_REQUEST}][%X{RequestId:-NO_REQUEST}]: %msg%n%throwable</pattern>
+        </encoder>
     </appender>
     
     <!-- LOG everything at INFO level -->

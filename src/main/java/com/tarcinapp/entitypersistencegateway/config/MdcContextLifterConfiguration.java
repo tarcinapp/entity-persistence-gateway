@@ -84,6 +84,10 @@ public class MdcContextLifterConfiguration {
     /**
      * A CoreSubscriber wrapper that lifts MDC context from Reactor context
      * to the thread-local MDC before each signal and cleans up afterwards.
+     * 
+     * <p>This implementation is defensive and only sets MDC when the context
+     * actually contains MDC data, avoiding interference with internal Reactor
+     * operations and WebClient response handling.</p>
      */
     private static class MdcContextLifter<T> implements CoreSubscriber<T> {
         
@@ -95,25 +99,25 @@ public class MdcContextLifterConfiguration {
 
         @Override
         public void onSubscribe(Subscription subscription) {
-            copyToMdc(coreSubscriber.currentContext());
+            copyToMdcIfPresent(coreSubscriber.currentContext());
             coreSubscriber.onSubscribe(subscription);
         }
 
         @Override
         public void onNext(T t) {
-            copyToMdc(coreSubscriber.currentContext());
+            copyToMdcIfPresent(coreSubscriber.currentContext());
             coreSubscriber.onNext(t);
         }
 
         @Override
         public void onError(Throwable throwable) {
-            copyToMdc(coreSubscriber.currentContext());
+            copyToMdcIfPresent(coreSubscriber.currentContext());
             coreSubscriber.onError(throwable);
         }
 
         @Override
         public void onComplete() {
-            copyToMdc(coreSubscriber.currentContext());
+            copyToMdcIfPresent(coreSubscriber.currentContext());
             coreSubscriber.onComplete();
         }
 
@@ -123,25 +127,23 @@ public class MdcContextLifterConfiguration {
         }
 
         /**
-         * Copies MDC context from Reactor context to the current thread's MDC.
-         * If no MDC context is found in Reactor context, the current MDC is cleared.
+         * Copies MDC context from Reactor context to the current thread's MDC,
+         * but only if MDC context is present. This avoids clearing MDC for
+         * internal Reactor operations that don't have our context.
+         * 
+         * <p>Unlike the previous implementation that cleared MDC when context
+         * was missing, this version preserves existing MDC state to avoid
+         * interference with nested reactive streams (like WebClient calls).</p>
          */
-        private void copyToMdc(Context context) {
-            if (context.isEmpty()) {
-                MDC.clear();
-                return;
-            }
-
-            if (!context.hasKey(MDC_CONTEXT_MAP)) {
-                MDC.clear();
+        private void copyToMdcIfPresent(Context context) {
+            if (context.isEmpty() || !context.hasKey(MDC_CONTEXT_MAP)) {
+                // Don't clear MDC - let existing values remain for nested operations
                 return;
             }
 
             Map<String, String> mdcContext = context.get(MDC_CONTEXT_MAP);
             
-            if (mdcContext == null || mdcContext.isEmpty()) {
-                MDC.clear();
-            } else {
+            if (mdcContext != null && !mdcContext.isEmpty()) {
                 MDC.setContextMap(mdcContext);
             }
         }
