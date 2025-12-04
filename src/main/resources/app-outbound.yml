@@ -1,6 +1,6 @@
 app:
   outbound:
-    backend:
+    routing-target:
       protocol: http
       host: entity-persistence-service
       port: 80

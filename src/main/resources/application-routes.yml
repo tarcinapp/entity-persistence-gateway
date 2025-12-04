@@ -4,7 +4,7 @@ spring:
       routes:
       # entity controller
       - id: createEntity
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=POST
@@ -15,7 +15,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -42,7 +42,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntity.responseTimeoutMs}
       - id: updateAllEntities
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=PATCH
@@ -53,7 +53,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -77,7 +77,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
       - id: findEntities
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}
         - Method=GET
@@ -85,7 +85,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -120,7 +120,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntities.responseTimeoutMs}
       - id: countEntities
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/count
         - Method=GET
@@ -128,7 +128,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -152,7 +152,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.countEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.countEntities.responseTimeoutMs}
       - id: findEntityById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
@@ -160,7 +160,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -187,7 +187,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
       - id: updateEntityById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -198,7 +198,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -215,7 +215,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
       - id: replaceEntityById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -226,7 +226,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -247,7 +247,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
       - id: deleteEntityById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
@@ -255,7 +255,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -271,7 +271,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
       - id: findEntityChildren
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/children
         - Method=GET
@@ -279,7 +279,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -314,7 +314,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
       - id: createEntityChild
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/children
         - Method=POST
@@ -325,7 +325,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -352,7 +352,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
       - id: findEntityParents
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/parents
         - Method=GET
@@ -360,7 +360,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.outbound.backend.baseUri}entities/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -396,7 +396,7 @@ spring:
           response-timeout: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
       # list controller
       - id: createList
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=POST
@@ -407,7 +407,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -434,7 +434,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createList.responseTimeoutMs}
       - id: updateAllLists
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=PATCH
@@ -445,7 +445,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -469,7 +469,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.updateAllLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateAllLists.responseTimeoutMs}
       - id: findLists
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=GET
@@ -477,7 +477,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -512,7 +512,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findLists.responseTimeoutMs}
       - id: countLists
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/count
         - Method=GET
@@ -520,7 +520,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -544,7 +544,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.countLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.countLists.responseTimeoutMs}
       - id: findListById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
@@ -552,7 +552,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -579,7 +579,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListById.responseTimeoutMs}
       - id: updateListById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -590,7 +590,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -610,7 +610,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.updateListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateListById.responseTimeoutMs}
       - id: replaceListById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -621,7 +621,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -645,7 +645,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.replaceListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.replaceListById.responseTimeoutMs}
       - id: deleteListById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
@@ -653,7 +653,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -669,7 +669,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.deleteListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteListById.responseTimeoutMs}
       - id: findListChildren
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/children
         - Method=GET
@@ -677,7 +677,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -712,7 +712,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListChildren.responseTimeoutMs}
       - id: createListChild
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/children
         - Method=POST
@@ -723,7 +723,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -750,7 +750,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createListChild.responseTimeoutMs}
       - id: findListParents
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/parents
         - Method=GET
@@ -758,7 +758,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.outbound.backend.baseUri}lists/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -794,12 +794,12 @@ spring:
           response-timeout: ${app.timeouts.lists.findListParents.responseTimeoutMs}
       # relations controller
       - id: createRelation
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=POST
         filters:
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.backend.baseUri}relations
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.routing-target.baseUri}relations
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.relations.create}
@@ -835,12 +835,12 @@ spring:
           connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.createRelation.responseTimeoutMs}
       - id: updateAllRelations
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=PATCH
         filters:
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.backend.baseUri}relations
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.routing-target.baseUri}relations
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.relations.update}
@@ -868,12 +868,12 @@ spring:
           connect-timeout: ${app.timeouts.relations.updateAllRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateAllRelations.responseTimeoutMs}
       - id: findRelations
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}
         - Method=GET
         filters:
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.backend.baseUri}relations
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}, ${app.outbound.routing-target.baseUri}relations
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
@@ -909,12 +909,12 @@ spring:
           connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelations.responseTimeoutMs}
       - id: countRelations
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count
         - Method=GET
         filters:
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count, ${app.outbound.backend.baseUri}relations/count
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/count, ${app.outbound.routing-target.baseUri}relations/count
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
@@ -939,7 +939,7 @@ spring:
           connect-timeout: ${app.timeouts.relations.countRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.countRelations.responseTimeoutMs}
       - id: findRelationById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
@@ -950,7 +950,7 @@ spring:
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
-            replacement: ${app.outbound.backend.baseUri}relations/${recordId}
+            replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -977,7 +977,7 @@ spring:
           connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelationById.responseTimeoutMs}
       - id: updateRelationById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -991,7 +991,7 @@ spring:
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
-            replacement: ${app.outbound.backend.baseUri}relations/${recordId}
+            replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1011,7 +1011,7 @@ spring:
           connect-timeout: ${app.timeouts.relations.updateRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateRelationById.responseTimeoutMs}
       - id: replaceRelationById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -1025,7 +1025,7 @@ spring:
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
-            replacement: ${app.outbound.backend.baseUri}relations/${recordId}
+            replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1049,7 +1049,7 @@ spring:
           connect-timeout: ${app.timeouts.relations.replaceRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.replaceRelationById.responseTimeoutMs}
       - id: deleteRelationById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
@@ -1060,7 +1060,7 @@ spring:
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
-            replacement: ${app.outbound.backend.baseUri}relations/${recordId}
+            replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1077,7 +1077,7 @@ spring:
           response-timeout: ${app.timeouts.relations.deleteRelationById.responseTimeoutMs}
       # entity-reactions controller
       - id: createEntityReaction
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions
         - Method=POST
@@ -1086,7 +1086,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1113,7 +1113,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createEntityReaction.responseTimeoutMs}
       - id: updateAllEntityReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions
         - Method=PATCH
@@ -1122,7 +1122,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1146,13 +1146,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.updateAllEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllEntityReactions.responseTimeoutMs}
       - id: findEntityReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1187,13 +1187,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactions.responseTimeoutMs}
       - id: countEntityReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1217,13 +1217,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.countEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countEntityReactions.responseTimeoutMs}
       - id: findEntityReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1250,7 +1250,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactionById.responseTimeoutMs}
       - id: updateEntityReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -1259,7 +1259,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1279,7 +1279,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.updateEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateEntityReactionById.responseTimeoutMs}
       - id: replaceEntityReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -1288,7 +1288,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1312,13 +1312,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.replaceEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceEntityReactionById.responseTimeoutMs}
       - id: deleteEntityReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.backend.baseUri}entity-reactions
+        - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1334,13 +1334,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.deleteEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteEntityReactionById.responseTimeoutMs}
       - id: findChildrenEntityReactionsByReactionId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/children
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}entity-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1375,7 +1375,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.responseTimeoutMs}
       - id: createChildEntityReaction
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/children
         - Method=POST
@@ -1384,7 +1384,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}entity-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
         - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: GenerateRequestId
@@ -1412,13 +1412,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildEntityReaction.responseTimeoutMs}
       - id: findParentsByEntityReactionId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/parents
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/parents, ${app.outbound.backend.baseUri}entity-reactions/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/parents
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1454,7 +1454,7 @@ spring:
           response-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.responseTimeoutMs}
       # reactions through entity controller
       - id: createReactionByEntityId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=POST
@@ -1463,7 +1463,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}entities/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1490,7 +1490,7 @@ spring:
           connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createReactionByEntityId.responseTimeoutMs}
       - id: updateReactionsByEntityId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=PATCH
@@ -1499,7 +1499,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}entities/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1523,13 +1523,13 @@ spring:
           connect-timeout: ${app.timeouts.entities.updateReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateReactionsByEntityId.responseTimeoutMs}
       - id: findReactionsByEntityId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}entities/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1564,13 +1564,13 @@ spring:
           connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findReactionsByEntityId.responseTimeoutMs}
       - id: deleteReactionsByEntityId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}entities/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1590,7 +1590,7 @@ spring:
           response-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.responseTimeoutMs}
       # list-reactions controller
       - id: createListReaction
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions
         - Method=POST
@@ -1599,7 +1599,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1626,7 +1626,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createListReaction.responseTimeoutMs}
       - id: updateAllListReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=PATCH
@@ -1635,7 +1635,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1659,13 +1659,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.updateAllListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllListReactions.responseTimeoutMs}
       - id: findListReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1700,13 +1700,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactions.responseTimeoutMs}
       - id: countListReactions
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/count
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1730,13 +1730,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.countListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countListReactions.responseTimeoutMs}
       - id: findListReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1763,7 +1763,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactionById.responseTimeoutMs}
       - id: updateListReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -1772,7 +1772,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1792,7 +1792,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.updateListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateListReactionById.responseTimeoutMs}
       - id: replaceListReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -1801,7 +1801,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1825,13 +1825,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.replaceListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceListReactionById.responseTimeoutMs}
       - id: deleteListReactionById
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.backend.baseUri}list-reactions
+        - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1847,13 +1847,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.deleteListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteListReactionById.responseTimeoutMs}
       - id: findChildrenListReactionsByReactionId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}list-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1888,7 +1888,7 @@ spring:
           connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.responseTimeoutMs}
       - id: createChildListReaction
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
         - Method=POST
@@ -1897,7 +1897,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.backend.baseUri}list-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1924,13 +1924,13 @@ spring:
           connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildListReaction.responseTimeoutMs}
       - id: findParentsByListReactionId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/parents
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.outbound.backend.baseUri}list-reactions/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/parents
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -1966,7 +1966,7 @@ spring:
           response-timeout: ${app.timeouts.reactions.findParentsByListReactionId.responseTimeoutMs}
       # reactions through list controller
       - id: createReactionByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=POST
@@ -1975,7 +1975,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}lists/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2002,7 +2002,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createReactionByListId.responseTimeoutMs}
       - id: updateReactionsByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=PATCH
@@ -2011,7 +2011,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.reactions.update}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}lists/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2035,13 +2035,13 @@ spring:
           connect-timeout: ${app.timeouts.lists.updateReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateReactionsByListId.responseTimeoutMs}
       - id: findReactionsByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}lists/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2076,13 +2076,13 @@ spring:
           connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findReactionsByListId.responseTimeoutMs}
       - id: deleteReactionsByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.backend.baseUri}lists/${recordId}/reactions
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2103,7 +2103,7 @@ spring:
           response-timeout: ${app.timeouts.lists.deleteReactionsByListId.responseTimeoutMs}
       # entities through list controller
       - id: createEntityByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=POST
@@ -2112,7 +2112,7 @@ spring:
           args:
             maxSize: ${app.request-sizes.entities.create}
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.backend.baseUri}lists/${recordId}/entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2139,7 +2139,7 @@ spring:
           connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createEntityByListId.responseTimeoutMs}
       - id: updateEntitiesByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=PATCH
@@ -2150,7 +2150,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.backend.baseUri}lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2172,13 +2172,13 @@ spring:
           connect-timeout: ${app.timeouts.lists.updateEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateEntitiesByListId.responseTimeoutMs}
       - id: findEntitiesByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.backend.baseUri}lists/${recordId}/entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2211,13 +2211,13 @@ spring:
           connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findEntitiesByListId.responseTimeoutMs}
       - id: deleteEntitiesByListId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=DELETE
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.backend.baseUri}lists/${recordId}/entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2239,13 +2239,13 @@ spring:
           response-timeout: ${app.timeouts.lists.deleteEntitiesByListId.responseTimeoutMs}
       # lists through entity controller
       - id: findListsByEntityId
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/lists
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.outbound.backend.baseUri}entities/${recordId}/lists
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: RequestRateLimiter
@@ -2279,13 +2279,13 @@ spring:
           response-timeout: ${app.timeouts.entities.findListsByEntityId.responseTimeoutMs}
       # ping controller
       - id: ping
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}ping
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}ping, ${app.outbound.backend.baseUri}ping
+        - RewritePath=${app.inbound.baseUri}ping, ${app.outbound.routing-target.baseUri}ping
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2306,7 +2306,7 @@ spring:
             status: 404
       # entity kind alias from root mapping
       - id: createEntityByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=POST
@@ -2324,7 +2324,7 @@ spring:
             maxSize: ${app.request-sizes.entities.create}
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: GenerateRequestId
@@ -2350,7 +2350,7 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
       - id: findAllEntitiesByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=GET
@@ -2371,7 +2371,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
             recordType: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
@@ -2397,7 +2397,7 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
       - id: replaceEntityByIdByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PUT
@@ -2415,7 +2415,7 @@ spring:
             maxSize: ${app.request-sizes.entities.update}
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: GenerateRequestId
@@ -2438,7 +2438,7 @@ spring:
         - name: AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
       - id: countEntitiesByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/count
         - Method=GET
@@ -2452,7 +2452,7 @@ spring:
           args:
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities/count
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities/count
         - name: ConvertKindAliasToKindQuery
         - name: AuthenticateRequest
         - name: GenerateRequestId
@@ -2474,7 +2474,7 @@ spring:
             size: ${app.local-cache.entities.countEntities.size}
             recordType: entities
       - id: updateAllEntitiesByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}
         - Method=PATCH
@@ -2492,7 +2492,7 @@ spring:
             maxSize: ${app.request-sizes.entities.update}
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2515,7 +2515,7 @@ spring:
             recordType: entities
         - RemoveRequestHeader=Authorization
       - id: findEntityByIdByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
@@ -2529,7 +2529,7 @@ spring:
           args:
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2553,7 +2553,7 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
       - id: updateEntityByIdByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=PATCH
@@ -2571,7 +2571,7 @@ spring:
             maxSize: ${app.request-sizes.entities.update}
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2589,7 +2589,7 @@ spring:
             leaseTime: ${app.locks.entities.update.leaseTime}
         - RemoveRequestHeader=Authorization
       - id: deleteEntityByIdByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
@@ -2603,7 +2603,7 @@ spring:
           args:
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.backend.baseUri}entities/${recordId}
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2616,7 +2616,7 @@ spring:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
       - id: findEntityChildrenByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=GET
@@ -2630,7 +2630,7 @@ spring:
           args:
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2663,7 +2663,7 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
       - id: createEntityChildByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/children
         - Method=POST
@@ -2681,7 +2681,7 @@ spring:
             maxSize: ${app.request-sizes.entities.create}
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.backend.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - name: PlaceKindNameIntoPayload
         - name: AuthenticateRequest
         - name: GenerateRequestId
@@ -2707,7 +2707,7 @@ spring:
           args:
             policyName: /policies/fields/entities/policy
       - id: findEntityParentsByKindAlias
-        uri: ${app.outbound.backend.protocol}://${app.outbound.backend.host}:${app.outbound.backend.port}
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/parents
         - Method=GET
@@ -2721,7 +2721,7 @@ spring:
           args:
             recordType: entities
         - name: CheckIfRouteEnabled
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.backend.baseUri}entities/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter

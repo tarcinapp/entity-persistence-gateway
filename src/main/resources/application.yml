@@ -70,12 +70,12 @@ spring:
   cloud:
     gateway:
       httpclient:
-        connect-timeout: ${app.outbound.backend.connectTimeoutMs}
-        response-timeout: ${app.outbound.backend.responseTimeout}
+        connect-timeout: ${app.outbound.routing-target.connectTimeoutMs}
+        response-timeout: ${app.outbound.routing-target.responseTimeout}
         pool:
           type: fixed
-          max-connections: ${app.outbound.backend.maxConnections}
-          acquire-timeout: ${app.outbound.backend.acquireTimeoutMs}
+          max-connections: ${app.outbound.routing-target.maxConnections}
+          acquire-timeout: ${app.outbound.routing-target.acquireTimeoutMs}
           max-life-time: 45000 
       
       globalcors:

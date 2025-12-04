@@ -22,29 +22,29 @@ public class BackendClientBase implements IBackendClientBase {
     
     private WebClient webClient;
 
-    @Value("${app.outbound.backend.host:entity-persistence-service}")
+    @Value("${app.outbound.routing-target.host:entity-persistence-service}")
     private String host;
 
-    @Value("${app.outbound.backend.port:80}")
+    @Value("${app.outbound.routing-target.port:80}")
     private String port;
 
-    @Value("${app.outbound.backend.protocol:http}")
+    @Value("${app.outbound.routing-target.protocol:http}")
     private String protocol;
 
     // TCP Handshake Timeout
-    @Value("${app.outbound.backend.connectTimeoutMs:3000}")
+    @Value("${app.outbound.routing-target.connectTimeoutMs:3000}")
     private int connectTimeoutMs;
 
     // Socket Read Timeout (Data gap)
-    @Value("${app.outbound.backend.readTimeoutMs:300}")
+    @Value("${app.outbound.routing-target.readTimeoutMs:300}")
     private int readTimeoutMs;
 
     // Socket Write Timeout
-    @Value("${app.outbound.backend.writeTimeoutMs:300}")
+    @Value("${app.outbound.routing-target.writeTimeoutMs:300}")
     private int writeTimeoutMs;
     
     // Total Request Timeout (Deadline)
-    @Value("${app.outbound.backend.responseTimeout:3000ms}")
+    @Value("${app.outbound.routing-target.responseTimeout:3000ms}")
     private Duration responseTimeout;
 
     @PostConstruct
