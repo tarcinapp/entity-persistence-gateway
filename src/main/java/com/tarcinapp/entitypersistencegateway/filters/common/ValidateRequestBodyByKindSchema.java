@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.common;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -39,7 +39,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<ValidateEntityRequestBody.Config> {
+public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactory<ValidateRequestBodyByKindSchema.Config> {
 
     @Value("${app.commonBaseSchema:#{null}}")
     private String commonBaseSchema;
@@ -64,8 +64,8 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
     // V7 corresponds to Draft-07 which matches your schema definition.
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
 
-    public ValidateEntityRequestBody(ObjectMapper objectMapper) {
-        super(ValidateEntityRequestBody.Config.class);
+    public ValidateRequestBodyByKindSchema(ObjectMapper objectMapper) {
+        super(ValidateRequestBodyByKindSchema.Config.class);
         this.objectMapper = objectMapper;
     }
 
@@ -185,7 +185,7 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            log.debug("ValidateEntityRequestBody filter started.");
+            log.debug("ValidateRequestBodyByKindSchema filter started.");
 
             return modifyRequestBodyFilterFactory
                     .apply(new ModifyRequestBodyGatewayFilterFactory.Config()

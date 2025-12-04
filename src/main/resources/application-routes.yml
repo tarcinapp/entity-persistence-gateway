@@ -2296,7 +2296,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
             recordType: entities
-        - name: ValidateEntityRequestBody
+        - name: ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
@@ -2387,7 +2387,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
             recordType: entities
-        - name: ValidateEntityRequestBody
+        - name: ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
@@ -2463,6 +2463,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
             recordType: entities
+        - name: ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
@@ -2537,7 +2538,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
             recordType: entities
-        - name: ValidateEntityRequestBody
+        - name: ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
@@ -2647,6 +2648,7 @@ spring:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
             recordType: entities
+        - name: ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
