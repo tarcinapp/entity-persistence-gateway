@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
+import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,8 @@ public class DynamicTimeoutGatewayFilterFactory extends AbstractGatewayFilterFac
         // This filter must run before NettyRoutingFilter (Order: Integer.MAX_VALUE).
         // -1 is a safe place to ensure attributes are set before routing logic kicks in.
         return new OrderedGatewayFilter((exchange, chain) -> {
+            // Restore MDC from exchange attributes for proper logging
+            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
             // 1. Config Resolution
             String recordType = config.getRecordType();

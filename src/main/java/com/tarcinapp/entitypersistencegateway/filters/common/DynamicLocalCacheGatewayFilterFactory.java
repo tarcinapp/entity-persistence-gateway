@@ -3,6 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,8 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
         // This filter must run before NettyWriteResponseFilter to capture the response body
         // Order -20 ensures it runs before most other write filters
         return new OrderedGatewayFilter((exchange, chain) -> {
+            // Restore MDC from exchange attributes for proper logging
+            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
             
             ServerHttpRequest request = exchange.getRequest();
 

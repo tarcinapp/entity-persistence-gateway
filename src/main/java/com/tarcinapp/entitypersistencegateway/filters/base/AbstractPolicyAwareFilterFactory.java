@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -63,6 +64,8 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
             }
 
             return this.filter(config, exchange, chain).onErrorResume(e -> {
+                // Restore MDC in error handler
+                MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
                 log.error("An error occured while evaluating the policy.", e);
 
                 ServerHttpResponse response = exchange.getResponse();
@@ -86,6 +89,8 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
         policyInquiryData.setPolicyName(config.getPolicyName());
         
         return this.executePolicy(policyInquiryData).flatMap(pr -> {
+            // Restore MDC after async policy execution
+            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
             log.debug("Policy evaluation is completed.");
 

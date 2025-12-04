@@ -9,8 +9,18 @@
     <appender name="Console"
         class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
+            <!-- 
+                Log pattern includes two request IDs from MDC:
+                - SpringRequestId: The original Spring WebFlux request ID (always available)
+                - RequestId: The custom generated request ID (available after GenerateRequestId filter)
+                
+                Default value "NO_REQUEST" is used for logs emitted outside of request context
+                (startup, scheduled tasks, etc.)
+                
+                Format: [timestamp][level][thread][class][springRequestId][requestId]: message
+            -->
             <Pattern>
-                [%d{ISO8601}][%level][%t][%C{1}][%X{RequestId}]: %msg%n%throwable
+                [%d{ISO8601}][%level][%t][%C{1}][%X{SpringRequestId:-NO_REQUEST}][%X{RequestId:-NO_REQUEST}]: %msg%n%throwable
             </Pattern>
         </layout>
     </appender>

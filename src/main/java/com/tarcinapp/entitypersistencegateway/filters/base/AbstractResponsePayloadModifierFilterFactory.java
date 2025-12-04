@@ -23,6 +23,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebExchangeDecorator;
 
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -56,6 +57,8 @@ public abstract class AbstractResponsePayloadModifierFilterFactory<C, I, O> exte
 
                         @Override
                         public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
+                            // Restore MDC from exchange attributes for logging in response decorator
+                            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
                             if (originalResponse.getStatusCode().is2xxSuccessful()) {
 
@@ -72,9 +75,12 @@ public abstract class AbstractResponsePayloadModifierFilterFactory<C, I, O> exte
                                 ClientResponse clientResponse = prepareClientResponse(body, httpHeaders);
 
                                 Mono<O> modifiedBody = extractBody(exchange, clientResponse, inClass)
-                                        .flatMap(originalBody -> modifyResponsePayload(config, exchange,
-                                                (I) originalBody)
-                                                .switchIfEmpty(Mono.empty()));
+                                        .flatMap(originalBody -> {
+                                            // Restore MDC before calling the payload modifier
+                                            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
+                                            return modifyResponsePayload(config, exchange, (I) originalBody)
+                                                    .switchIfEmpty(Mono.empty());
+                                        });
 
                                 BodyInserter<Mono<O>, ReactiveHttpOutputMessage> bodyInserter = BodyInserters
                                         .fromPublisher(modifiedBody, outClass);
@@ -85,6 +91,8 @@ public abstract class AbstractResponsePayloadModifierFilterFactory<C, I, O> exte
 
                                 return bodyInserter.insert(outputMessage, new BodyInserterContext())
                                         .then(Mono.defer(() -> {
+                                            // Restore MDC before final write
+                                            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
                                             Mono<DataBuffer> messageBody = writeBody(getDelegate(),
                                                     outputMessage,

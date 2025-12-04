@@ -99,7 +99,7 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
             
             try {
                 String policyDataStr = objectMapper.writeValueAsString(policyData);
-                log.debug("Policy data prepared: {}", policyDataStr);
+                log.trace("Policy data prepared: {}", policyDataStr);
             } catch (JsonProcessingException e) {
                 log.debug("Unable to serialize policy data to JSON string.", e);
             }

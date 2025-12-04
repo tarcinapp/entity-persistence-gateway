@@ -56,7 +56,7 @@ public class DropFieldsForMultiItemResponses extends
 
             String modifiedPayload = objectMapper.writeValueAsString(payloadMap);
 
-            log.debug("Modified payload: " + modifiedPayload);
+            log.trace("Modified payload: " + modifiedPayload);
 
             return Mono.just(modifiedPayload);
         } catch (JsonMappingException e) {

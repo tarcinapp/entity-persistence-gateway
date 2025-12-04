@@ -2,6 +2,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -35,6 +36,8 @@ public class KindResolutionGatewayFilterFactory
         // Auth).
         // This ensures others can use the pre-resolved kind configuration.
         return new OrderedGatewayFilter((exchange, chain) -> {
+            // Restore MDC from exchange attributes for proper logging
+            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
             // Initialize the attribute object with default values (configured = false)
             KindAliasConfigAttr kindAliasConfigAttr = new KindAliasConfigAttr();
