@@ -1,12 +1,12 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RLockReactive;
-import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,22 +14,19 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
-import reactor.core.publisher.Mono;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class AcquireLockForCreation
-        extends AbstractGatewayFilterFactory<AcquireLockForCreation.Config> {
+public class AcquireLockForCreation extends AbstractGatewayFilterFactory<AcquireLockForCreation.Config> {
+
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
 
@@ -39,125 +36,89 @@ public class AcquireLockForCreation
     @Value("${app.shortcode:#{tarcinapp}}")
     private String appShortcode;
 
+    private static final String IDEMPOTENCY_HEADER = "X-Idempotency-Key";
+
     public AcquireLockForCreation() {
         super(Config.class);
     }
 
     @Override
     public GatewayFilter apply(Config config) {
-
         return (exchange, chain) -> {
-            log.debug("AcquireLockForCreation filter is started.");
 
+            // 1. STRATEGY: Header Check (FAST PATH)
+            // If the client provides an Idempotency Key, we avoid the cost of reading the body.
+            String idempotencyKey = exchange.getRequest().getHeaders().getFirst(IDEMPOTENCY_HEADER);
+
+            if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                log.debug("Idempotency header found: {}", idempotencyKey);
+                String lockKey = appShortcode + ":lock:creation:header:" + idempotencyKey;
+
+                // Acquire the lock directly without reading the body and continue the chain
+                return lockAndProceed(lockKey, config, Mono.empty())
+                        .then(chain.filter(exchange));
+            }
+
+            // 2. STRATEGY: Payload Hash (SLOW PATH)
+            // If the header does not exist, we must read and hash the body.
             return modifyRequestBodyFilterFactory
-                    .apply(
-                            new ModifyRequestBodyGatewayFilterFactory.Config()
-                                    .setRewriteFunction(String.class, String.class, (ex, payload) -> {
+                .apply(new ModifyRequestBodyGatewayFilterFactory.Config()
+                    .setRewriteFunction(String.class, String.class, (ex, payload) -> {
 
-                                        try {
+                        String hash = calculatePayloadHash(payload);
+                        String lockKey = appShortcode + ":lock:creation:hash:" + hash;
 
-                                            String payloadHash = calculatePayloadhHash(ex, payload);
-                                            log.debug("Payload hash is calculated as: " + payloadHash);
-
-                                            /*
-                                             * if (true) {
-                                             * JsonProcessingException jsonProcessingException = new
-                                             * JsonProcessingException(
-                                             * "Simulated JSON processing exception") {
-                                             * };
-                                             * 
-                                             * throw jsonProcessingException;
-                                             * }
-                                             */
-
-                                                // Resolve lock timings from config or defaults
-                                                Duration wait = config.getWaitTime() != null ? config.getWaitTime() : Duration.ofSeconds(3);
-                                                Duration lease = config.getLeaseTime() != null ? config.getLeaseTime() : Duration.ofSeconds(30);
-
-                                                // Pass the request as it is to the filter chain
-                                                return this.lockRecord(payloadHash, wait, lease)
-                                                    .then(Mono.just(payload));
-                                        } catch (JsonProcessingException e) {
-                                            log.error(
-                                                    "An error occured while parsing the request payload for hash calculation.",
-                                                    e);
-
-                                            throw new ResponseStatusException(
-                                                    HttpStatus.BAD_REQUEST, "Invalid JSON body", e);
-                                        }
-                                    }))
-                    .filter(exchange, chain)
-                    .onErrorResume(e -> {
-
-                        ServerHttpResponse response = exchange.getResponse();
-
-                        if (e instanceof ResponseStatusException) {
-                            response.setStatusCode(((ResponseStatusException) e).getStatusCode());
-                        } else {
-                            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                            log.error("Error in AcquireLockForCreation filter", e);
-                        }
-
-                        return response.setComplete();
-                    });
+                        // Acquire the lock; if successful, return the payload unchanged
+                        return lockAndProceed(lockKey, config, Mono.just(payload))
+                                .thenReturn(payload);
+                    }))
+                .filter(exchange, chain);
         };
     }
 
-        private Mono<Void> lockRecord(String payloadHash, Duration waitTime, Duration leaseTime) {
+    /**
+     * Common Lock Acquisition Logic
+     * Uses RLock (mutex) and manages the risk of thread identity in reactive flows.
+     */
+    private Mono<Void> lockAndProceed(String lockKey, Config config, Mono<?> trigger) {
 
-        final long currentThreadId = Thread.currentThread().getId();
-        final RReadWriteLockReactive lock = redissonReactiveClient
-                .getReadWriteLock(appShortcode+"+lock-on-record-creation-" + payloadHash);
-        final RLockReactive writeLock = lock.writeLock();
+        final RLockReactive lock = redissonReactiveClient.getLock(lockKey);
 
-        return writeLock.isLocked()
-                .flatMap(locked -> {
+        // Since threads may switch in reactive pipelines, we generate a virtual Thread ID.
+        // Redisson will treat this ID as the “owner” of the lock.
+        final long virtualThreadId = ThreadLocalRandom.current().nextLong();
 
-                    if (locked) {
-                        throw new ResponseStatusException(HttpStatus.LOCKED,
-                                "Resource already locked. payload hash: " + payloadHash);
-                    }
+        long waitTime = config.getWaitTime() != null ? config.getWaitTime() : 3000;
+        long leaseTime = config.getLeaseTime() != null ? config.getLeaseTime() : 30000;
 
-                log.debug("Trying to acquire lock for record creation. payload hash: " + payloadHash);
+        return lock.tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS, virtualThreadId)
+            .flatMap(acquired -> {
+                if (!acquired) {
+                    return Mono.error(new ResponseStatusException(
+                        HttpStatus.TOO_MANY_REQUESTS,
+                        "Resource is currently being processed. Duplicate request detected."
+                    ));
+                }
 
-                    return writeLock
-                    .tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS, currentThreadId)
-                            .flatMap(lockAcquired -> {
-
-                                if (!lockAcquired) {
-                                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                            "Failed to acquire write lock for the record creation with payload hash: "
-                                                    + payloadHash);
-                                }
-
-                                log.debug("Lock acquired for the record creation with payload hash: " + payloadHash);
-
-                                return Mono.<Void>empty();
-                            })
-                            .onErrorResume(throwable -> {
-
-                                return writeLock.unlock(currentThreadId)
-                                        .then(Mono.error(throwable));
-                            })
-                            .doFinally(signalType -> {
-                                writeLock.unlock(currentThreadId).subscribe();
-                            });
-                });
+                log.debug("Lock acquired: {}", lockKey);
+                return Mono.empty();
+            })
+            // When the chain completes (response sent or error raised), release the lock
+            .doFinally(signal -> {
+                lock.unlock(virtualThreadId)
+                    .doOnError(e -> log.warn("Error unlocking key {}: {}", lockKey, e.getMessage()))
+                    .subscribe();
+            })
+            .then();
     }
 
-    private String calculatePayloadhHash(ServerWebExchange ex, String payload)
-            throws JsonMappingException, JsonProcessingException {
-
-        // Use a hash function (e.g., SHA-256) to hash the keyFields to create an
-        // payload hash.
-        // This example uses SHA-256 for simplicity; you can choose a suitable hashing
-        // algorithm.
+    private String calculatePayloadHash(String payload) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(payload.getBytes());
+            byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
             return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error calculating hash from the payload", e);
+            throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
 
@@ -171,7 +132,7 @@ public class AcquireLockForCreation
 
     @Data
     public static class Config {
-        private Duration waitTime;
-        private Duration leaseTime;
+        private Long waitTime;  // Milliseconds
+        private Long leaseTime; // Milliseconds
     }
 }

@@ -1,11 +1,10 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
-import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RLockReactive;
-import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import reactor.core.publisher.Mono;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 /**
  * Gateway filter that acquires a distributed write lock for update operations on specific records.
@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLockForUpdate.Config> {
+    
     @Autowired
     RedissonReactiveClient redissonReactiveClient;
 
@@ -48,80 +49,45 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
                 return chain.filter(exchange);
             }
 
-            log.debug("Acquiring write lock for record: " + recordId);
+            // Creating the lock key
+            String lockKey = appShortcode + ":lock-on-record-update:" + recordId;
 
-            Duration wait = config.getWaitTime() != null ? config.getWaitTime() : Duration.ofSeconds(3);
-            Duration lease = config.getLeaseTime() != null ? config.getLeaseTime() : Duration.ofSeconds(30);
+            // Virtual ID for safe lock ownership in reactive flow
+            final long virtualThreadId = ThreadLocalRandom.current().nextLong();
 
-            return acquireWriteLock(recordId, wait, lease)
-                    .then(chain.filter(exchange))
-                    .doFinally(signalType -> {
-                        releaseWriteLock(recordId).subscribe();
-                    });
+            long waitTime = config.getWaitTime() != null ? config.getWaitTime() : 3000;
+            long leaseTime = config.getLeaseTime() != null ? config.getLeaseTime() : 30000;
+
+            final RLockReactive lock = redissonReactiveClient.getLock(lockKey);
+
+            log.debug("Attempting to acquire update lock for record: {}", recordId);
+
+            return lock.tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS, virtualThreadId)
+                .flatMap(acquired -> {
+                    if (!acquired) {
+                        log.warn("Record locked by another process: {}", recordId);
+                        return Mono.error(new ResponseStatusException(HttpStatus.LOCKED,
+                            "Resource is currently locked by another request: " + recordId));
+                    }
+
+                    log.debug("Update lock acquired for record: {}", recordId);
+                    
+                    // Continue the filter chain
+                    return chain.filter(exchange);
+                })
+                .doFinally(signalType -> {
+                    // Unlock ONLY if we acquired it (identified by virtualThreadId).
+                    // We do not use forceUnlock() to preserve data integrity.
+                    lock.unlock(virtualThreadId)
+                        .doOnError(e -> log.warn("Error unlocking record {}: {}", recordId, e.getMessage()))
+                        .subscribe();
+                });
         };
     }
 
-    private Mono<Void> acquireWriteLock(String recordId, Duration waitTime, Duration leaseTime) {
-        final RReadWriteLockReactive lock = redissonReactiveClient
-                .getReadWriteLock(appShortcode + ":lock-on-record-update:" + recordId);
-        final RLockReactive writeLock = lock.writeLock();
-
-        return writeLock.isLocked()
-                .flatMap(locked -> {
-                    if (locked) {
-                        log.warn("Record already locked: " + recordId);
-                        throw new ResponseStatusException(HttpStatus.LOCKED,
-                                "Resource is currently locked by another request: " + recordId);
-                    }
-
-                    return writeLock.tryLock(waitTime.getSeconds(), leaseTime.getSeconds(), TimeUnit.SECONDS)
-                            .flatMap(lockAcquired -> {
-                                if (!lockAcquired) {
-                                    log.error("Failed to acquire write lock for record: " + recordId);
-                                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                            "Failed to acquire write lock for record: " + recordId);
-                                }
-
-                                log.debug("Write lock acquired for record: " + recordId);
-                                return Mono.<Void>empty();
-                            });
-                })
-                .onErrorResume(throwable -> {
-                    return releaseWriteLock(recordId)
-                            .then(Mono.error(throwable));
-                });
-    }
-
-    private Mono<Void> releaseWriteLock(String recordId) {
-        final RReadWriteLockReactive lock = redissonReactiveClient
-                .getReadWriteLock(appShortcode + ":lock-on-record-update:" + recordId);
-        final RLockReactive writeLock = lock.writeLock();
-
-        return writeLock.forceUnlock()
-                .doOnSuccess(v -> log.debug("Write lock released for record: " + recordId))
-                .doOnError(e -> log.error("Error releasing write lock for record: " + recordId, e))
-                .then()
-                .onErrorResume(e -> Mono.empty()); // Ignore unlock errors
-    }
-
+    @Data
     public static class Config {
-        private Duration waitTime;
-        private Duration leaseTime;
-
-        public Duration getWaitTime() {
-            return waitTime;
-        }
-
-        public void setWaitTime(Duration waitTime) {
-            this.waitTime = waitTime;
-        }
-
-        public Duration getLeaseTime() {
-            return leaseTime;
-        }
-
-        public void setLeaseTime(Duration leaseTime) {
-            this.leaseTime = leaseTime;
-        }
+        private Long waitTime;  // Milliseconds
+        private Long leaseTime; // Milliseconds
     }
 }
