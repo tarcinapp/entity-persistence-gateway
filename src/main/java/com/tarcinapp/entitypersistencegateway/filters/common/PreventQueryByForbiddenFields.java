@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -17,11 +18,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * If client is not allowed to see a field, they are unable to query by that field.
- * This field checks if there is a forbidden field queried. If there is, then returns emtpy 
- * array creating a warning level log.
+ * This filter checks if there is a forbidden field queried. If there is, then returns 
+ * a response appropriate to the HTTP method, creating a warning level log.
  * 
- * We are returning empty array because this is consistent with backend service behavior. 
- * When a client queries backend with a field that does not exist, backend return emtpy array.
+ * Response format depends on the HTTP method:
+ * - GET operations: returns empty array [] (consistent with backend service behavior)
+ * - DELETE operations: returns {"count": 0} (matches delete operation response format)
+ * - PATCH operations: returns 204 No Content with empty body
  */
 @Component
 @Slf4j
@@ -40,13 +43,23 @@ public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFact
                     .anyMatch(param -> param.startsWith("filter[where][" + fieldName)));
 
             if (shouldReturnEmptyResponse) {
+                HttpMethod method = exchange.getRequest().getMethod();
+                log.warn("Client used a field name in it's query which it is not allowed to see! Returning response for {} operation.", method);
 
-                log.warn("Client used a field name in it's query which it is not allowed to see! Returning an empty array.");
-
-                // Modify the response to return an empty JSON array
-                exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                exchange.getResponse().setStatusCode(HttpStatus.OK);
-                return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap("[]".getBytes())));
+                // Determine response format based on HTTP method
+                if (HttpMethod.DELETE.equals(method)) {
+                    exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap("{\"count\": 0}".getBytes())));
+                } else if (HttpMethod.PATCH.equals(method)) {
+                    exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
+                    return exchange.getResponse().setComplete();
+                } else {
+                    // GET and other operations return empty array
+                    exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap("[]".getBytes())));
+                }
             }
 
             // If the field doesn't exist, continue with the request
