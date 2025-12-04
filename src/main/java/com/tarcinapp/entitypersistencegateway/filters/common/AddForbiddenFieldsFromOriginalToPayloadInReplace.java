@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
+import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -58,8 +59,8 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
     @Autowired
     IAuthorizationClient authorizationClient;
 
-    @Autowired(required = false)
-    private Key key;
+    @Autowired
+    private JwtAuthenticationService jwtAuthenticationService;
 
     private final ObjectMapper objectMapper;
 
@@ -75,8 +76,10 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
             log.debug("AddForbiddenFieldsFromOriginalToPayloadInReplace filter is started. Policy name: "
                     + config.getPolicyName());
 
-            if (this.key == null) {
-                log.warn("RS256 key is not configured. We can't query for forbidden fields. This request won't be authorized.");
+
+            // Check if JWT authentication is configured
+            if (!jwtAuthenticationService.isConfigured()) {
+                log.warn("RS256 key is not configured. We can't query for forbidden fields. ");
                 return chain.filter(exchange);
             }
 
