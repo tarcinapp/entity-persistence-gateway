@@ -64,6 +64,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
@@ -452,6 +456,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
@@ -849,6 +857,11 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/relations/policy
+        - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         metadata:
@@ -1120,10 +1133,14 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entityReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: entityReactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
         metadata:
           connect-timeout: ${app.timeouts.reactions.updateAllEntityReactions.connectTimeoutMs}
@@ -1153,7 +1170,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: entityReactions
+            recordType: entityReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1189,7 +1206,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: entityReactions
+            recordType: entityReactions
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1341,7 +1358,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: entityReactions
+            recordType: entityReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1419,7 +1436,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: entityReactions
+            recordType: entityReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1493,6 +1510,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entityReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
@@ -1625,10 +1646,14 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: listReactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
         metadata:
           connect-timeout: ${app.timeouts.reactions.updateAllListReactions.connectTimeoutMs}
@@ -1658,7 +1683,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: listReactions
+            recordType: listReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1694,7 +1719,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: listReactions
+            recordType: listReactions
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1846,7 +1871,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: listReactions
+            recordType: listReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1923,7 +1948,7 @@ spring:
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToReactionsQuery
           args:
-            reactionType: listReactions
+            recordType: listReactions
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1997,6 +2022,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
@@ -2064,6 +2093,7 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
+        - name: PreventStringifiedJsonFilter
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: listReactions
@@ -2131,6 +2161,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
@@ -2196,6 +2230,9 @@ spring:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: AddSetsToThroughRecordQuery
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         metadata:
           connect-timeout: ${app.timeouts.lists.deleteEntitiesByListId.connectTimeoutMs}
@@ -2464,9 +2501,13 @@ spring:
             burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
             recordType: entities
         - name: ValidateRequestBodyByKindSchema
-        - name: AuthorizeRequest
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
           args:
-            policyName: /policies/auth/routes/entities/updateAllEntities/policy
+            policyName: /policies/fields/entities/policy
+#        - name: AuthorizeRequest
+#          args:
+#            policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
