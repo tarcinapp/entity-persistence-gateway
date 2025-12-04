@@ -24,12 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reaction query filter that enforces audience constraints for low authority users.
- *  * Valid reactionType values:
+ *  * Valid recordType values:
  * - entityReactions: Uses entitySet for filtering
  * - listReactions: Uses listSet for filtering
  *  * Differences from AddSetsToEntityListOrReactionViaRecordQuery:
- * - Accepts reactionType (not recordType)
- * - Applies audience sets to either entitySet or listSet depending on the reactionType
+ * - Accepts recordType 
+ * - Applies audience sets to either entitySet or listSet depending on the recordType
  * - Does NOT wrap or process filter[include] parameters as reactions do not support includes
  * - Still protects top-level sets and filter[lookup] chains (including nested lookups)
  *
@@ -49,8 +49,8 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            String reactionType = config.getReactionType();
-            log.debug("AddSetsToReactionsQuery filter is started. reactionType: {}", reactionType);
+            String recordType = config.getRecordType();
+            log.debug("AddSetsToReactionsQuery filter is started. recordType: {}", recordType);
 
             GatewaySecurityContext gc = (GatewaySecurityContext) exchange.getAttributes().get(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
             
@@ -87,12 +87,12 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
                 appShortcode + ".reactions.find.editor"
             );
 
-            if (reactionType != null) {
+            if (recordType != null) {
                 privilegedRoles = Stream.concat(privilegedRoles, Stream.of(
-                    appShortcode + "." + reactionType + ".admin",
-                    appShortcode + "." + reactionType + ".editor",
-                    appShortcode + "." + reactionType + ".find.admin",
-                    appShortcode + "." + reactionType + ".find.editor"
+                    appShortcode + "." + recordType + ".admin",
+                    appShortcode + "." + recordType + ".editor",
+                    appShortcode + "." + recordType + ".find.admin",
+                    appShortcode + "." + recordType + ".find.editor"
                 ));
             }
 
@@ -143,9 +143,9 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
 
             String groupsStr = groups.stream().collect(Collectors.joining(","));
 
-            // Determine target set key based on reactionType
-            // If reactionType contains "list" use listSet, otherwise use entitySet
-            boolean useListSet = reactionType != null && reactionType.toLowerCase().contains("list");
+            // Determine target set key based on recordType
+            // If recordType contains "list" use listSet, otherwise use entitySet
+            boolean useListSet = recordType != null && recordType.toLowerCase().contains("list");
             String primarySetKey = useListSet ? "listSet" : "entitySet";
 
             // Check if caller supplied the primary set already
@@ -312,6 +312,6 @@ public class AddSetsToReactionsQuery extends AbstractGatewayFilterFactory<AddSet
 
     @Data
     public static class Config {
-        private String reactionType; // determines entitySet vs listSet usage
+        private String recordType; // determines entitySet vs listSet usage
     }
 }
