@@ -531,6 +531,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/countLists/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/lists/policy
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: lists
@@ -928,6 +932,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/relations/policy
         - name: AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -1204,6 +1212,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entityReactions/policy
         - name: AddSetsToReactionsQuery
           args:
             recordType: entityReactions
@@ -1717,6 +1729,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/listReactions/policy
         - name: AddSetsToReactionsQuery
           args:
             recordType: listReactions
@@ -2464,6 +2480,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
+        - name: PreventStringifiedJsonFilter
+        - name: PreventQueryByForbiddenFields
+          args:
+            policyName: /policies/fields/entities/policy
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
