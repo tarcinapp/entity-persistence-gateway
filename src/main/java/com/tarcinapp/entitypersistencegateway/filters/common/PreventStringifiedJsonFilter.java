@@ -47,7 +47,7 @@ public class PreventStringifiedJsonFilter extends AbstractGatewayFilterFactory<P
 
                     // Return an unauthorized response
                     ServerHttpResponse response = exchange.getResponse();
-                    response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                    response.setStatusCode(HttpStatus.FORBIDDEN);
                     return response.setComplete();
                 }
             }
