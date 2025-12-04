@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.entitycontroller.find;
+package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -20,15 +20,23 @@ import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Gateway filter that converts a kind alias path parameter into a query filter.
+ * 
+ * This filter is used for find/count operations where the kind alias from the URL
+ * needs to be converted to a query parameter filter on the _kind field.
+ * 
+ * Works with any record type (entities, lists, reactions) that supports kind alias paths.
+ */
 @Component
 @Slf4j
-public class ConvertKindAliasToQueryForFindEntities
-        extends AbstractGatewayFilterFactory<ConvertKindAliasToQueryForFindEntities.Config> {
+public class ConvertKindAliasToKindQuery
+        extends AbstractGatewayFilterFactory<ConvertKindAliasToKindQuery.Config> {
 
     // Pattern Matcher for MultiValueMap keys
     private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[_kind\\].*");
 
-    public ConvertKindAliasToQueryForFindEntities() {
+    public ConvertKindAliasToKindQuery() {
         super(Config.class);
     }
 
@@ -36,19 +44,18 @@ public class ConvertKindAliasToQueryForFindEntities
     public GatewayFilter apply(Config config) {
 
         return (exchange, chain) -> {
-            log.debug("ConvertKindAliasToQuery filter is started.");
+            log.debug("ConvertKindAliasToKindQuery filter started.");
 
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String kindAlias = uriVariables.get("kindAlias");
 
-            log.debug("Caller requested kind alias '{}'. Checking if {} is configured as an entity kind.", kindAlias,
-                    kindAlias);
+            log.debug("Caller requested kind alias '{}'. Checking if it is configured.", kindAlias);
 
             KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 
-            // Defensive check: If attribute is missing or kind is not configured, skip logic.
+            // Defensive check: If attribute is missing or kind is not configured, return 404
             if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
-                log.debug("No kind alias configuration found in attributes. Skipping payload modification.");
+                log.debug("No kind alias configuration found in attributes. Skipping query modification.");
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Kind configuration not found for the provided alias"));
             }

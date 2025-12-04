@@ -2340,7 +2340,7 @@ spring:
             policyName: /policies/auth/routes/entities/findEntities/policy
         - name: PreventStringifiedJsonFilter
         - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindAliasToQueryForFindEntities
+        - name: ConvertKindAliasToKindQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -2416,7 +2416,7 @@ spring:
             recordType: entities
         - name: CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.backend.baseUri}entities/count
-        - name: ConvertKindAliasToQueryForFindEntities
+        - name: ConvertKindAliasToKindQuery
         - name: AuthenticateRequest
         - name: GenerateRequestId
         - name: DynamicRateLimiter
@@ -2468,7 +2468,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindAliasToQueryForFindEntities
+        - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -2605,6 +2605,7 @@ spring:
           args:
             recordType: entities
         - name: ConvertSimplerQueriesToBackendFormat
+        - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
@@ -2695,6 +2696,7 @@ spring:
           args:
             recordType: entities
         - name: ConvertSimplerQueriesToBackendFormat
+        - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
           args:
             recordType: entities
