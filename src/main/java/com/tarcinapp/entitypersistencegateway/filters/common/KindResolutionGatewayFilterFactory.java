@@ -61,6 +61,7 @@ public class KindResolutionGatewayFilterFactory
                     // 3. Populate the attribute object
                     kindAliasConfigAttr.setKindAliasConfigured(true);
                     kindAliasConfigAttr.setKindName(kindName);
+                    kindAliasConfigAttr.setRecordType(config.getRecordType());
 
                     // Construct Original Resource URL if recordType and recordId are present
                     // This is crucial for Authorization logic to know the actual resource being

@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
@@ -160,9 +158,12 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
                         combinedSchemaNode.put("additionalProperties", false);
                     }
 
+                    // Build composite key using recordType and kindName
+                    String schemaKey = buildSchemaKey(kindAliasPath.getRecordType(), kindAliasPath.getName());
+
                     // 1. Create and Store Full Schema (POST/PUT)
                     JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(combinedSchemaNode);
-                    combinedSchemas.put(kindAliasPath.getName(), combinedSchema);
+                    combinedSchemas.put(schemaKey, combinedSchema);
 
                     // 2. Create and Store Patch Schema (PATCH)
                     // We clone the node (or just verify we can modify it since we just created it)
@@ -171,7 +172,7 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
                     patchSchemaNode.remove("required");
 
                     JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-                    patchSchemas.put(kindAliasPath.getName(), patchSchema);
+                    patchSchemas.put(schemaKey, patchSchema);
                 }
             }
 
@@ -201,6 +202,8 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
                                 }
 
                                 String kindName = kindAliasConfigAttr.getKindName();
+                                String recordType = kindAliasConfigAttr.getRecordType();
+                                String schemaKey = buildSchemaKey(recordType, kindName);
 
                                 try {
                                     JsonNode requestJsonNode = objectMapper.readTree(payload);
@@ -211,7 +214,7 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
                                     // SELECT SCHEMA BASED ON METHOD
                                     if (method == HttpMethod.PATCH) {
                                         // Use the schema where root-level 'required' is removed
-                                        JsonSchema schema = patchSchemas.get(kindName);
+                                        JsonSchema schema = patchSchemas.get(schemaKey);
                                         if (schema == null) {
                                             // Fallback if no schema (shouldn't happen if initialized correctly)
                                             return Mono.just(payload);
@@ -219,7 +222,7 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
                                         errors = schema.validate(requestJsonNode);
                                     } else {
                                         // POST / PUT: Use full schema
-                                        JsonSchema schema = combinedSchemas.get(kindName);
+                                        JsonSchema schema = combinedSchemas.get(schemaKey);
                                         if (schema == null) {
                                             return Mono.just(payload);
                                         }
@@ -304,6 +307,13 @@ public class ValidateEntityRequestBody extends AbstractGatewayFilterFactory<Vali
         responseJson.set("error", errorNode);
 
         return responseJson;
+    }
+
+    /**
+     * Builds a composite key for schema lookup using recordType and kindName.
+     */
+    private static String buildSchemaKey(String recordType, String kindName) {
+        return recordType + ":" + kindName;
     }
 
     public static class Config {
