@@ -3,6 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -16,8 +17,6 @@ import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBod
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -45,31 +44,31 @@ public class AcquireLockForCreation extends AbstractGatewayFilterFactory<Acquire
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-
+            
             // 1. STRATEGY: Header Check (FAST PATH)
-            // If the client provides an Idempotency Key, we avoid the cost of reading the body.
+            // If the client sends an Idempotency Key, we skip reading the body (saving RAM/CPU).
             String idempotencyKey = exchange.getRequest().getHeaders().getFirst(IDEMPOTENCY_HEADER);
 
             if (idempotencyKey != null && !idempotencyKey.isBlank()) {
                 log.debug("Idempotency header found: {}", idempotencyKey);
                 String lockKey = appShortcode + ":lock:creation:header:" + idempotencyKey;
-
-                // Acquire the lock directly without reading the body and continue the chain
-                return lockAndProceed(lockKey, config, Mono.empty())
+                
+                // Acquire lock without reading body and proceed
+                return lockAndProceed(lockKey, config)
                         .then(chain.filter(exchange));
             }
 
             // 2. STRATEGY: Payload Hash (SLOW PATH)
-            // If the header does not exist, we must read and hash the body.
+            // No header implies we must read and hash the body.
             return modifyRequestBodyFilterFactory
                 .apply(new ModifyRequestBodyGatewayFilterFactory.Config()
                     .setRewriteFunction(String.class, String.class, (ex, payload) -> {
-
+                        
                         String hash = calculatePayloadHash(payload);
                         String lockKey = appShortcode + ":lock:creation:hash:" + hash;
 
-                        // Acquire the lock; if successful, return the payload unchanged
-                        return lockAndProceed(lockKey, config, Mono.just(payload))
+                        // Acquire lock, if successful, return original payload to continue chain
+                        return lockAndProceed(lockKey, config)
                                 .thenReturn(payload);
                     }))
                 .filter(exchange, chain);
@@ -77,33 +76,32 @@ public class AcquireLockForCreation extends AbstractGatewayFilterFactory<Acquire
     }
 
     /**
-     * Common Lock Acquisition Logic
-     * Uses RLock (mutex) and manages the risk of thread identity in reactive flows.
+     * Shared Locking Logic
+     * Uses RLock (Mutex) and Virtual Thread ID for reactive safety.
      */
-    private Mono<Void> lockAndProceed(String lockKey, Config config, Mono<?> trigger) {
-
+    private Mono<Void> lockAndProceed(String lockKey, Config config) {
+        
         final RLockReactive lock = redissonReactiveClient.getLock(lockKey);
-
-        // Since threads may switch in reactive pipelines, we generate a virtual Thread ID.
-        // Redisson will treat this ID as the “owner” of the lock.
+        
+        // In reactive streams, thread ID is not stable. 
+        // We generate a virtual ID to act as the lock owner for this specific request.
         final long virtualThreadId = ThreadLocalRandom.current().nextLong();
 
-        long waitTime = config.getWaitTime() != null ? config.getWaitTime() : 3000;
-        long leaseTime = config.getLeaseTime() != null ? config.getLeaseTime() : 30000;
+        // Convert Duration to Milliseconds (or use defaults)
+        long waitMillis = config.getWaitTime() != null ? config.getWaitTime().toMillis() : 3000;
+        long leaseMillis = config.getLeaseTime() != null ? config.getLeaseTime().toMillis() : 30000;
 
-        return lock.tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS, virtualThreadId)
+        return lock.tryLock(waitMillis, leaseMillis, TimeUnit.MILLISECONDS, virtualThreadId)
             .flatMap(acquired -> {
                 if (!acquired) {
-                    return Mono.error(new ResponseStatusException(
-                        HttpStatus.TOO_MANY_REQUESTS,
-                        "Resource is currently being processed. Duplicate request detected."
-                    ));
+                    return Mono.error(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, 
+                        "Resource is currently being processed. Duplicate request detected."));
                 }
-
+                
                 log.debug("Lock acquired: {}", lockKey);
                 return Mono.empty();
             })
-            // When the chain completes (response sent or error raised), release the lock
+            // Ensure lock is released whether the chain succeeds or fails
             .doFinally(signal -> {
                 lock.unlock(virtualThreadId)
                     .doOnError(e -> log.warn("Error unlocking key {}: {}", lockKey, e.getMessage()))
@@ -132,7 +130,7 @@ public class AcquireLockForCreation extends AbstractGatewayFilterFactory<Acquire
 
     @Data
     public static class Config {
-        private Long waitTime;  // Milliseconds
-        private Long leaseTime; // Milliseconds
+        private Duration waitTime;  // Supports '3s', '500ms' in YAML
+        private Duration leaseTime; // Supports '30s' in YAML
     }
 }

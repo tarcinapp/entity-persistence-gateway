@@ -1,5 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -49,20 +50,21 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
                 return chain.filter(exchange);
             }
 
-            // Creating the lock key
+            // Constructing lock key
             String lockKey = appShortcode + ":lock-on-record-update:" + recordId;
 
-            // Virtual ID for safe lock ownership in reactive flow
+            // Generate a virtual thread ID for safe lock ownership in reactive flow
             final long virtualThreadId = ThreadLocalRandom.current().nextLong();
 
-            long waitTime = config.getWaitTime() != null ? config.getWaitTime() : 3000;
-            long leaseTime = config.getLeaseTime() != null ? config.getLeaseTime() : 30000;
+            // Convert Duration to Milliseconds (or use defaults)
+            long waitMillis = config.getWaitTime() != null ? config.getWaitTime().toMillis() : 3000;
+            long leaseMillis = config.getLeaseTime() != null ? config.getLeaseTime().toMillis() : 30000;
 
             final RLockReactive lock = redissonReactiveClient.getLock(lockKey);
 
             log.debug("Attempting to acquire update lock for record: {}", recordId);
 
-            return lock.tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS, virtualThreadId)
+            return lock.tryLock(waitMillis, leaseMillis, TimeUnit.MILLISECONDS, virtualThreadId)
                 .flatMap(acquired -> {
                     if (!acquired) {
                         log.warn("Record locked by another process: {}", recordId);
@@ -76,7 +78,7 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
                     return chain.filter(exchange);
                 })
                 .doFinally(signalType -> {
-                    // Unlock ONLY if we acquired it (identified by virtualThreadId).
+                    // Unlock ONLY if we acquired the lock (using virtualThreadId).
                     // We do not use forceUnlock() to preserve data integrity.
                     lock.unlock(virtualThreadId)
                         .doOnError(e -> log.warn("Error unlocking record {}: {}", recordId, e.getMessage()))
@@ -87,7 +89,7 @@ public class AcquireLockForUpdate extends AbstractGatewayFilterFactory<AcquireLo
 
     @Data
     public static class Config {
-        private Long waitTime;  // Milliseconds
-        private Long leaseTime; // Milliseconds
+        private Duration waitTime;  // Supports '3s', '500ms' in YAML
+        private Duration leaseTime; // Supports '30s' in YAML
     }
 }
