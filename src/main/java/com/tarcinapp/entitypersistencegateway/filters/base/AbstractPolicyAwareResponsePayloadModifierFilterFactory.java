@@ -37,9 +37,6 @@ import reactor.core.publisher.Mono;
 public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C extends PolicyEvaluatingFilterConfig, PR, I, O>
         extends AbstractPolicyAwareFilterFactory<C, PR> {
 
-    @Autowired(required = false)
-    Key key;
-
     @Autowired
     IAuthorizationClient authorizationClient;
 

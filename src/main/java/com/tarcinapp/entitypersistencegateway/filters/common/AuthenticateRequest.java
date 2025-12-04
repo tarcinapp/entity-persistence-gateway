@@ -62,7 +62,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
 
             // Check if JWT authentication is configured
             if (!jwtAuthenticationService.isConfigured()) {
-                log.warn("RS256 key not configured. Requests won't be authenticated!");
+                log.warn("Authentication is not configured. Requests won't be authenticated!");
                 return chain.filter(exchange);
             }
 

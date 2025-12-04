@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
+import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -34,11 +35,11 @@ import reactor.core.publisher.Mono;
 public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatingFilterConfig, PR>
         extends AbstractGatewayFilterFactory<C> {
 
-    @Autowired(required = false)
-    Key key;
-
     @Autowired
     IAuthorizationClient authorizationClient;
+
+    @Autowired
+    private JwtAuthenticationService jwtAuthenticationService;
 
     private Class<PR> policyResultClass;
 
@@ -58,8 +59,9 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
 
         return (exchange, chain) -> {
 
-            if (key == null) {
-                log.warn("Policy evaluation is skipped as security key is not configured.");
+            // Check if JWT authentication is configured
+            if (!jwtAuthenticationService.isConfigured()) {
+                log.warn("Authentication provider is not configured. Skipping policy evaluation!");
                 return chain.filter(exchange);
             }
 
