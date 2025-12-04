@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractPolicyAwareFilterFactory;
@@ -40,14 +42,15 @@ public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFact
 
             boolean shouldReturnEmptyResponse = fieldsToCheck.stream()
                 .anyMatch(fieldName -> exchange.getRequest().getQueryParams().keySet().stream()
-                    .anyMatch(param -> param.startsWith("filter[where][" + fieldName)));
+                    .anyMatch(param -> param.startsWith("filter[where][" + fieldName) || param.startsWith("where[" + fieldName)));
 
             if (shouldReturnEmptyResponse) {
                 HttpMethod method = exchange.getRequest().getMethod();
+                String routeId = getRouteId(exchange);
                 log.warn("Client used a field name in it's query which it is not allowed to see! Returning response for {} operation.", method);
 
                 // Determine response format based on HTTP method
-                if (HttpMethod.DELETE.equals(method)) {
+                if (HttpMethod.DELETE.equals(method) || routeId.startsWith("count")) {
                     exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
                     exchange.getResponse().setStatusCode(HttpStatus.OK);
                     return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap("{\"count\": 0}".getBytes())));
@@ -66,6 +69,15 @@ public class PreventQueryByForbiddenFields extends AbstractPolicyAwareFilterFact
             return chain.filter(exchange);
         };
     }
+
+    /**
+     * Extracts the route ID from the exchange
+     */
+    private String getRouteId(ServerWebExchange exchange) {
+        Object routeIdAttr = exchange.getAttributes().get(ServerWebExchangeUtils.GATEWAY_PREDICATE_MATCHED_PATH_ROUTE_ID_ATTR);
+        return routeIdAttr != null ? routeIdAttr.toString() : "unknown";
+    }
+
 
     /**
      * This POJO is used to map PDP response of inquiry of forbidden fields.
