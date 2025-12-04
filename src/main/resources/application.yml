@@ -74,8 +74,8 @@ spring:
         response-timeout: ${app.outbound.routing-target.responseTimeout}
         pool:
           type: fixed
-          max-connections: ${app.outbound.routing-target.maxConnections}
-          acquire-timeout: ${app.outbound.routing-target.acquireTimeoutMs}
+          max-connections: ${app.outbound.routing-target.pool.maxConnections}
+          acquire-timeout: ${app.outbound.routing-target.pool.acquireTimeoutMs}
           max-life-time: 45000 
       
       globalcors:

@@ -1,16 +1,52 @@
 app:
   outbound:
+    
+    # ---------------------------------------------------------
+    # 1. ROUTING TARGET (Default Backend)
+    # ---------------------------------------------------------
+    # The main business service where traffic flows unless otherwise specified 
+    # (via route metadata).
+    # E.g.: ElasticSearch, Python AI, Legacy SQL, etc.
     routing-target:
       protocol: http
       host: entity-persistence-service
       port: 80
       baseUri: '/'
+      
+      # Timeouts (Business logic might be slow, so this should be flexible)
       connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
-      readTimeoutMs: 300
-      writeTimeoutMs: 300
+      readTimeoutMs: 3000   # Business services can sometimes take long
+      writeTimeoutMs: 3000
       responseTimeout: ${app.timeouts.default.responseTimeoutMs}
-      maxConnections: 500
-      acquireTimeoutMs: 3000
+      
+      pool:
+        maxConnections: 500
+        acquireTimeoutMs: 3000
+
+    # ---------------------------------------------------------
+    # 2. POLICY SOURCE (Security Data Provider)
+    # ---------------------------------------------------------
+    # The source where AuthenticationFilter fetches "Row Level Security" data 
+    # (owner, visibility) for OPA decisions.
+    # This is USUALLY the Core Mongo service and must be very fast.
+    policy-source:
+      # Inherit connection settings from routing-target to avoid duplication.
+      # If the business backend moves, policy check follows by default unless overridden.
+      protocol: ${app.outbound.routing-target.protocol}
+      host: ${app.outbound.routing-target.host}
+      port: ${app.outbound.routing-target.port}
+      baseUri: ${app.outbound.routing-target.baseUri}
+      
+      # Timeouts (This is the Security layer, must be VERY FAST)
+      # If Policy Source is unresponsive, Gateway should fail fast rather than blocking.
+      connectTimeoutMs: 1000 # Fail fast
+      readTimeoutMs: 1000    # Policy data fetch shouldn't take longer than 1 second
+      writeTimeoutMs: 1000
+      responseTimeout: PT1S
+      
+      pool:
+        maxConnections: 200 # Dedicated pool for Auth traffic
+        acquireTimeoutMs: 1000
 
     opa:
       protocol: https
