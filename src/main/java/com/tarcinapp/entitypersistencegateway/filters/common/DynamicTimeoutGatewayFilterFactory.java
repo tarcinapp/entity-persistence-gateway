@@ -2,6 +2,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,19 +41,8 @@ public class DynamicTimeoutGatewayFilterFactory extends AbstractGatewayFilterFac
             // Restore MDC from exchange attributes for proper logging
             MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
-            // 1. Config Resolution
-            String recordType = config.getRecordType();
-            
-            // If recordType is not provided in args, try to fetch it from route metadata
-            if (recordType == null) {
-                Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-                if (route != null) {
-                    Object metaRecordType = route.getMetadata().get("recordType");
-                    if (metaRecordType != null) {
-                        recordType = metaRecordType.toString();
-                    }
-                }
-            }
+            // 1. Resolve recordType with hierarchical fallback
+            String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "DynamicTimeout");
 
             // Default values from route arguments (YAML)
             Integer defaultConnectTimeout = config.getConnectTimeoutMs();

@@ -14,6 +14,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -49,14 +50,7 @@ public class DynamicRequestSizeFilter extends AbstractGatewayFilterFactory<Dynam
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             HttpMethod method = exchange.getRequest().getMethod();
-            String recordType = config.getRecordType();
-
-            if (recordType == null || recordType.isEmpty()) {
-                log.error("DynamicRequestSizeFilter filter requires recordType to be set in config.");
-
-                exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                return exchange.getResponse().setComplete();
-            }
+            String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "DynamicRequestSizeFilter");
 
             // Only check size for methods with request bodies
             if (method != HttpMethod.POST && method != HttpMethod.PUT && method != HttpMethod.PATCH) {

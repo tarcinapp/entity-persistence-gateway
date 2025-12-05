@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration;
 import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration.FieldsetDefinition;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractResponsePayloadModifierFilterFactory;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import com.tarcinapp.entitypersistencegateway.services.FieldsetService;
 
 import reactor.core.publisher.Mono;
@@ -54,11 +55,8 @@ public class ApplyFieldsetConfig
             return Mono.just(payload);
         }
 
-        String resourceType = config.getRecordType();
-        if (resourceType == null || resourceType.isEmpty()) {
-            log.warn("No resource type specified in filter configuration, cannot apply fieldsets");
-            return Mono.just(payload);
-        }
+        // Resolve recordType with hierarchical fallback
+        String resourceType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "ApplyFieldsetConfig");
 
         // Parse query parameters
         URI uri = exchange.getRequest().getURI();

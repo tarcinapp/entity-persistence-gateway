@@ -16,8 +16,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -30,15 +30,14 @@ spring:
           args:
             waitTime: ${app.locks.entities.create.waitTime}
             leaseTime: ${app.locks.entities.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntity.responseTimeoutMs}
       - id: updateAllEntities
@@ -54,8 +53,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -64,16 +63,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
       - id: findEntities
@@ -86,8 +84,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -96,14 +94,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -112,11 +106,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntities.responseTimeoutMs}
       - id: countEntities
@@ -129,8 +123,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -139,16 +133,14 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.countEntities.timeToLive}
             size: ${app.local-cache.entities.countEntities.size}
-            recordType: entities
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.countEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.countEntities.responseTimeoutMs}
       - id: findEntityById
@@ -161,8 +153,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -176,14 +168,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
-            recordType: entities
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
       - id: updateEntityById
@@ -199,8 +189,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -209,9 +199,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
-        - name: AcquireLockForUpdate
+        - AcquireLockForUpdate
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
       - id: replaceEntityById
@@ -227,8 +218,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -237,13 +228,14 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
-        - name: AcquireLockForUpdate
+        - AcquireLockForUpdate
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/entities/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
       - id: deleteEntityById
@@ -256,8 +248,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}, ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -268,6 +260,7 @@ spring:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
       - id: findEntityChildren
@@ -280,8 +273,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -290,14 +283,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -306,11 +295,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
       - id: createEntityChild
@@ -326,8 +315,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -340,15 +329,14 @@ spring:
           args:
             waitTime: ${app.locks.entities.createChild.waitTime}
             leaseTime: ${app.locks.entities.createChild.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
       - id: findEntityParents
@@ -361,8 +349,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -371,14 +359,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -387,11 +371,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
       # list controller
@@ -408,8 +392,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -422,15 +406,14 @@ spring:
           args:
             waitTime: ${app.locks.lists.create.waitTime}
             leaseTime: ${app.locks.lists.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createList.responseTimeoutMs}
       - id: updateAllLists
@@ -446,8 +429,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -456,16 +439,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: lists
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.updateAllLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateAllLists.responseTimeoutMs}
       - id: findLists
@@ -478,8 +460,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -488,14 +470,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findLists/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-              recordType: lists
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -504,11 +482,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
-            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findLists.responseTimeoutMs}
       - id: countLists
@@ -521,8 +499,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -531,20 +509,18 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/countLists/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: lists
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.countLists.timeToLive}
             size: ${app.local-cache.lists.countLists.size}
-            recordType: lists
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.countLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.countLists.responseTimeoutMs}
       - id: findListById
@@ -557,8 +533,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -572,14 +548,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListById.timeToLive}
             size: ${app.local-cache.lists.findListById.size}
-            recordType: lists
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListById.responseTimeoutMs}
       - id: updateListById
@@ -595,8 +569,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -611,6 +585,7 @@ spring:
             leaseTime: ${app.locks.lists.update.leaseTime}
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.updateListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateListById.responseTimeoutMs}
       - id: replaceListById
@@ -626,8 +601,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -643,9 +618,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/lists/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.replaceListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.replaceListById.responseTimeoutMs}
       - id: deleteListById
@@ -658,8 +634,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -670,6 +646,7 @@ spring:
             policyName: /policies/auth/routes/lists/deleteListById/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.deleteListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteListById.responseTimeoutMs}
       - id: findListChildren
@@ -682,8 +659,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -692,14 +669,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListChildren/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: lists
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -708,11 +681,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListChildren.timeToLive}
             size: ${app.local-cache.lists.findListChildren.size}
-            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListChildren.responseTimeoutMs}
       - id: createListChild
@@ -728,8 +701,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -742,15 +715,14 @@ spring:
           args:
             waitTime: ${app.locks.lists.createChild.waitTime}
             leaseTime: ${app.locks.lists.createChild.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createListChild.responseTimeoutMs}
       - id: findListParents
@@ -763,8 +735,8 @@ spring:
           args:
             controllerName: lists
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -773,14 +745,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListParents/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: lists
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -789,11 +757,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
             size: ${app.local-cache.lists.findListParents.size}
-            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.lists.findListParents.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListParents.responseTimeoutMs}
       # relations controller
@@ -810,8 +778,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -828,14 +796,13 @@ spring:
           args:
             excludeFields:
             - OWNER_USERS
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: relations
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/relations/policy
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.createRelation.responseTimeoutMs}
       - id: updateAllRelations
@@ -851,8 +818,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -861,14 +828,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/relations/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToRelationQuery
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.updateAllRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateAllRelations.responseTimeoutMs}
       - id: findRelations
@@ -881,8 +849,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -891,12 +859,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/findRelations/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: relations
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToRelationQuery
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToRelationQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/relations/policy
@@ -905,11 +871,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
             size: ${app.local-cache.relations.findRelations.size}
-            recordType: relations
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/relations/policy
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelations.responseTimeoutMs}
       - id: countRelations
@@ -922,8 +888,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: relations
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -932,18 +898,18 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/relations/policy
-        - name: AddSetsToRelationQuery
+        - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.relations.countRelations.timeToLive}
             size: ${app.local-cache.relations.countRelations.size}
-            recordType: relations
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.countRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.countRelations.responseTimeoutMs}
       - id: findRelationById
@@ -959,8 +925,8 @@ spring:
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -974,14 +940,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
             size: ${app.local-cache.relations.findRelationById.size}
-            recordType: relations
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: relations
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/relations/policy
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelationById.responseTimeoutMs}
       - id: updateRelationById
@@ -995,13 +959,13 @@ spring:
             maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
           args:
-              controllerName: relations
+            controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1016,6 +980,7 @@ spring:
             leaseTime: ${app.locks.relations.update.leaseTime}
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.updateRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateRelationById.responseTimeoutMs}
       - id: replaceRelationById
@@ -1029,13 +994,13 @@ spring:
             maxSize: ${app.request-sizes.relations.update}
         - name: CheckIfRouteEnabled
           args:
-              controllerName: relations
+            controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1051,9 +1016,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/relations/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.replaceRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.replaceRelationById.responseTimeoutMs}
       - id: deleteRelationById
@@ -1064,13 +1030,13 @@ spring:
         filters:
         - name: CheckIfRouteEnabled
           args:
-              controllerName: relations
+            controllerName: relations
         - name: RewritePath
           args:
             regexp: ${app.inbound.baseUri}${app.inbound.controllerPaths.relations}/(?<recordId>.*)
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1081,6 +1047,7 @@ spring:
             policyName: /policies/auth/routes/relations/deleteRelationById/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: relations
           connect-timeout: ${app.timeouts.relations.deleteRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.deleteRelationById.responseTimeoutMs}
       # entity-reactions controller
@@ -1093,10 +1060,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1107,17 +1074,17 @@ spring:
             policyName: /policies/auth/routes/entityReactions/createEntityReaction/policy
         - name: AcquireLockForCreation
           args:
+            recordType: entityReactions
             waitTime: ${app.locks.reactions.create.waitTime}
             leaseTime: ${app.locks.reactions.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createEntityReaction.responseTimeoutMs}
       - id: updateAllEntityReactions
@@ -1129,10 +1096,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1141,16 +1108,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: entityReactions
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.updateAllEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllEntityReactions.responseTimeoutMs}
       - id: findEntityReactions
@@ -1159,10 +1125,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1171,14 +1137,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactions/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: entityReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1187,11 +1149,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
-            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactions.responseTimeoutMs}
       - id: countEntityReactions
@@ -1200,10 +1162,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/count
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1212,20 +1174,18 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: entityReactions
+        - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entityReactions.countEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.countEntityReactions.size}
-            recordType: entityReactions
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.countEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countEntityReactions.responseTimeoutMs}
       - id: findEntityReactionById
@@ -1234,10 +1194,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1251,14 +1211,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
-            recordType: entityReactions
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactionById.responseTimeoutMs}
       - id: updateEntityReactionById
@@ -1270,10 +1228,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1288,6 +1246,7 @@ spring:
             leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.updateEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateEntityReactionById.responseTimeoutMs}
       - id: replaceEntityReactionById
@@ -1299,10 +1258,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1318,9 +1277,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/entityReactions/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.replaceEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceEntityReactionById.responseTimeoutMs}
       - id: deleteEntityReactionById
@@ -1329,10 +1289,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1343,6 +1303,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/deleteEntityReactionById/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.deleteEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteEntityReactionById.responseTimeoutMs}
       - id: findChildrenEntityReactionsByReactionId
@@ -1351,10 +1312,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/children
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1363,14 +1324,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findChildrenEntityReactionsByReactionId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: entityReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1379,11 +1336,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
-            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.responseTimeoutMs}
       - id: createChildEntityReaction
@@ -1395,11 +1352,11 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
-        - name: PlaceKindNameIntoPayload
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1412,15 +1369,14 @@ spring:
           args:
             waitTime: ${app.locks.reactions.create.waitTime}
             leaseTime: ${app.locks.reactions.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildEntityReaction.responseTimeoutMs}
       - id: findParentsByEntityReactionId
@@ -1429,10 +1385,10 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/parents
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/parents
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1441,14 +1397,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findParentsByEntityReactionId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: entityReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1457,11 +1409,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
-            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.responseTimeoutMs}
       # reactions through entity controller
@@ -1474,10 +1426,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1490,15 +1442,14 @@ spring:
           args:
             waitTime: ${app.locks.reactions.create.waitTime}
             leaseTime: ${app.locks.reactions.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createReactionByEntityId.responseTimeoutMs}
       - id: updateReactionsByEntityId
@@ -1510,10 +1461,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1522,16 +1473,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entityReactions
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.updateReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateReactionsByEntityId.responseTimeoutMs}
       - id: findReactionsByEntityId
@@ -1540,10 +1490,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1552,14 +1502,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/findReactionsByEntityId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entityReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entityReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entityReactions/policy
@@ -1568,11 +1514,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
-            recordType: entityReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entityReactions/policy
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findReactionsByEntityId.responseTimeoutMs}
       - id: deleteReactionsByEntityId
@@ -1581,10 +1527,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=DELETE
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1593,14 +1539,12 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entityReactions
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.responseTimeoutMs}
-      # list-reactions controller
       - id: createListReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1610,10 +1554,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1626,15 +1570,14 @@ spring:
           args:
             waitTime: ${app.locks.reactions.create.waitTime}
             leaseTime: ${app.locks.reactions.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createListReaction.responseTimeoutMs}
       - id: updateAllListReactions
@@ -1646,10 +1589,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1658,16 +1601,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: listReactions
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.updateAllListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllListReactions.responseTimeoutMs}
       - id: findListReactions
@@ -1676,10 +1618,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1688,14 +1630,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findListReactions/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: listReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1704,11 +1642,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
-            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactions.responseTimeoutMs}
       - id: countListReactions
@@ -1717,10 +1655,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/count
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1729,20 +1667,18 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: listReactions
+        - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.listReactions.countListReactions.timeToLive}
             size: ${app.local-cache.listReactions.countListReactions.size}
-            recordType: listReactions
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.countListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countListReactions.responseTimeoutMs}
       - id: findListReactionById
@@ -1751,10 +1687,10 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1768,14 +1704,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
             size: ${app.local-cache.listReactions.findListReactionById.size}
-            recordType: listReactions
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactionById.responseTimeoutMs}
       - id: updateListReactionById
@@ -1787,10 +1721,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1805,6 +1739,7 @@ spring:
             leaseTime: ${app.locks.reactions.update.leaseTime}
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.updateListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateListReactionById.responseTimeoutMs}
       - id: replaceListReactionById
@@ -1816,10 +1751,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1835,9 +1770,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/listReactions/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.replaceListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceListReactionById.responseTimeoutMs}
       - id: deleteListReactionById
@@ -1846,10 +1782,10 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1860,6 +1796,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/deleteListReactionById/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.deleteListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteListReactionById.responseTimeoutMs}
       - id: findChildrenListReactionsByReactionId
@@ -1868,10 +1805,10 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1880,14 +1817,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findChildrenListReactionsByReactionId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: listReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1896,11 +1829,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
-            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.responseTimeoutMs}
       - id: createChildListReaction
@@ -1912,10 +1845,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1928,15 +1861,14 @@ spring:
           args:
             waitTime: ${app.locks.reactions.createChild.waitTime}
             leaseTime: ${app.locks.reactions.createChild.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildListReaction.responseTimeoutMs}
       - id: findParentsByListReactionId
@@ -1945,10 +1877,10 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/parents
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/parents
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1957,14 +1889,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findParentsByListReactionId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToReactionsQuery
-          args:
-            recordType: listReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToReactionsQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -1973,11 +1901,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
-            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByListReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findParentsByListReactionId.responseTimeoutMs}
       # reactions through list controller
@@ -1990,10 +1918,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2006,15 +1934,14 @@ spring:
           args:
             waitTime: ${app.locks.reactions.create.waitTime}
             leaseTime: ${app.locks.reactions.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createReactionByListId.responseTimeoutMs}
       - id: updateReactionsByListId
@@ -2026,10 +1953,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2038,16 +1965,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: listReactions
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.lists.updateReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateReactionsByListId.responseTimeoutMs}
       - id: findReactionsByListId
@@ -2056,10 +1982,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2068,14 +1994,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/findReactionsByListId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: listReactions
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: listReactions
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/listReactions/policy
@@ -2084,11 +2006,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
-            recordType: listReactions
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/listReactions/policy
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findReactionsByListId.responseTimeoutMs}
       - id: deleteReactionsByListId
@@ -2097,10 +2019,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=DELETE
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2109,12 +2031,11 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: listReactions
+        - PreventStringifiedJsonFilter
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: listReactions
           connect-timeout: ${app.timeouts.lists.deleteReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteReactionsByListId.responseTimeoutMs}
       # entities through list controller
@@ -2127,10 +2048,10 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.entities.create}
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2143,15 +2064,14 @@ spring:
           args:
             waitTime: ${app.locks.entities.create.waitTime}
             leaseTime: ${app.locks.entities.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createEntityByListId.responseTimeoutMs}
       - id: updateEntitiesByListId
@@ -2167,8 +2087,8 @@ spring:
           args:
             controllerName: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2177,14 +2097,15 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToThroughRecordQuery
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.lists.updateEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateEntitiesByListId.responseTimeoutMs}
       - id: findEntitiesByListId
@@ -2193,10 +2114,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2205,12 +2126,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/findEntitiesByListId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToThroughRecordQuery
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -2219,11 +2138,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findEntitiesByListId.responseTimeoutMs}
       - id: deleteEntitiesByListId
@@ -2232,10 +2151,10 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=DELETE
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2244,26 +2163,26 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToThroughRecordQuery
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         metadata:
+          recordType: entities
           connect-timeout: ${app.timeouts.lists.deleteEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteEntitiesByListId.responseTimeoutMs}
-      # lists through entity controller
       - id: findListsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/lists
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2272,12 +2191,10 @@ spring:
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listsThroughEntity/findListsByEntityId/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: lists
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: AddSetsToThroughRecordQuery
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/lists/policy
@@ -2286,11 +2203,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
-            recordType: lists
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/lists/policy
         metadata:
+          recordType: lists
           connect-timeout: ${app.timeouts.entities.findListsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findListsByEntityId.responseTimeoutMs}
       # ping controller
@@ -2300,7 +2217,7 @@ spring:
         - Path=${app.inbound.baseUri}ping
         - Method=GET
         filters:
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}ping, ${app.outbound.routing-target.baseUri}ping
         - name: RequestRateLimiter
           args:
@@ -2329,27 +2246,22 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.createEntity.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.createEntity.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
+        - KindResolution
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
-        - name: PlaceKindNameIntoPayload
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
-            recordType: entities
-        - name: ValidateRequestBodyByKindSchema
+        - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
@@ -2357,14 +2269,14 @@ spring:
           args:
             waitTime: ${app.locks.entities.create.waitTime}
             leaseTime: ${app.locks.entities.create.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities
       - id: findAllEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2373,45 +2285,38 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.findEntities.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntities.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - KindResolution
+        - CheckIfRouteEnabled
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
-            recordType: entities
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindAliasToKindQuery
+        - PreventStringifiedJsonFilter
+        - ConvertSimplerQueriesToBackendFormat
+        - ConvertKindAliasToKindQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - ApplyFieldsetConfig
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities
       - id: replaceEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2420,27 +2325,22 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
+        - KindResolution
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
-        - name: PlaceKindNameIntoPayload
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
-            recordType: entities
-        - name: ValidateRequestBodyByKindSchema
+        - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
@@ -2451,8 +2351,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/entities/policy
-        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+        - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
       - id: countEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2461,38 +2363,33 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.countEntities.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.countEntities.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - KindResolution
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities/count
-        - name: ConvertKindAliasToKindQuery
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - ConvertKindAliasToKindQuery
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.countEntities.burstCapacity}
-            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
-        - name: PreventStringifiedJsonFilter
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.countEntities.timeToLive}
             size: ${app.local-cache.entities.countEntities.size}
-            recordType: entities
+        metadata:
+          recordType: entities
       - id: updateAllEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2501,39 +2398,34 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
+        - KindResolution
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
-            recordType: entities
-        - name: ValidateRequestBodyByKindSchema
-        - name: PreventStringifiedJsonFilter
+        - ValidateRequestBodyByKindSchema
+        - PreventStringifiedJsonFilter
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
-#        - name: AuthorizeRequest
-#          args:
-#            policyName: /policies/auth/routes/entities/updateAllEntities/policy
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
         - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
       - id: findEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2542,21 +2434,17 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - KindResolution
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityById.burstCapacity}
-            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
@@ -2565,13 +2453,12 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
-            recordType: entities
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - ApplyFieldsetConfig
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities
       - id: updateEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2580,26 +2467,21 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
+        - KindResolution
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
-            recordType: entities
-        - name: ValidateRequestBodyByKindSchema
+        - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
@@ -2608,6 +2490,8 @@ spring:
             waitTime: ${app.locks.entities.update.waitTime}
             leaseTime: ${app.locks.entities.update.leaseTime}
         - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
       - id: deleteEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2616,25 +2500,23 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - KindResolution
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
-            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/deleteEntityById/policy
         - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
       - id: findEntityChildrenByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2643,33 +2525,25 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - KindResolution
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityChildren.burstCapacity}
-            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindAliasToKindQuery
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - ConvertKindAliasToKindQuery
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -2678,10 +2552,11 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities
       - id: createEntityChildByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2690,27 +2565,22 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
+        - KindResolution
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
-        - name: PlaceKindNameIntoPayload
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
-            recordType: entities
-        - name: ValidateRequestBodyByKindSchema
+        - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
@@ -2718,14 +2588,14 @@ spring:
           args:
             waitTime: ${app.locks.entities.createChild.waitTime}
             leaseTime: ${app.locks.entities.createChild.leaseTime}
-        - name: AddManagedFieldsInCreation
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
         - name: DropFieldsForSingleItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities
       - id: findEntityParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2734,33 +2604,25 @@ spring:
         filters:
         - name: DynamicTimeout
           args:
-            recordType: entities
             connectTimeoutMs: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
-        - name: KindResolution
-          args:
-            recordType: entities
-        - name: CheckIfRouteEnabled
+        - KindResolution
+        - CheckIfRouteEnabled
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
-        - name: AuthenticateRequest
-        - name: GenerateRequestId
+        - AuthenticateRequest
+        - GenerateRequestId
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityParents.burstCapacity}
-            recordType: entities
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy
-        - name: PreventStringifiedJsonFilter
-        - name: ApplyFieldsetConfig
-          args:
-            recordType: entities
-        - name: ConvertSimplerQueriesToBackendFormat
-        - name: ConvertKindAliasToKindQuery
-        - name: AddSetsToEntityListOrReactionViaRecordQuery
-          args:
-            recordType: entities
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - ConvertKindAliasToKindQuery
+        - AddSetsToEntityListOrReactionViaRecordQuery
         - name: PreventQueryByForbiddenFields
           args:
             policyName: /policies/fields/entities/policy
@@ -2769,7 +2631,8 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
-            recordType: entities
         - name: DropFieldsForMultiItemResponses
           args:
             policyName: /policies/fields/entities/policy
+        metadata:
+          recordType: entities

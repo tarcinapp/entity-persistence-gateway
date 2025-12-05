@@ -3,6 +3,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -58,16 +59,19 @@ public class KindResolutionGatewayFilterFactory
                 String kindName = kindAliasPathsConfig.getDefaultKindPathAliasToKindMap().get(kindAlias);
 
                 if (kindName != null) {
-                    // 3. Populate the attribute object
+                    // 3. Resolve recordType with hierarchical fallback
+                    String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "KindResolution");
+
+                    // Populate the attribute object
                     kindAliasConfigAttr.setKindAliasConfigured(true);
                     kindAliasConfigAttr.setKindName(kindName);
-                    kindAliasConfigAttr.setRecordType(config.getRecordType());
+                    kindAliasConfigAttr.setRecordType(recordType);
 
                     // Construct Original Resource URL if recordType and recordId are present
                     // This is crucial for Authorization logic to know the actual resource being
                     // accessed.
-                    if (config.getRecordType() != null && !config.getRecordType().isEmpty() && recordId != null) {
-                        String originalResourceUrl = "/" + config.getRecordType() + "/" + recordId;
+                    if (recordId != null) {
+                        String originalResourceUrl = "/" + recordType + "/" + recordId;
                         kindAliasConfigAttr.setOriginalResourceUrl(originalResourceUrl);
                     }
 

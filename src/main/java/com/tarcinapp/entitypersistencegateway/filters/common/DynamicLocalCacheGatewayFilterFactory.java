@@ -4,6 +4,7 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -89,11 +90,8 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
             // Check if client requested no-cache (force refresh)
             boolean clientSaysNoCache = cacheControlValues != null && cacheControlValues.stream().anyMatch(v -> v.contains("no-cache"));
 
-            // Config resolution
-            String recordType = config.getRecordType();
-            if (recordType == null || recordType.isEmpty()) {
-                log.warn("DynamicLocalCache filter requires 'recordType' arg.");
-            }
+            // Resolve recordType with hierarchical fallback
+            String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "DynamicLocalCache");
 
             KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 

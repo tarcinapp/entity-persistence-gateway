@@ -17,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -60,15 +61,7 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
 
         return (exchange, chain) -> {
 
-            Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-            String recordType = config.getRecordType();
-
-            if (recordType == null || recordType.isEmpty()) {
-                log.error("DynamicRateLimiter filter requires recordType to be set in config.");
-
-                exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                return exchange.getResponse().setComplete();
-            }
+            String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "DynamicRateLimiter");
 
             KindAliasConfigAttr kindAliasConfigAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
 

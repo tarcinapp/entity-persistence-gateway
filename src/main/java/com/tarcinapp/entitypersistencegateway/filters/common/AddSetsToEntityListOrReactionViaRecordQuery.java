@@ -18,6 +18,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -74,7 +75,8 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
         @Override
         public GatewayFilter apply(Config config) {
                 return (exchange, chain) -> {
-                        String recordType = config.getRecordType();
+                        // Resolve recordType with hierarchical fallback
+                        String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "AddSetsToEntityListOrReactionViaRecordQuery");
                         log.debug("AddSetsToEntityListOrReactionViaRecordQuery filter is started. recordType: {}",
                                         recordType);
 
