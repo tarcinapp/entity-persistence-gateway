@@ -13,6 +13,7 @@ app:
     
   # Base schema definition
   commonBaseSchema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"_kind":{"type":"string"},"_slug":{"type":"string"},"_createdDateTime":{"type":"string","format":"date-time"},"_lastUpdatedDateTime":{"type":"string","format":"date-time"},"_validFromDateTime":{"type":"string","format":"date-time","nullable":true},"_validUntilDateTime":{"type":"string","format":"date-time","nullable":true},"_visibility":{"type":"string","enum":["public","protected","private"]},"_version":{"type":"number"},"_lastUpdatedBy":{"type":"string"},"_createdBy":{"type":"string"},"_ownerUsers":{"type":"array","items":{"type":"string"}},"_ownerGroups":{"type":"array","items":{"type":"string"}},"_viewerUsers":{"type":"array","items":{"type":"string"}},"_viewerGroups":{"type":"array","items":{"type":"string"}}},"required":[]}'
+
 ---
 debug: ${app.debug}
 
@@ -22,20 +23,24 @@ server:
   compression:
     enabled: true
     mime-types: application/json
-  
-  # CRITICAL: Graceful shutdown ensures in-flight requests are completed before killing the pod
   shutdown: graceful
 
 spring:
+  # LINKING: We map Spring's native JMX settings to our custom variables defined in application-jmx.yml
+  jmx:
+    enabled: ${app.jmx.enabled}
+    default-domain: ${app.jmx.default-domain}
+    unique-names: ${app.jmx.unique-names}
+
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
-  # CRITICAL: Configures the shared ObjectMapper bean
+  # Configures the shared ObjectMapper bean
   jackson:
     serialization:
       write-dates-as-timestamps: false # Forces ISO-8601 date format (e.g., "2023-12-01T10:00:00Z")
 
-  # CRITICAL: Increases the buffer size for request bodies. 
+  # Increases the buffer size for request bodies. 
   codec:
     max-in-memory-size: 10MB 
 
@@ -54,6 +59,7 @@ spring:
       - classpath:application-rate-limits.yml
       - classpath:application-locks.yml
       - classpath:application-local-caching.yml
+      # MONITORING IMPORTS
       - classpath:application-management.yml
       - classpath:application-jmx.yml
 
@@ -94,8 +100,3 @@ spring:
       filter:
         local-response-cache:
           enabled: false
-
-  jmx:
-    enabled: ${app.jmx.enabled}
-    default-domain: ${app.jmx.default-domain}
-    unique-names: ${app.jmx.unique-names}

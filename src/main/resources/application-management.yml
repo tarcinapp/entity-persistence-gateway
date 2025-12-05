@@ -1,56 +1,105 @@
+# ============================================================
+# ACTUATOR ENDPOINT EXPOSURE CONFIGURATION
+# ============================================================
 management:
   endpoints:
     web:
       exposure:
-        # STABILITY FIX: Direct reference to the string variable.
-        # No more nested logic or map lookups that cause startup crashes.
+        # HTTP EXPOSURE
+        # We control the exposed endpoints via the variable defined in 'app-inbound.yml'.
+        # This prevents accidental exposure of sensitive endpoints to the public network.
+        # Example value: "gateway,health,metrics,prometheus"
         include: "${app.inbound.exposedEndpoints}"
       base-path: /actuator
-  
+    
+    jmx:
+      exposure:
+        # JMX EXPOSURE (Internal/Local)
+        # Since JMX/Jolokia is accessed via a secured local port or SSH tunnel, 
+        # it is safe and recommended to expose ALL endpoints here for deep debugging.
+        include: "*"
+      
+      # Domain for Actuator MBeans to distinguish them from core Spring MBeans
+      # This groups Actuator beans under 'management.gateway' folder in JConsole/Hawtio.
+      domain: management.gateway
+      unique-names: true
+
+  # ============================================================
+  # INDIVIDUAL ENDPOINT SETTINGS
+  # ============================================================
   endpoint:
     health:
+      # Health Details
+      # In Production, consider changing this to 'when-authorized' or 'never' 
+      # if the management port is exposed to the public.
       show-details: always
       show-components: always
+      
+      # Kubernetes Probes
+      # Enables /actuator/health/liveness and /actuator/health/readiness
+      # Essential for K8s pod lifecycle management.
       probes:
         enabled: true
     
-    # Conditional enabling based on the main flag
+    # Gateway Actuator
+    # Enables inspection of routes, filters, and topology via /actuator/gateway
     gateway:
       enabled: true
+    
     metrics:
       enabled: true
+    
     prometheus:
       enabled: true
+    
+    # Remote Shutdown
+    # SECURITY BEST PRACTICE: Always disable remote shutdown via HTTP.
     shutdown:
       enabled: false
+    
     env:
       enabled: true
+    
+    # Configuration Properties
+    # Often produces too much data, enable only if debugging configuration binding.
     configprops:
       enabled: false
 
+  # ============================================================
+  # METRICS CONFIGURATION (MICROMETER)
+  # ============================================================
   metrics:
     tags:
+      # Common tags added to every metric
       application: ${app.name}
       environment: ${spring.profiles.active:default}
     
     distribution:
+      # Generates histogram buckets for latency visualization in Grafana.
+      # Without this, you cannot calculate P95 or P99 latency.
       percentiles-histogram:
         http.server.requests: true
+        gateway.requests: true
     
     export:
+      # PROMETHEUS EXPORT
+      # Scraped by Prometheus server at /actuator/prometheus
       prometheus:
         enabled: true
         step: 1m
+      
+      # JMX EXPORT
+      # Exports metrics as JMX MBeans so Hawtio/JConsole can visualize them.
+      # These will appear under the 'gateway.metrics' domain.
+      jmx:
+        enabled: true
+        domain: gateway.metrics
+        step: 1m
 
-  health:
-    defaults:
-      enabled: true
-    redis:
-      enabled: true
-    diskspace:
-      enabled: true
-      threshold: 10MB
-  
+  # ============================================================
+  # INFO ENDPOINT CONTENT
+  # ============================================================
+  # Controls what data is shown at /actuator/info
   info:
     env:
       enabled: true
@@ -63,3 +112,9 @@ management:
     git:
       enabled: true
       mode: full
+
+# ============================================================
+# OBSERVABILITY & TRACING (PLACEHOLDER)
+# ============================================================
+# If you plan to use Zipkin or Jaeger in the future, 
+# 'management.tracing' configurations should be placed here.
