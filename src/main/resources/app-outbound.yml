@@ -1,12 +1,8 @@
 app:
   outbound:
     
-    # ---------------------------------------------------------
-    # 1. ROUTING TARGET (Default Backend)
-    # ---------------------------------------------------------
+    # ROUTING TARGET (Default Backend)
     # The main business service where traffic flows unless otherwise specified 
-    # (via route metadata).
-    # E.g.: ElasticSearch, Python AI, Legacy SQL, etc.
     routing-target:
       protocol: http
       host: entity-persistence-service
@@ -23,9 +19,7 @@ app:
         maxConnections: 500
         acquireTimeoutMs: 3000
 
-    # ---------------------------------------------------------
-    # 2. POLICY SOURCE (Security Data Provider)
-    # ---------------------------------------------------------
+    # POLICY SOURCE (Security Data Provider)
     # The source where AuthenticationFilter fetches "Row Level Security" data 
     # (owner, visibility) for OPA decisions.
     # This is USUALLY the Core Mongo service and must be very fast.

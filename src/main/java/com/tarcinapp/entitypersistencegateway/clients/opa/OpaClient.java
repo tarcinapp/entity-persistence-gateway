@@ -124,7 +124,6 @@ public class OpaClient implements IAuthorizationClient {
 
     private boolean isRetryableException(Throwable ex) {
         if (ex instanceof WebClientRequestException) {
-            // ReadTimeoutException bir WebClientRequestException içinde saklanır
             return ex.getCause() instanceof ReadTimeoutException;
         }
         return ex instanceof TimeoutException;
