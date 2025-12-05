@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -96,15 +98,8 @@ public class CheckIfRouteEnabled
                 : items.stream().filter(s -> s != null).map(String::trim).collect(Collectors.toList());
     }
 
+    @Data
     public static class Config {
         private String controllerName;
-
-        public String getControllerName() {
-            return controllerName;
-        }
-
-        public void setControllerName(String controllerName) {
-            this.controllerName = controllerName;
-        }
     }    
 }
