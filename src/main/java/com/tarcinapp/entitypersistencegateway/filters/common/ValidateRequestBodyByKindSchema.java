@@ -30,8 +30,9 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig.KindAliasPathSingleConfig;
+import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
+import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.AliasConfig;
+import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.ControllerConfig;
 import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     private String commonBaseSchema;
 
     @Autowired
-    private KindAliasPathsConfig kindAliasPathsConfig;
+    private OpenApiProperties openApiProperties;
 
     private static JsonSchema baseSchema;
 
@@ -72,7 +73,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     @EventListener(ContextRefreshedEvent.class)
     public void createCombinedSchemas() {
 
-        if (kindAliasPathsConfig.getKindAliasPaths().isEmpty()) {
+        if (openApiProperties.getControllers() == null || openApiProperties.getControllers().isEmpty()) {
             return;
         }
 
@@ -85,99 +86,127 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                 baseSchema = SCHEMA_FACTORY.getSchema(this.commonBaseSchema);
             }
 
-            // Merge each given schema with base schema
-            for (KindAliasPathSingleConfig kindAliasPath : kindAliasPathsConfig.getKindAliasPaths()) {
-                String schema = kindAliasPath.getSchema();
+            JsonNode baseSchemaNode = baseSchema != null ? baseSchema.getSchemaNode() : objectMapper.createObjectNode();
 
-                if (schema != null) {
-                    JsonNode kindAliasPathSchema = objectMapper.readTree(schema);
-                    JsonNode baseSchemaNode = baseSchema.getSchemaNode();
+            // Merge each given schema with base schema from app.oas.controllers
+            for (Map.Entry<String, ControllerConfig> controllerEntry : openApiProperties.getControllers().entrySet()) {
+                String controllerName = controllerEntry.getKey();
+                ControllerConfig controllerConfig = controllerEntry.getValue();
 
-                    // Check if user schema has additionalProperties set to false
-                    boolean userRestrictsAdditionalProps = false;
-                    if (kindAliasPathSchema.has("additionalProperties")) {
-                        JsonNode additionalPropsNode = kindAliasPathSchema.get("additionalProperties");
-                        if (additionalPropsNode.isBoolean() && !additionalPropsNode.asBoolean()) {
-                            userRestrictsAdditionalProps = true;
-                        }
-                    }
+                if (controllerConfig.getAliases() == null) {
+                    continue;
+                }
 
-                    // Create a new merged schema by combining properties from both schemas
-                    ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
-
-                    // Copy meta fields
-                    if (kindAliasPathSchema.has("$schema"))
-                        combinedSchemaNode.set("$schema", kindAliasPathSchema.get("$schema"));
-                    else if (baseSchemaNode.has("$schema"))
-                        combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
-
-                    combinedSchemaNode.put("type", "object");
-
-                    // Merge properties
-                    ObjectNode mergedProperties = objectMapper.createObjectNode();
-
-                    if (baseSchemaNode.has("properties")) {
-                        baseSchemaNode.get("properties").fields()
-                                .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
-                    }
-
-                    if (kindAliasPathSchema.has("properties")) {
-                        kindAliasPathSchema.get("properties").fields()
-                                .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
-                    }
-
-                    combinedSchemaNode.set("properties", mergedProperties);
-
-                    // Merge required fields
-                    ArrayNode mergedRequired = objectMapper.createArrayNode();
-
-                    if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
-                        baseSchemaNode.get("required").forEach(mergedRequired::add);
-                    }
-
-                    if (kindAliasPathSchema.has("required") && kindAliasPathSchema.get("required").isArray()) {
-                        kindAliasPathSchema.get("required").forEach(req -> {
-                            boolean exists = false;
-                            for (JsonNode existing : mergedRequired) {
-                                if (existing.equals(req)) {
-                                    exists = true;
-                                    break;
-                                }
-                            }
-                            if (!exists) {
-                                mergedRequired.add(req);
-                            }
-                        });
-                    }
-
-                    if (mergedRequired.size() > 0) {
-                        combinedSchemaNode.set("required", mergedRequired);
-                    }
-
-                    if (userRestrictsAdditionalProps) {
-                        combinedSchemaNode.put("additionalProperties", false);
-                    }
-
-                    // Build composite key using recordType and kindName
-                    String schemaKey = buildSchemaKey(kindAliasPath.getRecordType(), kindAliasPath.getName());
-
-                    // 1. Create and Store Full Schema (POST/PUT)
-                    JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(combinedSchemaNode);
-                    combinedSchemas.put(schemaKey, combinedSchema);
-
-                    // 2. Create and Store Patch Schema (PATCH)
-                    // We clone the node (or just verify we can modify it since we just created it)
-                    // Removing "required" at the root level allows partial updates
-                    ObjectNode patchSchemaNode = combinedSchemaNode.deepCopy();
-                    patchSchemaNode.remove("required");
-
-                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-                    patchSchemas.put(schemaKey, patchSchema);
+                for (AliasConfig aliasConfig : controllerConfig.getAliases()) {
+                    registerSchemasForAlias(controllerName, aliasConfig, baseSchemaNode);
                 }
             }
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize schemas", e);
+        }
+    }
+
+    private void registerSchemasForAlias(String controllerName, AliasConfig aliasConfig, JsonNode baseSchemaNode)
+            throws JsonProcessingException {
+
+        if (aliasConfig == null) {
+            return;
+        }
+
+        // Skip schema creation when validation is explicitly disabled
+        boolean validationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
+
+        if (validationEnabled && aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
+
+            JsonNode aliasSchema = objectMapper.readTree(aliasConfig.getSchema());
+
+            // Check if user schema has additionalProperties set to false
+            boolean userRestrictsAdditionalProps = false;
+            if (aliasSchema.has("additionalProperties")) {
+                JsonNode additionalPropsNode = aliasSchema.get("additionalProperties");
+                if (additionalPropsNode.isBoolean() && !additionalPropsNode.asBoolean()) {
+                    userRestrictsAdditionalProps = true;
+                }
+            }
+
+            // Create a new merged schema by combining properties from both schemas
+            ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
+
+            // Copy meta fields
+            if (aliasSchema.has("$schema")) {
+                combinedSchemaNode.set("$schema", aliasSchema.get("$schema"));
+            } else if (baseSchemaNode.has("$schema")) {
+                combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
+            }
+
+            combinedSchemaNode.put("type", "object");
+
+            // Merge properties
+            ObjectNode mergedProperties = objectMapper.createObjectNode();
+
+            if (baseSchemaNode.has("properties")) {
+                baseSchemaNode.get("properties").fields()
+                        .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
+            }
+
+            if (aliasSchema.has("properties")) {
+                aliasSchema.get("properties").fields()
+                        .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
+            }
+
+            combinedSchemaNode.set("properties", mergedProperties);
+
+            // Merge required fields
+            ArrayNode mergedRequired = objectMapper.createArrayNode();
+
+            if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
+                baseSchemaNode.get("required").forEach(mergedRequired::add);
+            }
+
+            if (aliasSchema.has("required") && aliasSchema.get("required").isArray()) {
+                aliasSchema.get("required").forEach(req -> {
+                    boolean exists = false;
+                    for (JsonNode existing : mergedRequired) {
+                        if (existing.equals(req)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        mergedRequired.add(req);
+                    }
+                });
+            }
+
+            if (mergedRequired.size() > 0) {
+                combinedSchemaNode.set("required", mergedRequired);
+            }
+
+            if (userRestrictsAdditionalProps) {
+                combinedSchemaNode.put("additionalProperties", false);
+            }
+
+            // Build composite key using controller and kind
+            String schemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
+
+            // 1. Create and Store Full Schema (POST/PUT)
+            JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(combinedSchemaNode);
+            combinedSchemas.put(schemaKey, combinedSchema);
+
+            // 2. Create and Store Patch Schema (PATCH)
+            ObjectNode patchSchemaNode = combinedSchemaNode.deepCopy();
+            patchSchemaNode.remove("required");
+
+            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+            patchSchemas.put(schemaKey, patchSchema);
+        }
+
+        // Recursively register children under the same controller
+        if (aliasConfig.getChildren() != null) {
+            for (AliasConfig child : aliasConfig.getChildren()) {
+                registerSchemasForAlias(controllerName, child, baseSchemaNode);
+            }
         }
     }
 

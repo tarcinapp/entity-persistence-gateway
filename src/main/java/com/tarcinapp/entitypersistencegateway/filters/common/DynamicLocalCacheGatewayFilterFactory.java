@@ -2,7 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;

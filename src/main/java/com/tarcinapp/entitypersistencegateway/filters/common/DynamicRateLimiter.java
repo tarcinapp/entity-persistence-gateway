@@ -16,7 +16,6 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
 import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +44,6 @@ public class DynamicRateLimiter extends AbstractGatewayFilterFactory<DynamicRate
 
     @Autowired
     private Environment environment;
-
-    @Autowired
-    private KindAliasPathsConfig kindAliasPathsConfig;
 
     @Autowired
     private RedisRateLimiter redisRateLimiter;

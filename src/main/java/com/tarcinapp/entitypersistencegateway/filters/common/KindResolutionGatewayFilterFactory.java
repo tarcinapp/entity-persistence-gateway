@@ -1,7 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.common;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
-import com.tarcinapp.entitypersistencegateway.config.KindAliasPathsConfig;
+import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.Data;
@@ -24,7 +24,7 @@ public class KindResolutionGatewayFilterFactory
         extends AbstractGatewayFilterFactory<KindResolutionGatewayFilterFactory.Config> {
 
     @Autowired(required = false)
-    private KindAliasPathsConfig kindAliasPathsConfig;
+    private OpenApiProperties openApiProperties;
 
     public KindResolutionGatewayFilterFactory() {
         super(Config.class);
@@ -53,14 +53,18 @@ public class KindResolutionGatewayFilterFactory
             String recordId = uriVariables.get("recordId");
 
             // 2. Perform Lookup if Alias exists and Config is loaded
-            if (kindAlias != null && kindAliasPathsConfig != null) {
+            if (kindAlias != null && openApiProperties != null) {
 
-                // O(1) access via HashMap to get the Kind Name
-                String kindName = kindAliasPathsConfig.getDefaultKindPathAliasToKindMap().get(kindAlias);
+                OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(kindAlias);
 
-                if (kindName != null) {
-                    // 3. Resolve recordType with hierarchical fallback
-                    String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "KindResolution");
+                if (aliasContext != null && aliasContext.getAliasConfig() != null) {
+                    String kindName = aliasContext.getAliasConfig().getKind();
+
+                    // Prefer controller name from config; fall back to route metadata if absent
+                    String recordType = aliasContext.getControllerName();
+                    if (recordType == null || recordType.isBlank()) {
+                        recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "KindResolution");
+                    }
 
                     // Populate the attribute object
                     kindAliasConfigAttr.setKindAliasConfigured(true);
@@ -68,9 +72,7 @@ public class KindResolutionGatewayFilterFactory
                     kindAliasConfigAttr.setRecordType(recordType);
 
                     // Construct Original Resource URL if recordType and recordId are present
-                    // This is crucial for Authorization logic to know the actual resource being
-                    // accessed.
-                    if (recordId != null) {
+                    if (recordId != null && recordType != null) {
                         String originalResourceUrl = "/" + recordType + "/" + recordId;
                         kindAliasConfigAttr.setOriginalResourceUrl(originalResourceUrl);
                     }

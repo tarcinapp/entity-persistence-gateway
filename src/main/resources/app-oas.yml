@@ -1,44 +1,158 @@
 app:
   oas:
-    title: ""
-    version: ""
-    contact: ""
-    summary: ""
-    description: ""
-    externalDocs:
-      description: ""
-      url: ""
-    tags: [] # list of global tags
+    # ----------------------------------------------------------------
+    # 1. API IDENTIFICATION (GLOBAL)
+    # ----------------------------------------------------------------
+    title: "Entity Persistence Platform API"
+    version: "1.0.0"
+    description: |
+      This API acts as a central Gateway entry point providing dynamic entity 
+      management, security, validation, and orchestration services.
+    
+    contact:
+      name: "Platform Team"
+      email: "support@tarcinapp.com"
+      url: "https://tarcinapp.com"
+    
     servers:
-      - url: "" # if empty, a default may be added during runtime
-        description: ""
+      - url: "https://api.tarcinapp.com/v1"
+        description: "Production Environment"
+      - url: "http://localhost:8081/api/v1"
+        description: "Local Development"
+
+    # ----------------------------------------------------------------
+    # 2. CONTROLLER AND ALIAS DEFINITIONS
+    # ----------------------------------------------------------------
     controllers:
+      
+      # === ENTITIES CONTROLLER (Generic CRUD) ===
       entities:
         aliases:
+          
+          # --- RESOURCE: BOOKS ---
           - alias: books
             kind: book
-            schema: "" # default schema for operations that don't supply one
+            description: "Main resource for managing library books."
+            
+            # SCHEMA: Inline JSON Block (Readable and single file)
+            # The Gateway will parse this string and pass it to the Validation Filter.
+            schema: |
+              {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "_name": { "type": "string", "description": "Name of the book" },
+                  "author": { "type": "string", "description": "Author of the book" },
+                  "isbn": { "type": "string", "pattern": "^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$)[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$" },
+                  "status": { "type": "string", "enum": ["active", "passive", "draft"] },
+                  "details": {
+                    "type": "object",
+                    "properties": {
+                      "publishedDate": { "type": "string", "format": "date" },
+                      "genre": { "type": "string" }
+                    },
+                    "required": ["publishedDate"]
+                  }
+                },
+                "required": ["_name", "author", "status"]
+              }
+            
             validationEnabled: true
-            children: # Can be disabled from routes-toogles if needed
-              alias: popular      # a path alias to use instead of '/children' in URLs
-              kind: popularBook   # kind should be defined under aliases
-        routes:
-          createEntityByKindAlias:
-            summary: ""
-            description: ""
-            operationId: createBook
-            deprecated: false
-            validationEnabled: true
-            tags: [] # operation-specific tags
-            request:
-              schema: "" # built using specified schema and caller's role
-              headers:
-              examples:
-                - name: sampleBook
-                  value: {}
-            response:
-              "201":
-                schema: "" # built using specified schema, base schema and caller's role
-                headers:
-                examples:
-# Note: security (e.g. bearer auth), paths, methods, parameters and non-200 responses are handled elsewhere/at generation time.
+
+            # CHILDREN: Resources under /books/{id}/...
+            children:
+              # Path: /books/{id}/popular
+              # Meaning: Popular highlights or variations belonging to this book
+              - alias: popular
+                kind: popularBookHighlight
+                description: "Popular content or highlights for the selected book."
+                # You can define a separate schema for the child resource
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "highlightText": { "type": "string" },
+                      "likes": { "type": "number" }
+                    }
+                  }
+
+            # ROUTES: Operation-based customizations
+            # The keys here MUST MATCH the Route IDs in the Gateway Java code.
+            routes:
+              
+              # POST /books
+              createEntityByKindAlias:
+                operationId: createBook
+                summary: "Create New Book"
+                description: "Creates a new book entity after validating against the schema."
+                tags: ["Books"]
+                request:
+                  examples:
+                    - name: SampleBook
+                      value:
+                        _name: "The Lord of the Rings"
+                        author: "J.R.R. Tolkien"
+                        status: "active"
+                        details:
+                          publishedDate: "1954-07-29"
+                          genre: "Fantasy"
+
+              # GET /books
+              listEntitiesByKindAlias:
+                operationId: listBooks
+                summary: "List Books"
+                description: "Retrieves a list of books with filtering and pagination options."
+                tags: ["Books"]
+                
+              # GET /books/{id}
+              getEntityById:
+                operationId: getBookById
+                summary: "Get Book Details"
+                tags: ["Books"]
+                
+              # PATCH /books/{id}
+              patchEntityById:
+                operationId: updateBook
+                summary: "Update Book"
+                description: "Updates only the provided fields (Partial Update)."
+                tags: ["Books"]
+
+              # DELETE /books/{id}
+              deleteEntityById:
+                operationId: deleteBook
+                summary: "Delete Book"
+                tags: ["Books"]
+
+      # === LISTS CONTROLLER (Collections) ===
+      lists:
+        aliases:
+          - alias: reading-lists
+            kind: readingList
+            description: "Reading lists created by users."
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_name": { "type": "string" },
+                  "isPublic": { "type": "boolean" }
+                },
+                "required": ["_name"]
+              }
+            routes:
+              createListByKindAlias:
+                operationId: createReadingList
+                summary: "Create Reading List"
+                tags: ["Lists"]
+              listListsByKindAlias:
+                operationId: getReadingLists
+                summary: "Get Reading Lists"
+                tags: ["Lists"]
+
+    # ----------------------------------------------------------------
+    # 3. GLOBAL TAGS
+    # ----------------------------------------------------------------
+    tags:
+      - name: "Books"
+        description: "Operations related to book management"
+      - name: "Lists"
+        description: "Reading list operations"
