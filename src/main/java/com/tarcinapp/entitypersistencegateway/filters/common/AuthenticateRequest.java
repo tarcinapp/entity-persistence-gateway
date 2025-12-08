@@ -18,18 +18,17 @@ import com.tarcinapp.entitypersistencegateway.services.SecurityContextBuilder;
 import com.tarcinapp.entitypersistencegateway.services.policydata.PolicyDataBuilderRegistry;
 
 import io.jsonwebtoken.Claims;
+import java.util.concurrent.TimeoutException; // TimeoutException import edildi
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
  * Refactored authentication filter that delegates responsibilities to specialized services.
- * 
- * This filter:
+ * * This filter:
  * 1. Authenticates requests using JWT tokens (via JwtAuthenticationService)
  * 2. Builds security context (via SecurityContextBuilder)
  * 3. Prepares policy data (via PolicyDataBuilder implementations)
- * 
- * The filter has been decomposed to follow Single Responsibility Principle,
+ * * The filter has been decomposed to follow Single Responsibility Principle,
  * making it easier to test, maintain, and extend with route-specific logic.
  */
 @Slf4j
@@ -96,7 +95,7 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      * Called after successful authentication
      */
     private Mono<Void> onAuthenticationSuccess(Claims claims, ServerWebExchange exchange, 
-                                                 GatewayFilterChain chain) {
+                                                GatewayFilterChain chain) {
         log.debug("Authentication successful for user: " + claims.getSubject());
 
         // Build security context from JWT claims
@@ -115,18 +114,30 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
     private Mono<Void> handleAuthenticationError(Throwable e, ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();
 
-        if (e instanceof WebClientResponseException) {
+        // Check Timeout Exceptions
+        if (e instanceof TimeoutException || e instanceof java.net.SocketTimeoutException) {
+            log.error("Authentication or Policy Data fetch timed out (1000ms limit reached).", e);
+            response.setStatusCode(HttpStatus.GATEWAY_TIMEOUT); // 504
+        } 
+        // Check WebClient Errors (e.g., 404, 500 from backend)
+        else if (e instanceof WebClientResponseException) {
             WebClientResponseException clientException = (WebClientResponseException) e;
             if (clientException.getStatusCode() == HttpStatus.NOT_FOUND) {
                 response.setStatusCode(HttpStatus.NOT_FOUND);
+            } else if (clientException.getStatusCode().is5xxServerError()) {
+                response.setStatusCode(HttpStatus.BAD_GATEWAY); // 502
             } else {
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
             }
-        } else if (e instanceof ResponseStatusException) {
+        } 
+        // Check Response Status Errors (Thrown by us)
+        else if (e instanceof ResponseStatusException) {
             response.setStatusCode(((ResponseStatusException) e).getStatusCode());
-        } else {
+        } 
+        // Check General Errors (Default to Unauthorized but log)
+        else {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            log.error("Authentication failed", e);
+            log.error("Authentication failed with unexpected error", e);
         }
 
         return response.setComplete();

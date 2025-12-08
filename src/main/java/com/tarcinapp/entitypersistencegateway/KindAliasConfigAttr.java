@@ -16,6 +16,7 @@ public class KindAliasConfigAttr {
     public static final String KIND_ALIAS_CONFIG_ATTR = "KindAliasConfigAttr";
     boolean isKindAliasConfigured;
     String kindName;
+    String kindAlias;
     String recordType;
     String originalResourceUrl;
 }

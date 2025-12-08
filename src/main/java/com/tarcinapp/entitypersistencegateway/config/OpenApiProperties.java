@@ -93,6 +93,7 @@ public class OpenApiProperties {
         private String operationId;
         private String summary;
         private String description;
+        private String schema;
         private Boolean validationEnabled;
         private List<String> tags = new ArrayList<>();
         private Map<String, Object> request;

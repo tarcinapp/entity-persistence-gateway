@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
+import org.springframework.cloud.gateway.route.Route; // EKLENDİ: Route sınıfı import edildi
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
@@ -114,92 +116,41 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             return;
         }
 
-        // Skip schema creation when validation is explicitly disabled
-        boolean validationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
+        // Process Alias Schema
+        boolean aliasValidationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
+        if (aliasValidationEnabled && aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
+            ObjectNode aliasSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), baseSchemaNode);
+            String aliasSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
+            
+            JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(aliasSchemaNode);
+            combinedSchemas.put(aliasSchemaKey, combinedSchema);
+            
+            ObjectNode patchSchemaNode = aliasSchemaNode.deepCopy();
+            patchSchemaNode.remove("required");
+            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+            patchSchemas.put(aliasSchemaKey, patchSchema);
+        }
 
-        if (validationEnabled && aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
-
-            JsonNode aliasSchema = objectMapper.readTree(aliasConfig.getSchema());
-
-            // Check if user schema has additionalProperties set to false
-            boolean userRestrictsAdditionalProps = false;
-            if (aliasSchema.has("additionalProperties")) {
-                JsonNode additionalPropsNode = aliasSchema.get("additionalProperties");
-                if (additionalPropsNode.isBoolean() && !additionalPropsNode.asBoolean()) {
-                    userRestrictsAdditionalProps = true;
+        // Process Route-level Schemas
+        if (aliasConfig.getRoutes() != null) {
+            for (Map.Entry<String, OpenApiProperties.RouteConfig> routeEntry : aliasConfig.getRoutes().entrySet()) {
+                String routeId = routeEntry.getKey();
+                OpenApiProperties.RouteConfig routeConfig = routeEntry.getValue();
+                
+                boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null || routeConfig.getValidationEnabled();
+                if (routeValidationEnabled && routeConfig.getSchema() != null && aliasConfig.getKind() != null) {
+                    ObjectNode routeSchemaNode = mergeSchemaWithBase(routeConfig.getSchema(), baseSchemaNode);
+                    String routeSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind(), routeId);
+                    
+                    JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(routeSchemaNode);
+                    combinedSchemas.put(routeSchemaKey, combinedSchema);
+                    
+                    ObjectNode patchSchemaNode = routeSchemaNode.deepCopy();
+                    patchSchemaNode.remove("required");
+                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+                    patchSchemas.put(routeSchemaKey, patchSchema);
                 }
             }
-
-            // Create a new merged schema by combining properties from both schemas
-            ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
-
-            // Copy meta fields
-            if (aliasSchema.has("$schema")) {
-                combinedSchemaNode.set("$schema", aliasSchema.get("$schema"));
-            } else if (baseSchemaNode.has("$schema")) {
-                combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
-            }
-
-            combinedSchemaNode.put("type", "object");
-
-            // Merge properties
-            ObjectNode mergedProperties = objectMapper.createObjectNode();
-
-            if (baseSchemaNode.has("properties")) {
-                baseSchemaNode.get("properties").fields()
-                        .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
-            }
-
-            if (aliasSchema.has("properties")) {
-                aliasSchema.get("properties").fields()
-                        .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
-            }
-
-            combinedSchemaNode.set("properties", mergedProperties);
-
-            // Merge required fields
-            ArrayNode mergedRequired = objectMapper.createArrayNode();
-
-            if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
-                baseSchemaNode.get("required").forEach(mergedRequired::add);
-            }
-
-            if (aliasSchema.has("required") && aliasSchema.get("required").isArray()) {
-                aliasSchema.get("required").forEach(req -> {
-                    boolean exists = false;
-                    for (JsonNode existing : mergedRequired) {
-                        if (existing.equals(req)) {
-                            exists = true;
-                            break;
-                        }
-                    }
-                    if (!exists) {
-                        mergedRequired.add(req);
-                    }
-                });
-            }
-
-            if (mergedRequired.size() > 0) {
-                combinedSchemaNode.set("required", mergedRequired);
-            }
-
-            if (userRestrictsAdditionalProps) {
-                combinedSchemaNode.put("additionalProperties", false);
-            }
-
-            // Build composite key using controller and kind
-            String schemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
-
-            // 1. Create and Store Full Schema (POST/PUT)
-            JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(combinedSchemaNode);
-            combinedSchemas.put(schemaKey, combinedSchema);
-
-            // 2. Create and Store Patch Schema (PATCH)
-            ObjectNode patchSchemaNode = combinedSchemaNode.deepCopy();
-            patchSchemaNode.remove("required");
-
-            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-            patchSchemas.put(schemaKey, patchSchema);
         }
 
         // Recursively register children under the same controller
@@ -208,6 +159,82 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                 registerSchemasForAlias(controllerName, child, baseSchemaNode);
             }
         }
+    }
+
+    /**
+     * Merges a given schema string with the base schema using property/required merging.
+     * Returns the combined ObjectNode ready for conversion to JsonSchema.
+     */
+    private ObjectNode mergeSchemaWithBase(String schemaString, JsonNode baseSchemaNode)
+            throws JsonProcessingException {
+        
+        JsonNode userSchema = objectMapper.readTree(schemaString);
+        
+        boolean userRestrictsAdditionalProps = false;
+        if (userSchema.has("additionalProperties")) {
+            JsonNode additionalPropsNode = userSchema.get("additionalProperties");
+            if (additionalPropsNode.isBoolean() && !additionalPropsNode.asBoolean()) {
+                userRestrictsAdditionalProps = true;
+            }
+        }
+
+        ObjectNode combinedSchemaNode = objectMapper.createObjectNode();
+
+        // Copy meta fields
+        if (userSchema.has("$schema")) {
+            combinedSchemaNode.set("$schema", userSchema.get("$schema"));
+        } else if (baseSchemaNode.has("$schema")) {
+            combinedSchemaNode.set("$schema", baseSchemaNode.get("$schema"));
+        }
+
+        combinedSchemaNode.put("type", "object");
+
+        // Merge properties
+        ObjectNode mergedProperties = objectMapper.createObjectNode();
+
+        if (baseSchemaNode.has("properties")) {
+            baseSchemaNode.get("properties").fields()
+                    .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
+        }
+
+        if (userSchema.has("properties")) {
+            userSchema.get("properties").fields()
+                    .forEachRemaining(entry -> mergedProperties.set(entry.getKey(), entry.getValue()));
+        }
+
+        combinedSchemaNode.set("properties", mergedProperties);
+
+        // Merge required fields
+        ArrayNode mergedRequired = objectMapper.createArrayNode();
+
+        if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
+            baseSchemaNode.get("required").forEach(mergedRequired::add);
+        }
+
+        if (userSchema.has("required") && userSchema.get("required").isArray()) {
+            userSchema.get("required").forEach(req -> {
+                boolean exists = false;
+                for (JsonNode existing : mergedRequired) {
+                    if (existing.equals(req)) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    mergedRequired.add(req);
+                }
+            });
+        }
+
+        if (mergedRequired.size() > 0) {
+            combinedSchemaNode.set("required", mergedRequired);
+        }
+
+        if (userRestrictsAdditionalProps) {
+            combinedSchemaNode.put("additionalProperties", false);
+        }
+
+        return combinedSchemaNode;
     }
 
     @Override
@@ -232,31 +259,74 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
 
                                 String kindName = kindAliasConfigAttr.getKindName();
                                 String recordType = kindAliasConfigAttr.getRecordType();
-                                String schemaKey = buildSchemaKey(recordType, kindName);
+                                
+                                // DÜZELTME BAŞLANGICI: Route cast hatası giderildi.
+                                Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+                                String routeId = (route != null) ? route.getId() : null;
+                                // DÜZELTME BİTİŞİ
+
+                                // Resolve validation flag: Route -> Alias -> Default(true)
+                                boolean validationEnabled = true;
+                                OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(kindAliasConfigAttr.getKindAlias());
+                                if (aliasContext != null && aliasContext.getAliasConfig() != null) {
+                                    AliasConfig aliasConfig = aliasContext.getAliasConfig();
+                                    
+                                    // Check route-level validationEnabled first
+                                    if (routeId != null && aliasConfig.getRoutes() != null) {
+                                        OpenApiProperties.RouteConfig routeConfig = aliasConfig.getRoutes().get(routeId);
+                                        if (routeConfig != null && routeConfig.getValidationEnabled() != null) {
+                                            validationEnabled = routeConfig.getValidationEnabled();
+                                        } else if (aliasConfig.getValidationEnabled() != null) {
+                                            // Fall back to alias-level validationEnabled
+                                            validationEnabled = aliasConfig.getValidationEnabled();
+                                        }
+                                    } else if (aliasConfig.getValidationEnabled() != null) {
+                                        // Use alias-level validationEnabled
+                                        validationEnabled = aliasConfig.getValidationEnabled();
+                                    }
+                                }
+
+                                // If validation is disabled, skip validation
+                                if (!validationEnabled) {
+                                    log.debug("Validation disabled for kind: {} at route: {}", kindName, routeId);
+                                    return Mono.just(payload);
+                                }
 
                                 try {
                                     JsonNode requestJsonNode = objectMapper.readTree(payload);
                                     Set<ValidationMessage> errors;
-
                                     HttpMethod method = exchange.getRequest().getMethod();
 
-                                    // SELECT SCHEMA BASED ON METHOD
-                                    if (method == HttpMethod.PATCH) {
-                                        // Use the schema where root-level 'required' is removed
-                                        JsonSchema schema = patchSchemas.get(schemaKey);
-                                        if (schema == null) {
-                                            // Fallback if no schema (shouldn't happen if initialized correctly)
-                                            return Mono.just(payload);
+                                    // 1. Try route-specific schema (if routeId available)
+                                    String schemaKey = null;
+                                    JsonSchema schema = null;
+                                    
+                                    if (routeId != null) {
+                                        String routeSchemaKey = buildSchemaKey(recordType, kindName, routeId);
+                                        schema = combinedSchemas.get(routeSchemaKey);
+                                        if (schema != null) {
+                                            schemaKey = routeSchemaKey;
+                                            log.debug("Using route-specific schema for {}", routeSchemaKey);
                                         }
-                                        errors = schema.validate(requestJsonNode);
-                                    } else {
-                                        // POST / PUT: Use full schema
-                                        JsonSchema schema = combinedSchemas.get(schemaKey);
-                                        if (schema == null) {
-                                            return Mono.just(payload);
-                                        }
-                                        errors = schema.validate(requestJsonNode);
                                     }
+
+                                    // 2. Fall back to alias schema
+                                    if (schema == null) {
+                                        schemaKey = buildSchemaKey(recordType, kindName);
+                                        if (method == HttpMethod.PATCH) {
+                                            schema = patchSchemas.get(schemaKey);
+                                        } else {
+                                            schema = combinedSchemas.get(schemaKey);
+                                        }
+                                    }
+
+                                    // If no schema found, skip validation
+                                    if (schema == null) {
+                                        log.debug("No schema found for kind: {}, skipping validation", kindName);
+                                        return Mono.just(payload);
+                                    }
+
+                                    errors = schema.validate(requestJsonNode);
 
                                     // If validation errors exist
                                     if (!errors.isEmpty()) {
@@ -343,6 +413,13 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
      */
     private static String buildSchemaKey(String recordType, String kindName) {
         return recordType + ":" + kindName;
+    }
+
+    /**
+     * Builds a composite key for route-specific schema lookup using recordType, kindName, and routeId.
+     */
+    private static String buildSchemaKey(String recordType, String kindName, String routeId) {
+        return recordType + ":" + kindName + ":" + routeId;
     }
 
     public static class Config {

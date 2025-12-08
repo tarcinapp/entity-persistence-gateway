@@ -68,6 +68,7 @@ public class KindResolutionGatewayFilterFactory
 
                     // Populate the attribute object
                     kindAliasConfigAttr.setKindAliasConfigured(true);
+                    kindAliasConfigAttr.setKindAlias(kindAlias);
                     kindAliasConfigAttr.setKindName(kindName);
                     kindAliasConfigAttr.setRecordType(recordType);
 

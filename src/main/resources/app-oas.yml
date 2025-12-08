@@ -85,6 +85,18 @@ app:
                 operationId: createBook
                 summary: "Create New Book"
                 description: "Creates a new book entity after validating against the schema."
+                validationEnabled: true
+                # Optional: Override with a stricter route-specific schema
+                # schema: |
+                #   {
+                #     "type": "object",
+                #     "properties": {
+                #       "_name": { "type": "string" },
+                #       "author": { "type": "string" },
+                #       "status": { "type": "string", "enum": ["active", "draft"] }
+                #     },
+                #     "required": ["_name", "author", "status"]
+                #   }
                 tags: ["Books"]
                 request:
                   examples:
@@ -115,6 +127,16 @@ app:
                 operationId: updateBook
                 summary: "Update Book"
                 description: "Updates only the provided fields (Partial Update)."
+                validationEnabled: true
+                # Optional: Override with a custom schema for partial updates
+                # schema: |
+                #   {
+                #     "type": "object",
+                #     "properties": {
+                #       "author": { "type": "string" },
+                #       "status": { "type": "string", "enum": ["active", "passive", "draft"] }
+                #     }
+                #   }
                 tags: ["Books"]
 
               # DELETE /books/{id}
@@ -142,10 +164,22 @@ app:
               createListByKindAlias:
                 operationId: createReadingList
                 summary: "Create Reading List"
+                validationEnabled: true
+                # Optional: Override with a custom schema for this specific route
+                # schema: |
+                #   {
+                #     "type": "object",
+                #     "properties": {
+                #       "_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                #       "isPublic": { "type": "boolean" }
+                #     },
+                #     "required": ["_name"]
+                #   }
                 tags: ["Lists"]
               listListsByKindAlias:
                 operationId: getReadingLists
                 summary: "Get Reading Lists"
+                validationEnabled: true
                 tags: ["Lists"]
 
     # ----------------------------------------------------------------
