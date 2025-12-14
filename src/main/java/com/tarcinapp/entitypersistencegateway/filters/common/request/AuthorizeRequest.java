@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.common;
+package com.tarcinapp.entitypersistencegateway.filters.common.request;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;

@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.common;
+package com.tarcinapp.entitypersistencegateway.filters.common.request;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

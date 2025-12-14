@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.common;
+package com.tarcinapp.entitypersistencegateway.filters.common.request;
 
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 import lombok.extern.slf4j.Slf4j;

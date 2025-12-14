@@ -1,4 +1,4 @@
-package com.tarcinapp.entitypersistencegateway.filters.common;
+package com.tarcinapp.entitypersistencegateway.filters.common.response;
 
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
