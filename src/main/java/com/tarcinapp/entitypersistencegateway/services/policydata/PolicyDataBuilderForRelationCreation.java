@@ -16,7 +16,6 @@ import org.springframework.web.server.ServerWebExchange;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
@@ -31,7 +30,7 @@ import reactor.core.publisher.Mono;
  */
 @Slf4j
 @Component("policyDataBuilderForRelationCreation")
-public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
+public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuilder {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
@@ -46,16 +45,9 @@ public class PolicyDataBuilderForRelationCreation implements PolicyDataBuilder {
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
+        populateCommonData(policyData, exchange);
+        
         ServerHttpRequest request = exchange.getRequest();
-
-        // Get security context
-        GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
-
-        // Populate basic policy data
-        policyData.setHttpMethod(request.getMethod());
-        policyData.setEncodedJwt(securityContext != null ? securityContext.getEncodedJwt() : null);
-        policyData.setQueryParams(request.getQueryParams());
-        policyData.setRequestPath(request.getPath());
 
         log.debug("Building policy data for relation creation: " + request.getMethod() + " " + request.getPath());
 

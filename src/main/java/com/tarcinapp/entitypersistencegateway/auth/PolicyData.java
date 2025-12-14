@@ -18,6 +18,8 @@ public class PolicyData implements Cloneable {
 
     private String policyName;
     private String appShortcode;
+
+    private String operation;
     
     @JsonSerialize(using = ToStringSerializer.class)
     private HttpMethod httpMethod;

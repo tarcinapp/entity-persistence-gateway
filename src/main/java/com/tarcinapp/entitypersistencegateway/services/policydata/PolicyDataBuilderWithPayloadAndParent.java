@@ -9,7 +9,6 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.services.OriginalRecordFetcher;
 
@@ -22,7 +21,7 @@ import reactor.core.publisher.Mono;
  */
 @Slf4j
 @Component("policyDataBuilderWithPayloadAndParent")
-public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder {
+public class PolicyDataBuilderWithPayloadAndParent extends AbstractPolicyDataBuilder {
 
     @Autowired
     private OriginalRecordFetcher originalRecordFetcher;
@@ -32,18 +31,11 @@ public class PolicyDataBuilderWithPayloadAndParent implements PolicyDataBuilder 
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
+        populateCommonData(policyData, exchange);
+        
         ServerHttpRequest request = exchange.getRequest();
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
         String recordId = uriVariables.get("recordId");
-
-        // Get security context
-        GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
-
-        // Populate basic policy data
-        policyData.setHttpMethod(request.getMethod());
-        policyData.setEncodedJwt(securityContext != null ? securityContext.getEncodedJwt() : null);
-        policyData.setQueryParams(request.getQueryParams());
-        policyData.setRequestPath(request.getPath());
 
         log.debug("Building policy data with payload and parent for " + request.getMethod() + " " + request.getPath());
 

@@ -6,7 +6,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -17,15 +16,12 @@ import org.springframework.web.server.ServerWebExchange;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.clients.backend.IBackendClientBase;
 import com.tarcinapp.entitypersistencegateway.dto.AnyRecordBase;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-
-import java.time.format.DateTimeFormatter;
 
 /**
  * Policy data builder for reaction creation endpoints.
@@ -34,15 +30,12 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component("policyDataBuilderForReactionCreation")
-public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
+public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuilder {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
     @Autowired
     private IBackendClientBase backendBaseClient;
-
-    @Autowired
-    private PayloadExtractor payloadExtractor;
 
     private final ObjectMapper objectMapper;
 
@@ -52,17 +45,9 @@ public class PolicyDataBuilderForReactionCreation implements PolicyDataBuilder {
 
     @Override
     public Mono<Void> buildPolicyData(PolicyData policyData, ServerWebExchange exchange, GatewayFilterChain chain) {
+        populateCommonData(policyData, exchange);
+        
         ServerHttpRequest request = exchange.getRequest();
-        Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
-
-        // Get security context
-        GatewaySecurityContext securityContext = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
-
-        // Populate basic policy data
-        policyData.setHttpMethod(request.getMethod());
-        policyData.setEncodedJwt(securityContext != null ? securityContext.getEncodedJwt() : null);
-        policyData.setQueryParams(request.getQueryParams());
-        policyData.setRequestPath(request.getPath());
 
         log.debug("Building policy data for reaction creation: " + request.getMethod() + " " + request.getPath());
 
