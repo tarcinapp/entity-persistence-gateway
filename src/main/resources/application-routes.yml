@@ -33,9 +33,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
@@ -64,9 +61,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
@@ -98,17 +92,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
@@ -169,9 +157,6 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
@@ -287,17 +272,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
@@ -332,9 +311,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
@@ -363,17 +339,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
@@ -409,9 +379,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
@@ -440,9 +407,6 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
@@ -474,17 +438,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
@@ -510,9 +468,6 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/countLists/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -549,9 +504,6 @@ spring:
             timeToLive: ${app.local-cache.lists.findListById.timeToLive}
             size: ${app.local-cache.lists.findListById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
@@ -673,17 +625,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.findListChildren.timeToLive}
             size: ${app.local-cache.lists.findListChildren.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
@@ -718,9 +664,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
@@ -749,17 +692,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
             size: ${app.local-cache.lists.findListParents.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListParents.connectTimeoutMs}
@@ -798,9 +735,6 @@ spring:
             - OWNER_USERS
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/relations/policy
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
@@ -829,9 +763,6 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/relations/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
@@ -863,17 +794,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToRelationQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/relations/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
             size: ${app.local-cache.relations.findRelations.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/relations/policy
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
@@ -899,9 +824,6 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/countRelations/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/relations/policy
         - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -941,9 +863,6 @@ spring:
             timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
             size: ${app.local-cache.relations.findRelationById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/relations/policy
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
@@ -1080,9 +999,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
@@ -1109,9 +1025,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
@@ -1141,17 +1054,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
@@ -1175,9 +1082,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -1212,9 +1116,6 @@ spring:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
@@ -1328,17 +1229,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
@@ -1372,9 +1267,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
@@ -1401,17 +1293,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.connectTimeoutMs}
@@ -1445,9 +1331,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
@@ -1474,9 +1357,6 @@ spring:
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
@@ -1506,17 +1386,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entityReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entityReactions/policy
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
@@ -1573,9 +1447,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
@@ -1602,9 +1473,6 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
@@ -1634,17 +1502,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
@@ -1668,9 +1530,6 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -1705,9 +1564,6 @@ spring:
             timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
             size: ${app.local-cache.listReactions.findListReactionById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
@@ -1821,17 +1677,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
@@ -1864,9 +1714,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
@@ -1893,17 +1740,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByListReactionId.connectTimeoutMs}
@@ -1937,9 +1778,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
@@ -1966,9 +1804,6 @@ spring:
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
@@ -1998,17 +1833,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/listReactions/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/listReactions/policy
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
@@ -2067,9 +1896,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
@@ -2098,9 +1924,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
         - RemoveRequestHeader=Authorization
@@ -2130,17 +1953,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
@@ -2165,9 +1982,6 @@ spring:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -2195,17 +2009,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/lists/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/lists/policy
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.entities.findListsByEntityId.connectTimeoutMs}
@@ -2272,9 +2080,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
       - id: findAllEntitiesByKindAlias
@@ -2302,9 +2107,6 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - ApplyFieldsetConfig
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
@@ -2312,9 +2114,6 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
       - id: replaceEntityByIdByKindAlias
@@ -2379,9 +2178,6 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -2414,9 +2210,6 @@ spring:
             burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
         - ValidateRequestBodyByKindSchema
         - PreventStringifiedJsonFilter
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
@@ -2454,9 +2247,6 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
       - id: updateEntityByIdByKindAlias
@@ -2544,17 +2334,11 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
       - id: createEntityChildByKindAlias
@@ -2591,9 +2375,6 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
-        - name: DropFieldsForSingleItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
       - id: findEntityParentsByKindAlias
@@ -2623,16 +2404,10 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
-        - name: PreventQueryByForbiddenFields
-          args:
-            policyName: /policies/fields/entities/policy
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
-        - name: DropFieldsForMultiItemResponses
-          args:
-            policyName: /policies/fields/entities/policy
         metadata:
           recordType: entities
