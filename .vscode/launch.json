@@ -2,7 +2,13 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-EntityPersistenceGatewayApplication<entity-persistence-gateway>",
+            "request": "attach",
+            "name": "Attach by Process ID",
+            "processId": "${command:PickJavaProcess}"
+        },
+        {
+            "type": "java",
+            "name": "Debug with DEV Profile",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
