@@ -40,7 +40,7 @@ public abstract class AbstractPolicyDataBuilder implements PolicyDataBuilder {
         
         switch (method) {
             case "POST":
-                operation = "create";
+                operation = "find"; // we need to hide fields-to-find in the response of a creation operation
                 break;
             case "PUT":
             case "PATCH":
