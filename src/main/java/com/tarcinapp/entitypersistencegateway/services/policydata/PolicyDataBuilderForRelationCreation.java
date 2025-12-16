@@ -26,7 +26,8 @@ import reactor.core.publisher.Mono;
 /**
  * Policy data builder for relation creation endpoint.
  * Fetches both the entity (_entityId) and list (_listId) from the payload in parallel,
- * and maps them to _toMetadata and _fromMetadata in the request payload.
+ * and maps them to _toMetadata and _fromMetadata in the policy data for authorization.
+ * This builder does NOT modify the request payload - it only builds policy data.
  */
 @Slf4j
 @Component("policyDataBuilderForRelationCreation")
@@ -51,16 +52,17 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
 
         log.debug("Building policy data for relation creation: " + request.getMethod() + " " + request.getPath());
 
-        // Extract payload and fetch both entity and list, then inject metadata
-        return extractPayloadAndInjectRelationMetadata(policyData, exchange, chain);
+        // Extract payload, fetch both entity and list, build policy data (without modifying payload)
+        return extractPayloadAndBuildPolicyData(policyData, exchange, chain);
     }
 
     /**
      * Extracts the request payload, fetches both entity and list in parallel,
-     * and injects their managed fields into _toMetadata and _fromMetadata.
+     * and builds policy data with _toMetadata and _fromMetadata for authorization.
+     * The request payload is passed through unchanged.
      */
-    private Mono<Void> extractPayloadAndInjectRelationMetadata(PolicyData policyData, ServerWebExchange exchange,
-                                                                 GatewayFilterChain chain) {
+    private Mono<Void> extractPayloadAndBuildPolicyData(PolicyData policyData, ServerWebExchange exchange,
+                                                         GatewayFilterChain chain) {
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = 
             new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
@@ -81,24 +83,9 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
                                 "Relation must specify both _entityId and _listId");
                         }
 
-                        // Fetch both resources in parallel
-                        return fetchRelatedResourcesAndInjectMetadata(payloadJSON, entityId, listId)
-                            .flatMap(updatedPayload -> {
-                                try {
-                                    // Set the payload in policy data
-                                    AnyRecordBase recordBase = prepareRecordBaseFromPayload(updatedPayload);
-                                    policyData.setRequestPayload(recordBase);
-
-                                    // Return the updated JSON string
-                                    String updatedJsonStr = objectMapper.writeValueAsString(updatedPayload);
-                                    log.debug("Injected _toMetadata and _fromMetadata into relation payload");
-                                    return Mono.just(updatedJsonStr);
-                                } catch (JsonProcessingException e) {
-                                    log.error("Failed to serialize updated payload", e);
-                                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                        "Failed to process request payload");
-                                }
-                            });
+                        // Fetch both resources in parallel and build policy data
+                        return fetchRelatedResourcesAndBuildPolicyData(policyData, payloadJSON, entityId, listId)
+                            .thenReturn(inboundJsonRequestStr); // Return original payload unchanged
                     } catch (JsonProcessingException e) {
                         log.error("Failed to parse JSON payload", e);
                         throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
@@ -110,12 +97,13 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
     }
 
     /**
-     * Fetches both entity and list in parallel and injects their managed fields 
-     * into _toMetadata and _fromMetadata.
+     * Fetches both entity and list in parallel and builds policy data with 
+     * _toMetadata and _fromMetadata for authorization.
      */
-    private Mono<Map<String, Object>> fetchRelatedResourcesAndInjectMetadata(Map<String, Object> payloadJSON,
-                                                                               String entityId,
-                                                                               String listId) {
+    private Mono<Void> fetchRelatedResourcesAndBuildPolicyData(PolicyData policyData,
+                                                                Map<String, Object> payloadJSON,
+                                                                String entityId,
+                                                                String listId) {
         String entityPath = "/entities/" + entityId;
         String listPath = "/lists/" + listId;
         
@@ -138,21 +126,25 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
 
         // Wait for both to complete in parallel
         return Mono.zip(entityMono, listMono)
-            .map(tuple -> {
+            .doOnNext(tuple -> {
                 AnyRecordBase entity = tuple.getT1();
                 AnyRecordBase list = tuple.getT2();
 
-                // Always override metadata with fetched data from the related resources
                 // Create _toMetadata with managed fields from entity
                 Map<String, Object> toMetadata = createMetadataMap(entity);
-                payloadJSON.put("_toMetadata", toMetadata);
                 
                 // Create _fromMetadata with managed fields from list
                 Map<String, Object> fromMetadata = createMetadataMap(list);
-                payloadJSON.put("_fromMetadata", fromMetadata);
 
-                return payloadJSON;
-            });
+                // Build policy data with request payload and metadata
+                AnyRecordBase recordBase = prepareRecordBaseFromPayload(payloadJSON);
+                recordBase.getCustomFields().put("_toMetadata", toMetadata);
+                recordBase.getCustomFields().put("_fromMetadata", fromMetadata);
+                policyData.setRequestPayload(recordBase);
+                
+                log.debug("Built policy data with _toMetadata and _fromMetadata for relation");
+            })
+            .then();
     }
 
     /**
@@ -193,8 +185,9 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
 
     /**
      * Prepares a record base object from the request payload.
-     * Preserves all incoming payload data and includes _toMetadata and _fromMetadata for policy evaluation.
+     * Preserves all incoming payload data for policy evaluation.
      */
+    @SuppressWarnings("unchecked")
     private AnyRecordBase prepareRecordBaseFromPayload(Map<String, Object> payloadJSON) {
         AnyRecordBase recordBase = new AnyRecordBase();
 
@@ -207,8 +200,7 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
             recordBase.set_ownerGroups((java.util.List<String>) payloadJSON.get("_ownerGroups"));
 
             // Clone ALL incoming payload data to custom fields
-            // Note: _toMetadata and _fromMetadata are overridden with fetched data,
-            // all other fields (_entityId, _listId, etc.) are preserved as-is
+            // (excluding metadata fields which will be added from fetched resources)
             for (Map.Entry<String, Object> entry : payloadJSON.entrySet()) {
                 recordBase.getCustomFields().put(entry.getKey(), entry.getValue());
             }

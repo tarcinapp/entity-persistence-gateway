@@ -26,7 +26,8 @@ import reactor.core.publisher.Mono;
 /**
  * Policy data builder for reaction creation endpoints.
  * Fetches the target resource (entity or list) from _entityId or _listId in the payload,
- * and embeds its managed fields into _relationMetadata within the request payload.
+ * and embeds its managed fields into _relationMetadata within the policy data for authorization.
+ * This builder does NOT modify the request payload - it only builds policy data.
  */
 @Slf4j
 @Component("policyDataBuilderForReactionCreation")
@@ -51,16 +52,17 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
 
         log.debug("Building policy data for reaction creation: " + request.getMethod() + " " + request.getPath());
 
-        // Extract payload and fetch target resource, then inject _relationMetadata
-        return extractPayloadAndInjectRelationMetadata(policyData, exchange, chain);
+        // Extract payload, fetch target resource, build policy data (without modifying payload)
+        return extractPayloadAndBuildPolicyData(policyData, exchange, chain);
     }
 
     /**
      * Extracts the request payload, fetches the target resource (entity/list),
-     * and injects its managed fields into _relationMetadata.
+     * and builds policy data with _relationMetadata for authorization.
+     * The request payload is passed through unchanged.
      */
-    private Mono<Void> extractPayloadAndInjectRelationMetadata(PolicyData policyData, ServerWebExchange exchange,
-                                                                 GatewayFilterChain chain) {
+    private Mono<Void> extractPayloadAndBuildPolicyData(PolicyData policyData, ServerWebExchange exchange,
+                                                         GatewayFilterChain chain) {
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = 
             new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
@@ -92,24 +94,9 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
                         final String finalResourceType = resourceType;
                         final String finalTargetResourceId = targetResourceId;
 
-                        // Fetch the target resource and inject its metadata
-                        return fetchTargetResourceAndInjectMetadata(payloadJSON, finalResourceType, finalTargetResourceId)
-                            .flatMap(updatedPayload -> {
-                                try {
-                                    // Set the payload in policy data
-                                    AnyRecordBase recordBase = prepareRecordBaseFromPayload(updatedPayload);
-                                    policyData.setRequestPayload(recordBase);
-
-                                    // Return the updated JSON string
-                                    String updatedJsonStr = objectMapper.writeValueAsString(updatedPayload);
-                                    log.debug("Injected _relationMetadata into reaction payload");
-                                    return Mono.just(updatedJsonStr);
-                                } catch (JsonProcessingException e) {
-                                    log.error("Failed to serialize updated payload", e);
-                                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                        "Failed to process request payload");
-                                }
-                            });
+                        // Fetch the target resource and build policy data
+                        return fetchTargetResourceAndBuildPolicyData(policyData, payloadJSON, finalResourceType, finalTargetResourceId)
+                            .thenReturn(inboundJsonRequestStr); // Return original payload unchanged
                     } catch (JsonProcessingException e) {
                         log.error("Failed to parse JSON payload", e);
                         throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
@@ -121,16 +108,17 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
     }
 
     /**
-     * Fetches the target resource and injects its managed fields into _relationMetadata
+     * Fetches the target resource and builds policy data with _relationMetadata
      */
-    private Mono<Map<String, Object>> fetchTargetResourceAndInjectMetadata(Map<String, Object> payloadJSON,
-                                                                             String resourceType,
-                                                                             String targetResourceId) {
+    private Mono<Void> fetchTargetResourceAndBuildPolicyData(PolicyData policyData,
+                                                              Map<String, Object> payloadJSON,
+                                                              String resourceType,
+                                                              String targetResourceId) {
         String targetResourcePath = "/" + resourceType + "/" + targetResourceId;
         log.debug("Fetching target resource: " + targetResourcePath);
 
         return backendBaseClient.get(targetResourcePath, AnyRecordBase.class)
-            .map(targetResource -> {
+            .doOnNext(targetResource -> {
                 // Create _relationMetadata with managed fields from target resource
                 Map<String, Object> relationMetadata = new HashMap<>();
                 relationMetadata.put("_id", targetResource.get_id());
@@ -155,22 +143,29 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
                     relationMetadata.put("_validUntilDateTime", formattedDate);
                 }
 
-                // Inject _relationMetadata into payload
-                payloadJSON.put("_relationMetadata", relationMetadata);
-
-                return payloadJSON;
+                // Build policy data with request payload and relation metadata
+                AnyRecordBase recordBase = prepareRecordBaseFromPayload(payloadJSON);
+                recordBase.set_relationMetadata(relationMetadata);
+                policyData.setRequestPayload(recordBase);
+                
+                log.debug("Built policy data with _relationMetadata for reaction");
             })
             .onErrorMap(e -> {
+                if (e instanceof ResponseStatusException) {
+                    return e;
+                }
                 log.error("Failed to fetch target resource: " + targetResourcePath, e);
                 return new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Could not fetch target resource for reaction: " + targetResourceId, e);
-            });
+            })
+            .then();
     }
 
     /**
      * Prepares a record base object from the request payload.
-     * Extracts managed fields including _relationMetadata for policy evaluation.
+     * Extracts managed fields for policy evaluation.
      */
+    @SuppressWarnings("unchecked")
     private AnyRecordBase prepareRecordBaseFromPayload(Map<String, Object> payloadJSON) {
         AnyRecordBase recordBase = new AnyRecordBase();
 
@@ -181,13 +176,6 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
             recordBase.set_visibility((String) payloadJSON.get("_visibility"));
             recordBase.set_ownerUsers((java.util.List<String>) payloadJSON.get("_ownerUsers"));
             recordBase.set_ownerGroups((java.util.List<String>) payloadJSON.get("_ownerGroups"));
-
-            // Extract _relationMetadata if present
-            @SuppressWarnings("unchecked")
-            Map<String, Object> relationMetadata = (Map<String, Object>) payloadJSON.get("_relationMetadata");
-            if (relationMetadata != null) {
-                recordBase.set_relationMetadata(relationMetadata);
-            }
 
             return recordBase;
         } catch (ClassCastException e) {
