@@ -23,6 +23,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
               burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntity/policy
@@ -33,6 +34,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
@@ -57,6 +59,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
@@ -85,6 +88,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntities/policy
@@ -97,6 +101,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
@@ -118,6 +123,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.countEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
@@ -148,6 +154,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
               burstCapacity: ${app.rate-limits.entities.findEntityById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
@@ -157,6 +164,7 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
@@ -181,6 +189,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
               burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
@@ -210,6 +219,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
               burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/replaceEntityById/policy
@@ -265,6 +275,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
               burstCapacity: ${app.rate-limits.entities.findEntityChildren.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
@@ -277,6 +288,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
@@ -301,6 +313,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
               burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/createEntityChild/policy
@@ -311,6 +324,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
@@ -332,6 +346,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
               burstCapacity: ${app.rate-limits.entities.findEntityParents.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy
@@ -344,6 +359,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
@@ -369,6 +385,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.createList.replenishRate}
               burstCapacity: ${app.rate-limits.lists.createList.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/createList/policy
@@ -379,6 +396,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
@@ -403,6 +421,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.updateAllLists.replenishRate}
               burstCapacity: ${app.rate-limits.lists.updateAllLists.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
@@ -431,6 +450,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
               burstCapacity: ${app.rate-limits.lists.findLists.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findLists/policy
@@ -443,6 +463,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
@@ -495,6 +516,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.findListById.replenishRate}
               burstCapacity: ${app.rate-limits.lists.findListById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListById/policy
@@ -504,6 +526,7 @@ spring:
             timeToLive: ${app.local-cache.lists.findListById.timeToLive}
             size: ${app.local-cache.lists.findListById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
@@ -528,6 +551,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.updateListById.replenishRate}
               burstCapacity: ${app.rate-limits.lists.updateListById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/updateListById/policy
@@ -560,6 +584,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.replaceListById.replenishRate}
               burstCapacity: ${app.rate-limits.lists.replaceListById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/replaceListById/policy
@@ -593,6 +618,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.deleteListById.replenishRate}
               burstCapacity: ${app.rate-limits.lists.deleteListById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/deleteListById/policy
@@ -618,6 +644,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.findListChildren.replenishRate}
               burstCapacity: ${app.rate-limits.lists.findListChildren.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListChildren/policy
@@ -630,6 +657,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListChildren.timeToLive}
             size: ${app.local-cache.lists.findListChildren.size}
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
@@ -654,6 +682,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.createListChild.replenishRate}
               burstCapacity: ${app.rate-limits.lists.createListChild.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/createListChild/policy
@@ -664,6 +693,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
@@ -685,6 +715,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.findListParents.replenishRate}
               burstCapacity: ${app.rate-limits.lists.findListParents.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/lists/findListParents/policy
@@ -697,6 +728,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
             size: ${app.local-cache.lists.findListParents.size}
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListParents.connectTimeoutMs}
@@ -722,6 +754,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.createRelation.replenishRate}
               burstCapacity: ${app.rate-limits.relations.createRelation.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/createRelation/policy
@@ -735,6 +768,7 @@ spring:
             - OWNER_USERS
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
@@ -759,6 +793,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.updateAllRelations.replenishRate}
               burstCapacity: ${app.rate-limits.relations.updateAllRelations.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
@@ -787,6 +822,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.findRelations.replenishRate}
               burstCapacity: ${app.rate-limits.relations.findRelations.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/findRelations/policy
@@ -799,6 +835,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
             size: ${app.local-cache.relations.findRelations.size}
+        - FieldFilter
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
@@ -815,6 +852,7 @@ spring:
             controllerName: relations
         - AuthenticateRequest
         - GenerateRequestId
+        - FetchForbiddenFields
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -854,6 +892,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.findRelationById.replenishRate}
               burstCapacity: ${app.rate-limits.relations.findRelationById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/findRelationById/policy
@@ -863,6 +902,7 @@ spring:
             timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
             size: ${app.local-cache.relations.findRelationById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
@@ -890,6 +930,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.updateRelationById.replenishRate}
               burstCapacity: ${app.rate-limits.relations.updateRelationById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/updateRelationById/policy
@@ -925,6 +966,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.relations.replaceRelationById.replenishRate}
               burstCapacity: ${app.rate-limits.relations.replaceRelationById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/relations/replaceRelationById/policy
@@ -988,6 +1030,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/createEntityReaction/policy
@@ -999,6 +1042,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
@@ -1021,6 +1065,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateAllEntityReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
@@ -1047,6 +1092,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findEntityReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactions/policy
@@ -1059,6 +1105,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
@@ -1078,6 +1125,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.countEntityReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.countEntityReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
@@ -1107,6 +1155,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findEntityReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactionById/policy
@@ -1116,6 +1165,7 @@ spring:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
@@ -1138,6 +1188,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateEntityReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/updateEntityReactionById/policy
@@ -1168,6 +1219,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.replaceEntityReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.replaceEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/replaceEntityReactionById/policy
@@ -1199,6 +1251,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.deleteEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/deleteEntityReactionById/policy
@@ -1222,6 +1275,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findChildrenEntityReactionsByReactionId/policy
@@ -1234,6 +1288,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
@@ -1257,6 +1312,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createChildEntityReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createChildEntityReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/createChildEntityReaction/policy
@@ -1267,6 +1323,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
@@ -1286,6 +1343,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findParentsByEntityReactionId.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findParentsByEntityReactionId.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entityReactions/findParentsByEntityReactionId/policy
@@ -1298,6 +1356,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.connectTimeoutMs}
@@ -1321,6 +1380,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
@@ -1331,6 +1391,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
@@ -1353,6 +1414,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateAllEntityReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
@@ -1379,6 +1441,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findEntityReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/findReactionsByEntityId/policy
@@ -1391,6 +1454,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - FieldFilter
         metadata:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
@@ -1410,6 +1474,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.deleteEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
@@ -1437,6 +1502,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createListReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/createListReaction/policy
@@ -1447,6 +1513,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
@@ -1469,6 +1536,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateAllListReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
@@ -1495,6 +1563,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findListReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findListReactions/policy
@@ -1507,6 +1576,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
@@ -1526,6 +1596,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.countListReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.countListReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
@@ -1555,6 +1626,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findListReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findListReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findListReactionById/policy
@@ -1564,6 +1636,7 @@ spring:
             timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
             size: ${app.local-cache.listReactions.findListReactionById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
@@ -1586,6 +1659,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateListReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateListReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/updateListReactionById/policy
@@ -1616,6 +1690,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.replaceListReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.replaceListReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/replaceListReactionById/policy
@@ -1670,6 +1745,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findChildrenListReactionsByReactionId/policy
@@ -1682,6 +1758,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
@@ -1704,6 +1781,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createChildListReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createChildListReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/createChildListReaction/policy
@@ -1714,6 +1792,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
@@ -1733,6 +1812,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findParentsByListReactionId.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findParentsByListReactionId.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listReactions/findParentsByListReactionId/policy
@@ -1745,6 +1825,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByListReactionId.connectTimeoutMs}
@@ -1768,6 +1849,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.createListReaction.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/createReactionByListId/policy
@@ -1778,6 +1860,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
@@ -1800,6 +1883,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.updateAllListReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
@@ -1826,6 +1910,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.findListReactions.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/findReactionsByListId/policy
@@ -1838,6 +1923,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - FieldFilter
         metadata:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
@@ -1857,6 +1943,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
               burstCapacity: ${app.rate-limits.reactions.deleteListReactionById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
@@ -1886,6 +1973,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
               burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/createEntityByListId/policy
@@ -1896,6 +1984,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
@@ -1920,6 +2009,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
@@ -1946,6 +2036,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
               burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/findEntitiesByListId/policy
@@ -1958,6 +2049,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - FieldFilter
         metadata:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
@@ -1977,6 +2069,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
               burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
@@ -2002,6 +2095,7 @@ spring:
             redis-rate-limiter:
               replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
               burstCapacity: ${app.rate-limits.lists.findLists.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/listsThroughEntity/findListsByEntityId/policy
@@ -2014,6 +2108,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - FieldFilter
         metadata:
           recordType: lists
           connect-timeout: ${app.timeouts.entities.findListsByEntityId.connectTimeoutMs}
@@ -2069,6 +2164,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
+        - FetchForbiddenFields
         - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
@@ -2080,6 +2176,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
       - id: findAllEntitiesByKindAlias
@@ -2100,6 +2197,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
+        - FetchForbiddenFields
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - name: AuthorizeRequest
           args:
@@ -2114,6 +2212,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - FieldFilter
         metadata:
           recordType: entities
       - id: replaceEntityByIdByKindAlias
@@ -2139,6 +2238,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.replaceEntityById.burstCapacity}
+        - FetchForbiddenFields
         - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
@@ -2152,6 +2252,7 @@ spring:
             policyName: /policies/fields/entities/policy
         - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
       - id: countEntitiesByKindAlias
@@ -2174,6 +2275,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.countEntities.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
@@ -2208,6 +2310,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
+        - FetchForbiddenFields
         - ValidateRequestBodyByKindSchema
         - PreventStringifiedJsonFilter
         - name: AuthorizeRequest
@@ -2238,6 +2341,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityById.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityById/policy
@@ -2247,6 +2351,7 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
+        - FieldFilter
         metadata:
           recordType: entities
       - id: updateEntityByIdByKindAlias
@@ -2271,6 +2376,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
             burstCapacity: ${app.rate-limits.entities.updateEntityById.burstCapacity}
+        - FetchForbiddenFields
         - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
@@ -2326,6 +2432,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityChildren.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityChildren/policy
@@ -2335,6 +2442,7 @@ spring:
         - ConvertKindAliasToKindQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         - name: DynamicLocalCache
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
@@ -2364,6 +2472,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
             burstCapacity: ${app.rate-limits.entities.createEntityChild.burstCapacity}
+        - FetchForbiddenFields
         - ValidateRequestBodyByKindSchema
         - name: AuthorizeRequest
           args:
@@ -2375,6 +2484,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - FieldFilter
         metadata:
           recordType: entities
       - id: findEntityParentsByKindAlias
@@ -2396,6 +2506,7 @@ spring:
           args:
             replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
             burstCapacity: ${app.rate-limits.entities.findEntityParents.burstCapacity}
+        - FetchForbiddenFields
         - name: AuthorizeRequest
           args:
             policyName: /policies/auth/routes/entities/findEntityParents/policy
@@ -2409,5 +2520,6 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
+        - FieldFilter
         metadata:
           recordType: entities
