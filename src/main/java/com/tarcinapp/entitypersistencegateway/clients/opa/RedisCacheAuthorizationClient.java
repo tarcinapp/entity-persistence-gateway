@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -22,6 +23,11 @@ import java.util.Map;
 
 /**
  * Decorator around the real OPA client that adds Redis caching.
+
+ * Caching is now strictly limited to read-only operations (GET, HEAD, OPTIONS).
+ * Write operations (POST, PUT, PATCH, DELETE) are dynamic by nature (payload dependent)
+ * and caching them causes "Cache Poisoning" where a permission granted for one payload
+ * might be incorrectly served for a different, forbidden payload.
  */
 @Component
 @Primary
@@ -44,6 +50,12 @@ public class RedisCacheAuthorizationClient implements IAuthorizationClient {
 
     @Override
     public Mono<PolicyResult> executePolicy(PolicyData data) {
+        // 1. Check if method is cacheable (GET/HEAD/OPTIONS)
+        if (!isCacheableMethod(data.getHttpMethod())) {
+            log.debug("Skipping cache for write/unsafe operation: {}. Delegating to OPA.", data.getHttpMethod());
+            return delegate.executePolicy(data);
+        }
+
         log.debug("Starting executePolicy for policy: {}", data.getPolicyName());
         String key = buildCacheKey(data.getPolicyName(), data.getEncodedJwt());
         Duration ttl = calculateTtl(data.getEncodedJwt());
@@ -85,6 +97,12 @@ public class RedisCacheAuthorizationClient implements IAuthorizationClient {
 
     @Override
     public <T> Mono<T> executePolicy(PolicyData data, Class<T> type) {
+        // 1. Check if method is cacheable (GET/HEAD/OPTIONS)
+        if (!isCacheableMethod(data.getHttpMethod())) {
+            log.debug("Skipping cache for write/unsafe operation: {}. Delegating to OPA.", data.getHttpMethod());
+            return delegate.executePolicy(data, type);
+        }
+
         log.debug("Starting executePolicy for policy: {} with type: {}", data.getPolicyName(), type.getSimpleName());
         String key = buildCacheKey(data.getPolicyName(), data.getEncodedJwt());
         Duration ttl = calculateTtl(data.getEncodedJwt());
@@ -122,6 +140,18 @@ public class RedisCacheAuthorizationClient implements IAuthorizationClient {
                     log.warn("Redis read failed for key {}: {}", key, e.toString());
                     return delegate.executePolicy(data, type);
                 });
+    }
+
+    /**
+     * Determines if the request method is safe to cache.
+     * We only cache read-only methods. Any method that might modify data based on a payload
+     * (POST, PUT, PATCH, DELETE) must bypass cache to ensure the specific payload is authorized dynamically.
+     */
+    private boolean isCacheableMethod(HttpMethod httpMethod) {
+        if (httpMethod == null) return false;
+        return httpMethod.equals(HttpMethod.GET) ||
+               httpMethod.equals(HttpMethod.HEAD) ||
+               httpMethod.equals(HttpMethod.OPTIONS);
     }
 
     private String buildCacheKey(String policyName, String encodedJwt) {
