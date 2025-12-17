@@ -66,37 +66,29 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
         policyInquiryData.setPolicyName(config.getPolicyName());
 
         return this.executePolicy(policyInquiryData)
+            // ERROR HANDLING SCOPE:
+            // This onErrorResume ONLY catches errors occurring during the Policy Execution (e.g. OPA down, Network error).
+            // It does NOT catch errors from downstream filters (chain.filter) because they happen in the flatMap below.
+            .onErrorResume(e -> {
+                log.error("Authorization check failed (PEP error): {}", e.getMessage(), e);
+                return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Authorization System Failure"));
+            })
             .flatMap(authorized -> {
-
                 if (Boolean.TRUE.equals(authorized)) {
                     log.debug("PEP authorized the request.");
+                    // Forward to the next filter in the chain.
+                    // Errors occurring here or downstream will bubble up to the Global Exception Handler.
                     return chain.filter(exchange);
                 }
-                                    
+                
                 log.debug("PEP denied the request. Returning 403 Forbidden.");
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied by Policy"));
-            })
-            .onErrorResume(e -> {
-                // If the error is already a ResponseStatusException (e.g., 504 Timeout, 403 Forbidden)
-                // forward it to the client as is.
-                if (e instanceof ResponseStatusException) {
-                    ServerHttpResponse response = exchange.getResponse();
-                    response.setStatusCode(((ResponseStatusException) e).getStatusCode());
-                    return response.setComplete();
-                }
-
-                // For other unexpected errors, return 500 Internal Server Error
-                log.error("Unexpected authorization error: {}", e.getMessage(), e);
-                ServerHttpResponse response = exchange.getResponse();
-                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                return response.setComplete();
             });
     }
 
     private Mono<Boolean> executePolicy(PolicyData policyData) {
 
         if (log.isDebugEnabled()) {
-            
             try {
                 String policyDataStr = objectMapper.writeValueAsString(policyData);
                 log.trace("Policy data prepared: {}", policyDataStr);
@@ -114,7 +106,6 @@ public class AuthorizeRequest extends AbstractGatewayFilterFactory<AuthorizeRequ
     private PolicyData getPolicyInquriyData(ServerWebExchange exchange) throws CloneNotSupportedException {
         PolicyData policyInquiryData = exchange.getAttribute(PolicyData.POLICY_INQUIRY_DATA_ATTR);
         if (policyInquiryData == null) {
-            // Should not happen if AuthenticateRequest runs first, but defensive coding :)
             throw new CloneNotSupportedException("Policy data not found in attributes");
         }
         return (PolicyData) policyInquiryData.clone();
