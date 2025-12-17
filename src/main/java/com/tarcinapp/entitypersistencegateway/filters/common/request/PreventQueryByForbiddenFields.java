@@ -15,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,18 +24,17 @@ import java.util.regex.Pattern;
 /**
  * This filter inspects incoming HTTP Query Parameters to enforce Field Level Security on read operations.
  *
- * STRATEGY: "Surgical In-Place Replacement"
- * Instead of deleting the whole query scope (which breaks OR conditions),
- * we replace ONLY the specific forbidden parameter with an impossible condition.
+ * STRATEGY:
+ * 1. "Surgical In-Place Replacement" for WHERE clauses:
+ * Replaces forbidden params with impossible conditions (_id=__FORBIDDEN__) to prevent access/inference.
+ * 2. "Surgical Removal" for ORDER clauses:
+ * Removes forbidden sorting parameters to prevent "Side-Channel Attacks" (inference by sorting).
  *
- * Example:
- * Input:  filter[where][or][0][secretField]=X & filter[where][or][1][publicField]=Y
- * Action: Remove 'secretField'. Add 'filter[where][or][0][_id] = __FORBIDDEN__'
- * Result: (_id == __FORBIDDEN__ OR publicField == Y)
- *
- * Outcome:
- * - AND queries: (_id=F AND public=Y) -> Returns Nothing (Secure)
- * - OR queries:  (_id=F OR public=Y)  -> Returns Public=Y results (Secure & Functional)
+ * SCOPE:
+ * - Root Level Queries (Where & Order)
+ * - Include Scope Queries (Level 1)
+ * - Nested Include Scope Queries (Level 2)
+ * - Lookups are ignored (handled in Response phase).
  */
 @Component
 @Slf4j
@@ -76,8 +77,16 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                 MultiValueMap<String, String> originalParams = exchange.getRequest().getQueryParams();
                 String rootKind = resolveKind(originalParams);
 
-                // Mutable copy
-                MultiValueMap<String, String> mutableParams = new LinkedMultiValueMap<>(originalParams);
+                // Mutable copy (Deep copy to ensure lists are mutable for inplace modification)
+                // Using new LinkedMultiValueMap<>(originalParams) is not enough because the inner lists remain unmodifiable.
+                MultiValueMap<String, String> mutableParams = new LinkedMultiValueMap<>();
+                originalParams.forEach((key, values) -> mutableParams.put(key, new ArrayList<>(values)));
+
+                if (log.isDebugEnabled()) {
+                    String incomingDecoded = buildDecodedUri(exchange.getRequest().getURI(), originalParams);
+                    log.debug("Incoming URI (decoded): {}", incomingDecoded);
+                }
+
                 boolean isModified = false;
 
                 // 3. Pre-process Include Relations
@@ -90,7 +99,9 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                     
                     if (key.contains("[lookup]")) continue;
 
-                    // A. Root Level Check
+                    // --- WHERE CLAUSE CHECKS ---
+
+                    // A. Root Level Where Check
                     if (isRootWhereClause(key)) {
                         String fieldName = extractFieldName(key);
                         if (fieldName != null && isForbidden(library, rootRecordType, rootKind, fieldName)) {
@@ -99,7 +110,7 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                             isModified = true;
                         }
                     }
-                    // B. Level 1 Include Check
+                    // B. Level 1 Include Where Check
                     else if (isLevel1IncludeWhereClause(key)) {
                         String index = extractLevel1IncludeIndex(key);
                         String relationName = includeMap.getLevel1().get(index);
@@ -112,7 +123,7 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                             isModified = true;
                         }
                     }
-                    // C. Level 2 Include Check
+                    // C. Level 2 Include Where Check
                     else if (isLevel2IncludeWhereClause(key)) {
                         String[] indices = extractLevel2IncludeIndices(key);
                         if (indices != null) {
@@ -131,6 +142,53 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                             }
                         }
                     }
+
+                    // --- ORDER CLAUSE CHECKS ---
+
+                    // D. Root Level Order Check
+                    else if (isRootOrderClause(key)) {
+                        List<String> values = mutableParams.get(key);
+                        if (checkAndRemoveForbiddenOrders(values, library, rootRecordType, rootKind)) {
+                            isModified = true;
+                            if (values.isEmpty()) mutableParams.remove(key);
+                        }
+                    }
+                    // E. Level 1 Include Order Check
+                    else if (isLevel1IncludeOrderClause(key)) {
+                        String index = extractLevel1IncludeIndex(key);
+                        String relationName = includeMap.getLevel1().get(index);
+                        String targetRecordType = mapRelationToRecordType(rootRecordType, relationName);
+
+                        if (targetRecordType != null) {
+                            List<String> values = mutableParams.get(key);
+                            if (checkAndRemoveForbiddenOrders(values, library, targetRecordType, null)) {
+                                log.debug("Security: Removing forbidden Level 1 order in relation '{}'.", relationName);
+                                isModified = true;
+                                if (values.isEmpty()) mutableParams.remove(key);
+                            }
+                        }
+                    }
+                    // F. Level 2 Include Order Check
+                    else if (isLevel2IncludeOrderClause(key)) {
+                        String[] indices = extractLevel2IncludeIndices(key);
+                        if (indices != null) {
+                            String idx1 = indices[0];
+                            String idx2 = indices[1];
+                            String l1Relation = includeMap.getLevel1().get(idx1);
+                            String l1RecordType = mapRelationToRecordType(rootRecordType, l1Relation);
+                            String l2Relation = includeMap.getLevel2().get(idx1 + "_" + idx2);
+                            String l2RecordType = mapRelationToRecordType(l1RecordType, l2Relation);
+
+                            if (l2RecordType != null) {
+                                List<String> values = mutableParams.get(key);
+                                if (checkAndRemoveForbiddenOrders(values, library, l2RecordType, null)) {
+                                    log.debug("Security: Removing forbidden Level 2 order in relation '{}'.", l2Relation);
+                                    isModified = true;
+                                    if (values.isEmpty()) mutableParams.remove(key);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // 5. Rebuild
@@ -140,6 +198,11 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
                                 .replaceQueryParams(mutableParams)
                                 .build()
                                 .toUri();
+
+                        if (log.isDebugEnabled()) {
+                            String modifiedDecoded = buildDecodedUri(newUri, mutableParams);
+                            log.debug("Modified URI (decoded): {}", modifiedDecoded);
+                        }
 
                         return chain.filter(exchange.mutate()
                                 .request(exchange.getRequest().mutate().uri(newUri).build())
@@ -162,39 +225,40 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
     }
 
     /**
+     * Helper to check order values (e.g., "salary DESC", "name ASC") and remove forbidden ones.
+     */
+    private boolean checkAndRemoveForbiddenOrders(List<String> values, ForbiddenFieldsLibrary library, String recordType, String kind) {
+        if (values == null) return false;
+        
+        return values.removeIf(val -> {
+            // Extract field name from "field DESC" or "field"
+            String field = val.trim().split("\\s+")[0];
+            
+            if (isForbidden(library, recordType, kind, field)) {
+                log.debug("Security: Removing forbidden order on field '{}'.", field);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
      * REPLACES the forbidden parameter with an impossible _id condition IN PLACE.
-     * This preserves the logical structure (OR/AND arrays) of the query.
-     *
-     * Logic:
-     * Key:   filter[where][or][0][age][gt]
-     * Field: age
-     * 1. Find index of "[age]"
-     * 2. Substring to get prefix: "filter[where][or][0]"
-     * 3. Construct replacement: "filter[where][or][0][_id]"
-     * 4. Remove old key, set new key to "__FORBIDDEN__"
      */
     private void sanitizeQueryParam(MultiValueMap<String, String> params, String key, String fieldName) {
-        // Remove the original forbidden parameter
         params.remove(key);
 
-        // Calculate the base path by stripping the field name and any subsequent operators
-        // Example: "...[age][gt]" -> field is "age"
-        // We want to replace "[age][gt]" with "[_id]"
-        
         String fieldToken = "[" + fieldName + "]";
         int fieldIndex = key.lastIndexOf(fieldToken);
 
         if (fieldIndex != -1) {
             String basePath = key.substring(0, fieldIndex);
             String replacementKey = basePath + "[_id]";
-            
-            // Set the impossible condition
-            // This effectively changes (age > X) to (_id == __FORBIDDEN__)
             params.set(replacementKey, "__FORBIDDEN__");
         }
     }
 
-    // --- Helpers (Same as before) ---
+    // --- Helpers (Core Logic) ---
 
     private boolean isForbidden(ForbiddenFieldsLibrary library, String recordType, String kind, String field) {
         if (recordType == null || field == null) return false;
@@ -220,8 +284,15 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
         return null;
     }
 
+    // --- Clause Parsers ---
+
     private boolean isRootWhereClause(String key) {
         return (key.startsWith("filter[where]") || key.startsWith("where["))
+                && !key.contains("[include]") && !key.contains("[lookup]");
+    }
+    
+    private boolean isRootOrderClause(String key) {
+        return (key.startsWith("filter[order]") || key.startsWith("order"))
                 && !key.contains("[include]") && !key.contains("[lookup]");
     }
 
@@ -229,9 +300,19 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
         return key.contains("filter[include]") && key.contains("[scope][where]") && !key.contains("[scope][include]");
     }
 
+    private boolean isLevel1IncludeOrderClause(String key) {
+        return key.contains("filter[include]") && key.contains("[scope][order]") && !key.contains("[scope][include]");
+    }
+
     private boolean isLevel2IncludeWhereClause(String key) {
         return key.contains("filter[include]") && key.contains("[scope][include]") && key.contains("[scope][where]");
     }
+
+    private boolean isLevel2IncludeOrderClause(String key) {
+        return key.contains("filter[include]") && key.contains("[scope][include]") && key.contains("[scope][order]");
+    }
+
+    // --- Include Map Building ---
 
     @Data
     private static class IncludeRelationMap {
@@ -292,5 +373,56 @@ public class PreventQueryByForbiddenFields extends AbstractGatewayFilterFactory<
 
     @Data
     public static class Config {
+    }
+
+    // --- Logging Helpers ---
+
+    private String buildDecodedUri(URI baseUri, MultiValueMap<String, String> params) {
+        String scheme = baseUri.getScheme();
+        String authority = baseUri.getRawAuthority();
+        String path = baseUri.getRawPath();
+
+        String decodedAuthority = authority != null ? URLDecoder.decode(authority, StandardCharsets.UTF_8) : null;
+        String decodedPath = path != null ? URLDecoder.decode(path, StandardCharsets.UTF_8) : "";
+
+        String decodedQuery;
+        if (params != null && !params.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (Map.Entry<String, List<String>> e : params.entrySet()) {
+                String k = e.getKey();
+                List<String> vals = e.getValue();
+                if (vals == null || vals.isEmpty()) {
+                    if (!first) sb.append('&');
+                    sb.append(k);
+                    first = false;
+                } else {
+                    for (String v : vals) {
+                        if (!first) sb.append('&');
+                        sb.append(k);
+                        sb.append('=');
+                        if (v != null) sb.append(v);
+                        first = false;
+                    }
+                }
+            }
+            decodedQuery = sb.length() > 0 ? sb.toString() : null;
+        } else {
+            String rawQuery = baseUri.getRawQuery();
+            decodedQuery = rawQuery != null ? URLDecoder.decode(rawQuery, StandardCharsets.UTF_8) : null;
+        }
+
+        StringBuilder full = new StringBuilder();
+        if (scheme != null) {
+            full.append(scheme).append("://");
+        }
+        if (decodedAuthority != null) {
+            full.append(decodedAuthority);
+        }
+        full.append(decodedPath);
+        if (decodedQuery != null && !decodedQuery.isEmpty()) {
+            full.append('?').append(decodedQuery);
+        }
+        return full.toString();
     }
 }
