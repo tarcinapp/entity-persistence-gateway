@@ -55,23 +55,26 @@ public class FetchForbiddenFieldsGatewayFilterFactory
             log.debug("Fetching forbidden fields library from OPA/Redis.");
 
             // 3. Execute Policy
+            // ERROR HANDLING SCOPE:
+            // onErrorResume ONLY catches errors from authorizationClient.executePolicy()
+            // It does NOT catch errors from chain.filter() because they happen in a separate flatMap
             return authorizationClient.executePolicy(forbiddenCheckData, ForbiddenFieldsLibrary.class)
+                    // 4. Fallback: Fail Closed (ONLY for policy execution errors)
+                    // If OPA fails/timeouts, we MUST block the request for security.
+                    .onErrorResume(e -> {
+                        log.error("Failed to fetch forbidden fields due to error: {}. Blocking request (Fail Closed).", e.getMessage());
+                        return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve security policies. Please try again later."));
+                    })
                     .flatMap(library -> {
-                        // 4. Store result in Exchange Attribute
+                        // 5. Store result in Exchange Attribute
                         if (library != null && library.getRules() != null) {
                             exchange.getAttributes().put(GATEWAY_CONTEXT_FORBIDDEN_FIELDS, library);
                             log.debug("Forbidden fields fetched. Rules for types: {}", library.getRules().keySet());
                         } else {
                             log.debug("No forbidden fields returned from OPA.");
                         }
+                        // chain.filter() is OUTSIDE onErrorResume scope - downstream errors bubble up correctly
                         return chain.filter(exchange);
-                    })
-                    // 5. Fallback: Fail Closed
-                    // If OPA fails/timeouts, we MUST block the request for security.
-                    // We return a 500 Internal Server Error to indicate a system failure preventing the security check.
-                    .onErrorResume(e -> {
-                        log.error("Failed to fetch forbidden fields due to error: {}. Blocking request (Fail Closed).", e.getMessage());
-                        return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve security policies. Please try again later."));
                     });
         };
     }

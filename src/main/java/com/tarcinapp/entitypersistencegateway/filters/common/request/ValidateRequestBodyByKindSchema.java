@@ -18,9 +18,9 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -246,143 +246,164 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             return modifyRequestBodyFilterFactory
                     .apply(new ModifyRequestBodyGatewayFilterFactory.Config()
                             .setRewriteFunction(String.class, String.class, (ex, payload) -> {
-
-                                KindAliasConfigAttr kindAliasConfigAttr = exchange
-                                        .getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
-
-                                if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
-                                    log.debug(
-                                            "No kind alias configuration found in attributes. Skipping payload modification.");
-                                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                            "Kind configuration not found for the provided alias"));
-                                }
-
-                                String kindName = kindAliasConfigAttr.getKindName();
-                                String recordType = kindAliasConfigAttr.getRecordType();
-                                
-                                // DÜZELTME BAŞLANGICI: Route cast hatası giderildi.
-                                Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-                                String routeId = (route != null) ? route.getId() : null;
-                                // DÜZELTME BİTİŞİ
-
-                                // Resolve validation flag: Route -> Alias -> Default(true)
-                                boolean validationEnabled = true;
-                                OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(kindAliasConfigAttr.getKindAlias());
-                                if (aliasContext != null && aliasContext.getAliasConfig() != null) {
-                                    AliasConfig aliasConfig = aliasContext.getAliasConfig();
-                                    
-                                    // Check route-level validationEnabled first
-                                    if (routeId != null && aliasConfig.getRoutes() != null) {
-                                        OpenApiProperties.RouteConfig routeConfig = aliasConfig.getRoutes().get(routeId);
-                                        if (routeConfig != null && routeConfig.getValidationEnabled() != null) {
-                                            validationEnabled = routeConfig.getValidationEnabled();
-                                        } else if (aliasConfig.getValidationEnabled() != null) {
-                                            // Fall back to alias-level validationEnabled
-                                            validationEnabled = aliasConfig.getValidationEnabled();
-                                        }
-                                    } else if (aliasConfig.getValidationEnabled() != null) {
-                                        // Use alias-level validationEnabled
-                                        validationEnabled = aliasConfig.getValidationEnabled();
-                                    }
-                                }
-
-                                // If validation is disabled, skip validation
-                                if (!validationEnabled) {
-                                    log.debug("Validation disabled for kind: {} at route: {}", kindName, routeId);
-                                    return Mono.just(payload);
-                                }
-
-                                try {
-                                    JsonNode requestJsonNode = objectMapper.readTree(payload);
-                                    Set<ValidationMessage> errors;
-                                    HttpMethod method = exchange.getRequest().getMethod();
-
-                                    // 1. Try route-specific schema (if routeId available)
-                                    String schemaKey = null;
-                                    JsonSchema schema = null;
-                                    
-                                    if (routeId != null) {
-                                        String routeSchemaKey = buildSchemaKey(recordType, kindName, routeId);
-                                        schema = combinedSchemas.get(routeSchemaKey);
-                                        if (schema != null) {
-                                            schemaKey = routeSchemaKey;
-                                            log.debug("Using route-specific schema for {}", routeSchemaKey);
-                                        }
-                                    }
-
-                                    // 2. Fall back to alias schema
-                                    if (schema == null) {
-                                        schemaKey = buildSchemaKey(recordType, kindName);
-                                        if (method == HttpMethod.PATCH) {
-                                            schema = patchSchemas.get(schemaKey);
-                                        } else {
-                                            schema = combinedSchemas.get(schemaKey);
-                                        }
-                                    }
-
-                                    // If no schema found, skip validation
-                                    if (schema == null) {
-                                        log.debug("No schema found for kind: {}, skipping validation", kindName);
-                                        return Mono.just(payload);
-                                    }
-
-                                    errors = schema.validate(requestJsonNode);
-
-                                    // If validation errors exist
-                                    if (!errors.isEmpty()) {
-                                        log.debug("Validation errors found for kind: {}", kindName);
-
-                                        // Deduplicate errors
-                                        Map<String, ValidationMessage> uniqueErrorsMap = errors.stream()
-                                                .collect(Collectors.toMap(
-                                                        vm -> vm.getCode() + "|" + vm.getEvaluationPath().toString()
-                                                                + "|" + vm.getMessage(),
-                                                        vm -> vm,
-                                                        (existing, replacement) -> existing,
-                                                        LinkedHashMap::new));
-
-                                        Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values().stream()
-                                                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-                                        throw new JsonValidationException(uniqueErrors);
-                                    }
-
-                                    log.debug("No validation error.");
-                                    return Mono.just(payload);
-
-                                } catch (JsonProcessingException e) {
-                                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON body", e);
-                                }
+                                // Error handling is scoped ONLY to this validation logic
+                                // Downstream chain errors will propagate upstream without being caught here
+                                return validatePayload(exchange, payload);
                             }))
-                    .filter(exchange, chain)
-                    .onErrorResume(e -> {
-                        ServerHttpResponse response = exchange.getResponse();
-
-                        if (e instanceof ResponseStatusException) {
-                            response.setStatusCode(((ResponseStatusException) e).getStatusCode());
-                        } else if (e instanceof JsonValidationException) {
-                            JsonValidationException jve = (JsonValidationException) e;
-
-                            try {
-                                ObjectNode errorResponse = createErrorResponse(jve);
-                                byte[] bytes = objectMapper.writeValueAsBytes(errorResponse);
-
-                                response.setStatusCode(HttpStatus.UNPROCESSABLE_ENTITY);
-                                response.getHeaders().add("Content-Type", "application/json");
-
-                                return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
-                            } catch (JsonProcessingException ex) {
-                                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                                return response.setComplete();
-                            }
-                        } else {
-                            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                            log.error("Unexpected error in validation filter", e);
-                        }
-
-                        return response.setComplete();
-                    });
+                    // chain.filter is called here - its errors will propagate upstream, not caught by this filter
+                    .filter(exchange, chain);
         };
+    }
+
+    /**
+     * Validates the payload against the configured schema.
+     * Error handling is scoped ONLY to validation logic - downstream chain errors are NOT caught here.
+     */
+    private Mono<String> validatePayload(ServerWebExchange exchange, String payload) {
+        KindAliasConfigAttr kindAliasConfigAttr = exchange
+                .getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
+
+        if (kindAliasConfigAttr == null || !kindAliasConfigAttr.isKindAliasConfigured()) {
+            log.debug("No kind alias configuration found in attributes. Skipping payload modification.");
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Kind configuration not found for the provided alias"));
+        }
+
+        String kindName = kindAliasConfigAttr.getKindName();
+        String recordType = kindAliasConfigAttr.getRecordType();
+        
+        Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+        String routeId = (route != null) ? route.getId() : null;
+
+        // Resolve validation flag: Route -> Alias -> Default(true)
+        boolean validationEnabled = true;
+        OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(kindAliasConfigAttr.getKindAlias());
+        if (aliasContext != null && aliasContext.getAliasConfig() != null) {
+            AliasConfig aliasConfig = aliasContext.getAliasConfig();
+            
+            // Check route-level validationEnabled first
+            if (routeId != null && aliasConfig.getRoutes() != null) {
+                OpenApiProperties.RouteConfig routeConfig = aliasConfig.getRoutes().get(routeId);
+                if (routeConfig != null && routeConfig.getValidationEnabled() != null) {
+                    validationEnabled = routeConfig.getValidationEnabled();
+                } else if (aliasConfig.getValidationEnabled() != null) {
+                    // Fall back to alias-level validationEnabled
+                    validationEnabled = aliasConfig.getValidationEnabled();
+                }
+            } else if (aliasConfig.getValidationEnabled() != null) {
+                // Use alias-level validationEnabled
+                validationEnabled = aliasConfig.getValidationEnabled();
+            }
+        }
+
+        // If validation is disabled, skip validation
+        if (!validationEnabled) {
+            log.debug("Validation disabled for kind: {} at route: {}", kindName, routeId);
+            return Mono.just(payload);
+        }
+
+        try {
+            JsonNode requestJsonNode = objectMapper.readTree(payload);
+            Set<ValidationMessage> errors;
+            HttpMethod method = exchange.getRequest().getMethod();
+
+            // 1. Try route-specific schema (if routeId available)
+            String schemaKey = null;
+            JsonSchema schema = null;
+            
+            if (routeId != null) {
+                String routeSchemaKey = buildSchemaKey(recordType, kindName, routeId);
+                schema = combinedSchemas.get(routeSchemaKey);
+                if (schema != null) {
+                    schemaKey = routeSchemaKey;
+                    log.debug("Using route-specific schema for {}", routeSchemaKey);
+                }
+            }
+
+            // 2. Fall back to alias schema
+            if (schema == null) {
+                schemaKey = buildSchemaKey(recordType, kindName);
+                if (method == HttpMethod.PATCH) {
+                    schema = patchSchemas.get(schemaKey);
+                } else {
+                    schema = combinedSchemas.get(schemaKey);
+                }
+            }
+
+            // If no schema found, skip validation
+            if (schema == null) {
+                log.debug("No schema found for kind: {}, skipping validation", kindName);
+                return Mono.just(payload);
+            }
+
+            errors = schema.validate(requestJsonNode);
+
+            // If validation errors exist
+            if (!errors.isEmpty()) {
+                log.debug("Validation errors found for kind: {}", kindName);
+
+                // Deduplicate errors
+                Map<String, ValidationMessage> uniqueErrorsMap = errors.stream()
+                        .collect(Collectors.toMap(
+                                vm -> vm.getCode() + "|" + vm.getEvaluationPath().toString()
+                                        + "|" + vm.getMessage(),
+                                vm -> vm,
+                                (existing, replacement) -> existing,
+                                LinkedHashMap::new));
+
+                Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values().stream()
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                // Return validation error response - this is caught ONLY by this filter's error handling
+                return handleValidationError(new JsonValidationException(uniqueErrors), exchange);
+            }
+
+            log.debug("No validation error.");
+            return Mono.just(payload);
+
+        } catch (JsonProcessingException e) {
+            // Catches ONLY JSON parsing errors from this filter's logic
+            log.error("Invalid JSON body in validation filter", e);
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON body", e));
+        }
+    }
+
+    /**
+     * Handles validation errors by writing a structured error response.
+     * This method is called ONLY for errors from this filter's validation logic.
+     */
+    private Mono<String> handleValidationError(JsonValidationException jve, ServerWebExchange exchange) {
+        // For validation errors, we need to short-circuit the chain and return a custom response
+        // We do this by throwing a ResponseStatusException that will be handled by the global error handler
+        // or by returning an error Mono that will propagate upstream
+        try {
+            ObjectNode errorResponse = createErrorResponse(jve);
+            String errorJson = objectMapper.writeValueAsString(errorResponse);
+            
+            // Create a custom exception that carries the validation error details
+            return Mono.error(new ValidationResponseException(HttpStatus.UNPROCESSABLE_ENTITY, errorJson));
+        } catch (JsonProcessingException ex) {
+            log.error("Failed to serialize validation error response", ex);
+            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                    "Failed to process validation errors", ex));
+        }
+    }
+
+    /**
+     * Custom exception to carry validation error response details.
+     * This allows the global error handler to return a proper validation error response.
+     */
+    public static class ValidationResponseException extends ResponseStatusException {
+        private final String errorResponseJson;
+
+        public ValidationResponseException(HttpStatus status, String errorResponseJson) {
+            super(status, "Validation failed");
+            this.errorResponseJson = errorResponseJson;
+        }
+
+        public String getErrorResponseJson() {
+            return errorResponseJson;
+        }
     }
 
     private ObjectNode createErrorResponse(JsonValidationException jve) {

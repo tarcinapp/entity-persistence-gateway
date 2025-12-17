@@ -1,7 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.filters.base;
 
-import java.security.Key;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
@@ -65,16 +63,7 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
                 return chain.filter(exchange);
             }
 
-            return this.filter(config, exchange, chain).onErrorResume(e -> {
-                // Restore MDC in error handler
-                MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
-                log.error("An error occured while evaluating the policy.", e);
-
-                ServerHttpResponse response = exchange.getResponse();
-                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-
-                return response.setComplete();
-            });
+            return this.filter(config, exchange, chain);
         };
     }
 
@@ -90,17 +79,29 @@ public abstract class AbstractPolicyAwareFilterFactory<C extends PolicyEvaluatin
         PolicyData policyInquiryData = this.getPolicyInquriyData(exchange);
         policyInquiryData.setPolicyName(config.getPolicyName());
         
-        return this.executePolicy(policyInquiryData).flatMap(pr -> {
-            // Restore MDC after async policy execution
-            MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
+        return this.executePolicy(policyInquiryData)
+            .onErrorResume(e -> {
+                // Restore MDC in error handler - catches ONLY policy execution errors
+                MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
+                log.error("An error occurred while evaluating the policy.", e);
 
-            log.debug("Policy evaluation is completed.");
+                ServerHttpResponse response = exchange.getResponse();
+                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
 
-            if (log.isDebugEnabled())
-                log.trace("Policy response is: ", this.serializeObjectAsJsonForLogging(pr));
+                return response.setComplete().then(Mono.empty());
+            })
+            .flatMap(pr -> {
+                // Restore MDC after async policy execution
+                MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
-            return this.apply(config, pr).filter(exchange, chain);
-        });
+                log.debug("Policy evaluation is completed.");
+
+                if (log.isDebugEnabled())
+                    log.trace("Policy response is: ", this.serializeObjectAsJsonForLogging(pr));
+
+                // chain.filter is called here - its errors will propagate upstream, not caught by this filter
+                return this.apply(config, pr).filter(exchange, chain);
+            });
     }
 
     protected Mono<PR> executePolicy(PolicyData policyInquiryData) {

@@ -4,9 +4,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 
 import lombok.extern.slf4j.Slf4j;
@@ -31,15 +29,7 @@ public abstract class AbstractRequestPayloadModifierFilterFactory<C, I, O> exten
     public GatewayFilter apply(C config) {
 
         return (exchange, chain) -> {
-
-            return this.filter(config, exchange, chain).onErrorResume(e -> {
-                log.error("An error occured while executing the base class for request payload modification.", e);
-
-                ServerHttpResponse response = exchange.getResponse();
-                response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-
-                return response.setComplete();
-            });
+            return this.filter(config, exchange, chain);
         };
     }
 
@@ -48,9 +38,17 @@ public abstract class AbstractRequestPayloadModifierFilterFactory<C, I, O> exten
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
             .setContentType(MediaType.APPLICATION_JSON_VALUE)
             .setRewriteFunction(inClass, outClass, (ex, payload) -> {
-                return modifyRequestPayload(config, ex, payload);
+                return modifyRequestPayload(config, ex, payload)
+                    .onErrorResume(e -> {
+                        // Catches ONLY payload modification errors - not downstream chain errors
+                        log.error("An error occurred while executing request payload modification.", e);
+                        return Mono.error(new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Request payload modification failed", e));
+                    });
             });
 
+        // chain.filter is called here - its errors will propagate upstream, not caught by this filter
         return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -105,6 +104,8 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
         ModifyRequestBodyGatewayFilterFactory.Config modifyRequestConfig = new ModifyRequestBodyGatewayFilterFactory.Config()
                 .setContentType(MediaType.APPLICATION_JSON_VALUE)
                 .setRewriteFunction(String.class, String.class, (exchange1, payloadStr) -> {
+                    // Error handling scope is limited to payload transformation only
+                    // Downstream chain errors will propagate upstream without being caught here
                     try {
                         // Deserialize Payload
                         Map<String, Object> payloadRecord = objectMapper.readValue(payloadStr, MAP_TYPE_REFERENCE);
@@ -125,21 +126,20 @@ public class AddForbiddenFieldsFromOriginalToPayloadInReplace
                         return Mono.just(objectMapper.writeValueAsString(payloadRecord));
 
                     } catch (JsonProcessingException e) {
+                        // Catches ONLY JSON processing errors from this filter's logic
                         log.error("JSON Error in blind update filter: {}", e.getMessage());
-                        return Mono.error(new RuntimeException("JSON processing error in blind update filter"));
+                        return Mono.error(new org.springframework.web.server.ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR, "JSON processing error in blind update filter", e));
                     } catch (Exception e) {
+                        // Catches ONLY unexpected errors from this filter's logic
                         log.error("Unexpected error in blind update filter", e);
-                        return Mono.error(e);
+                        return Mono.error(new org.springframework.web.server.ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR, "Failed to merge forbidden fields", e));
                     }
                 });
 
-        return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain)
-                .onErrorResume(e -> {
-                    log.error("Failed to merge forbidden fields", e);
-                    ServerHttpResponse response = exchange.getResponse();
-                    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-                    return response.setComplete();
-                });
+        // chain.filter is called here - its errors will propagate upstream, not caught by this filter
+        return new ModifyRequestBodyGatewayFilterFactory().apply(modifyRequestConfig).filter(exchange, chain);
     }
 
     // --- Helpers for Nested Access (e.g. "metadata.privateKey") ---
