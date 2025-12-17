@@ -134,18 +134,26 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createListChild", builderWithPayloadAndParent);
         // POST /lists/{listId}/entities
         routeBuilderMap.put("createEntityByListId", builderWithPayloadAndParent);
+        // POST /lists/{kindAlias}
+        routeBuilderMap.put("createListByKindAlias", builderWithPayload);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /lists/{id}
         routeBuilderMap.put("updateListById", builderWithPayloadAndOriginal);
         // PUT /lists/{id}
         routeBuilderMap.put("replaceListById", builderWithPayloadAndOriginal);
+        // PATCH /lists/{kindAlias}/{id}
+        routeBuilderMap.put("updateListByIdByKindAlias", builderWithPayloadAndOriginal);
+        // PUT /lists/{kindAlias}/{id}
+        routeBuilderMap.put("replaceListByIdByKindAlias", builderWithPayloadAndOriginal);
 
         // PATCH - with payload (bulk update)
         // PATCH /lists
         routeBuilderMap.put("updateAllLists", builderWithPayload);
         // PATCH /lists/{listId}/entities
         routeBuilderMap.put("updateEntitiesByListId", builderWithPayloadAndParent);
+        // PATCH /lists/{kindAlias}
+        routeBuilderMap.put("updateAllListsByKindAlias", builderWithPayload);
 
         // GET - without payload
         // GET /lists
@@ -162,12 +170,28 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findEntitiesByListId", builderWithoutPayload);
         // GET /entities/{entityId}/lists
         routeBuilderMap.put("findListsByEntityId", builderWithoutPayload);
+        // GET /lists/{kindAlias}
+        routeBuilderMap.put("findAllListsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /lists/{kindAlias}/count
+        routeBuilderMap.put("countListsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /lists/{kindAlias}/{id}
+        routeBuilderMap.put("findListByIdByKindAlias", builderWithoutPayload);
+        // GET /lists/{kindAlias}/{id}/children
+        routeBuilderMap.put("findListChildrenByKindAlias", builderWithoutPayload);
+        // GET /lists/{kindAlias}/{id}/parents
+        routeBuilderMap.put("findListParentsByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /lists/{id}
         routeBuilderMap.put("deleteListById", builderWithoutPayload);
         // DELETE /lists/{listId}/entities
         routeBuilderMap.put("deleteEntitiesByListId", builderWithoutPayload);
+        // DELETE /lists/{kindAlias}/{id}
+        routeBuilderMap.put("deleteListByIdByKindAlias", builderWithoutPayload);
+
+        // POST - with payload (children operations)
+        // POST /lists/{kindAlias}/{id}/children
+        routeBuilderMap.put("createListChildByKindAlias", builderWithPayloadAndParent);
     }
 
     private void mapRelationRoutes() {
