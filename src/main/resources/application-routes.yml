@@ -977,7 +977,10 @@ spring:
         - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
           args:
             policyName: /policies/fields/relations/policy
-        - AddManagedFieldsFromOriginalToPayloadInReplace
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+          args:
+            excludeFields:
+            - OWNER_USERS
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations

@@ -1,31 +1,30 @@
 package com.tarcinapp.entitypersistencegateway.filters.common.request;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-
 import reactor.core.publisher.Mono;
+
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFilterFactory<AddManagedFieldsInCreation.Config, String, String> {
 
     private final ObjectMapper objectMapper;
-
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {};
 
     public AddManagedFieldsInCreation(ObjectMapper objectMapper) {
@@ -47,19 +46,13 @@ public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFi
         String authSubject = (gatewaySecurityContext != null) ? gatewaySecurityContext.getAuthSubject() : null;
 
         try {
-
             Map<String, Object> inboundJsonRequestMap = objectMapper.readValue(payload, MAP_TYPE_REF);
-
             String now = DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now());
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
             
-            /*
-             * We used putIfAbsent here because user may be authorized to send custom values
-             * for these fields.
-             */
             for (ManagedField field : fieldsToAdd) {
                 
-                if (field == ManagedField.CREATION_DATE_TIME || field == ManagedField.LAST_UPDATED_DATE_TIME) {
+                if (field == ManagedField.CREATED_DATE_TIME || field == ManagedField.LAST_UPDATED_DATE_TIME) {
                     inboundJsonRequestMap.putIfAbsent(field.getFieldName(), now);
                 }
 
@@ -77,28 +70,34 @@ public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFi
 
             return Mono.just(objectMapper.writeValueAsString(inboundJsonRequestMap));
 
-        } catch (Exception e) {
-            log.error("Error while adding managed fields to payload", e);
+        } catch (JsonProcessingException e) {
+            log.error("JSON processing failed during creation payload modification", e);
             return Mono.error(e);
         }
     }
 
     private List<ManagedField> getFieldsToAdd(Config config) {
+        List<ManagedField> allFields = new ArrayList<>(Arrays.asList(ManagedField.values()));
 
         if (config.getIncludeFields() == null && config.getExcludeFields() == null) {
-            return Arrays.asList(ManagedField.values());
+            return allFields;
         }
 
         if (config.getIncludeFields() != null) {
             return config.getIncludeFields().stream()
-                .map(ManagedField::valueOf)
-                .collect(Collectors.toList());
+                    .map(ManagedField::valueOf)
+                    .collect(Collectors.toList());
         }
 
-        List<String> excludeFieldNames = config.getExcludeFields();
-        return Arrays.stream(ManagedField.values())
-            .filter(field -> !excludeFieldNames.contains(field.name()))
-            .collect(Collectors.toList());
+        if (config.getExcludeFields() != null) {
+            List<ManagedField> excluded = config.getExcludeFields().stream()
+                    .map(ManagedField::valueOf)
+                    .collect(Collectors.toList());
+            allFields.removeAll(excluded);
+            return allFields;
+        }
+
+        return allFields;
     }
 
     private GatewaySecurityContext getGatewaySecurityContext(ServerWebExchange exchange) {
@@ -107,7 +106,7 @@ public class AddManagedFieldsInCreation extends AbstractRequestPayloadModifierFi
 
     @Data
     public static class Config {
-        List<String> includeFields;
-        List<String> excludeFields;
+        private List<String> includeFields;
+        private List<String> excludeFields;
     }
 }
