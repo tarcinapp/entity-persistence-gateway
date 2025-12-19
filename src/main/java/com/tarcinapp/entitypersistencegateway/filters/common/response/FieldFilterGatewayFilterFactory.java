@@ -20,7 +20,6 @@ import java.util.Set;
  * The Final Assembly:
  * This Gateway Filter intercepts the backend response and applies the
  * context-aware field masking logic using the FieldFilterService.
- * * Unlike the previous version, this filter does NOT call OPA.
  * It expects 'FetchForbiddenFieldsGatewayFilterFactory' to have already
  * fetched the rules and placed them in the Exchange Attributes.
  */
