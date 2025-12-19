@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The Final Assembly:
@@ -60,13 +62,18 @@ public class FieldFilterGatewayFilterFactory
         // This tells the service exactly where to look for relational data to avoid full scan.
         List<String> targetPaths = queryStringTargetAnalyzer.resolveTargetFields(exchange.getRequest().getQueryParams());
         
+        // 3.1 Identify Lookup Constraints: For Polymorphic Lookup Audit
+        // This map tells us which lookup properties were filtered by which fields.
+        Map<String, Set<String>> lookupConstraints = queryStringTargetAnalyzer.resolveLookupConstraints(exchange.getRequest().getQueryParams());
+        
         try {
             // 4. Deserialize: Convert JSON String to Java Object (Map or List)
             // We use Object.class to handle both Single Record (Map) and Collection (List) responses dynamically.
             Object data = objectMapper.readValue(payload, Object.class);
 
             // 5. Execute: Call the Surgeon to clean the data
-            Object filteredData = fieldFilterService.filterPayload(data, library, targetPaths);
+            // Updated to pass lookupConstraints for security audit
+            Object filteredData = fieldFilterService.filterPayload(data, library, targetPaths, lookupConstraints);
 
             // 6. Serialize: Convert back to JSON String
             return Mono.just(objectMapper.writeValueAsString(filteredData));

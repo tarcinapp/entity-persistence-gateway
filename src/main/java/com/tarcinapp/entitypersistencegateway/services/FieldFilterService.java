@@ -4,8 +4,10 @@ import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Service responsible for high-performance, context-aware field filtering.
@@ -15,7 +17,17 @@ import java.util.Map;
 @Slf4j
 public class FieldFilterService {
 
-    public Object filterPayload(Object payload, ForbiddenFieldsLibrary library, List<String> targetPaths) {
+    /**
+     * Entry point for filtering response payload.
+     * Supports Audit for Polymorphic Lookups.
+     *
+     * @param payload Response body (Map or List)
+     * @param library Forbidden Fields Library
+     * @param targetPaths Fields to drill down into (includes/lookups)
+     * @param lookupConstraints Map of "Lookup Property" -> "Fields used to filter it"
+     * @return Filtered (sanitized) payload
+     */
+    public Object filterPayload(Object payload, ForbiddenFieldsLibrary library, List<String> targetPaths, Map<String, Set<String>> lookupConstraints) {
         if (payload == null) return null;
         if (library == null) return payload;
 
@@ -32,14 +44,14 @@ public class FieldFilterService {
             if (payload instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> mapPayload = (Map<String, Object>) payload;
-                cleanTargetsInMap(mapPayload, library, targetPaths);
+                cleanTargetsInMap(mapPayload, library, targetPaths, lookupConstraints);
             } else if (payload instanceof List) {
                 List<?> listPayload = (List<?>) payload;
                 for (Object item : listPayload) {
                     if (item instanceof Map) {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> mapItem = (Map<String, Object>) item;
-                        cleanTargetsInMap(mapItem, library, targetPaths);
+                        cleanTargetsInMap(mapItem, library, targetPaths, lookupConstraints);
                     }
                 }
             }
@@ -48,10 +60,37 @@ public class FieldFilterService {
         return payload;
     }
 
-    private void cleanTargetsInMap(Map<String, Object> map, ForbiddenFieldsLibrary library, List<String> targetPaths) {
+    // Overload for backward compatibility / tests without constraints
+    public Object filterPayload(Object payload, ForbiddenFieldsLibrary library, List<String> targetPaths) {
+        return filterPayload(payload, library, targetPaths, Collections.emptyMap());
+    }
+
+    private void cleanTargetsInMap(Map<String, Object> map, ForbiddenFieldsLibrary library, List<String> targetPaths, Map<String, Set<String>> lookupConstraints) {
         for (String target : targetPaths) {
             if (map.containsKey(target)) {
                 Object targetData = map.get(target);
+
+                // --- SECURITY AUDIT FOR POLYMORPHIC LOOKUPS ---
+                // If this target is a lookup that was filtered by specific fields,
+                // we must ensure those fields are NOT forbidden for the specific record(s) returned.
+                if (lookupConstraints != null && lookupConstraints.containsKey(target)) {
+                    Set<String> usedFilterFields = lookupConstraints.get(target);
+                    
+                    // Perform audit
+                    boolean isSafe = auditLookupData(targetData, library, usedFilterFields);
+                    
+                    if (!isSafe) {
+                         if (log.isDebugEnabled()) {
+                             log.debug("Security Audit Failed: Lookup target '{}' was filtered by forbidden fields. Nuking content to prevent inference.", target);
+                         }
+                         // Violation detected: Remove the entire lookup result to prevent side-channel leaks.
+                         map.remove(target);
+                         continue; // Skip cleaning since it's gone
+                    }
+                }
+
+                // --- CLEAN DATA ---
+                // If audit passed (or no audit needed), proceed to clean visual fields
                 cleanDataStructure(targetData, library);
             }
         }
@@ -105,6 +144,58 @@ public class FieldFilterService {
         for (String path : forbiddenFields) {
             navigateAndDelete(record, path);
         }
+    }
+
+    /**
+     * Audits the data to ensure no forbidden fields were used in the filter query.
+     * Returns TRUE if safe, FALSE if violation detected.
+     */
+    private boolean auditLookupData(Object data, ForbiddenFieldsLibrary library, Set<String> usedFilterFields) {
+        if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapRecord = (Map<String, Object>) data;
+            return auditLookupRecord(mapRecord, library, usedFilterFields);
+        } else if (data instanceof List) {
+            List<?> list = (List<?>) data;
+            for (Object item : list) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> mapItem = (Map<String, Object>) item;
+                    // If ANY record in the list violates the rule, the whole list is unsafe.
+                    if (!auditLookupRecord(mapItem, library, usedFilterFields)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        return true; // Primitives are safe
+    }
+
+    /**
+     * checks a single record against used filter fields.
+     */
+    private boolean auditLookupRecord(Map<String, Object> record, ForbiddenFieldsLibrary library, Set<String> usedFilterFields) {
+        String recordType = (String) record.get("_recordType");
+        String kind = (String) record.get("_kind");
+
+        if (recordType == null) return true; // Cannot determine rules, assume safe
+
+        String ruleKey = normalizeRecordType(recordType);
+        List<String> forbiddenFields = library.resolveForbiddenFields(ruleKey, kind);
+        
+        if (forbiddenFields == null || forbiddenFields.isEmpty()) return true;
+
+        // Check intersection: Did we filter by a field that is forbidden for this record?
+        for (String usedField : usedFilterFields) {
+            if (forbiddenFields.contains(usedField)) {
+                if (log.isDebugEnabled()) {
+                     log.debug("Audit Violation: Record type '{}/{}' has forbidden field '{}' which was used in lookup filter.", ruleKey, kind, usedField);
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
     private void navigateAndDelete(Map<String, Object> currentObject, String path) {
