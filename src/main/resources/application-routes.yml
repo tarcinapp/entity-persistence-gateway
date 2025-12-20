@@ -1040,7 +1040,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1075,7 +1077,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1103,7 +1107,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1137,7 +1143,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/count
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1168,7 +1176,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1202,7 +1212,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1233,7 +1245,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1265,7 +1279,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1289,7 +1305,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/children
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
@@ -1326,7 +1344,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -1358,7 +1378,9 @@ spring:
         - Path=${app.inbound.baseUri}entity-reactions/{recordId}/parents
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}entity-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
@@ -1396,7 +1418,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughEntity
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1430,7 +1454,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughEntity
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1458,7 +1484,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughEntity
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1492,7 +1520,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/reactions
         - Method=DELETE
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughEntity
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1521,7 +1551,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1549,13 +1581,15 @@ spring:
       - id: updateAllListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
+        - Path=${app.inbound.baseUri}list-reactions
         - Method=PATCH
         filters:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1580,10 +1614,12 @@ spring:
       - id: findListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}
+        - Path=${app.inbound.baseUri}list-reactions
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1614,10 +1650,12 @@ spring:
       - id: countListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/count
+        - Path=${app.inbound.baseUri}list-reactions/count
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1648,7 +1686,9 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1682,7 +1722,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1713,7 +1755,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1745,7 +1789,9 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
         - Method=DELETE
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1768,7 +1814,9 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/children
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
@@ -1805,7 +1853,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
@@ -1836,7 +1886,9 @@ spring:
         - Path=${app.inbound.baseUri}list-reactions/{recordId}/parents
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listReactions
         - RewritePath=${app.inbound.baseUri}list-reactions/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
@@ -1874,7 +1926,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1908,7 +1962,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.reactions.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1936,7 +1992,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -1970,7 +2028,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/reactions
         - Method=DELETE
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionsThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/reactions, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
@@ -2001,7 +2061,9 @@ spring:
         - name: RequestSize
           args:
             maxSize: ${app.request-sizes.entities.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
@@ -2037,7 +2099,7 @@ spring:
             maxSize: ${app.request-sizes.entities.update}
         - name: CheckIfRouteEnabled
           args:
-            controllerName: entities
+            controllerName: entitiesThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
@@ -2065,7 +2127,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
@@ -2099,7 +2163,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/{recordId}/entities
         - Method=DELETE
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesThroughList
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<recordId>.*)/entities, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
@@ -2126,7 +2192,9 @@ spring:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/{recordId}/lists
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listsThroughEntity
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<recordId>.*)/lists, ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
         - AuthenticateRequest
         - GenerateRequestId
@@ -2161,7 +2229,9 @@ spring:
         - Path=${app.inbound.baseUri}ping
         - Method=GET
         filters:
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: ping
         - RewritePath=${app.inbound.baseUri}ping, ${app.outbound.routing-target.baseUri}ping
         - name: RequestRateLimiter
           args:
@@ -2178,6 +2248,9 @@ spring:
         predicates:
         - Path=${app.inbound.baseUri}${app.inbound.controllerPaths.explorer}
         filters:
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: explorer
         - name: SetStatus
           args:
             status: 404
@@ -2196,7 +2269,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2231,7 +2306,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.findEntities.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntities.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -2271,7 +2348,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2308,7 +2387,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.countEntities.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.countEntities.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities/count
         - ConvertKindAliasToKindQuery
         - AuthenticateRequest
@@ -2345,7 +2426,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
@@ -2377,7 +2460,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2413,7 +2498,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2444,7 +2531,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2469,7 +2558,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
@@ -2509,7 +2600,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.entities.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2544,7 +2637,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
@@ -2585,7 +2680,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.lists.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2620,7 +2717,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.findLists.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.findLists.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -2660,7 +2759,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.lists.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2697,7 +2798,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.countLists.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.countLists.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists/count
         - ConvertKindAliasToKindQuery
         - AuthenticateRequest
@@ -2734,7 +2837,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.lists.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
@@ -2766,7 +2871,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.findListById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.findListById.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2802,7 +2909,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.lists.update}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2833,7 +2942,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.deleteListById.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.deleteListById.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
@@ -2858,7 +2969,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.findListChildren.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
@@ -2898,7 +3011,9 @@ spring:
         - name: DynamicRequestSizeFilter
           args:
             maxSize: ${app.request-sizes.lists.create}
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
@@ -2933,7 +3048,9 @@ spring:
             connectTimeoutMs: ${app.timeouts.lists.findListParents.connectTimeoutMs}
             responseTimeoutMs: ${app.timeouts.lists.findListParents.responseTimeoutMs}
         - KindResolution
-        - CheckIfRouteEnabled
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
