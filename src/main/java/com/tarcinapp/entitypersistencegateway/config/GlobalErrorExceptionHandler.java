@@ -1,11 +1,13 @@
 package com.tarcinapp.entitypersistencegateway.config;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.exceptions.ErrorBodyCarrier;
+import com.tarcinapp.entitypersistencegateway.services.RequestIdService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -13,92 +15,164 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
-
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Global Error Exception Handler for Spring Cloud Gateway (WebFlux).
- * 
- * This handler catches all exceptions that bubble up from the filter chain
- * and returns a consistent JSON error response to the client.
- * 
- * It follows the "Error Isolation" principle where filters catch their own
- * local errors but propagate downstream/unexpected errors up the chain
- * to be handled here.
- * 
- * Order -2 ensures this runs before the default ResponseStatusExceptionHandler (Order 0)
- * and before DefaultErrorWebExceptionHandler (Order -1).
+ *
+ * Responsibilities:
+ * 1. Catch all exceptions from filters (Auth, Validation, System).
+ * 2. Format errors to match the Backend Error Contract ({ "error": { ... } }).
+ * 3. Ensure Request ID traceability is always present in error bodies for consistency.
+ * * NOTE ON BACKEND ERRORS: 
+ * This handler catches internal Gateway exceptions and connectivity issues (502, 504).
+ * To process business errors returned by the backend (4xx, 5xx), a separate 
+ * ModifyResponseBody filter is required to "stamp" those responses with the requestId.
  */
 @Slf4j
 @Order(-2)
 @Component
 public class GlobalErrorExceptionHandler implements WebExceptionHandler {
 
+    private final ObjectMapper objectMapper;
+    private final RequestIdService requestIdService;
+
+    // Type reference for JSON manipulation
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {};
+
+    public GlobalErrorExceptionHandler(ObjectMapper objectMapper, RequestIdService requestIdService) {
+        this.objectMapper = objectMapper;
+        this.requestIdService = requestIdService;
+    }
+
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-        // DEBUG: Log exception chain to diagnose wrapping issues
-        log.debug("GlobalErrorExceptionHandler received exception: {} - {}", 
-                ex.getClass().getName(), ex.getMessage());
-        Throwable debugCause = ex.getCause();
-        int depth = 1;
-        while (debugCause != null) {
-            log.debug("  Cause chain [{}]: {} - {}", depth, 
-                    debugCause.getClass().getName(), debugCause.getMessage());
-            debugCause = debugCause.getCause();
-            depth++;
-        }
+        
+        // 1. Resolve Safe Request ID via Central Service
+        // This ensures the ID is available for both logging and body injection.
+        String requestId = requestIdService.resolveOrCreateId(exchange);
 
-        // Find the most relevant exception (unwrap if needed)
+        // 2. Resolve Exception & Status
         Throwable relevantError = findRelevantException(ex);
-        log.debug("Relevant exception determined: {} - {}", 
-                relevantError.getClass().getName(), relevantError.getMessage());
-
-        // Determine HTTP status code
-        HttpStatusCode statusCode = determineHttpStatus(ex);
+        HttpStatusCode statusCode = determineHttpStatus(relevantError);
         HttpStatus httpStatus = HttpStatus.resolve(statusCode.value());
         if (httpStatus == null) {
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        log.debug("Determined HTTP status: {}", statusCode);
 
-        // Log the error with context
-        logError(exchange, relevantError, httpStatus);
+        // 3. Special Case: Exception carries its own pre-formatted body (e.g. Validation)
+        // We still need to ensure requestId is present in these bodies for consistency.
+        if (relevantError instanceof ErrorBodyCarrier) {
+            return handleCustomBodyError(exchange, (ErrorBodyCarrier) relevantError, requestId);
+        }
 
-        // Build the error response body
-        Map<String, Object> errorBody = buildErrorBody(exchange, relevantError, httpStatus);
+        // 4. Standard Case: Generate Backend-Compliant JSON for generic errors
+        return handleStandardError(exchange, relevantError, httpStatus, requestId);
+    }
 
-        // Set response status and content type
+    /**
+     * Handles exceptions with pre-formatted bodies. 
+     * Injects requestId into the body if it's missing to ensure consistency with backend contract.
+     */
+    private Mono<Void> handleCustomBodyError(ServerWebExchange exchange, ErrorBodyCarrier carrier, String requestId) {
+        HttpStatus status = HttpStatus.resolve(carrier.getStatusCode().value());
+        if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        logError(exchange, new RuntimeException("Custom Body Error: " + carrier.getErrorResponseJson()), status, requestId);
+
+        exchange.getResponse().setStatusCode(status);
+        exchange.getResponse().getHeaders().setContentType(carrier.getContentType());
+
+        String rawJson = carrier.getErrorResponseJson();
+        String finalJson = rawJson;
+
+        try {
+            // Standardize: Inject requestId into the 'error' object of the custom body
+            Map<String, Object> bodyMap = objectMapper.readValue(rawJson, MAP_TYPE_REF);
+            
+            if (bodyMap.containsKey("error") && bodyMap.get("error") instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> errorNode = (Map<String, Object>) bodyMap.get("error");
+                errorNode.putIfAbsent("requestId", requestId);
+                finalJson = objectMapper.writeValueAsString(bodyMap);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to inject requestId into custom error body. Returning original. reqId: {}", requestId);
+        }
+
+        byte[] bytes = finalJson.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
+
+        return exchange.getResponse().writeWith(Mono.just(buffer));
+    }
+
+    private Mono<Void> handleStandardError(ServerWebExchange exchange, Throwable error, HttpStatus httpStatus, String requestId) {
+        logError(exchange, error, httpStatus, requestId);
+
         exchange.getResponse().setStatusCode(httpStatus);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        // Write JSON response
+        // Build Nested Error Body: { "error": { ... } }
+        Map<String, Object> root = new LinkedHashMap<>();
+        Map<String, Object> errorNode = new LinkedHashMap<>();
+
+        // -- Mandatory Backend Spec Fields --
+        errorNode.put("statusCode", httpStatus.value());
+        errorNode.put("name", mapStatusToName(httpStatus));
+        errorNode.put("message", extractErrorMessage(error));
+        errorNode.put("code", mapStatusToCode(httpStatus));
+        
+        // -- Infra Fields (Consistency is key here) --
+        errorNode.put("requestId", requestId);
+        errorNode.put("path", exchange.getRequest().getPath().value());
+
+        root.put("error", errorNode);
+
         try {
-            byte[] bytes = new com.fasterxml.jackson.databind.ObjectMapper()
-                    .writeValueAsBytes(errorBody);
-            org.springframework.core.io.buffer.DataBuffer buffer = 
-                    exchange.getResponse().bufferFactory().wrap(bytes);
+            byte[] bytes = objectMapper.writeValueAsBytes(root);
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
             return exchange.getResponse().writeWith(Mono.just(buffer));
-        } catch (Exception e) {
-            log.error("Failed to write error response", e);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to write error response JSON", e);
             return exchange.getResponse().setComplete();
         }
     }
 
-    /**
-     * Determines the HTTP status code based on the exception type.
-     * Unwraps the exception chain to find ResponseStatusException if present.
-     * 
-     * @param error The exception that was thrown
-     * @return The appropriate HTTP status code
-     */
+    // --- Helpers ---
+
+    private String mapStatusToName(HttpStatus status) {
+        switch (status) {
+            case BAD_REQUEST: return "BadRequestError";
+            case UNAUTHORIZED: return "UnauthorizedError";
+            case FORBIDDEN: return "ForbiddenError";
+            case NOT_FOUND: return "NotFoundError";
+            case METHOD_NOT_ALLOWED: return "MethodNotAllowedError";
+            case NOT_ACCEPTABLE: return "NotAcceptableError";
+            case REQUEST_TIMEOUT: return "RequestTimeoutError";
+            case CONFLICT: return "ConflictError";
+            case UNSUPPORTED_MEDIA_TYPE: return "UnsupportedMediaTypeError";
+            case UNPROCESSABLE_ENTITY: return "UnprocessableEntityError";
+            case TOO_MANY_REQUESTS: return "LimitExceededError";
+            case INTERNAL_SERVER_ERROR: return "InternalServerError";
+            case NOT_IMPLEMENTED: return "NotImplementedError";
+            case BAD_GATEWAY: return "BadGatewayError";
+            case SERVICE_UNAVAILABLE: return "ServiceUnavailableError";
+            case GATEWAY_TIMEOUT: return "GatewayTimeoutError";
+            default: return "UnknownError";
+        }
+    }
+
+    private String mapStatusToCode(HttpStatus status) {
+        return "GATEWAY-" + status.name();
+    }
+
     private HttpStatusCode determineHttpStatus(Throwable error) {
-        // Check the exception itself
         if (error instanceof ResponseStatusException) {
             return ((ResponseStatusException) error).getStatusCode();
         }
-        
-        // Check the cause chain for wrapped ResponseStatusException
         Throwable cause = error.getCause();
         while (cause != null) {
             if (cause instanceof ResponseStatusException) {
@@ -106,111 +180,41 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
             }
             cause = cause.getCause();
         }
-        
-        // Default to 500 Internal Server Error for unknown exceptions
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
-    
-    /**
-     * Finds the most relevant exception in the cause chain.
-     * Prefers ResponseStatusException if found.
-     * 
-     * @param error The root exception
-     * @return The most relevant exception for error reporting
-     */
+
     private Throwable findRelevantException(Throwable error) {
-        if (error instanceof ResponseStatusException) {
+        if (error instanceof ResponseStatusException || error instanceof ErrorBodyCarrier) {
             return error;
         }
-        
         Throwable cause = error.getCause();
         while (cause != null) {
-            if (cause instanceof ResponseStatusException) {
+            if (cause instanceof ResponseStatusException || cause instanceof ErrorBodyCarrier) {
                 return cause;
             }
             cause = cause.getCause();
         }
-        
         return error;
     }
 
-    /**
-     * Logs the error with request context information.
-     * 
-     * @param exchange The server web exchange
-     * @param error The exception that was thrown
-     * @param httpStatus The determined HTTP status
-     */
-    private void logError(ServerWebExchange exchange, Throwable error, HttpStatus httpStatus) {
+    private void logError(ServerWebExchange exchange, Throwable error, HttpStatus httpStatus, String requestId) {
         String path = exchange.getRequest().getPath().value();
         String method = exchange.getRequest().getMethod().name();
-        String requestId = exchange.getRequest().getId();
-
+        
         if (httpStatus.is5xxServerError()) {
-            log.error("Global Error Handler - {} {} [requestId={}] - Status: {} - Error: {}",
+            log.error("Global Error - {} {} [reqId={}] - Status: {} - Error: {}",
                     method, path, requestId, httpStatus.value(), error.getMessage(), error);
-        } else if (httpStatus.is4xxClientError()) {
-            log.warn("Global Error Handler - {} {} [requestId={}] - Status: {} - Error: {}",
-                    method, path, requestId, httpStatus.value(), error.getMessage());
         } else {
-            log.info("Global Error Handler - {} {} [requestId={}] - Status: {} - Error: {}",
+            log.warn("Global Error - {} {} [reqId={}] - Status: {} - Error: {}",
                     method, path, requestId, httpStatus.value(), error.getMessage());
         }
     }
 
-    /**
-     * Builds a structured JSON error response body.
-     * 
-     * @param exchange The server web exchange
-     * @param error The exception that was thrown
-     * @param httpStatus The determined HTTP status
-     * @return A map representing the JSON error response
-     */
-    private Map<String, Object> buildErrorBody(ServerWebExchange exchange, Throwable error, HttpStatus httpStatus) {
-        Map<String, Object> errorBody = new LinkedHashMap<>();
-        
-        // Timestamp in ISO 8601 format
-        errorBody.put("timestamp", OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        
-        // Request path
-        errorBody.put("path", exchange.getRequest().getPath().value());
-        
-        // HTTP status code
-        errorBody.put("status", httpStatus.value());
-        
-        // HTTP status reason phrase
-        errorBody.put("error", httpStatus.getReasonPhrase());
-        
-        // Error message - use the exception message or a default
-        String message = extractErrorMessage(error);
-        errorBody.put("message", message);
-        
-        // Request ID for traceability
-        errorBody.put("requestId", exchange.getRequest().getId());
-        
-        return errorBody;
-    }
-
-    /**
-     * Extracts a meaningful error message from the exception.
-     * 
-     * @param error The exception
-     * @return A user-friendly error message
-     */
     private String extractErrorMessage(Throwable error) {
         if (error instanceof ResponseStatusException) {
-            ResponseStatusException rse = (ResponseStatusException) error;
-            String reason = rse.getReason();
-            if (reason != null && !reason.isBlank()) {
-                return reason;
-            }
+            String reason = ((ResponseStatusException) error).getReason();
+            if (reason != null && !reason.isBlank()) return reason;
         }
-        
-        String message = error.getMessage();
-        if (message != null && !message.isBlank()) {
-            return message;
-        }
-        
-        return "An unexpected error occurred";
+        return error.getMessage() != null ? error.getMessage() : "An unexpected error occurred.";
     }
 }

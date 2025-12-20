@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
-import org.springframework.cloud.gateway.route.Route; // EKLENDİ: Route sınıfı import edildi
+import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -35,6 +35,7 @@ import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.AliasConfig;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.ControllerConfig;
+import com.tarcinapp.entitypersistencegateway.exceptions.JsonResponseStatusException;
 import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -354,7 +355,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                 Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values().stream()
                         .collect(Collectors.toCollection(LinkedHashSet::new));
 
-                // Return validation error response - this is caught ONLY by this filter's error handling
+                // Return validation error response using the generic JsonResponseStatusException
                 return handleValidationError(new JsonValidationException(uniqueErrors), exchange);
             }
 
@@ -380,29 +381,12 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             ObjectNode errorResponse = createErrorResponse(jve);
             String errorJson = objectMapper.writeValueAsString(errorResponse);
             
-            // Create a custom exception that carries the validation error details
-            return Mono.error(new ValidationResponseException(HttpStatus.UNPROCESSABLE_ENTITY, errorJson));
+            // USE GENERIC EXCEPTION: Using JsonResponseStatusException instead of custom inner class
+            return Mono.error(new JsonResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, errorJson));
         } catch (JsonProcessingException ex) {
             log.error("Failed to serialize validation error response", ex);
             return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
                     "Failed to process validation errors", ex));
-        }
-    }
-
-    /**
-     * Custom exception to carry validation error response details.
-     * This allows the global error handler to return a proper validation error response.
-     */
-    public static class ValidationResponseException extends ResponseStatusException {
-        private final String errorResponseJson;
-
-        public ValidationResponseException(HttpStatus status, String errorResponseJson) {
-            super(status, "Validation failed");
-            this.errorResponseJson = errorResponseJson;
-        }
-
-        public String getErrorResponseJson() {
-            return errorResponseJson;
         }
     }
 

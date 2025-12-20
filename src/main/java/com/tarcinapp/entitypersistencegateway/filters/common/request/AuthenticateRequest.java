@@ -85,10 +85,11 @@ public class AuthenticateRequest extends AbstractGatewayFilterFactory<Authentica
      */
     private Mono<Void> performAuthentication(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.debug("RS256 public key configured. Authenticating request...");
-
+        // IMPORTANT: Only catch errors from authenticate(); do NOT catch downstream errors
+        // Scope onErrorResume to the authenticate() stage and short-circuit after writing response
         return jwtAuthenticationService.authenticate(exchange)
-                .flatMap(claims -> onAuthenticationSuccess(claims, exchange, chain))
-                .onErrorResume(e -> handleAuthenticationError(e, exchange));
+            .onErrorResume(e -> handleAuthenticationError(e, exchange).then(Mono.<io.jsonwebtoken.Claims>empty()))
+            .flatMap(claims -> onAuthenticationSuccess(claims, exchange, chain));
     }
 
     /**
