@@ -39,25 +39,25 @@ public class OpaClient implements IAuthorizationClient {
     
     private final ObjectMapper objectMapper;
 
-    @Value("${app.opa.host:localhost}")
+    @Value("${app.outbound.opa.host:localhost}")
     private String host;
 
-    @Value("${app.opa.port:8181}")
+    @Value("${app.outbound.opa.port:8181}")
     private String port;
 
-    @Value("${app.opa.protocol:http}")
+    @Value("${app.outbound.opa.protocol:http}")
     private String protocol;
 
-    @Value("${app.opa.connectTimeoutMs:500}")
+    @Value("${app.outbound.opa.connectTimeoutMs:500}")
     private int connectTimeoutMs;
 
-    @Value("${app.opa.responseTimeout:500ms}")
+    @Value("${app.outbound.opa.responseTimeout:500ms}")
     private Duration responseTimeout;
 
-    @Value("${app.opa.readTimeoutMs:300}")
+    @Value("${app.outbound.opa.readTimeoutMs:300}")
     private int readTimeoutMs;
 
-    @Value("${app.opa.writeTimeoutMs:300}")
+    @Value("${app.outbound.opa.writeTimeoutMs:300}")
     private int writeTimeoutMs;
 
     public OpaClient(ObjectMapper objectMapper) {

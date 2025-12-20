@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.exceptions.ErrorBodyCarrier;
 import com.tarcinapp.entitypersistencegateway.services.RequestIdService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -17,20 +18,16 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Global Error Exception Handler for Spring Cloud Gateway (WebFlux).
- *
- * Responsibilities:
- * 1. Catch all exceptions from filters (Auth, Validation, System).
- * 2. Format errors to match the Backend Error Contract ({ "error": { ... } }).
- * 3. Ensure Request ID traceability is always present in error bodies for consistency.
- * * NOTE ON BACKEND ERRORS: 
- * This handler catches internal Gateway exceptions and connectivity issues (502, 504).
- * To process business errors returned by the backend (4xx, 5xx), a separate 
- * ModifyResponseBody filter is required to "stamp" those responses with the requestId.
+ * * Updated to respect Spring Boot's standard error properties:
+ * - server.error.include-message
+ * - server.error.include-stacktrace
  */
 @Slf4j
 @Order(-2)
@@ -40,7 +37,16 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
     private final ObjectMapper objectMapper;
     private final RequestIdService requestIdService;
 
-    // Type reference for JSON manipulation
+    // Standard Spring Error Properties
+    @Value("${server.error.include-message:never}")
+    private String includeMessage;
+
+    @Value("${server.error.include-stacktrace:never}")
+    private String includeStacktrace;
+
+    private static final String ALWAYS = "always";
+    private static final String NEVER = "never";
+
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {};
 
     public GlobalErrorExceptionHandler(ObjectMapper objectMapper, RequestIdService requestIdService) {
@@ -51,31 +57,26 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         
-        // 1. Resolve Safe Request ID via Central Service
-        // This ensures the ID is available for both logging and body injection.
         String requestId = requestIdService.resolveOrCreateId(exchange);
 
-        // 2. Resolve Exception & Status
         Throwable relevantError = findRelevantException(ex);
         HttpStatusCode statusCode = determineHttpStatus(relevantError);
         HttpStatus httpStatus = HttpStatus.resolve(statusCode.value());
+        
         if (httpStatus == null) {
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         }
 
-        // 3. Special Case: Exception carries its own pre-formatted body (e.g. Validation)
-        // We still need to ensure requestId is present in these bodies for consistency.
         if (relevantError instanceof ErrorBodyCarrier) {
             return handleCustomBodyError(exchange, (ErrorBodyCarrier) relevantError, requestId);
         }
 
-        // 4. Standard Case: Generate Backend-Compliant JSON for generic errors
         return handleStandardError(exchange, relevantError, httpStatus, requestId);
     }
 
     /**
-     * Handles exceptions with pre-formatted bodies. 
-     * Injects requestId into the body if it's missing to ensure consistency with backend contract.
+     * Handles exceptions with pre-formatted bodies (e.g. Validation).
+     * Masks the 'message' field if it's a 5xx error and include-message is set to 'never'.
      */
     private Mono<Void> handleCustomBodyError(ServerWebExchange exchange, ErrorBodyCarrier carrier, String requestId) {
         HttpStatus status = HttpStatus.resolve(carrier.getStatusCode().value());
@@ -90,17 +91,23 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
         String finalJson = rawJson;
 
         try {
-            // Standardize: Inject requestId into the 'error' object of the custom body
             Map<String, Object> bodyMap = objectMapper.readValue(rawJson, MAP_TYPE_REF);
             
             if (bodyMap.containsKey("error") && bodyMap.get("error") instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> errorNode = (Map<String, Object>) bodyMap.get("error");
+                
                 errorNode.putIfAbsent("requestId", requestId);
+
+                // Security: Mask message in custom 5xx errors if configured
+                if (status.is5xxServerError() && NEVER.equalsIgnoreCase(includeMessage)) {
+                    errorNode.put("message", "An internal server error occurred.");
+                }
+
                 finalJson = objectMapper.writeValueAsString(bodyMap);
             }
         } catch (Exception e) {
-            log.warn("Failed to inject requestId into custom error body. Returning original. reqId: {}", requestId);
+            log.warn("Failed to process custom error body. reqId: {}", requestId);
         }
 
         byte[] bytes = finalJson.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -115,19 +122,23 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
         exchange.getResponse().setStatusCode(httpStatus);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        // Build Nested Error Body: { "error": { ... } }
         Map<String, Object> root = new LinkedHashMap<>();
         Map<String, Object> errorNode = new LinkedHashMap<>();
 
-        // -- Mandatory Backend Spec Fields --
         errorNode.put("statusCode", httpStatus.value());
         errorNode.put("name", mapStatusToName(httpStatus));
-        errorNode.put("message", extractErrorMessage(error));
-        errorNode.put("code", mapStatusToCode(httpStatus));
         
-        // -- Infra Fields (Consistency is key here) --
+        // --- Respect include-message ---
+        errorNode.put("message", resolveErrorMessage(error, httpStatus));
+        
+        errorNode.put("code", mapStatusToCode(httpStatus));
         errorNode.put("requestId", requestId);
         errorNode.put("path", exchange.getRequest().getPath().value());
+
+        // --- Respect include-stacktrace ---
+        if (ALWAYS.equalsIgnoreCase(includeStacktrace)) {
+            errorNode.put("stacktrace", getStackTrace(error));
+        }
 
         root.put("error", errorNode);
 
@@ -141,7 +152,29 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
         }
     }
 
-    // --- Helpers ---
+    /**
+     * Resolves the error message based on the status code and security configuration.
+     */
+    private String resolveErrorMessage(Throwable error, HttpStatus status) {
+        // If it's a 5xx error and messages should be hidden, mask it.
+        if (status.is5xxServerError() && NEVER.equalsIgnoreCase(includeMessage)) {
+            return "An internal server error occurred.";
+        }
+
+        if (error instanceof ResponseStatusException) {
+            String reason = ((ResponseStatusException) error).getReason();
+            if (reason != null && !reason.isBlank()) return reason;
+        }
+        
+        return error.getMessage() != null ? error.getMessage() : "An unexpected error occurred.";
+    }
+
+    private String getStackTrace(Throwable error) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        error.printStackTrace(pw);
+        return sw.toString();
+    }
 
     private String mapStatusToName(HttpStatus status) {
         switch (status) {
@@ -150,14 +183,9 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
             case FORBIDDEN: return "ForbiddenError";
             case NOT_FOUND: return "NotFoundError";
             case METHOD_NOT_ALLOWED: return "MethodNotAllowedError";
-            case NOT_ACCEPTABLE: return "NotAcceptableError";
-            case REQUEST_TIMEOUT: return "RequestTimeoutError";
-            case CONFLICT: return "ConflictError";
-            case UNSUPPORTED_MEDIA_TYPE: return "UnsupportedMediaTypeError";
             case UNPROCESSABLE_ENTITY: return "UnprocessableEntityError";
             case TOO_MANY_REQUESTS: return "LimitExceededError";
             case INTERNAL_SERVER_ERROR: return "InternalServerError";
-            case NOT_IMPLEMENTED: return "NotImplementedError";
             case BAD_GATEWAY: return "BadGatewayError";
             case SERVICE_UNAVAILABLE: return "ServiceUnavailableError";
             case GATEWAY_TIMEOUT: return "GatewayTimeoutError";
@@ -172,13 +200,6 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
     private HttpStatusCode determineHttpStatus(Throwable error) {
         if (error instanceof ResponseStatusException) {
             return ((ResponseStatusException) error).getStatusCode();
-        }
-        Throwable cause = error.getCause();
-        while (cause != null) {
-            if (cause instanceof ResponseStatusException) {
-                return ((ResponseStatusException) cause).getStatusCode();
-            }
-            cause = cause.getCause();
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
@@ -208,13 +229,5 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
             log.warn("Global Error - {} {} [reqId={}] - Status: {} - Error: {}",
                     method, path, requestId, httpStatus.value(), error.getMessage());
         }
-    }
-
-    private String extractErrorMessage(Throwable error) {
-        if (error instanceof ResponseStatusException) {
-            String reason = ((ResponseStatusException) error).getReason();
-            if (reason != null && !reason.isBlank()) return reason;
-        }
-        return error.getMessage() != null ? error.getMessage() : "An unexpected error occurred.";
     }
 }
