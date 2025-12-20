@@ -44,6 +44,8 @@ public class CheckIfRouteEnabled
             List<String> routesOff = normalizeList(toggles.getRoutes().getOff());
             List<String> controllersOn = normalizeList(toggles.getControllers().getOn());
             List<String> controllersOff = normalizeList(toggles.getControllers().getOff());
+            List<String> tagsOn = normalizeList(toggles.getTags().getOn());
+            List<String> tagsOff = normalizeList(toggles.getTags().getOff());
 
             String controllerName = config.getControllerName();
             boolean controllerDecidesDisabled = false;
@@ -68,7 +70,39 @@ public class CheckIfRouteEnabled
                 }
             }
 
-            // Route-level evaluation (only applies if controller didn't disable)
+            // Tag-level evaluation (only applies if controller didn't disable)
+            boolean tagDecidesDisabled = false;
+            
+            if (!tagsOn.isEmpty() || !tagsOff.isEmpty()) {
+                List<String> routeTags = extractTagsFromRoute(route);
+                
+                log.debug("CheckIfRouteEnabled evaluating tags for route: " + routeId + ", routeTags: " + routeTags + ", tagsOff: " + tagsOff + ", tagsOn: " + tagsOn);
+                
+                if (routeTags != null && !routeTags.isEmpty()) {
+                    if (!tagsOn.isEmpty()) {
+                        // only routes with tags listed in tagsOn are enabled
+                        tagDecidesDisabled = routeTags.stream().noneMatch(tagsOn::contains);
+                    } else if (!tagsOff.isEmpty()) {
+                        // routes with tags listed in tagsOff are disabled
+                        tagDecidesDisabled = routeTags.stream().anyMatch(tagsOff::contains);
+                        if (tagDecidesDisabled) {
+                            log.warn("Route " + routeId + " is disabled by tag toggles (has tags in tagsOff). Returning 404 Not Found");
+                        }
+                    }
+                } else if (!tagsOn.isEmpty()) {
+                    // route has no tags but tagsOn is set, so it's disabled
+                    tagDecidesDisabled = true;
+                    log.debug("Route " + routeId + " has no tags but tagsOn is configured: " + tagsOn);
+                }
+            }
+
+            if (tagDecidesDisabled) {
+                log.warn("Route " + routeId + " is disabled by tag toggles. Returning 404 Not Found");
+                exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+                return exchange.getResponse().setComplete();
+            }
+
+            // Route-level evaluation (only applies if controller and tags didn't disable)
             boolean routeDisabled = false;
 
             if (routeId != null) {
@@ -95,6 +129,57 @@ public class CheckIfRouteEnabled
     private List<String> normalizeList(List<String> items) {
         return items == null ? java.util.Collections.emptyList()
                 : items.stream().filter(s -> s != null).map(String::trim).collect(Collectors.toList());
+    }
+
+    private List<String> extractTagsFromRoute(Route route) {
+        if (route == null || route.getMetadata() == null) {
+            return null;
+        }
+        
+        Object tagsObj = route.getMetadata().get("tags");
+        if (tagsObj == null) {
+            return null;
+        }
+        
+        // Handle List directly
+        if (tagsObj instanceof List<?>) {
+            List<?> list = (List<?>) tagsObj;
+            List<String> stringList = new java.util.ArrayList<>();
+            for (Object item : list) {
+                if (item != null) {
+                    stringList.add(item.toString());
+                }
+            }
+            return stringList;
+        }
+        
+        // Handle Map (LinkedHashMap from YAML with numeric indices)
+        if (tagsObj instanceof java.util.Map<?, ?>) {
+            java.util.Map<?, ?> map = (java.util.Map<?, ?>) tagsObj;
+            List<String> stringList = new java.util.ArrayList<>();
+            
+            // Sort by numeric keys to preserve order
+            map.entrySet().stream()
+                .sorted((a, b) -> {
+                    try {
+                        int keyA = Integer.parseInt(a.getKey().toString());
+                        int keyB = Integer.parseInt(b.getKey().toString());
+                        return Integer.compare(keyA, keyB);
+                    } catch (NumberFormatException e) {
+                        return a.getKey().toString().compareTo(b.getKey().toString());
+                    }
+                })
+                .forEach(entry -> {
+                    if (entry.getValue() != null) {
+                        stringList.add(entry.getValue().toString());
+                    }
+                });
+            
+            return stringList.isEmpty() ? null : stringList;
+        }
+        
+        log.debug("Tags object is not a List or Map. Type: " + tagsObj.getClass().getName() + ", Value: " + tagsObj);
+        return null;
     }
 
     @Data

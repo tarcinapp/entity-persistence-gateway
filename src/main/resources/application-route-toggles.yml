@@ -14,3 +14,10 @@
 #         on:
 #         - controller3
 #         - controller4
+#     tags:
+#         off:
+#         - tag1
+#         - tag2
+#         on:
+#         - tag3
+#         - tag4

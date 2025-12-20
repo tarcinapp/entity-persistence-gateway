@@ -39,6 +39,13 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntity.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntity.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - generic
       - id: updateAllEntities
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -72,6 +79,15 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.updateAllEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateAllEntities.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - entities
+          - generic
       - id: findEntities
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -108,6 +124,13 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntities.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - generic
+          - collection
       - id: countEntities
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -140,6 +163,12 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.countEntities.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.countEntities.responseTimeoutMs}
+          tags:
+          - get
+          - count
+          - read-only
+          - entities
+          - generic
       - id: findEntityById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -173,6 +202,14 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityById.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - generic
+          - by-id
+          - single-record
       - id: updateEntityById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -203,6 +240,15 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.updateEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateEntityById.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entities
+          - generic
+          - by-id
+          - single-record
       - id: replaceEntityById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -237,6 +283,15 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.replaceEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.replaceEntityById.responseTimeoutMs}
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - entities
+          - generic
+          - by-id
+          - single-record
       - id: deleteEntityById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -262,6 +317,13 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.deleteEntityById.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.deleteEntityById.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - entities
+          - generic
+          - by-id
+          - single-record
       - id: findEntityChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -298,6 +360,15 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityChildren.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - generic
+          - hierarchical
+          - children
+          - collection
       - id: createEntityChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -334,6 +405,13 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.createEntityChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createEntityChild.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - generic
       - id: findEntityParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -370,6 +448,15 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.entities.findEntityParents.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findEntityParents.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - generic
+          - hierarchical
+          - parents
+          - collection
       # list controller
       - id: createList
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -407,6 +494,13 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createList.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createList.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - lists
+          - generic
       - id: updateAllLists
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -440,6 +534,15 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.updateAllLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateAllLists.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - lists
+          - generic
       - id: findLists
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -476,6 +579,13 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findLists.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - generic
+          - collection
       - id: countLists
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -508,6 +618,12 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.countLists.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.countLists.responseTimeoutMs}
+          tags:
+          - get
+          - count
+          - read-only
+          - lists
+          - generic
       - id: findListById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -541,6 +657,14 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListById.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - generic
+          - by-id
+          - single-record
       - id: updateListById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -574,6 +698,15 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.updateListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateListById.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - lists
+          - generic
+          - by-id
+          - single-record
       - id: replaceListById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -611,6 +744,15 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.replaceListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.replaceListById.responseTimeoutMs}
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - lists
+          - generic
+          - by-id
+          - single-record
       - id: deleteListById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -637,6 +779,13 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.deleteListById.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteListById.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - lists
+          - generic
+          - by-id
+          - single-record
       - id: findListChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -673,6 +822,15 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListChildren.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListChildren.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - generic
+          - hierarchical
+          - children
+          - collection
       - id: createListChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -709,6 +867,13 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.createListChild.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createListChild.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - lists
+          - generic
       - id: findListParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -745,6 +910,15 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.lists.findListParents.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findListParents.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - generic
+          - hierarchical
+          - parents
+          - collection
       # relations controller
       - id: createRelation
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -785,6 +959,13 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.createRelation.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.createRelation.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - relations
+          - generic
       - id: updateAllRelations
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -818,6 +999,15 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.updateAllRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateAllRelations.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - relations
+          - generic
       - id: findRelations
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -854,6 +1044,13 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelations.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - relations
+          - generic
+          - collection
       - id: countRelations
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -887,6 +1084,12 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.countRelations.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.countRelations.responseTimeoutMs}
+          tags:
+          - get
+          - count
+          - read-only
+          - relations
+          - generic
       - id: findRelationById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -923,6 +1126,14 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.findRelationById.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - relations
+          - generic
+          - by-id
+          - single-record
       - id: updateRelationById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -959,6 +1170,15 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.updateRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.updateRelationById.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - relations
+          - generic
+          - by-id
+          - single-record
       - id: replaceRelationById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1002,6 +1222,15 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.replaceRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.replaceRelationById.responseTimeoutMs}
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - relations
+          - generic
+          - by-id
+          - single-record
       - id: deleteRelationById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1030,6 +1259,13 @@ spring:
           recordType: relations
           connect-timeout: ${app.timeouts.relations.deleteRelationById.connectTimeoutMs}
           response-timeout: ${app.timeouts.relations.deleteRelationById.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - relations
+          - generic
+          - by-id
+          - single-record
       # entity-reactions controller
       - id: createEntityReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -1068,6 +1304,14 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createEntityReaction.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entityReactions
+          - generic
+          - reaction
       - id: updateAllEntityReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1101,6 +1345,16 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.updateAllEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllEntityReactions.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - entityReactions
+          - generic
+          - reaction
       - id: findEntityReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1137,6 +1391,14 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactions.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - generic
+          - collection
+          - reaction
       - id: countEntityReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1170,6 +1432,13 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.countEntityReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countEntityReactions.responseTimeoutMs}
+          tags:
+          - get
+          - count
+          - read-only
+          - entityReactions
+          - generic
+          - reaction
       - id: findEntityReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1203,6 +1472,15 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findEntityReactionById.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: updateEntityReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1236,6 +1514,16 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.updateEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateEntityReactionById.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entityReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: replaceEntityReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1273,6 +1561,16 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.replaceEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceEntityReactionById.responseTimeoutMs}
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - entityReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: deleteEntityReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1299,6 +1597,14 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.deleteEntityReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteEntityReactionById.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - entityReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: findChildrenEntityReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1335,6 +1641,16 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenEntityReactionsByReactionId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - generic
+          - hierarchical
+          - children
+          - collection
+          - reaction
       - id: createChildEntityReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1372,6 +1688,14 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.createChildEntityReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildEntityReaction.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entityReactions
+          - generic
+          - reaction
       - id: findParentsByEntityReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1408,6 +1732,16 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findParentsByEntityReactionId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - generic
+          - hierarchical
+          - parents
+          - collection
+          - reaction
       # reactions through entity controller
       - id: createReactionByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -1445,6 +1779,15 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.createReactionByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.createReactionByEntityId.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entityReactions
+          - reactionsThroughEntity
+          - through
+          - reaction
       - id: updateReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1478,6 +1821,15 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.updateReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.updateReactionsByEntityId.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entityReactions
+          - reactionsThroughEntity
+          - through
+          - reaction
       - id: findReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1514,6 +1866,15 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.findReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findReactionsByEntityId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - reactionsThroughEntity
+          - through
+          - collection
+          - reaction
       - id: deleteReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1542,6 +1903,13 @@ spring:
           recordType: entityReactions
           connect-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.deleteReactionsByEntityId.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - entityReactions
+          - reactionsThroughEntity
+          - through
+          - reaction
       - id: createListReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1578,6 +1946,14 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createListReaction.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - listReactions
+          - generic
+          - reaction
       - id: updateAllListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1611,6 +1987,16 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.updateAllListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateAllListReactions.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - listReactions
+          - generic
+          - reaction
       - id: findListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1647,6 +2033,14 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactions.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - generic
+          - collection
+          - reaction
       - id: countListReactions
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1680,6 +2074,13 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.countListReactions.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.countListReactions.responseTimeoutMs}
+          tags:
+          - get
+          - count
+          - read-only
+          - listReactions
+          - generic
+          - reaction
       - id: findListReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1713,6 +2114,15 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findListReactionById.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: updateListReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1746,6 +2156,16 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.updateListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.updateListReactionById.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - listReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: replaceListReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1783,6 +2203,16 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.replaceListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.replaceListReactionById.responseTimeoutMs}
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - listReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: deleteListReactionById
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1808,6 +2238,14 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.deleteListReactionById.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.deleteListReactionById.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - listReactions
+          - generic
+          - by-id
+          - single-record
+          - reaction
       - id: findChildrenListReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1844,6 +2282,16 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findChildrenListReactionsByReactionId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - generic
+          - hierarchical
+          - children
+          - collection
+          - reaction
       - id: createChildListReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1880,6 +2328,14 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.createChildListReaction.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.createChildListReaction.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - listReactions
+          - generic
+          - reaction
       - id: findParentsByListReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1916,6 +2372,16 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.reactions.findParentsByListReactionId.connectTimeoutMs}
           response-timeout: ${app.timeouts.reactions.findParentsByListReactionId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - generic
+          - hierarchical
+          - parents
+          - collection
+          - reaction
       # reactions through list controller
       - id: createReactionByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -1953,6 +2419,15 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.createReactionByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createReactionByListId.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - listReactions
+          - reactionsThroughList
+          - through
+          - reaction
       - id: updateReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1986,6 +2461,15 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.updateReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateReactionsByListId.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - listReactions
+          - reactionsThroughList
+          - through
+          - reaction
       - id: findReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2022,6 +2506,15 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.findReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findReactionsByListId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - reactionsThroughList
+          - through
+          - collection
+          - reaction
       - id: deleteReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2051,6 +2544,13 @@ spring:
           recordType: listReactions
           connect-timeout: ${app.timeouts.lists.deleteReactionsByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteReactionsByListId.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - listReactions
+          - reactionsThroughList
+          - through
+          - reaction
       # entities through list controller
       - id: createEntityByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2088,6 +2588,14 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.createEntityByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.createEntityByListId.responseTimeoutMs}
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - entitiesThroughList
+          - through
       - id: updateEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2121,6 +2629,14 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.updateEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.updateEntitiesByListId.responseTimeoutMs}
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entities
+          - entitiesThroughList
+          - through
       - id: findEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2157,6 +2673,14 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.findEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.findEntitiesByListId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entitiesThroughList
+          - through
+          - collection
       - id: deleteEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2186,6 +2710,12 @@ spring:
           recordType: entities
           connect-timeout: ${app.timeouts.lists.deleteEntitiesByListId.connectTimeoutMs}
           response-timeout: ${app.timeouts.lists.deleteEntitiesByListId.responseTimeoutMs}
+          tags:
+          - delete
+          - destructive
+          - entities
+          - entitiesThroughList
+          - through
       - id: findListsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2222,6 +2752,14 @@ spring:
           recordType: lists
           connect-timeout: ${app.timeouts.entities.findListsByEntityId.connectTimeoutMs}
           response-timeout: ${app.timeouts.entities.findListsByEntityId.responseTimeoutMs}
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listsThroughEntity
+          - through
+          - collection
       # ping controller
       - id: ping
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2242,7 +2780,14 @@ spring:
         metadata:
           connect-timeout: ${app.timeouts.ping.ping.connectTimeoutMs}
           response-timeout: ${app.timeouts.ping.ping.responseTimeoutMs}
-      #explorer controller
+          tags:
+          - get
+          - read-only
+          - ping
+          - collection
+          - utility
+          - health-check
+      # explorer controller
       - id: explorer
         uri: no://op
         predicates:
@@ -2254,6 +2799,11 @@ spring:
         - name: SetStatus
           args:
             status: 404
+        metadata:
+          tags:
+          - explorer
+          - utility
+          - api-discovery
       # entity kind alias from root mapping
       - id: createEntityByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2295,6 +2845,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - entitiesKindAlias
+          - kind-alias
       - id: findAllEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2334,6 +2892,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - collection
       - id: replaceEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2376,6 +2942,16 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: countEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2412,6 +2988,13 @@ spring:
             size: ${app.local-cache.entities.countEntities.size}
         metadata:
           recordType: entities
+          tags:
+          - get
+          - count
+          - read-only
+          - entities
+          - entitiesKindAlias
+          - kind-alias
       - id: updateAllEntitiesByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2449,6 +3032,16 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - entities
+          - entitiesKindAlias
+          - kind-alias
       - id: findEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2484,6 +3077,15 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: updateEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2520,6 +3122,16 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: deleteEntityByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2547,6 +3159,14 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
+          tags:
+          - delete
+          - destructive
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: findEntityChildrenByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2561,7 +3181,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entitiesKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children,
+          ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -2586,6 +3207,16 @@ spring:
             size: ${app.local-cache.entities.findEntityChildren.size}
         metadata:
           recordType: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - hierarchical
+          - children
+          - collection
       - id: createEntityChildByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2603,7 +3234,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entitiesKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children,
+          ${app.outbound.routing-target.baseUri}entities/${recordId}/children
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
@@ -2626,6 +3258,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - entitiesKindAlias
+          - kind-alias
       - id: findEntityParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2640,7 +3280,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entitiesKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.entities}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents,
+          ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -2665,6 +3306,16 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entitiesKindAlias
+          - kind-alias
+          - hierarchical
+          - parents
+          - collection
       # list kind alias from root mapping
       - id: createListByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2706,6 +3357,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - lists
+          - listKindAlias
+          - kind-alias
       - id: findAllListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2745,6 +3404,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listKindAlias
+          - kind-alias
+          - collection
       - id: replaceListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2787,6 +3454,16 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - lists
+          - listKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: countListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2822,7 +3499,14 @@ spring:
             timeToLive: ${app.local-cache.lists.countLists.timeToLive}
             size: ${app.local-cache.lists.countLists.size}
         metadata:
-          recordType: lists 
+          recordType: lists
+          tags:
+          - get
+          - count
+          - read-only
+          - lists
+          - listKindAlias
+          - kind-alias
       - id: updateAllListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2860,6 +3544,16 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - lists
+          - listKindAlias
+          - kind-alias
       - id: findListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2895,6 +3589,15 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: updateListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2931,6 +3634,16 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - lists
+          - listKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: deleteListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2958,6 +3671,14 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
+          tags:
+          - delete
+          - destructive
+          - lists
+          - listKindAlias
+          - kind-alias
+          - by-id
+          - single-record
       - id: findListChildrenByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2972,7 +3693,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children,
+          ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -2997,6 +3719,16 @@ spring:
             size: ${app.local-cache.lists.findListChildren.size}
         metadata:
           recordType: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listKindAlias
+          - kind-alias
+          - hierarchical
+          - children
+          - collection
       - id: createListChildByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -3014,7 +3746,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/children,
+          ${app.outbound.routing-target.baseUri}lists/${recordId}/children
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
@@ -3037,6 +3770,14 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - lists
+          - listKindAlias
+          - kind-alias
       - id: findListParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -3051,7 +3792,8 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listKindAlias
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents, ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerPaths.lists}/(?<kindAlias>/?.*)/(?<recordId>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/parents,
+          ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -3076,3 +3818,13 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listKindAlias
+          - kind-alias
+          - hierarchical
+          - parents
+          - collection

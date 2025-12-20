@@ -15,6 +15,7 @@ public class TogglesProperties {
 
     private Section routes = new Section();
     private Section controllers = new Section();
+    private Section tags = new Section();
 
     @Data
     public static class Section {
