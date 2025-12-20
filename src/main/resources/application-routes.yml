@@ -2570,11 +2570,7 @@ spring:
         - FieldFilter
         metadata:
           recordType: entities
-      
-      # === LIST KIND ALIAS ROUTES ===
-      # These routes enable abstracted paths for lists based on the _kind field
-      # Example: /lists/reading-lists instead of /lists?filter[where][_kind]=readingList
-      
+      # list kind alias from root mapping
       - id: createListByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2613,7 +2609,6 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
-      
       - id: findAllListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2651,7 +2646,6 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
-      
       - id: replaceListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2692,7 +2686,6 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
-      
       - id: countListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2726,8 +2719,7 @@ spring:
             timeToLive: ${app.local-cache.lists.countLists.timeToLive}
             size: ${app.local-cache.lists.countLists.size}
         metadata:
-          recordType: lists
-      
+          recordType: lists 
       - id: updateAllListsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2763,7 +2755,6 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
-      
       - id: findListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2797,7 +2788,6 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
-      
       - id: updateListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2832,7 +2822,6 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
-      
       - id: deleteListByIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2858,7 +2847,6 @@ spring:
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
-      
       - id: findListChildrenByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2896,7 +2884,6 @@ spring:
             size: ${app.local-cache.lists.findListChildren.size}
         metadata:
           recordType: lists
-      
       - id: createListChildByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2935,7 +2922,6 @@ spring:
         - FieldFilter
         metadata:
           recordType: lists
-      
       - id: findListParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
