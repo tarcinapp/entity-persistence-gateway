@@ -4,17 +4,22 @@ app:
     port: 8081
     baseUri: /api/v1/
     
-    # STABILITY FIX: We define the list explicitly here.
     # To disable metrics, set metricsEnabled: false AND exposedEndpoints: "none"
     metricsEnabled: true
     exposedEndpoints: "gateway,health,metrics,prometheus,jolokia,env,info"
     
-    # Generic Controller Paths used by routing logic
-    controllerPaths:
+    # Base paths used by routing logic (controllerBasePaths)
+    controllerBasePaths:
       entities: entities
       lists: lists
+      entitiesThroughList: ${app.inbound.controllerBasePaths.entities}
+      listsThroughEntity: ${app.inbound.controllerBasePaths.lists}
       relations: relations
       explorer: explorer
+      entityReactions: entity-reactions
+      listReactions: list-reactions
+      reactionsThroughEntity: reactions
+      reactionsThroughList: reactions
       
     cors:
       allowedOrigins:

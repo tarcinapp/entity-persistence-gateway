@@ -230,6 +230,69 @@ app:
         connectTimeoutMs: ${app.timeouts.reactions.default.connectTimeoutMs}
         responseTimeoutMs: ${app.timeouts.reactions.default.responseTimeoutMs}
 
+    reactionsThroughEntity:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      createReactionByEntityId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.responseTimeoutMs}
+      updateReactionsByEntityId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.responseTimeoutMs}
+      findReactionsByEntityId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.responseTimeoutMs}
+      deleteReactionsByEntityId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.default.responseTimeoutMs}
+
+    reactionsThroughList:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      createReactionByListId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughList.default.responseTimeoutMs}
+      updateReactionsByListId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughList.default.responseTimeoutMs}
+      findReactionsByListId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughList.default.responseTimeoutMs}
+      deleteReactionsByListId:
+        connectTimeoutMs: ${app.timeouts.reactionsThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.reactionsThroughList.default.responseTimeoutMs}
+
+    entitiesThroughList:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      createEntityByListId:
+        connectTimeoutMs: ${app.timeouts.entitiesThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entitiesThroughList.default.responseTimeoutMs}
+      updateEntitiesByListId:
+        connectTimeoutMs: ${app.timeouts.entitiesThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entitiesThroughList.default.responseTimeoutMs}
+      findEntitiesByListId:
+        connectTimeoutMs: ${app.timeouts.entitiesThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entitiesThroughList.default.responseTimeoutMs}
+      deleteEntitiesByListId:
+        connectTimeoutMs: ${app.timeouts.entitiesThroughList.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.entitiesThroughList.default.responseTimeoutMs}
+
+    listsThroughEntity:
+      default:
+        connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}
+      
+      findListsByEntityId:
+        connectTimeoutMs: ${app.timeouts.listsThroughEntity.default.connectTimeoutMs}
+        responseTimeoutMs: ${app.timeouts.listsThroughEntity.default.responseTimeoutMs}
+
     ping:
       connectTimeoutMs: ${app.timeouts.default.connectTimeoutMs}
       responseTimeoutMs: ${app.timeouts.default.responseTimeoutMs}

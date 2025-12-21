@@ -271,14 +271,28 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
 
         String kindName = kindAliasConfigAttr.getKindName();
+        String baseControllerName = kindAliasConfigAttr.getBaseControllerName();
+        String controllerName = kindAliasConfigAttr.getControllerName();
         String recordType = kindAliasConfigAttr.getRecordType();
+
+        // Prefer baseControllerName (alias routes), then controllerName, then recordType
+        String controllerForLookup = baseControllerName;
+        if (controllerForLookup == null || controllerForLookup.isBlank()) {
+            controllerForLookup = controllerName;
+        }
+        if (controllerForLookup == null || controllerForLookup.isBlank()) {
+            controllerForLookup = recordType;
+            log.warn("controllerName missing on KindAliasConfigAttr; falling back to recordType '{}' for alias '{}'.",
+                recordType, kindAliasConfigAttr.getKindAlias());
+        }
         
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = (route != null) ? route.getId() : null;
 
         // Resolve validation flag: Route -> Alias -> Default(true)
         boolean validationEnabled = true;
-        OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(kindAliasConfigAttr.getKindAlias());
+        OpenApiProperties.AliasContext aliasContext = openApiProperties
+            .getAliasContext(controllerForLookup, kindAliasConfigAttr.getKindAlias());
         if (aliasContext != null && aliasContext.getAliasConfig() != null) {
             AliasConfig aliasConfig = aliasContext.getAliasConfig();
             
@@ -313,7 +327,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             JsonSchema schema = null;
             
             if (routeId != null) {
-                String routeSchemaKey = buildSchemaKey(recordType, kindName, routeId);
+                String routeSchemaKey = buildSchemaKey(controllerForLookup, kindName, routeId);
                 schema = combinedSchemas.get(routeSchemaKey);
                 if (schema != null) {
                     schemaKey = routeSchemaKey;
@@ -323,7 +337,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
 
             // 2. Fall back to alias schema
             if (schema == null) {
-                schemaKey = buildSchemaKey(recordType, kindName);
+                schemaKey = buildSchemaKey(controllerForLookup, kindName);
                 if (method == HttpMethod.PATCH) {
                     schema = patchSchemas.get(schemaKey);
                 } else {
@@ -414,17 +428,17 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     }
 
     /**
-     * Builds a composite key for schema lookup using recordType and kindName.
+     * Builds a composite key for schema lookup using controllerName and kindName.
      */
-    private static String buildSchemaKey(String recordType, String kindName) {
-        return recordType + ":" + kindName;
+    private static String buildSchemaKey(String controllerName, String kindName) {
+        return controllerName + ":" + kindName;
     }
 
     /**
-     * Builds a composite key for route-specific schema lookup using recordType, kindName, and routeId.
+     * Builds a composite key for route-specific schema lookup using controllerName, kindName, and routeId.
      */
-    private static String buildSchemaKey(String recordType, String kindName, String routeId) {
-        return recordType + ":" + kindName + ":" + routeId;
+    private static String buildSchemaKey(String controllerName, String kindName, String routeId) {
+        return controllerName + ":" + kindName + ":" + routeId;
     }
 
     public static class Config {

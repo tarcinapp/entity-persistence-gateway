@@ -12,16 +12,21 @@
 # - Controllers: Configuration for each controller type
 # - Tags: Global tags for grouping API operations
 #
-# AVAILABLE CONTROLLERS:
-# ----------------------
-# - entities:         Main entity controller for CRUD operations
-# - lists:            List/collection management controller
-# - relations:        Entity relationship management
-# - entity-reactions: Reactions on entities (likes, comments, etc.)
-# - list-reactions:   Reactions on lists
+# AVAILABLE CONTROLLERS (controllerName):
+# ---------------------------------------
+# - entities:              Main entity controller for CRUD operations
+# - lists:                 List/collection management controller
+# - entitiesThroughList:   Entities addressed through list context
+# - listsThroughEntity:    Lists addressed through entity context
+# - relations:             Entity relationship management
+# - entityReactions:       Reactions on entities (likes, comments, etc.)
+# - reactionsThroughEntity: Reactions addressed through entity context
+# - listReactions:         Reactions on lists
+# - reactionsThroughList:  Reactions addressed through list context
 #
 # CONFIGURATION CONCEPTS:
 # -----------------------
+# - controllerName:   Matches route metadata controllerName (may differ from recordType)
 # - alias:            User-friendly URL path (e.g., "books" instead of "entities")
 # - kind:             Internal entity type identifier
 # - schema:           JSON Schema for request/response validation

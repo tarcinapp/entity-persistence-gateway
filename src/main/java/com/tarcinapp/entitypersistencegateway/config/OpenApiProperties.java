@@ -2,18 +2,22 @@ package com.tarcinapp.entitypersistencegateway.config;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @ConfigurationProperties(prefix = "app.oas")
 @Data
+@Slf4j
 public class OpenApiProperties {
 
     private String title;
@@ -25,51 +29,86 @@ public class OpenApiProperties {
     private List<Tag> tags = new ArrayList<>();
 
     // Flattened lookups for fast access
-    private final Map<String, AliasContext> aliasLookup = new HashMap<>();
+    private final Map<String, AliasContext> aliasLookupByControllerAndAlias = new HashMap<>();
+    private final Map<String, Map<String, AliasContext>> aliasLookupByController = new HashMap<>();
     private final Map<String, String> schemaByControllerAndKind = new HashMap<>();
 
     @PostConstruct
     public void init() {
-        aliasLookup.clear();
+        aliasLookupByControllerAndAlias.clear();
+        aliasLookupByController.clear();
         schemaByControllerAndKind.clear();
 
         controllers.forEach((controllerName, controllerConfig) -> {
             if (controllerConfig.getAliases() != null) {
-                controllerConfig.getAliases().forEach(aliasConfig -> registerAlias(controllerName, aliasConfig));
+                Set<String> seenAliases = new HashSet<>();
+                controllerConfig.getAliases()
+                        .forEach(aliasConfig -> registerAlias(controllerName, aliasConfig, seenAliases));
             }
         });
     }
 
-    private void registerAlias(String controllerName, AliasConfig aliasConfig) {
+    private void registerAlias(String controllerName, AliasConfig aliasConfig, Set<String> seenAliases) {
         if (aliasConfig == null || aliasConfig.getAlias() == null) {
             return;
         }
 
-        aliasLookup.put(aliasConfig.getAlias(), new AliasContext(controllerName, aliasConfig));
+        if (!seenAliases.add(aliasConfig.getAlias())) {
+            String message = "Duplicate alias '" + aliasConfig.getAlias() + "' detected for controller '"
+                    + controllerName + "'";
+            log.error(message);
+            throw new IllegalStateException(message);
+        }
+
+        AliasContext aliasContext = new AliasContext(controllerName, aliasConfig);
+
+        // Store per-controller lookup
+        aliasLookupByController.computeIfAbsent(controllerName, key -> new HashMap<>())
+                .put(aliasConfig.getAlias(), aliasContext);
+
+        // Store combined key lookup
+        aliasLookupByControllerAndAlias.put(buildAliasKey(controllerName, aliasConfig.getAlias()), aliasContext);
 
         if (aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
             schemaByControllerAndKind.put(buildSchemaKey(controllerName, aliasConfig.getKind()), aliasConfig.getSchema());
         }
 
         if (aliasConfig.getChildren() != null) {
-            aliasConfig.getChildren().forEach(child -> registerAlias(controllerName, child));
+            aliasConfig.getChildren().forEach(child -> registerAlias(controllerName, child, seenAliases));
         }
     }
 
-    public AliasContext getAliasContext(String alias) {
-        return aliasLookup.get(alias);
+    public AliasContext getAliasContext(String controllerName, String alias) {
+        if (controllerName == null || alias == null) {
+            return null;
+        }
+
+        Map<String, AliasContext> controllerAliases = aliasLookupByController.get(controllerName);
+        if (controllerAliases != null) {
+            AliasContext context = controllerAliases.get(alias);
+            if (context != null) {
+                return context;
+            }
+        }
+
+        // Fallback to combined key map to avoid double lookups if needed
+        return aliasLookupByControllerAndAlias.get(buildAliasKey(controllerName, alias));
     }
 
     public String getSchema(String controllerName, String kind) {
         return schemaByControllerAndKind.get(buildSchemaKey(controllerName, kind));
     }
 
-    public Map<String, AliasContext> getAliasLookup() {
-        return aliasLookup;
+    public Map<String, Map<String, AliasContext>> getAliasLookupByController() {
+        return aliasLookupByController;
     }
 
     private static String buildSchemaKey(String controllerName, String kind) {
         return controllerName + ":" + kind;
+    }
+
+    private static String buildAliasKey(String controllerName, String alias) {
+        return controllerName + ":" + alias;
     }
 
     @Data

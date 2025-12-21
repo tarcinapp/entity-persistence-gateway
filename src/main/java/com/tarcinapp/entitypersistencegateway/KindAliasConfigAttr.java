@@ -17,6 +17,8 @@ public class KindAliasConfigAttr {
     boolean isKindAliasConfigured;
     String kindName;
     String kindAlias;
+    String controllerName;
+    String baseControllerName;
     String recordType;
     String originalResourceUrl;
 }
