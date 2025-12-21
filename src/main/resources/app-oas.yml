@@ -1,3 +1,49 @@
+# ====================================================================
+# OpenAPI Configuration for Entity Persistence Gateway
+# ====================================================================
+#
+# This file configures OpenAPI documentation for the dynamic API gateway.
+# It maps controller routes to user-friendly aliases with schemas and
+# validation rules.
+#
+# STRUCTURE OVERVIEW:
+# -------------------
+# - API Identification: Global API metadata (title, version, contact, servers)
+# - Controllers: Configuration for each controller type
+# - Tags: Global tags for grouping API operations
+#
+# AVAILABLE CONTROLLERS:
+# ----------------------
+# - entities:         Main entity controller for CRUD operations
+# - lists:            List/collection management controller
+# - relations:        Entity relationship management
+# - entity-reactions: Reactions on entities (likes, comments, etc.)
+# - list-reactions:   Reactions on lists
+#
+# CONFIGURATION CONCEPTS:
+# -----------------------
+# - alias:            User-friendly URL path (e.g., "books" instead of "entities")
+# - kind:             Internal entity type identifier
+# - schema:           JSON Schema for request/response validation
+# - validationEnabled: Toggle validation on/off (alias-level or route-level)
+# - routes:           Per-route configuration (must match route IDs in application-routes.yml)
+# - children:         Nested resource configuration for hierarchical data
+#
+# ROUTE CONFIGURATION:
+# --------------------
+# Route keys under aliases.routes MUST match the route IDs defined in
+# application-routes.yml for the corresponding controller. For example:
+#   entities controller: createEntity, findEntities, findEntityById, etc.
+#   lists controller: createList, findLists, findListById, etc.
+#
+# VALIDATION & SCHEMA INHERITANCE:
+# ---------------------------------
+# - Alias-level schema/validation applies to all routes by default
+# - Route-level schema/validation overrides alias-level settings
+# - Useful for different validation rules per operation (strict create, lenient update)
+#
+# ====================================================================
+
 app:
   oas:
     # ----------------------------------------------------------------
@@ -46,8 +92,119 @@ app:
     #           validationEnabled: true
     #
     controllers: {}
+    
+    # Example with full structure (commented out):
+    # Note: Route keys must match the route IDs defined in application-routes.yml
+    # Note: Schema and validationEnabled can be overridden at route level
+    # controllers:
+    #   entities:
+    #     aliases:
+    #       - alias: books
+    #         kind: book
+    #         description: "Manage book entities"
+    #         schema: |
+    #           {
+    #             "type": "object",
+    #             "properties": {
+    #               "title": { "type": "string" },
+    #               "author": { "type": "string" },
+    #               "isbn": { "type": "string" }
+    #             },
+    #             "required": ["title", "author"]
+    #           }
+    #         validationEnabled: true
+    #         routes:
+    #           createEntity:
+    #             operationId: createBook
+    #             summary: "Create a new book"
+    #             description: "Creates a new book entity with validation"
+    #             tags:
+    #               - Books
+    #             request:
+    #               contentType: application/json
+    #             # Route-level validation override (optional)
+    #             validationEnabled: true
+    #           findEntities:
+    #             operationId: listBooks
+    #             summary: "List all books"
+    #             tags:
+    #               - Books
+    #           findEntityById:
+    #             operationId: getBookById
+    #             summary: "Get a book by ID"
+    #             tags:
+    #               - Books
+    #           updateEntityById:
+    #             operationId: updateBook
+    #             summary: "Update a book by ID"
+    #             tags:
+    #               - Books
+    #             # Route-level schema override (optional)
+    #             schema: |
+    #               {
+    #                 "type": "object",
+    #                 "properties": {
+    #                   "title": { "type": "string" },
+    #                   "author": { "type": "string" }
+    #                 }
+    #               }
+    #             validationEnabled: true
+    #           replaceEntityById:
+    #             operationId: replaceBook
+    #             summary: "Replace a book by ID"
+    #             tags:
+    #               - Books
+    #           deleteEntityById:
+    #             operationId: deleteBook
+    #             summary: "Delete a book by ID"
+    #             tags:
+    #               - Books
+    #             # Disable validation for this specific route
+    #             validationEnabled: false
+    #       - alias: authors
+    #         kind: author
+    #         description: "Manage author entities"
+    #         validationEnabled: false
+    #   lists:
+    #     aliases:
+    #       - alias: bookshelves
+    #         kind: bookshelf
+    #         description: "Manage bookshelf collections"
+    #         schema: |
+    #           {
+    #             "type": "object",
+    #             "properties": {
+    #               "name": { "type": "string" },
+    #               "location": { "type": "string" }
+    #             }
+    #           }
+    #         validationEnabled: true
+    #         routes:
+    #           createList:
+    #             operationId: createBookshelf
+    #             summary: "Create a new bookshelf"
+    #             tags:
+    #               - Bookshelves
+    #           findLists:
+    #             operationId: listBookshelves
+    #             summary: "List all bookshelves"
+    #             tags:
+    #               - Bookshelves
+    #         children:
+    #           - alias: books
+    #             kind: book
+    #             description: "Books within a bookshelf"
 
     # ----------------------------------------------------------------
     # 3. GLOBAL TAGS
     # ----------------------------------------------------------------
     tags: []
+    
+    # Example tags (commented out):
+    # tags:
+    #   - name: Books
+    #     description: "Operations related to book management"
+    #   - name: Authors
+    #     description: "Operations related to author management"
+    #   - name: Collections
+    #     description: "Operations related to collection management"
