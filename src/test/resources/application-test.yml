@@ -1,0 +1,115 @@
+# Test profile configuration
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+app:
+  shortcode: tarcinapp
+  name: entity-persistence-gateway-test
+
+  inbound:
+    baseUri: /api/v1/
+    port: 0  # Random port for tests
+    address: 0.0.0.0
+    metricsEnabled: false
+    controllerBasePaths:
+      entities: entities
+      lists: lists
+      relations: relations
+      entityReactions: entity-reactions
+      listReactions: list-reactions
+
+  outbound:
+    routing-target:
+      protocol: http
+      host: localhost
+      port: 8080  # Will be overridden by @DynamicPropertySource
+      baseUri: /
+
+  auth:
+    enabled: true
+    clockSkewSeconds: 60
+
+  opa:
+    protocol: http
+    host: localhost
+    port: 8181  # Will be overridden by @DynamicPropertySource
+
+  # Disable rate limiting by default for tests
+  rateLimits:
+    defaultRateLimit:
+      replenishRate: 10000
+      burstCapacity: 10000
+
+  # Fast lock timeouts for tests
+  locks:
+    waitTime: 1
+    leaseTime: 10
+
+  # Enable all routes for testing
+  routes:
+    createEntity:
+      enabled: true
+    findEntities:
+      enabled: true
+    findEntityById:
+      enabled: true
+    updateEntityById:
+      enabled: true
+    replaceEntityById:
+      enabled: true
+    deleteEntityById:
+      enabled: true
+    countEntities:
+      enabled: true
+    updateAllEntities:
+      enabled: true
+    findEntityChildren:
+      enabled: true
+    createEntityChild:
+      enabled: true
+    findEntityParents:
+      enabled: true
+    createList:
+      enabled: true
+    findLists:
+      enabled: true
+    findListById:
+      enabled: true
+    updateListById:
+      enabled: true
+    replaceListById:
+      enabled: true
+    deleteListById:
+      enabled: true
+    countLists:
+      enabled: true
+
+  # Default fieldsets
+  fieldsets:
+    managed: _createdDateTime,lastUpdatedDateTime,createdBy,lastUpdatedBy,ownerUsers,ownerGroups,viewerUsers,viewerGroups,visibility,idempotencyKey
+    unmanaged: id,name,kind,description
+
+  # Default fieldset configuration
+  defaultFieldset:
+    entities: ""
+    lists: ""
+    reactions: ""
+
+# Logging configuration for tests
+logging:
+  level:
+    root: WARN
+    com.tarcinapp: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    com.github.tomakehurst.wiremock: WARN
+
+# Redis configuration (will be overridden for embedded Redis)
+spring.data.redis:
+  host: localhost
+  port: 6370
+
+# Disable actuator endpoints in tests
+management:
+  endpoints:
+    enabled-by-default: false
