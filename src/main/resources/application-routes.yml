@@ -335,13 +335,13 @@ spring:
       - id: findEntityChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -381,7 +381,7 @@ spring:
       - id: createEntityChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -390,7 +390,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entities/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -425,13 +425,13 @@ spring:
       - id: findEntityParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entities
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entities/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesParentsAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -808,13 +808,13 @@ spring:
       - id: findListChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsChildrenAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -854,7 +854,7 @@ spring:
       - id: createListChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -863,7 +863,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}lists/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsChildrenAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -898,13 +898,13 @@ spring:
       - id: findListParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: lists
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}lists/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsParentsAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -1647,13 +1647,13 @@ spring:
       - id: findChildrenEntityReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entityReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -1694,7 +1694,7 @@ spring:
       - id: createChildEntityReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -1703,7 +1703,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entityReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
@@ -1740,13 +1740,13 @@ spring:
       - id: findParentsByEntityReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: entityReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -2303,13 +2303,13 @@ spring:
       - id: findChildrenListReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -2350,7 +2350,7 @@ spring:
       - id: createChildListReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/children
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -2359,7 +2359,7 @@ spring:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/children, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/children
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -2395,13 +2395,13 @@ spring:
       - id: findParentsByListReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/parents
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
           args:
             controllerName: listReactions
-        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/parents, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/parents
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter

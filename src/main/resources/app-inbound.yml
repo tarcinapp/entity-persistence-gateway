@@ -20,6 +20,18 @@ app:
       listReactions: list-reactions
       reactionsThroughEntity: reactions
       reactionsThroughList: reactions
+      # Accessor segments for hierarchical routes
+      defaultChildrenAccessor: children
+      defaultParentsAccessor: parents
+      # Per-record-type accessors (override if needed)
+      entitiesChildrenAccessor: ${app.inbound.controllerBasePaths.defaultChildrenAccessor}
+      entitiesParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
+      listsChildrenAccessor: ${app.inbound.controllerBasePaths.defaultChildrenAccessor}
+      listsParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
+      entityReactionsChildrenAccessor: ${app.inbound.controllerBasePaths.defaultChildrenAccessor}
+      entityReactionsParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
+      listReactionsChildrenAccessor: ${app.inbound.controllerBasePaths.defaultChildrenAccessor}
+      listReactionsParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
       
     cors:
       allowedOrigins:
