@@ -76,6 +76,10 @@ public class OpenApiProperties {
         if (aliasConfig.getChildren() != null) {
             aliasConfig.getChildren().forEach(child -> registerAlias(controllerName, child, seenAliases));
         }
+
+        if (aliasConfig.getParents() != null) {
+            aliasConfig.getParents().forEach(parent -> registerAlias(controllerName, parent, seenAliases));
+        }
     }
 
     public AliasContext getAliasContext(String controllerName, String alias) {
@@ -91,16 +95,11 @@ public class OpenApiProperties {
             }
         }
 
-        // Fallback to combined key map to avoid double lookups if needed
         return aliasLookupByControllerAndAlias.get(buildAliasKey(controllerName, alias));
     }
 
     public String getSchema(String controllerName, String kind) {
         return schemaByControllerAndKind.get(buildSchemaKey(controllerName, kind));
-    }
-
-    public Map<String, Map<String, AliasContext>> getAliasLookupByController() {
-        return aliasLookupByController;
     }
 
     private static String buildSchemaKey(String controllerName, String kind) {
@@ -124,6 +123,7 @@ public class OpenApiProperties {
         private String schema;
         private Boolean validationEnabled;
         private List<AliasConfig> children = new ArrayList<>();
+        private List<AliasConfig> parents = new ArrayList<>();
         private Map<String, RouteConfig> routes = new HashMap<>();
     }
 
