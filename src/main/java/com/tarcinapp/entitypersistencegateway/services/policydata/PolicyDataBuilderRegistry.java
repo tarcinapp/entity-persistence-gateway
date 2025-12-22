@@ -246,18 +246,28 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createChildEntityReaction", builderWithPayloadAndParent);
         // POST /entities/{entityId}/reactions
         routeBuilderMap.put("createReactionByEntityId", builderWithPayloadAndParent);
+        // POST /entity-reactions/{kindAlias}
+        routeBuilderMap.put("createEntityReactionByKindAlias", builderForReactionCreation);
+        // POST /entity-reactions/{kindAlias}/{parentId}/children
+        routeBuilderMap.put("createChildEntityReactionByKindAlias", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entity-reactions/{id}
         routeBuilderMap.put("updateEntityReactionById", builderWithPayloadAndOriginal);
         // PUT /entity-reactions/{id}
         routeBuilderMap.put("replaceEntityReactionById", builderWithPayloadAndOriginal);
+        // PATCH /entity-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("updateEntityReactionByIdByKindAlias", builderWithPayloadAndOriginal);
+        // PUT /entity-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("replaceEntityReactionByIdByKindAlias", builderWithPayloadAndOriginal);
 
         // PATCH - with payload (bulk update)
         // PATCH /entity-reactions
         routeBuilderMap.put("updateAllEntityReactions", builderWithPayload);
         // PATCH /entities/{entityId}/reactions
         routeBuilderMap.put("updateReactionsByEntityId", builderWithPayloadAndParent);
+        // PATCH /entity-reactions/{kindAlias}
+        routeBuilderMap.put("updateAllEntityReactionsByKindAlias", builderWithPayload);
 
         // GET - without payload
         // GET /entity-reactions
@@ -272,12 +282,24 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findParentsByEntityReactionId", builderWithoutPayload);
         // GET /entities/{entityId}/reactions
         routeBuilderMap.put("findReactionsByEntityId", builderWithoutPayload);
+        // GET /entity-reactions/{kindAlias}
+        routeBuilderMap.put("findAllEntityReactionsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /entity-reactions/{kindAlias}/count
+        routeBuilderMap.put("countEntityReactionsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /entity-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("findEntityReactionByIdByKindAlias", builderWithoutPayload);
+        // GET /entity-reactions/{kindAlias}/{reactionId}/children
+        routeBuilderMap.put("findChildrenEntityReactionsByReactionIdByKindAlias", builderWithoutPayload);
+        // GET /entity-reactions/{kindAlias}/{id}/parents
+        routeBuilderMap.put("findParentsByEntityReactionIdByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /entity-reactions/{id}
         routeBuilderMap.put("deleteEntityReactionById", builderWithoutPayload);
         // DELETE /entities/{entityId}/reactions
         routeBuilderMap.put("deleteReactionsByEntityId", builderWithoutPayload);
+        // DELETE /entity-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("deleteEntityReactionByIdByKindAlias", builderWithoutPayload);
     }
 
     private void mapListReactionRoutes() {
@@ -288,18 +310,28 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createChildListReaction", builderWithPayloadAndParent);
         // POST /lists/{listId}/reactions
         routeBuilderMap.put("createReactionByListId", builderWithPayloadAndParent);
+        // POST /list-reactions/{kindAlias}
+        routeBuilderMap.put("createListReactionByKindAlias", builderForReactionCreation);
+        // POST /list-reactions/{kindAlias}/{parentId}/children
+        routeBuilderMap.put("createChildListReactionByKindAlias", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /list-reactions/{id}
         routeBuilderMap.put("updateListReactionById", builderWithPayloadAndOriginal);
         // PUT /list-reactions/{id}
         routeBuilderMap.put("replaceListReactionById", builderWithPayloadAndOriginal);
+        // PATCH /list-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("updateListReactionByIdByKindAlias", builderWithPayloadAndOriginal);
+        // PUT /list-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("replaceListReactionByIdByKindAlias", builderWithPayloadAndOriginal);
 
         // PATCH - with payload (bulk update)
         // PATCH /list-reactions
         routeBuilderMap.put("updateAllListReactions", builderWithPayload);
         // PATCH /lists/{listId}/reactions
         routeBuilderMap.put("updateReactionsByListId", builderWithPayloadAndParent);
+        // PATCH /list-reactions/{kindAlias}
+        routeBuilderMap.put("updateAllListReactionsByKindAlias", builderWithPayload);
 
         // GET - without payload
         // GET /list-reactions
@@ -314,12 +346,24 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findParentsByListReactionId", builderWithoutPayload);
         // GET /lists/{listId}/reactions
         routeBuilderMap.put("findReactionsByListId", builderWithoutPayload);
+        // GET /list-reactions/{kindAlias}
+        routeBuilderMap.put("findAllListReactionsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /list-reactions/{kindAlias}/count
+        routeBuilderMap.put("countListReactionsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /list-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("findListReactionByIdByKindAlias", builderWithoutPayload);
+        // GET /list-reactions/{kindAlias}/{reactionId}/children
+        routeBuilderMap.put("findChildrenListReactionsByReactionIdByKindAlias", builderWithoutPayload);
+        // GET /list-reactions/{kindAlias}/{id}/parents
+        routeBuilderMap.put("findParentsByListReactionIdByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /list-reactions/{id}
         routeBuilderMap.put("deleteListReactionById", builderWithoutPayload);
         // DELETE /lists/{listId}/reactions
         routeBuilderMap.put("deleteReactionsByListId", builderWithoutPayload);
+        // DELETE /list-reactions/{kindAlias}/{id}
+        routeBuilderMap.put("deleteListReactionByIdByKindAlias", builderWithoutPayload);
     }
 
     /**
