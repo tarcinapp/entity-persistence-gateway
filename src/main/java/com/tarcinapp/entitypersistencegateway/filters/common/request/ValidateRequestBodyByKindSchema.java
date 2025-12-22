@@ -48,16 +48,22 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     @Value("${app.commonBaseSchema:#{null}}")
     private String commonBaseSchema;
 
+    @Value("${app.relationsBaseSchema:#{null}}")
+    private String relationsBaseSchemaString;
+
     @Autowired
     private OpenApiProperties openApiProperties;
 
     private static JsonSchema baseSchema;
+    private static JsonSchema relationsBaseSchema;
 
     // Stores schemas with "required" fields enforced (for POST/PUT)
-    private Map<String, JsonSchema> combinedSchemas;
+    private Map<String, JsonSchema> combinedSchemasCommon;
+    private Map<String, JsonSchema> combinedSchemasRelations;
 
     // Stores schemas with root-level "required" fields removed (for PATCH)
-    private Map<String, JsonSchema> patchSchemas;
+    private Map<String, JsonSchema> patchSchemasCommon;
+    private Map<String, JsonSchema> patchSchemasRelations;
 
     @Autowired
     private ModifyRequestBodyGatewayFilterFactory modifyRequestBodyFilterFactory;
@@ -80,16 +86,22 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             return;
         }
 
-        combinedSchemas = new HashMap<>();
-        patchSchemas = new HashMap<>();
+        combinedSchemasCommon = new HashMap<>();
+        patchSchemasCommon = new HashMap<>();
+        combinedSchemasRelations = new HashMap<>();
+        patchSchemasRelations = new HashMap<>();
 
         try {
-            // Init the base schema
+            // Init the base schemas
             if (this.commonBaseSchema != null) {
                 baseSchema = SCHEMA_FACTORY.getSchema(this.commonBaseSchema);
             }
+            if (this.relationsBaseSchemaString != null) {
+                relationsBaseSchema = SCHEMA_FACTORY.getSchema(this.relationsBaseSchemaString);
+            }
 
-            JsonNode baseSchemaNode = baseSchema != null ? baseSchema.getSchemaNode() : objectMapper.createObjectNode();
+            JsonNode defaultBaseSchemaNode = baseSchema != null ? baseSchema.getSchemaNode() : objectMapper.createObjectNode();
+            JsonNode relationsBaseSchemaNode = relationsBaseSchema != null ? relationsBaseSchema.getSchemaNode() : defaultBaseSchemaNode;
 
             // Merge each given schema with base schema from app.oas.controllers
             for (Map.Entry<String, ControllerConfig> controllerEntry : openApiProperties.getControllers().entrySet()) {
@@ -101,7 +113,9 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                 }
 
                 for (AliasConfig aliasConfig : controllerConfig.getAliases()) {
-                    registerSchemasForAlias(controllerName, aliasConfig, baseSchemaNode);
+                    // Register BOTH variants at initialization; runtime will choose based on route metadata
+                    registerSchemasForAlias(controllerName, aliasConfig, defaultBaseSchemaNode, true);
+                    registerSchemasForAlias(controllerName, aliasConfig, relationsBaseSchemaNode, false);
                 }
             }
 
@@ -110,7 +124,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
     }
 
-    private void registerSchemasForAlias(String controllerName, AliasConfig aliasConfig, JsonNode baseSchemaNode)
+    private void registerSchemasForAlias(String controllerName, AliasConfig aliasConfig, JsonNode baseSchemaNode, boolean registerToCommon)
             throws JsonProcessingException {
 
         if (aliasConfig == null) {
@@ -124,12 +138,20 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             String aliasSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
             
             JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(aliasSchemaNode);
-            combinedSchemas.put(aliasSchemaKey, combinedSchema);
+            if (registerToCommon) {
+                combinedSchemasCommon.put(aliasSchemaKey, combinedSchema);
+            } else {
+                combinedSchemasRelations.put(aliasSchemaKey, combinedSchema);
+            }
             
             ObjectNode patchSchemaNode = aliasSchemaNode.deepCopy();
             patchSchemaNode.remove("required");
             JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-            patchSchemas.put(aliasSchemaKey, patchSchema);
+            if (registerToCommon) {
+                patchSchemasCommon.put(aliasSchemaKey, patchSchema);
+            } else {
+                patchSchemasRelations.put(aliasSchemaKey, patchSchema);
+            }
         }
 
         // Process Route-level Schemas
@@ -144,12 +166,20 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                     String routeSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind(), routeId);
                     
                     JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(routeSchemaNode);
-                    combinedSchemas.put(routeSchemaKey, combinedSchema);
+                    if (registerToCommon) {
+                        combinedSchemasCommon.put(routeSchemaKey, combinedSchema);
+                    } else {
+                        combinedSchemasRelations.put(routeSchemaKey, combinedSchema);
+                    }
                     
                     ObjectNode patchSchemaNode = routeSchemaNode.deepCopy();
                     patchSchemaNode.remove("required");
                     JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-                    patchSchemas.put(routeSchemaKey, patchSchema);
+                    if (registerToCommon) {
+                        patchSchemasCommon.put(routeSchemaKey, patchSchema);
+                    } else {
+                        patchSchemasRelations.put(routeSchemaKey, patchSchema);
+                    }
                 }
             }
         }
@@ -157,7 +187,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         // Recursively register children under the same controller
         if (aliasConfig.getChildren() != null) {
             for (AliasConfig child : aliasConfig.getChildren()) {
-                registerSchemasForAlias(controllerName, child, baseSchemaNode);
+                registerSchemasForAlias(controllerName, child, baseSchemaNode, registerToCommon);
             }
         }
     }
@@ -288,6 +318,13 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = (route != null) ? route.getId() : null;
+        String routeRecordType = null;
+        if (route != null && route.getMetadata() != null) {
+            Object rt = route.getMetadata().get("recordType");
+            if (rt != null) {
+                routeRecordType = rt.toString();
+            }
+        }
 
         // Resolve validation flag: Route -> Alias -> Default(true)
         boolean validationEnabled = true;
@@ -328,7 +365,11 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             
             if (routeId != null) {
                 String routeSchemaKey = buildSchemaKey(controllerForLookup, kindName, routeId);
-                schema = combinedSchemas.get(routeSchemaKey);
+                if ("relations".equalsIgnoreCase(routeRecordType)) {
+                    schema = combinedSchemasRelations.get(routeSchemaKey);
+                } else {
+                    schema = combinedSchemasCommon.get(routeSchemaKey);
+                }
                 if (schema != null) {
                     schemaKey = routeSchemaKey;
                     log.debug("Using route-specific schema for {}", routeSchemaKey);
@@ -338,10 +379,18 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             // 2. Fall back to alias schema
             if (schema == null) {
                 schemaKey = buildSchemaKey(controllerForLookup, kindName);
-                if (method == HttpMethod.PATCH) {
-                    schema = patchSchemas.get(schemaKey);
+                if ("relations".equalsIgnoreCase(routeRecordType)) {
+                    if (method == HttpMethod.PATCH) {
+                        schema = patchSchemasRelations.get(schemaKey);
+                    } else {
+                        schema = combinedSchemasRelations.get(schemaKey);
+                    }
                 } else {
-                    schema = combinedSchemas.get(schemaKey);
+                    if (method == HttpMethod.PATCH) {
+                        schema = patchSchemasCommon.get(schemaKey);
+                    } else {
+                        schema = combinedSchemasCommon.get(schemaKey);
+                    }
                 }
             }
 

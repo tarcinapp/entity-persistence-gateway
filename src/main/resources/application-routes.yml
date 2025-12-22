@@ -3938,3 +3938,388 @@ spring:
           - hierarchical
           - parents
           - collection
+      # relations kind alias from root mapping
+      - id: createRelationByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}
+        - Method=POST
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.createRelation.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.createRelation.responseTimeoutMs}
+        - KindResolution
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.relations.create}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.createRelation.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.createRelation.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/createRelation/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.relations.create.waitTime}
+            leaseTime: ${app.locks.relations.create.leaseTime}
+        - name: AddManagedFieldsInCreation
+          args:
+            excludeFields:
+            - OWNER_USERS
+        - ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
+        - FieldFilter
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - relations
+          - relationsKindAlias
+          - kind-alias
+      - id: findAllRelationsByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.findRelations.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.findRelations.responseTimeoutMs}
+        - KindResolution
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.findRelations.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.findRelations.burstCapacity}
+        - FetchForbiddenFields
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/findRelations/policy
+        - PreventStringifiedJsonFilter
+        - ConvertSimplerQueriesToBackendFormat
+        - ConvertKindAliasToKindQuery
+        - ApplyFieldsetConfig
+        - AddSetsToRelationQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
+            size: ${app.local-cache.relations.findRelations.size}
+        - FieldFilter
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - get
+          - find
+          - read-only
+          - relations
+          - relationsKindAlias
+          - kind-alias
+          - collection
+      - id: countRelationsByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}/count
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.countRelations.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.countRelations.responseTimeoutMs}
+        - KindResolution
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations/count
+        - ConvertKindAliasToKindQuery
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.countRelations.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.countRelations.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/countRelations/policy
+        - PreventStringifiedJsonFilter
+        - PreventQueryByForbiddenFields
+        - AddSetsToRelationQuery
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.countRelations.timeToLive}
+            size: ${app.local-cache.relations.countRelations.size}
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - get
+          - count
+          - read-only
+          - relations
+          - relationsKindAlias
+          - kind-alias
+      - id: updateAllRelationsByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}
+        - Method=PATCH
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.updateAllRelations.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.updateAllRelations.responseTimeoutMs}
+        - KindResolution
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.relations.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.updateAllRelations.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.updateAllRelations.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - PreventStringifiedJsonFilter
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/updateAllRelations/policy
+        - name: ConvertSimplerQueriesToBackendFormat
+        - name: ConvertKindAliasToKindQuery
+        - name: AddSetsToRelationQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - patch
+          - update
+          - update-all
+          - bulk
+          - write
+          - manage
+          - relations
+          - relationsKindAlias
+          - kind-alias
+      - id: findRelationByIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.findRelationById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.findRelationById.responseTimeoutMs}
+        - KindResolution
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.findRelationById.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.findRelationById.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/findRelationById/policy
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
+            size: ${app.local-cache.relations.findRelationById.size}
+        - ApplyFieldsetConfig
+        - FieldFilter
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - get
+          - find
+          - read-only
+          - relations
+          - relationsKindAlias
+          - kind-alias
+          - by-id
+          - single-record
+      - id: updateRelationByIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PATCH
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.updateRelationById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.updateRelationById.responseTimeoutMs}
+        - KindResolution
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.relations.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.updateRelationById.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.updateRelationById.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/updateRelationById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.relations.update.waitTime}
+            leaseTime: ${app.locks.relations.update.leaseTime}
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - relations
+          - relationsKindAlias
+          - kind-alias
+          - by-id
+          - single-record
+      - id: replaceRelationByIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=PUT
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.replaceRelationById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.replaceRelationById.responseTimeoutMs}
+        - KindResolution
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.relations.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.replaceRelationById.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.replaceRelationById.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/replaceRelationById/policy
+        - name: AcquireLockForUpdate
+          args:
+            waitTime: ${app.locks.relations.update.waitTime}
+            leaseTime: ${app.locks.relations.update.leaseTime}
+        - name: AddForbiddenFieldsFromOriginalToPayloadInReplace
+          args:
+            policyName: /policies/fields/relations/policy
+        - name: AddManagedFieldsFromOriginalToPayloadInReplace
+          args:
+            excludeFields:
+            - OWNER_USERS
+        - RemoveRequestHeader=Authorization
+        - FieldFilter
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - put
+          - replace
+          - write
+          - manage
+          - relations
+          - relationsKindAlias
+          - kind-alias
+          - by-id
+          - single-record
+      - id: deleteRelationByIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}
+        - Method=DELETE
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.relations.deleteRelationById.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.relations.deleteRelationById.responseTimeoutMs}
+        - KindResolution
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: relationsKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.relations.deleteRelationById.replenishRate}
+            burstCapacity: ${app.rate-limits.relations.deleteRelationById.burstCapacity}
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/relations/deleteRelationById/policy
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: relations
+          controllerName: relationsKindAlias
+          baseControllerName: relations
+          tags:
+          - delete
+          - destructive
+          - relations
+          - relationsKindAlias
+          - kind-alias
+          - by-id
+          - single-record

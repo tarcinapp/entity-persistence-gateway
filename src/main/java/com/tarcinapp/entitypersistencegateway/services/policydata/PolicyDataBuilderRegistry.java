@@ -198,16 +198,24 @@ public class PolicyDataBuilderRegistry {
         // POST - with payload
         // POST /relations
         routeBuilderMap.put("createRelation", builderForRelationCreation);
+        // POST /relations/{kindAlias}
+        routeBuilderMap.put("createRelationByKindAlias", builderForRelationCreation);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /relations/{id}
         routeBuilderMap.put("updateRelationById", builderWithPayloadAndOriginal);
         // PUT /relations/{id}
         routeBuilderMap.put("replaceRelationById", builderWithPayloadAndOriginal);
+        // PATCH /relations/{kindAlias}/{id}
+        routeBuilderMap.put("updateRelationByIdByKindAlias", builderWithPayloadAndOriginal);
+        // PUT /relations/{kindAlias}/{id}
+        routeBuilderMap.put("replaceRelationByIdByKindAlias", builderWithPayloadAndOriginal);
 
         // PATCH - with payload (bulk update)
         // PATCH /relations
         routeBuilderMap.put("updateAllRelations", builderWithPayload);
+        // PATCH /relations/{kindAlias}
+        routeBuilderMap.put("updateAllRelationsByKindAlias", builderWithPayload);
 
         // GET - without payload
         // GET /relations
@@ -216,10 +224,18 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("countRelations", builderWithoutPayloadNoOriginal);
         // GET /relations/{id}
         routeBuilderMap.put("findRelationById", builderWithoutPayload);
+        // GET /relations/{kindAlias}
+        routeBuilderMap.put("findAllRelationsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /relations/{kindAlias}/count
+        routeBuilderMap.put("countRelationsByKindAlias", builderWithoutPayloadNoOriginal);
+        // GET /relations/{kindAlias}/{id}
+        routeBuilderMap.put("findRelationByIdByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /relations/{id}
         routeBuilderMap.put("deleteRelationById", builderWithoutPayload);
+        // DELETE /relations/{kindAlias}/{id}
+        routeBuilderMap.put("deleteRelationByIdByKindAlias", builderWithoutPayload);
     }
 
     private void mapEntityReactionRoutes() {
