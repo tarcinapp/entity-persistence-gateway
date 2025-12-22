@@ -33,11 +33,7 @@ public class KindResolutionGatewayFilterFactory
 
     @Override
     public GatewayFilter apply(Config config) {
-        // Order: -100
-        // This filter must run before other business logic filters (Cache, Timeout,
-        // Auth).
-        // This ensures others can use the pre-resolved kind configuration.
-        return new OrderedGatewayFilter((exchange, chain) -> {
+        return (exchange, chain) -> {
             // Restore MDC from exchange attributes for proper logging
             MdcContextLifterConfiguration.restoreMdcFromExchange(exchange);
 
@@ -123,8 +119,7 @@ public class KindResolutionGatewayFilterFactory
             }
 
             return chain.filter(exchange);
-
-        }, -100);
+        };
     }
 
     @Data
