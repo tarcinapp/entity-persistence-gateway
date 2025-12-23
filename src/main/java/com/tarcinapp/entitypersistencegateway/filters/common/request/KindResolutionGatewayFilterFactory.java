@@ -10,7 +10,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -19,6 +18,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * KindResolutionGatewayFilterFactory resolves business 'kind' and 'recordType' 
+ * from the URL alias and route metadata.
+ */
 @Component
 @Slf4j
 public class KindResolutionGatewayFilterFactory
@@ -44,56 +47,51 @@ public class KindResolutionGatewayFilterFactory
             // Put it into attributes immediately so downstream filters can always find it
             exchange.getAttributes().put(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR, kindAliasConfigAttr);
 
-            // 1. Extract Alias and Record ID from URL
             Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
             String kindAlias = uriVariables.get("kindAlias");
             String recordId = uriVariables.get("recordId");
 
-            // Resolve controllerName and baseControllerName from route metadata
+            // Extract metadata from route
             String controllerName = null;
             String baseControllerName = null;
             Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+            
             if (route != null && route.getMetadata() != null) {
-                Object controllerNameMeta = route.getMetadata().get("controllerName");
-                if (controllerNameMeta != null) {
-                    controllerName = controllerNameMeta.toString();
-                }
-                Object baseControllerNameMeta = route.getMetadata().get("baseControllerName");
-                if (baseControllerNameMeta != null) {
-                    baseControllerName = baseControllerNameMeta.toString();
-                }
+                Object cn = route.getMetadata().get("controllerName");
+                if (cn != null) controllerName = cn.toString();
+                
+                Object bcn = route.getMetadata().get("baseControllerName");
+                if (bcn != null) baseControllerName = bcn.toString();
             }
 
-            // Prefer explicit baseControllerName; fall back to controllerName
+            // Determine lookup context
             String lookupControllerName = (baseControllerName == null || baseControllerName.isBlank())
                     ? controllerName
                     : baseControllerName;
 
-            // 2. Perform Lookup if Alias exists and Config is loaded
             if (kindAlias != null && openApiProperties != null) {
 
                 if (lookupControllerName == null || lookupControllerName.isBlank()) {
-                    log.error("Kind Resolution: controllerName is missing in route metadata for alias '{}'.", kindAlias);
+                    log.error("Kind Resolution: controllerName missing for alias '{}'.", kindAlias);
                     exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
                     return Mono.empty();
                 }
 
-                OpenApiProperties.AliasContext aliasContext = openApiProperties
-                        .getAliasContext(lookupControllerName, kindAlias);
+                OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(lookupControllerName, kindAlias);
 
                 if (aliasContext != null && aliasContext.getAliasConfig() != null) {
-                    String kindName = aliasContext.getAliasConfig().getKind();
-
-                    // Prefer controller name from config; fall back to route metadata if absent
+                    OpenApiProperties.AliasConfig aliasConfig = aliasContext.getAliasConfig();
+                    String kindName = aliasConfig.getKind();
                     String resolvedControllerName = aliasContext.getControllerName();
+
                     if (resolvedControllerName == null || resolvedControllerName.isBlank()) {
                         resolvedControllerName = lookupControllerName;
                     }
 
-                    // Resolve record type from filter config or metadata (still needed for other filters)
+                    // Resolve recordType (logical name like 'entityReactions')
                     String recordType = RecordTypeResolver.resolve(config.getRecordType(), exchange, "KindResolution");
 
-                    // Populate the attribute object
+                    // Populate KindAliasConfigAttr
                     kindAliasConfigAttr.setKindAliasConfigured(true);
                     kindAliasConfigAttr.setKindAlias(kindAlias);
                     kindAliasConfigAttr.setKindName(kindName);
@@ -101,18 +99,22 @@ public class KindResolutionGatewayFilterFactory
                     kindAliasConfigAttr.setBaseControllerName(lookupControllerName);
                     kindAliasConfigAttr.setRecordType(recordType);
 
-                    // Construct Original Resource URL if recordType and recordId are present
+                    // Construct Original Resource URL using TECHNICAL path segment
                     if (recordId != null && recordType != null) {
-                        String originalResourceUrl = "/" + recordType + "/" + recordId;
+                        String technicalPath = resolveTechnicalPath(recordType);
+                        String originalResourceUrl = "/" + technicalPath + "/" + recordId;
                         kindAliasConfigAttr.setOriginalResourceUrl(originalResourceUrl);
                     }
 
-                        log.debug("Kind Resolution: Alias '{}' resolved to Kind '{}' under controller '{}' (recordType: {}). Original URL: {}",
-                            kindAlias, kindName, resolvedControllerName, recordType, kindAliasConfigAttr.getOriginalResourceUrl());
-                } else {
-                    log.debug("Kind Resolution: Alias '{}' could not be resolved to any kind.", kindAlias);
-                    log.debug("Exiting route with 404.");
+                    // Validation flag for downstream
+                    boolean isValidationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
+                    exchange.getAttributes().put("isValidationEnabled", isValidationEnabled);
 
+                    log.debug("Resolved KindAlias: recordType={}, kind={}, technicalPath={}, originalUrl={}", 
+                        recordType, kindName, resolveTechnicalPath(recordType), kindAliasConfigAttr.getOriginalResourceUrl());
+
+                } else {
+                    log.warn("Kind alias '{}' not resolved in controller context '{}'", kindAlias, lookupControllerName);
                     exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
                     return Mono.empty();
                 }
@@ -120,6 +122,23 @@ public class KindResolutionGatewayFilterFactory
 
             return chain.filter(exchange);
         };
+    }
+
+    /**
+     * Maps the logical recordType (e.g., 'entityReactions') to the 
+     * technical URL segment (e.g., 'entity-reactions').
+     */
+    private String resolveTechnicalPath(String recordType) {
+        if (recordType == null) return null;
+
+        switch (recordType) {
+            case "entityReactions":
+                return "entity-reactions";
+            case "listReactions":
+                return "list-reactions";
+            default:
+                return recordType;
+        }
     }
 
     @Data

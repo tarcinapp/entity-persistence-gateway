@@ -41,6 +41,10 @@ import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * ValidateRequestBodyByKindSchema validates the request payload against the schema 
+ * defined in the OpenAPI configuration for the resolved kind.
+ */
 @Component
 @Slf4j
 public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactory<ValidateRequestBodyByKindSchema.Config> {
@@ -274,6 +278,14 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         return (exchange, chain) -> {
             log.debug("ValidateRequestBodyByKindSchema filter started.");
 
+            // Early exit if validation is disabled (set by KindResolution)
+            // This prevents expensive body buffering if validation is not needed for this route/alias
+            Boolean isValidationEnabled = exchange.getAttribute("isValidationEnabled");
+            if (isValidationEnabled != null && !isValidationEnabled) {
+                log.debug("Validation disabled via exchange attribute. Skipping payload modification.");
+                return chain.filter(exchange);
+            }
+
             return modifyRequestBodyFilterFactory
                     .apply(new ModifyRequestBodyGatewayFilterFactory.Config()
                             .setRewriteFunction(String.class, String.class, (ex, payload) -> {
@@ -281,7 +293,6 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                                 // Downstream chain errors will propagate upstream without being caught here
                                 return validatePayload(exchange, payload);
                             }))
-                    // chain.filter is called here - its errors will propagate upstream, not caught by this filter
                     .filter(exchange, chain);
         };
     }
@@ -301,58 +312,19 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
 
         String kindName = kindAliasConfigAttr.getKindName();
-        String baseControllerName = kindAliasConfigAttr.getBaseControllerName();
-        String controllerName = kindAliasConfigAttr.getControllerName();
-        String recordType = kindAliasConfigAttr.getRecordType();
-
-        // Prefer baseControllerName (alias routes), then controllerName, then recordType
-        String controllerForLookup = baseControllerName;
+        String controllerForLookup = kindAliasConfigAttr.getBaseControllerName();
         if (controllerForLookup == null || controllerForLookup.isBlank()) {
-            controllerForLookup = controllerName;
+            controllerForLookup = kindAliasConfigAttr.getControllerName();
         }
         if (controllerForLookup == null || controllerForLookup.isBlank()) {
-            controllerForLookup = recordType;
-            log.warn("controllerName missing on KindAliasConfigAttr; falling back to recordType '{}' for alias '{}'.",
-                recordType, kindAliasConfigAttr.getKindAlias());
+            controllerForLookup = kindAliasConfigAttr.getRecordType();
         }
         
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = (route != null) ? route.getId() : null;
-        String routeRecordType = null;
-        if (route != null && route.getMetadata() != null) {
-            Object rt = route.getMetadata().get("recordType");
-            if (rt != null) {
-                routeRecordType = rt.toString();
-            }
-        }
-
-        // Resolve validation flag: Route -> Alias -> Default(true)
-        boolean validationEnabled = true;
-        OpenApiProperties.AliasContext aliasContext = openApiProperties
-            .getAliasContext(controllerForLookup, kindAliasConfigAttr.getKindAlias());
-        if (aliasContext != null && aliasContext.getAliasConfig() != null) {
-            AliasConfig aliasConfig = aliasContext.getAliasConfig();
-            
-            // Check route-level validationEnabled first
-            if (routeId != null && aliasConfig.getRoutes() != null) {
-                OpenApiProperties.RouteConfig routeConfig = aliasConfig.getRoutes().get(routeId);
-                if (routeConfig != null && routeConfig.getValidationEnabled() != null) {
-                    validationEnabled = routeConfig.getValidationEnabled();
-                } else if (aliasConfig.getValidationEnabled() != null) {
-                    // Fall back to alias-level validationEnabled
-                    validationEnabled = aliasConfig.getValidationEnabled();
-                }
-            } else if (aliasConfig.getValidationEnabled() != null) {
-                // Use alias-level validationEnabled
-                validationEnabled = aliasConfig.getValidationEnabled();
-            }
-        }
-
-        // If validation is disabled, skip validation
-        if (!validationEnabled) {
-            log.debug("Validation disabled for kind: {} at route: {}", kindName, routeId);
-            return Mono.just(payload);
-        }
+        String routeRecordType = (route != null && route.getMetadata().get("recordType") != null) 
+            ? route.getMetadata().get("recordType").toString() 
+            : null;
 
         try {
             JsonNode requestJsonNode = objectMapper.readTree(payload);
@@ -453,6 +425,9 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
     }
 
+    /**
+     * Creates the standardized JSON error response body.
+     */
     private ObjectNode createErrorResponse(JsonValidationException jve) {
         ArrayNode detailsArray = objectMapper.createArrayNode();
 
