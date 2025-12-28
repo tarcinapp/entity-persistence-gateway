@@ -323,69 +323,68 @@ app:
 
 **Role-Based Authorization via OPA:**
 
-Tarcinapp uses three base roles that can be applied at different granularity levels:
+Tarcinapp uses a sophisticated role-based access control system with four hierarchical access levels. The complete authorization model is documented in the [entity-persistence-gateway-policies](https://github.com/tarcinapp/entity-persistence-gateway-policies) repository.
+
+**Base Roles:**
 
 | Role | Description |
 |------|-------------|
-| **admin** | Full access - can perform all operations |
-| **editor** | Can create, read, update entities |
-| **member** | Read-only access |
+| **Admin** | Full administrative access; can perform all operations including sensitive modifications. Can access resources in any state (pending, active, expired). |
+| **Editor** | Elevated privileges for content management; can create and modify resources. Can access their own expired resources. |
+| **Member** | Standard user access; can interact with resources based on ownership and visibility rules. Cannot access expired resources even if they own them. |
+| **Visitor** | Limited read-only access; can view public resources with restrictions. Cannot see internal system fields. |
 
-These roles can be scoped at three levels:
-1. **Global level** - Applies to all resources (`roles: ["admin"]`)
-2. **Resource level** - Applies to specific controller type (`entities.roles: ["editor"]`, `lists.roles: ["member"]`)
-3. **Kind level** - Applies to specific entity kind (`entities.product.roles: ["editor"]`)
+**Three-Tier Role Granularity:**
 
-```rego
-# OPA policy example - role hierarchy with granular scoping
-package tarcinapp.entities.product.create
+Roles can be assigned at multiple scopes to provide flexible access control:
 
-import future.keywords.in
+1. **Application-Level**: Applies to all operations across all resource types
+   - Example: `tarcinapp.admin` grants admin access to everything
 
-default allow = false
+2. **Resource-Type Level**: Applies to all operations on a specific resource type
+   - Example: `tarcinapp.entities.editor` grants editor access to all entity operations
+   - Supported resource types: `entities`, `lists`, `relations`, `entityReactions`, `listReactions`
+   - Aliases: `records` (applies to both entities and lists), `reactions` (applies to both entityReactions and listReactions)
 
-# Global admin can do anything
-allow {
-    "admin" in input.roles
-}
+3. **Operation-Level**: Applies to specific operations on a resource type
+   - Example: `tarcinapp.entities.create.member` allows members to create entities only
+   - Operations: `create`, `find`, `update`, `updateall`, `delete`, `count`
 
-# Editor role at entities level can create products
-allow {
-    "editor" in input.entities.roles
-}
+**Field-Level Roles:**
 
-# Editor role specifically for product kind
-allow {
-    "editor" in input.entities.product.roles
-}
-```
+Beyond operation access, field-level roles control access to individual fields:
+- Format: `tarcinapp.<scope>.fields.<fieldName>.<operation>`
+- Operations: `find` (view), `create`, `update`, `manage` (all operations)
+- Example: `tarcinapp.entities.fields._visibility.update` allows updating the `_visibility` field
+
+**Role Examples:**
+
+| Role | Meaning |
+|------|---------|
+| `tarcinapp.admin` | Admin access to all operations |
+| `tarcinapp.records.admin` | Admin access to all record operations |
+| `tarcinapp.entities.create.editor` | Editor can create entities |
+| `tarcinapp.lists.find.member` | Member can query (read) lists |
+| `tarcinapp.entities.fields._visibility.find` | Can read the `_visibility` field of entities |
+
+> 📚 For complete authorization documentation including ownership, visibility, temporal access control, and field-level policies, see the [entity-persistence-gateway-policies README](https://github.com/tarcinapp/entity-persistence-gateway-policies).
 
 **Resulting Domain-Specific API:**
 ```bash
-# Create a product (requires admin OR editor role at appropriate level)
+# Create a product (requires appropriate role: admin, editor, or member with create permission)
 POST /products
 Content-Type: application/json
-Authorization: Bearer <editor-jwt>
+Authorization: Bearer <jwt-with-tarcinapp.entities.create.editor>
 {
   "name": "MacBook Pro",
   "price": 2499,
   "category": "electronics"
 }
 
-# Create an order (member can only read, editor/admin can create)
-POST /orders
-Content-Type: application/json
-Authorization: Bearer <admin-jwt>
-{
-  "productId": "abc123",
-  "quantity": 1,
-  "shippingAddress": "..."
-}
-
-# List orders (member role is sufficient for read operations)
-GET /orders
-Authorization: Bearer <member-jwt>
-# → Returns orders based on user's access level and ownerUsers filtering
+# List products (visitor can view public resources, member/editor/admin have broader access)
+GET /products
+Authorization: Bearer <jwt-with-tarcinapp.entities.find.visitor>
+# → Returns public, active products based on visibility and ownership rules
 ```
 
 #### Benefits of This Architecture
