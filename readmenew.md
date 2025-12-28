@@ -10,6 +10,7 @@
   - [1.1 What is Entity Persistence Gateway?](#11-what-is-entity-persistence-gateway)
   - [1.2 The Tarcinapp Suite Ecosystem](#12-the-tarcinapp-suite-ecosystem)
   - [1.3 Key Capabilities](#13-key-capabilities)
+  - [1.4 Transforming Generic Backend into Domain-Specific APIs](#14-transforming-generic-backend-into-domain-specific-apis)
 - [2. Architecture](#2-architecture)
   - [2.1 High-Level Architecture](#21-high-level-architecture)
   - [2.2 Filter Chain Architecture](#22-filter-chain-architecture)ng
@@ -137,6 +138,293 @@ The Entity Persistence Gateway is part of a larger microservices ecosystem calle
 | **Kind Alias Routing** | Semantic URLs mapping to entity kinds |
 | **JSON Schema Validation** | Request body validation against configurable schemas |
 | **Observability** | Metrics, Prometheus endpoint, JMX support, structured logging |
+
+### 1.4 Transforming Generic Backend into Domain-Specific APIs
+
+One of the most powerful architectural patterns enabled by the Entity Persistence Gateway is the ability to **transform a generic, reusable backend into domain-specific APIs** without modifying the backend code. This approach provides significant benefits:
+
+#### The Problem: Generic vs Domain-Specific
+
+The **Entity Persistence Service** is intentionally designed as a **generic CRUD engine**. It doesn't know about "products", "users", "orders", or "blog posts" — it only knows about "entities" with "kinds". This is by design:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Entity Persistence Service (Generic)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  POST   /entities              → Creates any entity                          │
+│  GET    /entities              → Lists any entities                          │
+│  GET    /entities/{id}         → Gets any entity by ID                       │
+│  PATCH  /entities/{id}         → Updates any entity                          │
+│  DELETE /entities/{id}         → Deletes any entity                          │
+│                                                                              │
+│  Entities are differentiated only by their "kind" field:                     │
+│  { "kind": "product", ... }  or  { "kind": "blog-post", ... }               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+While this generic approach maximizes code reuse, it creates challenges for API consumers:
+- **Lack of semantic clarity**: `/entities` doesn't communicate business intent
+- **No domain validation**: Any structure can be saved as any kind
+- **Uniform security**: Same rules apply to all entity types
+- **Confusing documentation**: OpenAPI specs describe generic operations, not business operations
+
+#### The Solution: Gateway as Domain Adapter
+
+The Entity Persistence Gateway solves this by acting as a **domain adapter layer** that sits in front of the generic backend:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Client Request                                  │
+│                         POST /products                                       │
+│                         { "name": "iPhone", "price": 999 }                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     Entity Persistence Gateway                               │
+│                                                                              │
+│  1. Kind Alias Routing:    /products → /entities?filter[where][kind]=product │
+│  2. Schema Validation:     Validates against product JSON schema             │
+│  3. Domain Authorization:  Checks product-specific OPA policies              │
+│  4. Rate Limiting:         Applies product-specific rate limits              │
+│  5. Field Injection:       Adds kind="product" automatically                 │
+│  6. Managed Fields:        Adds createdBy, ownerUsers, timestamps            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Entity Persistence Service                                │
+│                    POST /entities                                            │
+│                    { "kind": "product", "name": "iPhone", ... }             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Transformation Mechanisms
+
+| Mechanism | Generic Backend | Domain-Specific via Gateway |
+|-----------|-----------------|-----------------------------|
+| **URL Routing** | `/entities` | `/products`, `/orders`, `/users` via Kind Alias |
+| **Validation** | No schema validation | JSON Schema per entity type |
+| **Authorization** | Uniform access control | Kind-specific OPA policies |
+| **Rate Limiting** | Global limits | Per-kind rate limits |
+| **Field Visibility** | All fields visible | Role-based field masking per kind |
+| **Query Filtering** | Manual filtering | Auto-scoped queries per kind |
+| **Request Size** | Global limit | Per-kind size limits |
+| **Timeouts** | Global timeouts | Per-kind timeout configuration |
+
+#### Example: Building a Multi-Tenant E-Commerce API
+
+Using the gateway, you can expose domain-specific endpoints without changing the backend:
+
+**Kind Alias Configuration (via `app.oas.controllers`):**
+
+The gateway uses the `app.oas` configuration structure to define kind aliases per controller. Each controller (entities, lists, relations, entityReactions, etc.) can have multiple aliases:
+
+```yaml
+# In app-oas.yml or via properties file
+app:
+  oas:
+    controllers:
+      entities:
+        aliases:
+          - alias: products        # URL path: /products
+            kind: product          # Maps to kind=product
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "price": { "type": "number" },
+                  "category": { "type": "string" }
+                },
+                "required": ["name", "price"]
+              }
+          - alias: orders
+            kind: order
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "productId": { "type": "string" },
+                  "quantity": { "type": "integer" },
+                  "shippingAddress": { "type": "string" }
+                },
+                "required": ["productId", "quantity"]
+              }
+      lists:
+        aliases:
+          - alias: catalogs
+            kind: catalog
+            validationEnabled: true
+```
+
+Or in properties format (as used in `application-dev.properties`):
+```properties
+# Entity aliases
+app.oas.controllers.entities.aliases[0].alias=products
+app.oas.controllers.entities.aliases[0].kind=product
+app.oas.controllers.entities.aliases[0].validationEnabled=true
+app.oas.controllers.entities.aliases[0].schema={"type":"object","properties":{"name":{"type":"string"},"price":{"type":"number"}},"required":["name","price"]}
+
+app.oas.controllers.entities.aliases[1].alias=orders
+app.oas.controllers.entities.aliases[1].kind=order
+app.oas.controllers.entities.aliases[1].validationEnabled=true
+
+# List aliases
+app.oas.controllers.lists.aliases[0].alias=catalogs
+app.oas.controllers.lists.aliases[0].kind=catalog
+```
+
+**Domain-Specific Rate Limits:**
+
+Rate limits follow a hierarchical structure: global → controller → kind → route. Kind-specific configurations are nested **inside** the resource type (entities, lists, etc.):
+
+```yaml
+app:
+  rate-limits:
+    # Global default
+    default:
+      replenishRate: 10
+      burstCapacity: 20
+    
+    # Entities controller
+    entities:
+      default:
+        replenishRate: 10
+        burstCapacity: 20
+      
+      # Kind-specific overrides (nested inside entities)
+      kinds:
+        product:
+          default:
+            replenishRate: 100
+            burstCapacity: 200
+          createEntityByKindAlias:
+            replenishRate: 50
+            burstCapacity: 100
+        order:
+          default:
+            replenishRate: 50    # Orders need tighter control
+            burstCapacity: 100
+    
+    # Lists controller
+    lists:
+      default:
+        replenishRate: 10
+        burstCapacity: 20
+      kinds:
+        catalog:
+          default:
+            replenishRate: 30
+            burstCapacity: 60
+```
+
+**Role-Based Authorization via OPA:**
+
+Tarcinapp uses three base roles that can be applied at different granularity levels:
+
+| Role | Description |
+|------|-------------|
+| **admin** | Full access - can perform all operations |
+| **editor** | Can create, read, update entities |
+| **member** | Read-only access |
+
+These roles can be scoped at three levels:
+1. **Global level** - Applies to all resources (`roles: ["admin"]`)
+2. **Resource level** - Applies to specific controller type (`entities.roles: ["editor"]`, `lists.roles: ["member"]`)
+3. **Kind level** - Applies to specific entity kind (`entities.product.roles: ["editor"]`)
+
+```rego
+# OPA policy example - role hierarchy with granular scoping
+package tarcinapp.entities.product.create
+
+import future.keywords.in
+
+default allow = false
+
+# Global admin can do anything
+allow {
+    "admin" in input.roles
+}
+
+# Editor role at entities level can create products
+allow {
+    "editor" in input.entities.roles
+}
+
+# Editor role specifically for product kind
+allow {
+    "editor" in input.entities.product.roles
+}
+```
+
+**Resulting Domain-Specific API:**
+```bash
+# Create a product (requires admin OR editor role at appropriate level)
+POST /products
+Content-Type: application/json
+Authorization: Bearer <editor-jwt>
+{
+  "name": "MacBook Pro",
+  "price": 2499,
+  "category": "electronics"
+}
+
+# Create an order (member can only read, editor/admin can create)
+POST /orders
+Content-Type: application/json
+Authorization: Bearer <admin-jwt>
+{
+  "productId": "abc123",
+  "quantity": 1,
+  "shippingAddress": "..."
+}
+
+# List orders (member role is sufficient for read operations)
+GET /orders
+Authorization: Bearer <member-jwt>
+# → Returns orders based on user's access level and ownerUsers filtering
+```
+
+#### Benefits of This Architecture
+
+1. **Single Backend, Multiple Domains**: One Entity Persistence Service can power unlimited domain-specific APIs
+
+2. **Zero Backend Changes**: Adding new entity types requires only gateway configuration
+
+3. **Separation of Concerns**:
+   - Backend: Generic CRUD, data persistence, relationships
+   - Gateway: Domain rules, security, validation, transformation
+   - Policies: Access control logic in dedicated repository
+
+4. **Independent Scaling**: Gateway and backend can scale independently based on load
+
+5. **Rapid Prototyping**: New domain APIs can be created in minutes through configuration
+
+6. **Consistent Cross-Cutting Concerns**: Authentication, logging, rate limiting applied uniformly
+
+7. **Type Safety at the Edge**: JSON Schema validation catches invalid data before it reaches the backend
+
+8. **Flexible Authorization**: OPA policies can implement complex business rules per domain
+
+#### Configuration-Driven Domain APIs
+
+The gateway enables a **configuration-driven** approach to building domain APIs:
+
+| Configuration File | Domain Customization |
+|-------------------|----------------------|
+| `app-oas.yml` + properties | Define semantic URLs (aliases), schemas, and validation per controller/kind |
+| `application-route-toggles.yml` | Enable/disable operations per kind |
+| `application-rate-limits.yml` | Set rate limits per kind |
+| `application-timeouts.yml` | Configure timeouts per kind |
+| `application-request-sizes.yml` | Limit request sizes per kind |
+| `application-fieldsets.yml` | Define field visibility per kind |
+| `application-queries.yml` | Create saved queries per kind |
+| OPA Policies | Implement authorization rules per kind |
+
+This architecture demonstrates how the Entity Persistence Gateway acts as a **powerful domain adapter**, allowing organizations to build sophisticated, domain-specific APIs on top of a simple, generic persistence layer — maximizing code reuse while maintaining full control over business logic, security, and validation at the API boundary.
 
 ---
 

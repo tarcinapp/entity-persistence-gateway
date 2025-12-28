@@ -7,7 +7,7 @@ app:
       default:
         replenishRate: ${app.rate-limits.default.replenishRate}
         burstCapacity: ${app.rate-limits.default.burstCapacity}
-#     kinds:
+#     kinds: nI N
 #       book:
 #         default:
 #           replenishRate: 20
