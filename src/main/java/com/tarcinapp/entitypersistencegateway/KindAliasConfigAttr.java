@@ -10,10 +10,17 @@ import lombok.Data;
  *   For instance, if the kind alias is configured as /users, then the original resource URL is /entities/{id}.
  *   Knowing the original resource URL is needed for the authorization logic.
  *   Authorization logic needs to know the original resource URL in order to check if the user is authorized to access the original resource.
+ * 
+ * Validation Context Fields (computed by resolution filters):
+ * - effectiveValidationEnabled: Pre-computed validation flag using priority hierarchy
+ * - isHierarchyRequest: True if request was resolved via HierarchyKindAliasResolver
+ * - hierarchySchemaKey: Schema key for hierarchy-level override (format: "hierarchy:{controller}:{rootKind}:{targetAlias}")
  */
 @Data
 public class KindAliasConfigAttr {
     public static final String KIND_ALIAS_CONFIG_ATTR = "KindAliasConfigAttr";
+    
+    // Core identity fields
     boolean isKindAliasConfigured;
     String kindName;
     String kindAlias;
@@ -21,4 +28,9 @@ public class KindAliasConfigAttr {
     String baseControllerName;
     String recordType;
     String originalResourceUrl;
+    
+    // Validation context fields (computed by resolution filters)
+    Boolean effectiveValidationEnabled;
+    boolean isHierarchyRequest;
+    String hierarchySchemaKey;
 }

@@ -41,20 +41,23 @@ public class OpenApiProperties {
 
         controllers.forEach((controllerName, controllerConfig) -> {
             if (controllerConfig.getAliases() != null) {
-                Set<String> seenAliases = new HashSet<>();
+                Set<String> seenTopLevelAliases = new HashSet<>();
                 controllerConfig.getAliases()
-                        .forEach(aliasConfig -> registerAlias(controllerName, aliasConfig, seenAliases));
+                        .forEach(aliasConfig -> registerAlias(controllerName, aliasConfig, seenTopLevelAliases, true));
             }
         });
     }
 
-    private void registerAlias(String controllerName, AliasConfig aliasConfig, Set<String> seenAliases) {
+    private void registerAlias(String controllerName, AliasConfig aliasConfig, Set<String> seenTopLevelAliases, boolean isTopLevel) {
         if (aliasConfig == null || aliasConfig.getAlias() == null) {
             return;
         }
 
-        if (!seenAliases.add(aliasConfig.getAlias())) {
-            String message = "Duplicate alias '" + aliasConfig.getAlias() + "' detected for controller '"
+        // Only check for duplicates at the top level
+        // Hierarchy aliases (children/parents) can reuse names since they're resolved
+        // from the parent's children/parents arrays, not the global lookup
+        if (isTopLevel && !seenTopLevelAliases.add(aliasConfig.getAlias())) {
+            String message = "Duplicate top-level alias '" + aliasConfig.getAlias() + "' detected for controller '"
                     + controllerName + "'";
             log.error(message);
             throw new IllegalStateException(message);
@@ -62,23 +65,26 @@ public class OpenApiProperties {
 
         AliasContext aliasContext = new AliasContext(controllerName, aliasConfig);
 
-        // Store per-controller lookup
-        aliasLookupByController.computeIfAbsent(controllerName, key -> new HashMap<>())
-                .put(aliasConfig.getAlias(), aliasContext);
+        // Only register in global lookups for top-level aliases
+        if (isTopLevel) {
+            // Store per-controller lookup
+            aliasLookupByController.computeIfAbsent(controllerName, key -> new HashMap<>())
+                    .put(aliasConfig.getAlias(), aliasContext);
 
-        // Store combined key lookup
-        aliasLookupByControllerAndAlias.put(buildAliasKey(controllerName, aliasConfig.getAlias()), aliasContext);
+            // Store combined key lookup
+            aliasLookupByControllerAndAlias.put(buildAliasKey(controllerName, aliasConfig.getAlias()), aliasContext);
+        }
 
         if (aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
             schemaByControllerAndKind.put(buildSchemaKey(controllerName, aliasConfig.getKind()), aliasConfig.getSchema());
         }
 
         if (aliasConfig.getChildren() != null) {
-            aliasConfig.getChildren().forEach(child -> registerAlias(controllerName, child, seenAliases));
+            aliasConfig.getChildren().forEach(child -> registerAlias(controllerName, child, seenTopLevelAliases, false));
         }
 
         if (aliasConfig.getParents() != null) {
-            aliasConfig.getParents().forEach(parent -> registerAlias(controllerName, parent, seenAliases));
+            aliasConfig.getParents().forEach(parent -> registerAlias(controllerName, parent, seenTopLevelAliases, false));
         }
     }
 

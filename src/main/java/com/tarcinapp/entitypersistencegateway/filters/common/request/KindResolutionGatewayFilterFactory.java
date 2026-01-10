@@ -106,12 +106,20 @@ public class KindResolutionGatewayFilterFactory
                         kindAliasConfigAttr.setOriginalResourceUrl(originalResourceUrl);
                     }
 
-                    // Validation flag for downstream
-                    boolean isValidationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
-                    exchange.getAttributes().put("isValidationEnabled", isValidationEnabled);
+                    // Validation context: non-hierarchy request
+                    kindAliasConfigAttr.setHierarchyRequest(false);
+                    kindAliasConfigAttr.setHierarchySchemaKey(null);
+                    
+                    // Compute effective validation enabled from alias config
+                    Boolean effectiveValidationEnabled = aliasConfig.getValidationEnabled();
+                    if (effectiveValidationEnabled == null) {
+                        effectiveValidationEnabled = true; // Default enabled
+                    }
+                    kindAliasConfigAttr.setEffectiveValidationEnabled(effectiveValidationEnabled);
 
-                    log.debug("Resolved KindAlias: recordType={}, kind={}, technicalPath={}, originalUrl={}", 
-                        recordType, kindName, resolveTechnicalPath(recordType), kindAliasConfigAttr.getOriginalResourceUrl());
+                    log.debug("Resolved KindAlias: recordType={}, kind={}, technicalPath={}, originalUrl={}, validationEnabled={}", 
+                        recordType, kindName, resolveTechnicalPath(recordType), 
+                        kindAliasConfigAttr.getOriginalResourceUrl(), effectiveValidationEnabled);
 
                 } else {
                     log.warn("Kind alias '{}' not resolved in controller context '{}'", kindAlias, lookupControllerName);

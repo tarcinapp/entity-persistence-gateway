@@ -240,7 +240,7 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
      * Handles a successfully resolved hierarchy alias by:
      * 1. Rewriting the path to use the technical accessor segment
      * 2. Injecting the resolved kind into query parameters
-     * 3. Updating KindAliasConfigAttr for downstream filters
+     * 3. Updating KindAliasConfigAttr for downstream filters with validation context
      */
     private Mono<Void> handleResolvedAlias(ServerWebExchange exchange,
                                             org.springframework.cloud.gateway.filter.GatewayFilterChain chain,
@@ -252,6 +252,7 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
         Map<String, String> uriVariables = ServerWebExchangeUtils.getUriTemplateVariables(exchange);
         String recordId = uriVariables.get("recordId");
         String targetKind = targetAliasConfig.getKind();
+        String targetAlias = targetAliasConfig.getAlias();
 
         URI originalUri = exchange.getRequest().getURI();
 
@@ -290,7 +291,7 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
         // 4. Update KindAliasConfigAttr for downstream filters
         KindAliasConfigAttr updatedAttr = new KindAliasConfigAttr();
         updatedAttr.setKindAliasConfigured(true);
-        updatedAttr.setKindAlias(targetAliasConfig.getAlias());
+        updatedAttr.setKindAlias(targetAlias);
         updatedAttr.setKindName(targetKind);
         // Preserve controller context from root
         updatedAttr.setControllerName(rootAttr.getControllerName());
@@ -301,18 +302,38 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
             updatedAttr.setOriginalResourceUrl(rootAttr.getOriginalResourceUrl() + "/" + technicalAccessorSegment);
         }
 
-        // Update validation flag if target has specific configuration
-        Boolean targetValidationEnabled = targetAliasConfig.getValidationEnabled();
-        if (targetValidationEnabled != null) {
-            exchange.getAttributes().put("isValidationEnabled", targetValidationEnabled);
+        // 5. Set validation context fields for hierarchy request
+        updatedAttr.setHierarchyRequest(true);
+        
+        // Build hierarchy schema key if target has inline schema defined
+        // Format: "hierarchy:{controller}:{rootKind}:{targetAlias}"
+        String hierarchySchemaKey = null;
+        if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
+            String lookupController = rootAttr.getBaseControllerName();
+            if (lookupController == null || lookupController.isBlank()) {
+                lookupController = rootAttr.getControllerName();
+            }
+            hierarchySchemaKey = "hierarchy:" + lookupController + ":" 
+                               + rootAttr.getKindName() + ":" + targetAlias;
+            log.debug("HierarchyKindAliasResolver: Built hierarchySchemaKey='{}'", hierarchySchemaKey);
         }
+        updatedAttr.setHierarchySchemaKey(hierarchySchemaKey);
+        
+        // Compute effective validation enabled from target alias config
+        Boolean effectiveValidationEnabled = targetAliasConfig.getValidationEnabled();
+        if (effectiveValidationEnabled == null) {
+            effectiveValidationEnabled = true; // Default enabled
+        }
+        updatedAttr.setEffectiveValidationEnabled(effectiveValidationEnabled);
 
         exchange.getAttributes().put(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR, updatedAttr);
 
-        log.debug("HierarchyKindAliasResolver: Updated KindAliasConfigAttr - alias='{}', kind='{}', originalUrl='{}'",
-                updatedAttr.getKindAlias(), updatedAttr.getKindName(), updatedAttr.getOriginalResourceUrl());
+        log.debug("HierarchyKindAliasResolver: Updated KindAliasConfigAttr - alias='{}', kind='{}', " +
+                  "hierarchyRequest=true, hierarchySchemaKey='{}', validationEnabled={}",
+                updatedAttr.getKindAlias(), updatedAttr.getKindName(), 
+                hierarchySchemaKey, effectiveValidationEnabled);
 
-        // 5. Create modified exchange with new request
+        // 6. Create modified exchange with new request
         ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
                 .uri(newUri)
                 .build();
