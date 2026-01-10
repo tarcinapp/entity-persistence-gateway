@@ -335,7 +335,7 @@ spring:
       - id: findEntityChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -381,7 +381,7 @@ spring:
       - id: createEntityChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -425,7 +425,7 @@ spring:
       - id: findEntityParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -809,7 +809,7 @@ spring:
       - id: findListChildren
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -855,7 +855,7 @@ spring:
       - id: createListChild
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -899,7 +899,7 @@ spring:
       - id: findListParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId}/${app.inbound.controllerBasePaths.listsParentsAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -1650,7 +1650,7 @@ spring:
       - id: findChildrenEntityReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -1697,7 +1697,7 @@ spring:
       - id: createChildEntityReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -1707,7 +1707,6 @@ spring:
           args:
             controllerName: entityReactions
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
-        - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
         - name: RequestRateLimiter
@@ -1743,7 +1742,7 @@ spring:
       - id: findParentsByEntityReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -2419,7 +2418,7 @@ spring:
       - id: findChildrenListReactionsByReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
@@ -2466,7 +2465,7 @@ spring:
       - id: createChildListReaction
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - Method=POST
         filters:
         - name: RequestSize
@@ -2511,7 +2510,7 @@ spring:
       - id: findParentsByListReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
-        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
         - Method=GET
         filters:
         - name: CheckIfRouteEnabled
