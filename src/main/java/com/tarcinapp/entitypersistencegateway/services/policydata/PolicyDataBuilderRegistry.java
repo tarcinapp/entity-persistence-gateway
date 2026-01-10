@@ -84,6 +84,10 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createEntityChild", builderWithPayloadAndParent);
         // POST /entities/kind/{kindAlias}
         routeBuilderMap.put("createEntityByKindAlias", builderWithPayload);
+        // POST /entities/kind/{kindAlias}/{id}/children
+        routeBuilderMap.put("createEntityChildByKindAlias", builderWithPayloadAndParent);
+        // POST /entities/kind/{kindAlias}/{parentId}/{hierarchyAlias}
+        routeBuilderMap.put("createEntityHierarchyByKindAlias", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entities/{id}
@@ -118,6 +122,12 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("countEntitiesByKindAlias", builderWithoutPayloadNoOriginal);
         // GET /entities/kind/{kindAlias}/{id}
         routeBuilderMap.put("findEntityByIdByKindAlias", builderWithoutPayload);
+        // GET /entities/kind/{kindAlias}/{id}/children
+        routeBuilderMap.put("findEntityChildrenByKindAlias", builderWithoutPayload);
+        // GET /entities/kind/{kindAlias}/{id}/parents
+        routeBuilderMap.put("findEntityParentsByKindAlias", builderWithoutPayload);
+        // GET /entities/kind/{kindAlias}/{id}/{hierarchyAlias}
+        routeBuilderMap.put("findEntityHierarchyByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /entities/{id}
@@ -180,6 +190,8 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findListChildrenByKindAlias", builderWithoutPayload);
         // GET /lists/{kindAlias}/{id}/parents
         routeBuilderMap.put("findListParentsByKindAlias", builderWithoutPayload);
+        // GET /lists/kind/{kindAlias}/{id}/{hierarchyAlias}
+        routeBuilderMap.put("findListHierarchyByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /lists/{id}
@@ -192,6 +204,8 @@ public class PolicyDataBuilderRegistry {
         // POST - with payload (children operations)
         // POST /lists/{kindAlias}/{id}/children
         routeBuilderMap.put("createListChildByKindAlias", builderWithPayloadAndParent);
+        // POST /lists/kind/{kindAlias}/{parentId}/{hierarchyAlias}
+        routeBuilderMap.put("createListHierarchyByKindAlias", builderWithPayloadAndParent);
     }
 
     private void mapRelationRoutes() {
@@ -250,6 +264,9 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createEntityReactionByKindAlias", builderForReactionCreation);
         // POST /entity-reactions/{kindAlias}/{parentId}/children
         routeBuilderMap.put("createChildEntityReactionByKindAlias", builderWithPayloadAndParent);
+        // POST /entity-reactions/{kindAlias}/{parentId}/{hierarchyAlias}
+        routeBuilderMap.put("createEntityReactionHierarchyByKindAlias", builderWithPayloadAndParent);
+        
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /entity-reactions/{id}
@@ -278,6 +295,8 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findEntityReactionById", builderWithoutPayload);
         // GET /entity-reactions/{reactionId}/children
         routeBuilderMap.put("findChildrenEntityReactionsByReactionId", builderWithoutPayload);
+        // GET /entity-reactions/{reactionId}/{hierarchyAlias}
+        routeBuilderMap.put("findEntityReactionHierarchyByKindAlias", builderWithoutPayload);
         // GET /entity-reactions/{id}/parents
         routeBuilderMap.put("findParentsByEntityReactionId", builderWithoutPayload);
         // GET /entities/{entityId}/reactions
@@ -314,6 +333,8 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("createListReactionByKindAlias", builderForReactionCreation);
         // POST /list-reactions/{kindAlias}/{parentId}/children
         routeBuilderMap.put("createChildListReactionByKindAlias", builderWithPayloadAndParent);
+        // POST /list-reactions/{kindAlias}/{parentId}/{hierarchyAlias}
+        routeBuilderMap.put("createListReactionHierarchyByKindAlias", builderWithPayloadAndParent);
 
         // PATCH/PUT - with payload (lock is handled by separate AcquireLockForUpdate filter)
         // PATCH /list-reactions/{id}
@@ -356,6 +377,8 @@ public class PolicyDataBuilderRegistry {
         routeBuilderMap.put("findChildrenListReactionsByReactionIdByKindAlias", builderWithoutPayload);
         // GET /list-reactions/{kindAlias}/{id}/parents
         routeBuilderMap.put("findParentsByListReactionIdByKindAlias", builderWithoutPayload);
+        // GET /list-reactions/{kindAlias}/{reactionId}/{hierarchyAlias}
+        routeBuilderMap.put("findListReactionHierarchyByKindAlias", builderWithoutPayload);
 
         // DELETE - without payload
         // DELETE /list-reactions/{id}
