@@ -116,6 +116,9 @@ public class OasTransformationEngine {
             transformed.setComponents(transformComponents(rawOas.getComponents()));
         }
         
+        // 4. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
+        fixBrokenRefs(transformed);
+        
         log.info("OAS transformation complete: {} paths virtualized", 
             virtualizedPaths != null ? virtualizedPaths.size() : 0);
         
@@ -827,5 +830,239 @@ public class OasTransformationEngine {
     private static class TransformedPath {
         private final String virtualPath;
         private final PathItem pathItem;
+    }
+    
+    // ========================================================================
+    // BROKEN $ref FIXING METHODS
+    // ========================================================================
+    
+    /**
+     * Fixes broken $ref references throughout the OpenAPI spec.
+     * Common issues fixed:
+     * - #/definitions/X → #/components/schemas/X (OpenAPI 2.0 to 3.x migration)
+     * - References to non-existent schemas are removed (inlined as empty object)
+     */
+    private void fixBrokenRefs(OpenAPI openApi) {
+        Set<String> existingSchemas = new HashSet<>();
+        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+            existingSchemas.addAll(openApi.getComponents().getSchemas().keySet());
+        }
+        
+        int fixedCount = 0;
+        
+        // Fix refs in all paths
+        if (openApi.getPaths() != null) {
+            for (PathItem pathItem : openApi.getPaths().values()) {
+                fixedCount += fixRefsInPathItem(pathItem, existingSchemas);
+            }
+        }
+        
+        // Fix refs in components/schemas (schemas can reference each other)
+        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+            for (Schema<?> schema : openApi.getComponents().getSchemas().values()) {
+                fixedCount += fixRefsInSchema(schema, existingSchemas);
+            }
+        }
+        
+        if (fixedCount > 0) {
+            log.info("Fixed {} broken $ref references", fixedCount);
+        }
+    }
+    
+    /**
+     * Fixes broken refs in a PathItem (all its operations).
+     */
+    private int fixRefsInPathItem(PathItem pathItem, Set<String> existingSchemas) {
+        int count = 0;
+        
+        if (pathItem.getGet() != null) count += fixRefsInOperation(pathItem.getGet(), existingSchemas);
+        if (pathItem.getPost() != null) count += fixRefsInOperation(pathItem.getPost(), existingSchemas);
+        if (pathItem.getPut() != null) count += fixRefsInOperation(pathItem.getPut(), existingSchemas);
+        if (pathItem.getPatch() != null) count += fixRefsInOperation(pathItem.getPatch(), existingSchemas);
+        if (pathItem.getDelete() != null) count += fixRefsInOperation(pathItem.getDelete(), existingSchemas);
+        if (pathItem.getHead() != null) count += fixRefsInOperation(pathItem.getHead(), existingSchemas);
+        if (pathItem.getOptions() != null) count += fixRefsInOperation(pathItem.getOptions(), existingSchemas);
+        if (pathItem.getTrace() != null) count += fixRefsInOperation(pathItem.getTrace(), existingSchemas);
+        
+        return count;
+    }
+    
+    /**
+     * Fixes broken refs in an Operation.
+     */
+    private int fixRefsInOperation(Operation operation, Set<String> existingSchemas) {
+        int count = 0;
+        
+        // Fix refs in parameters
+        if (operation.getParameters() != null) {
+            for (io.swagger.v3.oas.models.parameters.Parameter param : operation.getParameters()) {
+                count += fixRefsInParameter(param, existingSchemas);
+            }
+        }
+        
+        // Fix refs in request body
+        if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+            for (io.swagger.v3.oas.models.media.MediaType mediaType : operation.getRequestBody().getContent().values()) {
+                if (mediaType.getSchema() != null) {
+                    count += fixRefsInSchema(mediaType.getSchema(), existingSchemas);
+                }
+            }
+        }
+        
+        // Fix refs in responses
+        if (operation.getResponses() != null) {
+            for (io.swagger.v3.oas.models.responses.ApiResponse response : operation.getResponses().values()) {
+                if (response.getContent() != null) {
+                    for (io.swagger.v3.oas.models.media.MediaType mediaType : response.getContent().values()) {
+                        if (mediaType.getSchema() != null) {
+                            count += fixRefsInSchema(mediaType.getSchema(), existingSchemas);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Fixes broken refs in a Parameter.
+     */
+    private int fixRefsInParameter(io.swagger.v3.oas.models.parameters.Parameter param, Set<String> existingSchemas) {
+        int count = 0;
+        
+        if (param.getSchema() != null) {
+            count += fixRefsInSchema(param.getSchema(), existingSchemas);
+        }
+        
+        if (param.getContent() != null) {
+            for (io.swagger.v3.oas.models.media.MediaType mediaType : param.getContent().values()) {
+                if (mediaType.getSchema() != null) {
+                    count += fixRefsInSchema(mediaType.getSchema(), existingSchemas);
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Recursively fixes broken refs in a Schema.
+     * This handles nested schemas, arrays, oneOf, anyOf, allOf, etc.
+     */
+    @SuppressWarnings("unchecked")
+    private int fixRefsInSchema(Schema<?> schema, Set<String> existingSchemas) {
+        if (schema == null) {
+            return 0;
+        }
+        
+        int count = 0;
+        
+        // Fix direct $ref
+        if (schema.get$ref() != null) {
+            String ref = schema.get$ref();
+            String fixedRef = fixRef(ref, existingSchemas);
+            
+            if (fixedRef == null) {
+                // Reference doesn't exist - remove the $ref and make it a generic object
+                log.debug("Removing broken $ref: {}", ref);
+                schema.set$ref(null);
+                schema.setType("object");
+                schema.setDescription("(Schema reference was unavailable)");
+                count++;
+            } else if (!fixedRef.equals(ref)) {
+                log.debug("Fixed $ref: {} → {}", ref, fixedRef);
+                schema.set$ref(fixedRef);
+                count++;
+            }
+        }
+        
+        // Fix refs in properties
+        if (schema.getProperties() != null) {
+            for (Object propSchema : schema.getProperties().values()) {
+                if (propSchema instanceof Schema) {
+                    count += fixRefsInSchema((Schema<?>) propSchema, existingSchemas);
+                }
+            }
+        }
+        
+        // Fix refs in items (for arrays)
+        if (schema.getItems() != null) {
+            count += fixRefsInSchema(schema.getItems(), existingSchemas);
+        }
+        
+        // Fix refs in additionalProperties
+        if (schema.getAdditionalProperties() instanceof Schema) {
+            count += fixRefsInSchema((Schema<?>) schema.getAdditionalProperties(), existingSchemas);
+        }
+        
+        // Fix refs in oneOf
+        if (schema.getOneOf() != null) {
+            for (Schema<?> oneOfSchema : schema.getOneOf()) {
+                count += fixRefsInSchema(oneOfSchema, existingSchemas);
+            }
+        }
+        
+        // Fix refs in anyOf
+        if (schema.getAnyOf() != null) {
+            for (Schema<?> anyOfSchema : schema.getAnyOf()) {
+                count += fixRefsInSchema(anyOfSchema, existingSchemas);
+            }
+        }
+        
+        // Fix refs in allOf
+        if (schema.getAllOf() != null) {
+            for (Schema<?> allOfSchema : schema.getAllOf()) {
+                count += fixRefsInSchema(allOfSchema, existingSchemas);
+            }
+        }
+        
+        // Fix refs in not
+        if (schema.getNot() != null) {
+            count += fixRefsInSchema(schema.getNot(), existingSchemas);
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Fixes a single $ref string.
+     * 
+     * @param ref The original reference
+     * @param existingSchemas Set of schema names that exist in components/schemas
+     * @return The fixed reference, or null if the target doesn't exist
+     */
+    private String fixRef(String ref, Set<String> existingSchemas) {
+        if (ref == null) {
+            return null;
+        }
+        
+        // Convert #/definitions/X to #/components/schemas/X (OpenAPI 2.0 → 3.x)
+        if (ref.startsWith("#/definitions/")) {
+            String schemaName = ref.substring("#/definitions/".length());
+            
+            // Check if the schema exists in components/schemas
+            if (existingSchemas.contains(schemaName)) {
+                return "#/components/schemas/" + schemaName;
+            }
+            
+            // Schema doesn't exist - return null to indicate broken ref
+            log.debug("Schema '{}' does not exist in components/schemas", schemaName);
+            return null;
+        }
+        
+        // Already in correct format - verify it exists
+        if (ref.startsWith("#/components/schemas/")) {
+            String schemaName = ref.substring("#/components/schemas/".length());
+            if (existingSchemas.contains(schemaName)) {
+                return ref; // Valid, no change needed
+            }
+            // Schema doesn't exist
+            log.debug("Schema '{}' does not exist in components/schemas", schemaName);
+            return null;
+        }
+        
+        // Other ref formats (external refs, etc.) - leave unchanged
+        return ref;
     }
 }
