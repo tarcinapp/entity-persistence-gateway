@@ -119,6 +119,12 @@ public class OasTransformationEngine {
         // 4. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
         fixBrokenRefs(transformed);
         
+        // 5. Fix schema validation keywords (uniqueItems must be on array, not items)
+        fixSchemaValidationKeywords(transformed);
+        
+        // 6. Deduplicate parameters (name+in must be unique per operation)
+        deduplicateParameters(transformed);
+        
         log.info("OAS transformation complete: {} paths virtualized", 
             virtualizedPaths != null ? virtualizedPaths.size() : 0);
         
@@ -1064,5 +1070,223 @@ public class OasTransformationEngine {
         
         // Other ref formats (external refs, etc.) - leave unchanged
         return ref;
+    }
+    
+    // ========================================================================
+    // SCHEMA VALIDATION KEYWORD FIXES
+    // ========================================================================
+    
+    /**
+     * Fixes misplaced JSON Schema validation keywords.
+     * - uniqueItems belongs on array schema, NOT on items schema
+     * - minItems/maxItems belong on array schema, NOT on items schema
+     */
+    private void fixSchemaValidationKeywords(OpenAPI openApi) {
+        int fixedCount = 0;
+        
+        // Fix in all paths
+        if (openApi.getPaths() != null) {
+            for (PathItem pathItem : openApi.getPaths().values()) {
+                fixedCount += fixValidationKeywordsInPathItem(pathItem);
+            }
+        }
+        
+        // Fix in components/schemas
+        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+            for (Schema<?> schema : openApi.getComponents().getSchemas().values()) {
+                fixedCount += fixValidationKeywordsInSchema(schema);
+            }
+        }
+        
+        if (fixedCount > 0) {
+            log.info("Fixed {} misplaced schema validation keywords", fixedCount);
+        }
+    }
+    
+    private int fixValidationKeywordsInPathItem(PathItem pathItem) {
+        int count = 0;
+        if (pathItem.getGet() != null) count += fixValidationKeywordsInOperation(pathItem.getGet());
+        if (pathItem.getPost() != null) count += fixValidationKeywordsInOperation(pathItem.getPost());
+        if (pathItem.getPut() != null) count += fixValidationKeywordsInOperation(pathItem.getPut());
+        if (pathItem.getPatch() != null) count += fixValidationKeywordsInOperation(pathItem.getPatch());
+        if (pathItem.getDelete() != null) count += fixValidationKeywordsInOperation(pathItem.getDelete());
+        if (pathItem.getHead() != null) count += fixValidationKeywordsInOperation(pathItem.getHead());
+        if (pathItem.getOptions() != null) count += fixValidationKeywordsInOperation(pathItem.getOptions());
+        if (pathItem.getTrace() != null) count += fixValidationKeywordsInOperation(pathItem.getTrace());
+        return count;
+    }
+    
+    private int fixValidationKeywordsInOperation(Operation operation) {
+        int count = 0;
+        
+        if (operation.getParameters() != null) {
+            for (io.swagger.v3.oas.models.parameters.Parameter param : operation.getParameters()) {
+                if (param.getSchema() != null) {
+                    count += fixValidationKeywordsInSchema(param.getSchema());
+                }
+                if (param.getContent() != null) {
+                    for (io.swagger.v3.oas.models.media.MediaType mt : param.getContent().values()) {
+                        if (mt.getSchema() != null) {
+                            count += fixValidationKeywordsInSchema(mt.getSchema());
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+            for (io.swagger.v3.oas.models.media.MediaType mt : operation.getRequestBody().getContent().values()) {
+                if (mt.getSchema() != null) {
+                    count += fixValidationKeywordsInSchema(mt.getSchema());
+                }
+            }
+        }
+        
+        if (operation.getResponses() != null) {
+            for (io.swagger.v3.oas.models.responses.ApiResponse response : operation.getResponses().values()) {
+                if (response.getContent() != null) {
+                    for (io.swagger.v3.oas.models.media.MediaType mt : response.getContent().values()) {
+                        if (mt.getSchema() != null) {
+                            count += fixValidationKeywordsInSchema(mt.getSchema());
+                        }
+                    }
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Recursively fixes validation keywords in a schema.
+     * If this is an array with items, and items has uniqueItems, move it to parent.
+     */
+    @SuppressWarnings("unchecked")
+    private int fixValidationKeywordsInSchema(Schema<?> schema) {
+        if (schema == null) {
+            return 0;
+        }
+        
+        int count = 0;
+        
+        // If this is an array schema with items
+        if ("array".equals(schema.getType()) && schema.getItems() != null) {
+            Schema<?> items = schema.getItems();
+            
+            // Check if items incorrectly has uniqueItems (should be on parent array)
+            if (items.getUniqueItems() != null && items.getUniqueItems()) {
+                log.debug("Moving uniqueItems from items to parent array schema");
+                schema.setUniqueItems(true);
+                items.setUniqueItems(null);
+                count++;
+            }
+            
+            // Recursively fix items schema
+            count += fixValidationKeywordsInSchema(items);
+        }
+        
+        // Fix in properties
+        if (schema.getProperties() != null) {
+            for (Object propSchema : schema.getProperties().values()) {
+                if (propSchema instanceof Schema) {
+                    count += fixValidationKeywordsInSchema((Schema<?>) propSchema);
+                }
+            }
+        }
+        
+        // Fix in additionalProperties
+        if (schema.getAdditionalProperties() instanceof Schema) {
+            count += fixValidationKeywordsInSchema((Schema<?>) schema.getAdditionalProperties());
+        }
+        
+        // Fix in oneOf/anyOf/allOf
+        if (schema.getOneOf() != null) {
+            for (Schema<?> s : schema.getOneOf()) {
+                count += fixValidationKeywordsInSchema(s);
+            }
+        }
+        if (schema.getAnyOf() != null) {
+            for (Schema<?> s : schema.getAnyOf()) {
+                count += fixValidationKeywordsInSchema(s);
+            }
+        }
+        if (schema.getAllOf() != null) {
+            for (Schema<?> s : schema.getAllOf()) {
+                count += fixValidationKeywordsInSchema(s);
+            }
+        }
+        
+        return count;
+    }
+    
+    // ========================================================================
+    // PARAMETER DEDUPLICATION
+    // ========================================================================
+    
+    /**
+     * Removes duplicate parameters from all operations.
+     * In OpenAPI, the combination of name + in must be unique per operation.
+     */
+    private void deduplicateParameters(OpenAPI openApi) {
+        int removedCount = 0;
+        
+        if (openApi.getPaths() != null) {
+            for (Map.Entry<String, PathItem> entry : openApi.getPaths().entrySet()) {
+                String path = entry.getKey();
+                PathItem pathItem = entry.getValue();
+                removedCount += deduplicateParametersInPathItem(path, pathItem);
+            }
+        }
+        
+        if (removedCount > 0) {
+            log.info("Removed {} duplicate parameters", removedCount);
+        }
+    }
+    
+    private int deduplicateParametersInPathItem(String path, PathItem pathItem) {
+        int count = 0;
+        if (pathItem.getGet() != null) count += deduplicateParametersInOperation(path, "GET", pathItem.getGet());
+        if (pathItem.getPost() != null) count += deduplicateParametersInOperation(path, "POST", pathItem.getPost());
+        if (pathItem.getPut() != null) count += deduplicateParametersInOperation(path, "PUT", pathItem.getPut());
+        if (pathItem.getPatch() != null) count += deduplicateParametersInOperation(path, "PATCH", pathItem.getPatch());
+        if (pathItem.getDelete() != null) count += deduplicateParametersInOperation(path, "DELETE", pathItem.getDelete());
+        if (pathItem.getHead() != null) count += deduplicateParametersInOperation(path, "HEAD", pathItem.getHead());
+        if (pathItem.getOptions() != null) count += deduplicateParametersInOperation(path, "OPTIONS", pathItem.getOptions());
+        if (pathItem.getTrace() != null) count += deduplicateParametersInOperation(path, "TRACE", pathItem.getTrace());
+        return count;
+    }
+    
+    /**
+     * Removes duplicate parameters from a single operation.
+     * Keeps the FIRST occurrence of each name+in combination.
+     */
+    private int deduplicateParametersInOperation(String path, String method, Operation operation) {
+        if (operation.getParameters() == null || operation.getParameters().isEmpty()) {
+            return 0;
+        }
+        
+        List<io.swagger.v3.oas.models.parameters.Parameter> params = operation.getParameters();
+        Set<String> seen = new HashSet<>();
+        List<io.swagger.v3.oas.models.parameters.Parameter> deduped = new ArrayList<>();
+        int removedCount = 0;
+        
+        for (io.swagger.v3.oas.models.parameters.Parameter param : params) {
+            String key = param.getName() + "|" + param.getIn();
+            
+            if (seen.contains(key)) {
+                log.debug("Removing duplicate parameter '{}' (in={}) from {} {}", 
+                    param.getName(), param.getIn(), method, path);
+                removedCount++;
+            } else {
+                seen.add(key);
+                deduped.add(param);
+            }
+        }
+        
+        if (removedCount > 0) {
+            operation.setParameters(deduped);
+        }
+        
+        return removedCount;
     }
 }
