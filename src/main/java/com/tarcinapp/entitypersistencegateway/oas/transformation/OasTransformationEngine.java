@@ -124,18 +124,44 @@ public class OasTransformationEngine {
     
     /**
      * Builds API info from gateway configuration.
+     * MANDATORY: title and version are required per OpenAPI spec.
      */
     private Info buildInfo() {
         Info info = new Info();
-        info.setTitle(openApiProperties.getTitle());
-        info.setVersion(openApiProperties.getVersion());
-        info.setDescription(openApiProperties.getDescription());
         
+        // Title is MANDATORY - fail loudly if not configured
+        String title = openApiProperties.getTitle();
+        if (title == null || title.isBlank()) {
+            log.warn("API title not configured in app.oas.title - using default");
+            title = "Entity Persistence Gateway API";
+        }
+        info.setTitle(title);
+        
+        // Version is MANDATORY - fail loudly if not configured
+        String version = openApiProperties.getVersion();
+        if (version == null || version.isBlank()) {
+            log.warn("API version not configured in app.oas.version - using default");
+            version = "1.0.0";
+        }
+        info.setVersion(version);
+        
+        // Description is optional but recommended
+        if (openApiProperties.getDescription() != null && !openApiProperties.getDescription().isBlank()) {
+            info.setDescription(openApiProperties.getDescription());
+        }
+        
+        // Contact is optional
         if (openApiProperties.getContact() != null) {
             Contact contact = new Contact();
-            contact.setName(openApiProperties.getContact().getName());
-            contact.setEmail(openApiProperties.getContact().getEmail());
-            contact.setUrl(openApiProperties.getContact().getUrl());
+            if (openApiProperties.getContact().getName() != null) {
+                contact.setName(openApiProperties.getContact().getName());
+            }
+            if (openApiProperties.getContact().getEmail() != null) {
+                contact.setEmail(openApiProperties.getContact().getEmail());
+            }
+            if (openApiProperties.getContact().getUrl() != null) {
+                contact.setUrl(openApiProperties.getContact().getUrl());
+            }
             info.setContact(contact);
         }
         
@@ -255,31 +281,38 @@ public class OasTransformationEngine {
         }
         
         // Generate base paths (collection and instance)
-        result.addAll(generateBasePaths(pathPrefix, aliasConfig, rawPaths, controllerName));
+        result.addAll(generateBasePaths(pathPrefix, aliasConfig, rawPaths, controllerName, null));
         
-        // Generate hierarchy paths (children and parents)
-        result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName));
+        // Generate hierarchy paths (children and parents) - pass parent alias for correct tagging
+        result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
         
         return result;
     }
     
     /**
      * Generates base paths (collection: /books, instance: /books/{id}).
+     * @param parentAlias If not null, this is a nested resource under the parent
      */
     private List<TransformedPath> generateBasePaths(
             String backendPrefix,
             AliasConfig aliasConfig,
             Paths rawPaths,
-            String controllerName) {
+            String controllerName,
+            AliasConfig parentAlias) {
         
         List<TransformedPath> result = new ArrayList<>();
         String virtualPrefix = "/" + aliasConfig.getAlias();
+        
+        // Determine the tag - use parent's alias if this is a nested resource
+        String tagName = parentAlias != null 
+            ? capitalizeFirst(parentAlias.getAlias()) 
+            : capitalizeFirst(aliasConfig.getAlias());
         
         // Collection path: /entities → /books
         PathItem collectionPathItem = rawPaths.get(backendPrefix);
         if (collectionPathItem != null) {
             PathItem transformed = transformPathItem(
-                collectionPathItem, aliasConfig, controllerName, false
+                collectionPathItem, aliasConfig, controllerName, false, tagName, parentAlias
             );
             // Inject kind filter into query parameters
             injectKindParameter(transformed, aliasConfig.getKind());
@@ -290,7 +323,7 @@ public class OasTransformationEngine {
         PathItem countPathItem = rawPaths.get(backendPrefix + "/count");
         if (countPathItem != null) {
             PathItem transformed = transformPathItem(
-                countPathItem, aliasConfig, controllerName, false
+                countPathItem, aliasConfig, controllerName, false, tagName, parentAlias
             );
             injectKindParameter(transformed, aliasConfig.getKind());
             result.add(new TransformedPath(virtualPrefix + "/count", transformed));
@@ -300,7 +333,7 @@ public class OasTransformationEngine {
         PathItem instancePathItem = rawPaths.get(backendPrefix + "/{id}");
         if (instancePathItem != null) {
             PathItem transformed = transformPathItem(
-                instancePathItem, aliasConfig, controllerName, true
+                instancePathItem, aliasConfig, controllerName, true, tagName, parentAlias
             );
             result.add(new TransformedPath(virtualPrefix + "/{id}", transformed));
         }
@@ -310,24 +343,30 @@ public class OasTransformationEngine {
     
     /**
      * Generates hierarchy paths for children and parents.
+     * Children/parents are nested under the parent's tag for proper grouping.
      */
     private List<TransformedPath> generateHierarchyPaths(
             String backendPrefix,
             AliasConfig aliasConfig,
             Paths rawPaths,
-            String controllerName) {
+            String controllerName,
+            AliasConfig rootParentAlias) {
         
         List<TransformedPath> result = new ArrayList<>();
         String virtualPrefix = "/" + aliasConfig.getAlias();
+        
+        // The tag for all nested resources is the ROOT parent's alias
+        String parentTagName = capitalizeFirst(rootParentAlias.getAlias());
         
         // Children paths: /entities/{id}/children → /books/{id}/chapters
         if (aliasConfig.getChildren() != null) {
             PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
             
-            aliasConfig.getChildren().forEach(childAlias -> {
+            for (AliasConfig childAlias : aliasConfig.getChildren()) {
                 if (childrenPathItem != null) {
-                    PathItem transformed = transformPathItem(
-                        childrenPathItem, childAlias, controllerName, true
+                    PathItem transformed = transformPathItemForHierarchy(
+                        childrenPathItem, childAlias, controllerName, 
+                        parentTagName, aliasConfig, "children"
                     );
                     injectKindParameter(transformed, childAlias.getKind());
                     
@@ -335,44 +374,174 @@ public class OasTransformationEngine {
                     result.add(new TransformedPath(virtualPath, transformed));
                 }
                 
-                // Recursively process nested hierarchies
+                // Recursively process nested hierarchies (children of children)
+                // Keep the same root parent for consistent tagging
                 result.addAll(generateHierarchyPaths(
                     backendPrefix + "/{id}/children", 
                     childAlias, 
                     rawPaths, 
-                    controllerName
+                    controllerName,
+                    rootParentAlias  // Keep root parent for tag consistency
                 ));
-            });
+            }
         }
         
         // Parents paths: /entities/{id}/parents → /books/{id}/authors
         if (aliasConfig.getParents() != null) {
             PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
             
-            aliasConfig.getParents().forEach(parentAlias -> {
+            for (AliasConfig parentAlias : aliasConfig.getParents()) {
                 if (parentsPathItem != null) {
-                    PathItem transformed = transformPathItem(
-                        parentsPathItem, parentAlias, controllerName, true
+                    PathItem transformed = transformPathItemForHierarchy(
+                        parentsPathItem, parentAlias, controllerName,
+                        parentTagName, aliasConfig, "parents"
                     );
                     injectKindParameter(transformed, parentAlias.getKind());
                     
                     String virtualPath = virtualPrefix + "/{id}/" + parentAlias.getAlias();
                     result.add(new TransformedPath(virtualPath, transformed));
                 }
-            });
+            }
         }
         
         return result;
     }
     
     /**
+     * Transforms a PathItem for hierarchy (children/parents) endpoints.
+     * These get special summary/description treatment and are tagged under the parent.
+     */
+    private PathItem transformPathItemForHierarchy(
+            PathItem original,
+            AliasConfig childAlias,
+            String controllerName,
+            String parentTagName,
+            AliasConfig parentAlias,
+            String relationType) {
+        
+        PathItem transformed = new PathItem();
+        
+        String parentResourceName = capitalizeFirst(singularize(parentAlias.getAlias()));
+        String childResourceName = capitalizeFirst(childAlias.getAlias());
+        
+        transformed.setDescription(String.format(
+            "%s of a %s", childResourceName, parentResourceName.toLowerCase()
+        ));
+        
+        // Transform each HTTP method's operation with hierarchy-aware summaries
+        if (original.getGet() != null) {
+            transformed.setGet(transformHierarchyOperation(
+                original.getGet(), childAlias, parentAlias, parentTagName, "get", relationType
+            ));
+        }
+        if (original.getPost() != null) {
+            transformed.setPost(transformHierarchyOperation(
+                original.getPost(), childAlias, parentAlias, parentTagName, "post", relationType
+            ));
+        }
+        if (original.getPut() != null) {
+            transformed.setPut(transformHierarchyOperation(
+                original.getPut(), childAlias, parentAlias, parentTagName, "put", relationType
+            ));
+        }
+        if (original.getPatch() != null) {
+            transformed.setPatch(transformHierarchyOperation(
+                original.getPatch(), childAlias, parentAlias, parentTagName, "patch", relationType
+            ));
+        }
+        if (original.getDelete() != null) {
+            transformed.setDelete(transformHierarchyOperation(
+                original.getDelete(), childAlias, parentAlias, parentTagName, "delete", relationType
+            ));
+        }
+        
+        return transformed;
+    }
+    
+    /**
+     * Transforms an operation for hierarchy endpoints with proper summaries.
+     */
+    private Operation transformHierarchyOperation(
+            Operation original,
+            AliasConfig childAlias,
+            AliasConfig parentAlias,
+            String parentTagName,
+            String httpMethod,
+            String relationType) {
+        
+        Operation transformed = new Operation();
+        
+        // Copy base properties
+        transformed.setParameters(original.getParameters() != null 
+            ? new ArrayList<>(original.getParameters()) 
+            : new ArrayList<>());
+        transformed.setRequestBody(original.getRequestBody());
+        
+        // MANDATORY: responses object is required per OpenAPI spec
+        if (original.getResponses() != null && !original.getResponses().isEmpty()) {
+            transformed.setResponses(original.getResponses());
+        } else {
+            io.swagger.v3.oas.models.responses.ApiResponses defaultResponses = 
+                new io.swagger.v3.oas.models.responses.ApiResponses();
+            io.swagger.v3.oas.models.responses.ApiResponse defaultResponse = 
+                new io.swagger.v3.oas.models.responses.ApiResponse();
+            defaultResponse.setDescription("Successful operation");
+            defaultResponses.addApiResponse("200", defaultResponse);
+            transformed.setResponses(defaultResponses);
+        }
+        
+        transformed.setDeprecated(original.getDeprecated());
+        transformed.setSecurity(original.getSecurity());
+        
+        String parentSingular = singularize(parentAlias.getAlias());
+        String childPlural = childAlias.getAlias();
+        String childSingular = singularize(childAlias.getAlias());
+        
+        // Generate operation ID: list{Parent}{Children}, create{Parent}{Child}
+        String operationId;
+        String summary;
+        
+        switch (httpMethod.toLowerCase()) {
+            case "get":
+                operationId = String.format("list%s%s", 
+                    capitalizeFirst(parentSingular), capitalizeFirst(childPlural));
+                summary = String.format("List %s belonging to a %s", 
+                    childPlural.toLowerCase(), parentSingular.toLowerCase());
+                break;
+            case "post":
+                operationId = String.format("create%s%s", 
+                    capitalizeFirst(parentSingular), capitalizeFirst(childSingular));
+                summary = String.format("Create a %s under a %s", 
+                    childSingular.toLowerCase(), parentSingular.toLowerCase());
+                break;
+            default:
+                operationId = String.format("%s%s%s", httpMethod,
+                    capitalizeFirst(parentSingular), capitalizeFirst(childSingular));
+                summary = String.format("%s %s of a %s", 
+                    capitalizeFirst(httpMethod), childSingular.toLowerCase(), parentSingular.toLowerCase());
+        }
+        
+        transformed.setOperationId(operationId);
+        transformed.setSummary(summary);
+        
+        // CRITICAL: Tag under PARENT, not child - maintains proper grouping
+        transformed.setTags(Collections.singletonList(parentTagName));
+        
+        return transformed;
+    }
+    
+    /**
      * Transforms a PathItem by rewriting operations.
+     * @param tagName The tag to use for operations (may be parent's tag for nested resources)
+     * @param parentAlias If not null, indicates this is a nested resource
      */
     private PathItem transformPathItem(
             PathItem original, 
             AliasConfig aliasConfig,
             String controllerName,
-            boolean isInstancePath) {
+            boolean isInstancePath,
+            String tagName,
+            AliasConfig parentAlias) {
         
         PathItem transformed = new PathItem();
         transformed.setDescription(aliasConfig.getDescription());
@@ -380,27 +549,27 @@ public class OasTransformationEngine {
         // Transform each HTTP method's operation
         if (original.getGet() != null) {
             transformed.setGet(transformOperation(
-                original.getGet(), aliasConfig, controllerName, "get", isInstancePath
+                original.getGet(), aliasConfig, controllerName, "get", isInstancePath, tagName
             ));
         }
         if (original.getPost() != null) {
             transformed.setPost(transformOperation(
-                original.getPost(), aliasConfig, controllerName, "post", isInstancePath
+                original.getPost(), aliasConfig, controllerName, "post", isInstancePath, tagName
             ));
         }
         if (original.getPut() != null) {
             transformed.setPut(transformOperation(
-                original.getPut(), aliasConfig, controllerName, "put", isInstancePath
+                original.getPut(), aliasConfig, controllerName, "put", isInstancePath, tagName
             ));
         }
         if (original.getPatch() != null) {
             transformed.setPatch(transformOperation(
-                original.getPatch(), aliasConfig, controllerName, "patch", isInstancePath
+                original.getPatch(), aliasConfig, controllerName, "patch", isInstancePath, tagName
             ));
         }
         if (original.getDelete() != null) {
             transformed.setDelete(transformOperation(
-                original.getDelete(), aliasConfig, controllerName, "delete", isInstancePath
+                original.getDelete(), aliasConfig, controllerName, "delete", isInstancePath, tagName
             ));
         }
         
@@ -415,7 +584,8 @@ public class OasTransformationEngine {
             AliasConfig aliasConfig,
             String controllerName,
             String httpMethod,
-            boolean isInstancePath) {
+            boolean isInstancePath,
+            String tagName) {
         
         Operation transformed = new Operation();
         
@@ -424,7 +594,21 @@ public class OasTransformationEngine {
             ? new ArrayList<>(original.getParameters()) 
             : new ArrayList<>());
         transformed.setRequestBody(original.getRequestBody());
-        transformed.setResponses(original.getResponses());
+        
+        // MANDATORY: responses object is required per OpenAPI spec
+        if (original.getResponses() != null && !original.getResponses().isEmpty()) {
+            transformed.setResponses(original.getResponses());
+        } else {
+            // Provide default response if none exists
+            io.swagger.v3.oas.models.responses.ApiResponses defaultResponses = 
+                new io.swagger.v3.oas.models.responses.ApiResponses();
+            io.swagger.v3.oas.models.responses.ApiResponse defaultResponse = 
+                new io.swagger.v3.oas.models.responses.ApiResponse();
+            defaultResponse.setDescription("Successful operation");
+            defaultResponses.addApiResponse("200", defaultResponse);
+            transformed.setResponses(defaultResponses);
+        }
+        
         transformed.setDeprecated(original.getDeprecated());
         transformed.setSecurity(original.getSecurity());
         
@@ -446,17 +630,17 @@ public class OasTransformationEngine {
             transformed.setDescription(routeConfig.getDescription());
             transformed.setTags(routeConfig.getTags() != null && !routeConfig.getTags().isEmpty()
                 ? routeConfig.getTags()
-                : Collections.singletonList(capitalizeFirst(aliasConfig.getAlias())));
+                : Collections.singletonList(tagName));
         } else if (orchestratorProperties.getTransformation().isAutoGenerateOperationIds()) {
             // Auto-generate operation metadata
             transformed.setOperationId(generateOperationId(originalOpId, aliasConfig));
             transformed.setSummary(generateSummary(originalOpId, aliasConfig, httpMethod, isInstancePath));
-            transformed.setTags(Collections.singletonList(capitalizeFirst(aliasConfig.getAlias())));
+            transformed.setTags(Collections.singletonList(tagName));
         } else {
             // Fall back to original
             transformed.setOperationId(originalOpId);
             transformed.setSummary(original.getSummary());
-            transformed.setTags(original.getTags());
+            transformed.setTags(original.getTags() != null ? original.getTags() : Collections.singletonList(tagName));
         }
         
         return transformed;

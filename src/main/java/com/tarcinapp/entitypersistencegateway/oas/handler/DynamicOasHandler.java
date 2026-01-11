@@ -1,9 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.oas.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.helpers.TokenParserRegistry;
 import com.tarcinapp.entitypersistencegateway.oas.cache.OasCacheKeyBuilder;
@@ -62,8 +59,7 @@ public class DynamicOasHandler {
     private final OasCacheKeyBuilder cacheKeyBuilder;
     private final TokenParserRegistry tokenParserRegistry;
     
-    private final ObjectMapper jsonMapper;
-    private final ObjectMapper yamlMapper;
+    private final ObjectMapper genericMapper;
     
     public DynamicOasHandler(
             OasOrchestratorProperties properties,
@@ -84,15 +80,9 @@ public class DynamicOasHandler {
         this.cacheKeyBuilder = cacheKeyBuilder;
         this.tokenParserRegistry = tokenParserRegistry;
         
-        // Configure JSON mapper to exclude nulls and empty values (NON_EMPTY includes NON_NULL)
-        this.jsonMapper = objectMapper.copy()
-            .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY);
-        
-        // Configure YAML mapper similarly
-        this.yamlMapper = new ObjectMapper(new YAMLFactory()
-            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
-            .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES))
-            .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY);
+        // Use generic mapper for JWT parsing, NOT for OpenAPI serialization
+        // OpenAPI serialization uses io.swagger.v3.core.util.Json/Yaml.pretty() static methods
+        this.genericMapper = objectMapper;
     }
     
     /**
@@ -262,7 +252,7 @@ public class DynamicOasHandler {
             }
             
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            var node = jsonMapper.readTree(payload);
+            var node = genericMapper.readTree(payload);
             
             if (node.has("iss")) {
                 return node.get("iss").asText();
@@ -302,15 +292,18 @@ public class DynamicOasHandler {
     
     /**
      * Serializes the OpenAPI object to JSON or YAML.
+     * Uses Swagger's native serializers which properly handle internal fields.
      */
     private String serializeOas(OpenAPI openApi, OutputFormat format) {
         try {
             if (format == OutputFormat.YAML) {
-                return yamlMapper.writeValueAsString(openApi);
+                // Use Swagger's native YAML serializer - handles internal fields properly
+                return io.swagger.v3.core.util.Yaml.pretty(openApi);
             } else {
-                return jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(openApi);
+                // Use Swagger's native JSON serializer - handles internal fields properly
+                return io.swagger.v3.core.util.Json.pretty(openApi);
             }
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Failed to serialize OpenAPI: {}", e.getMessage());
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
