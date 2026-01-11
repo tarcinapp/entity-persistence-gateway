@@ -1,0 +1,92 @@
+# ============================================================
+# Dynamic OAS Orchestrator Configuration
+# ============================================================
+# This file contains all configuration options for the
+# Dynamic OAS Orchestrator feature. Include this file
+# in your application configuration to enable the feature.
+#
+# Usage in application.yml:
+#   spring:
+#     config:
+#       import:
+#         - classpath:application-oas-orchestrator.yml
+# ============================================================
+
+# Main toggle - set to true to enable the OAS Orchestrator
+app:
+  oas:
+    orchestrator:
+      enabled: true
+      
+      # --------------------------------------------------------
+      # Endpoint Configuration
+      # --------------------------------------------------------
+      endpoints:
+        # Path for JSON-formatted OpenAPI spec
+        json: /openapi.json
+        
+        # Path for YAML-formatted OpenAPI spec
+        yaml: /openapi.yaml
+        
+        # Whether to require authentication for accessing docs
+        require-authentication: false
+      
+      # --------------------------------------------------------
+      # Backend Service Configuration
+      # --------------------------------------------------------
+      backend:
+        # Path to backend's OAS endpoint (appended to routing-target URL)
+        spec-path: /explorer/openapi.json
+        
+        # Connection timeout in milliseconds
+        connect-timeout-ms: 5000
+        
+        # Read timeout in milliseconds
+        read-timeout-ms: 10000
+      
+      # --------------------------------------------------------
+      # Cache Configuration
+      # --------------------------------------------------------
+      cache:
+        # Enable caching
+        enabled: true
+        
+        # Time-to-live for cached OAS specs
+        ttl: 15m
+        
+        # TTL for raw backend OAS cache
+        raw-oas-ttl: 5m
+        
+        # Maximum entries in L1 (Caffeine) cache
+        max-local-cache-size: 100
+        
+        # Redis key prefix
+        key-prefix: "oas:v1:"
+      
+      # --------------------------------------------------------
+      # OPA Configuration
+      # --------------------------------------------------------
+      opa:
+        # OPA policy path for field permissions
+        field-policy: /v1/data/tarcinapp/epg/forbidden_fields
+        
+        # Timeout for OPA queries
+        timeout: 500ms
+        
+        # Fail-closed mode (if true, OPA failure = 503)
+        fail-closed: false
+      
+      # --------------------------------------------------------
+      # Transformation Configuration
+      # --------------------------------------------------------
+      transformation:
+        # Include generic (non-aliased) endpoints
+        include-generic-endpoints: false
+        
+        # Simplify verbose schema names
+        simplify-schema-names: true
+
+# ============================================================
+# To test the endpoint:
+#   curl -H "Authorization: Bearer <token>" http://localhost:8080/openapi.json
+# ============================================================

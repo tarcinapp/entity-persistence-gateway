@@ -75,6 +75,7 @@ spring:
       # MONITORING IMPORTS
       - classpath:application-management.yml
       - classpath:application-jmx.yml
+      - classpath:application-oas-orchestrator.yml
 
   application:
     name: ${app.name}

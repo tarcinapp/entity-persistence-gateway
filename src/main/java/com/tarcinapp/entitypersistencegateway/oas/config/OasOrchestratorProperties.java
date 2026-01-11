@@ -1,0 +1,215 @@
+package com.tarcinapp.entitypersistencegateway.oas.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
+
+/**
+ * Configuration properties for the Dynamic OAS Orchestrator.
+ * 
+ * <p>This component generates personalized, virtualized OpenAPI specifications
+ * by transforming the backend's technical OAS based on domain aliases and
+ * user-specific field permissions.</p>
+ * 
+ * <h2>Configuration Example:</h2>
+ * <pre>
+ * app:
+ *   oas:
+ *     orchestrator:
+ *       enabled: true
+ *       endpoints:
+ *         json: /openapi.json
+ *         yaml: /openapi.yaml
+ *       cache:
+ *         enabled: true
+ *         ttl: PT15M
+ *         raw-oas-ttl: PT5M
+ *       backend:
+ *         spec-path: /explorer/openapi.json
+ *         connect-timeout: 3000
+ *         read-timeout: 5000
+ *       opa:
+ *         field-policy: /policies/oas/field_visibility/policy/result
+ *         timeout: PT500MS
+ * </pre>
+ */
+@Configuration
+@ConfigurationProperties(prefix = "app.oas.orchestrator")
+@Data
+public class OasOrchestratorProperties {
+    
+    /**
+     * Master switch to enable/disable the Dynamic OAS Orchestrator.
+     * When disabled, OAS endpoints return 404.
+     */
+    private boolean enabled = true;
+    
+    /**
+     * Endpoint configuration for OAS serving.
+     */
+    private EndpointConfig endpoints = new EndpointConfig();
+    
+    /**
+     * Caching configuration for transformed OAS specs.
+     */
+    private CacheConfig cache = new CacheConfig();
+    
+    /**
+     * Backend service configuration for fetching raw OAS.
+     */
+    private BackendConfig backend = new BackendConfig();
+    
+    /**
+     * OPA integration configuration for field-level permissions.
+     */
+    private OpaConfig opa = new OpaConfig();
+    
+    /**
+     * Transformation behavior configuration.
+     */
+    private TransformationConfig transformation = new TransformationConfig();
+    
+    @Data
+    public static class EndpointConfig {
+        /**
+         * Path to serve JSON-formatted OpenAPI spec.
+         * Relative to the gateway's base URI.
+         */
+        private String json = "/openapi.json";
+        
+        /**
+         * Path to serve YAML-formatted OpenAPI spec.
+         * Relative to the gateway's base URI.
+         */
+        private String yaml = "/openapi.yaml";
+        
+        /**
+         * Whether to require authentication for OAS endpoints.
+         * When false, anonymous users receive a spec with public-only fields.
+         */
+        private boolean requireAuthentication = false;
+    }
+    
+    @Data
+    public static class CacheConfig {
+        /**
+         * Enable/disable caching of transformed OAS specs.
+         * Strongly recommended for production.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Time-to-live for cached personalized OAS specs.
+         * Each unique role combination gets its own cached spec.
+         */
+        private Duration ttl = Duration.ofMinutes(15);
+        
+        /**
+         * Time-to-live for the raw backend OAS cache.
+         * This is shared across all users since it's role-independent.
+         */
+        private Duration rawOasTtl = Duration.ofMinutes(5);
+        
+        /**
+         * Maximum number of role-based specs to cache in-memory (L2 Caffeine).
+         * Prevents memory exhaustion from diverse role combinations.
+         */
+        private int maxLocalCacheSize = 100;
+        
+        /**
+         * Redis key prefix for OAS caching.
+         */
+        private String keyPrefix = "oas:v1:";
+    }
+    
+    @Data
+    public static class BackendConfig {
+        /**
+         * Path to the backend's OpenAPI spec endpoint.
+         * Appended to the routing-target base URL.
+         */
+        private String specPath = "/explorer/openapi.json";
+        
+        /**
+         * Connection timeout for backend OAS fetch.
+         */
+        private int connectTimeoutMs = 3000;
+        
+        /**
+         * Read timeout for backend OAS fetch.
+         */
+        private int readTimeoutMs = 5000;
+        
+        /**
+         * Write timeout for backend OAS fetch.
+         */
+        private int writeTimeoutMs = 3000;
+        
+        /**
+         * Overall response timeout for backend OAS fetch.
+         */
+        private Duration responseTimeout = Duration.ofSeconds(5);
+    }
+    
+    @Data
+    public static class OpaConfig {
+        /**
+         * OPA policy path for field-level visibility decisions.
+         * This policy receives JWT claims and returns forbidden fields per record type.
+         * 
+         * <p>Policy Contract:</p>
+         * <pre>
+         * Input: { "encodedJwt": "...", "roles": [...], "groups": [...] }
+         * Output: { "entities": { "default": [...], "kinds": { "book": [...] } }, ... }
+         * </pre>
+         */
+        private String fieldPolicy = "/policies/oas/field_visibility/policy/result";
+        
+        /**
+         * Timeout for OPA field permission queries.
+         * On timeout, the orchestrator falls back to full visibility (fail-open for docs).
+         */
+        private Duration timeout = Duration.ofMillis(500);
+        
+        /**
+         * Whether to fail-closed when OPA is unreachable.
+         * When false (default), OPA failures result in full-visibility specs.
+         * When true, OPA failures return 503 Service Unavailable.
+         */
+        private boolean failClosed = false;
+    }
+    
+    @Data
+    public static class TransformationConfig {
+        /**
+         * Whether to include generic (non-aliased) endpoints in the spec.
+         * When false, only aliased resources appear in the generated OAS.
+         */
+        private boolean includeGenericEndpoints = false;
+        
+        /**
+         * Whether to simplify verbose backend schema names.
+         * E.g., "GenericEntityExcluding__idempotencyKey..." → "Book"
+         */
+        private boolean simplifySchemaNames = true;
+        
+        /**
+         * Whether to include internal fields (prefixed with _) in schemas.
+         * These are typically system-managed fields like _id, _kind, _version.
+         */
+        private boolean includeInternalFields = true;
+        
+        /**
+         * List of internal field prefixes to consider for exclusion.
+         */
+        private String internalFieldPrefix = "_";
+        
+        /**
+         * Whether to generate operation IDs automatically from alias names.
+         * E.g., findEntities with alias "books" → listBooks
+         */
+        private boolean autoGenerateOperationIds = true;
+    }
+}
