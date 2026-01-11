@@ -10,6 +10,7 @@ import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperti
 import com.tarcinapp.entitypersistencegateway.oas.security.OasFieldPermissionService;
 import com.tarcinapp.entitypersistencegateway.oas.transformation.OasSchemaPruner;
 import com.tarcinapp.entitypersistencegateway.oas.transformation.OasTransformationEngine;
+import com.tarcinapp.entitypersistencegateway.oas.transformation.OasTransformationEngine.RequestContext;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.models.OpenAPI;
 import lombok.extern.slf4j.Slf4j;
@@ -148,6 +149,9 @@ public class DynamicOasHandler {
         
         log.debug("Handling OAS request: {} format={}", request.path(), format);
         
+        // Extract request context for dynamic server URL generation
+        RequestContext requestContext = extractRequestContext(request);
+        
         // 1. Extract security context (non-blocking)
         return extractSecurityContext(request)
             .flatMap(securityContext -> {
@@ -159,11 +163,33 @@ public class DynamicOasHandler {
                 // 3. Get from cache or compute
                 return cacheService.getOrCompute(
                     fullCacheKey,
-                    computePersonalizedOas(securityContext, format)
+                    computePersonalizedOas(securityContext, requestContext, format)
                 );
             })
             .flatMap(oasContent -> buildResponse(oasContent, format))
             .onErrorResume(this::handleError);
+    }
+    
+    /**
+     * Extracts request context (protocol, host, port) for dynamic server URL generation.
+     */
+    private RequestContext extractRequestContext(ServerRequest request) {
+        try {
+            var uri = request.uri();
+            return RequestContext.builder()
+                .scheme(uri.getScheme() != null ? uri.getScheme() : "http")
+                .host(uri.getHost() != null ? uri.getHost() : "localhost")
+                .port(uri.getPort())
+                .contextPath(null) // Gateway typically runs at root
+                .build();
+        } catch (Exception e) {
+            log.warn("Failed to extract request context: {}", e.getMessage());
+            return RequestContext.builder()
+                .scheme("http")
+                .host("localhost")
+                .port(8081)
+                .build();
+        }
     }
     
     /**
@@ -268,16 +294,16 @@ public class DynamicOasHandler {
      * Computes the personalized OAS for a user.
      * This is the full transformation pipeline.
      */
-    private Mono<String> computePersonalizedOas(GatewaySecurityContext securityContext, OutputFormat format) {
+    private Mono<String> computePersonalizedOas(GatewaySecurityContext securityContext, RequestContext requestContext, OutputFormat format) {
         log.debug("Computing personalized OAS for user: {}",
             securityContext.getAuthSubject() != null ? securityContext.getAuthSubject() : "anonymous");
         
-        // Pipeline: Fetch → Transform → Get Permissions → Prune → Serialize
+        // Pipeline: Fetch → Transform (with request context) → Get Permissions → Prune → Serialize
         return backendOasClient.fetchRawOas()
             .map(rawOas -> {
                 log.debug("Transforming raw OAS with {} paths",
                     rawOas.getPaths() != null ? rawOas.getPaths().size() : 0);
-                return transformationEngine.transform(rawOas);
+                return transformationEngine.transform(rawOas, requestContext);
             })
             .flatMap(transformedOas -> 
                 fieldPermissionService.fetchFieldPermissions(securityContext)

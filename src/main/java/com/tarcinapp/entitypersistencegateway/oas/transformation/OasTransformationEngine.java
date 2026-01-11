@@ -9,7 +9,10 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -44,8 +47,53 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OasTransformationEngine {
     
+    /**
+     * Context containing dynamic request information for server URL extraction.
+     * Used when static server configuration is not provided.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RequestContext {
+        private String scheme;      // http or https
+        private String host;        // hostname or IP
+        private int port;           // port number (-1 means default)
+        private String contextPath; // optional context path
+        
+        /**
+         * Builds the full server URL from request components.
+         */
+        public String toServerUrl() {
+            StringBuilder url = new StringBuilder();
+            url.append(scheme != null ? scheme : "http");
+            url.append("://");
+            url.append(host != null ? host : "localhost");
+            
+            // Only append port if non-default
+            if (port > 0 && port != 80 && port != 443) {
+                url.append(":").append(port);
+            } else if (port == -1) {
+                // No port specified, use defaults based on scheme
+                // Don't append anything for default ports
+            }
+            
+            if (contextPath != null && !contextPath.isEmpty() && !"/".equals(contextPath)) {
+                if (!contextPath.startsWith("/")) {
+                    url.append("/");
+                }
+                url.append(contextPath);
+            }
+            
+            return url.toString();
+        }
+    }
+    
     private final OpenApiProperties openApiProperties;
     private final OasOrchestratorProperties orchestratorProperties;
+    
+    // Thread-local storage for request context during transformation
+    private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
     
     // Maps backend controller names to their path prefixes
     private static final Map<String, String> CONTROLLER_PATH_PREFIXES = Map.of(
@@ -98,14 +146,31 @@ public class OasTransformationEngine {
      * @return Transformed OpenAPI spec with domain aliases
      */
     public OpenAPI transform(OpenAPI rawOas) {
+        return transform(rawOas, null);
+    }
+    
+    /**
+     * Transforms the raw backend OAS into a virtualized, domain-specific OAS.
+     * 
+     * @param rawOas The raw OpenAPI spec from the backend
+     * @param requestContext Dynamic request context for server URL extraction (fallback)
+     * @return Transformed OpenAPI spec with domain aliases
+     */
+    public OpenAPI transform(OpenAPI rawOas, RequestContext requestContext) {
         log.debug("Starting OAS transformation");
         
-        OpenAPI transformed = new OpenAPI();
+        // Store request context for use in buildServers()
+        if (requestContext != null) {
+            currentRequestContext.set(requestContext);
+        }
         
-        // 1. Set API metadata from gateway configuration
-        transformed.setInfo(buildInfo());
-        transformed.setServers(buildServers());
-        transformed.setTags(buildTags());
+        try {
+            OpenAPI transformed = new OpenAPI();
+            
+            // 1. Set API metadata from gateway configuration
+            transformed.setInfo(buildInfo());
+            transformed.setServers(buildServers());
+            transformed.setTags(buildTags());
         
         // 2. Transform paths based on alias configurations
         Paths virtualizedPaths = transformPaths(rawOas.getPaths());
@@ -128,7 +193,11 @@ public class OasTransformationEngine {
         log.info("OAS transformation complete: {} paths virtualized", 
             virtualizedPaths != null ? virtualizedPaths.size() : 0);
         
-        return transformed;
+            return transformed;
+        } finally {
+            // Always clean up ThreadLocal
+            currentRequestContext.remove();
+        }
     }
     
     /**
@@ -178,21 +247,46 @@ public class OasTransformationEngine {
     }
     
     /**
-     * Builds server list from gateway configuration.
+     * Builds server list using HYBRID logic:
+     * 
+     * <ol>
+     *   <li><b>CONDITION A (Config Mastery):</b> If app-oas.yml has populated servers list, use EXCLUSIVELY</li>
+     *   <li><b>CONDITION B (Dynamic Fallback):</b> If config is empty, extract from incoming request</li>
+     *   <li><b>CRITICAL:</b> NEVER return empty servers array - always provide at least one server</li>
+     * </ol>
      */
     private List<Server> buildServers() {
-        if (openApiProperties.getServers() == null) {
-            return Collections.emptyList();
+        // CONDITION A: Check static configuration FIRST
+        if (openApiProperties.getServers() != null && !openApiProperties.getServers().isEmpty()) {
+            log.debug("Using {} configured servers from app-oas.yml", openApiProperties.getServers().size());
+            return openApiProperties.getServers().stream()
+                .map(s -> {
+                    Server server = new Server();
+                    server.setUrl(s.getUrl());
+                    server.setDescription(s.getDescription());
+                    return server;
+                })
+                .collect(Collectors.toList());
         }
         
-        return openApiProperties.getServers().stream()
-            .map(s -> {
-                Server server = new Server();
-                server.setUrl(s.getUrl());
-                server.setDescription(s.getDescription());
-                return server;
-            })
-            .collect(Collectors.toList());
+        // CONDITION B: Dynamic fallback from request context
+        RequestContext requestContext = currentRequestContext.get();
+        if (requestContext != null) {
+            String dynamicUrl = requestContext.toServerUrl();
+            log.debug("No static servers configured, using dynamic URL from request: {}", dynamicUrl);
+            
+            Server dynamicServer = new Server();
+            dynamicServer.setUrl(dynamicUrl);
+            dynamicServer.setDescription("API Gateway (auto-detected)");
+            return List.of(dynamicServer);
+        }
+        
+        // CRITICAL FALLBACK: NEVER return empty - provide sensible default
+        log.warn("No servers configured and no request context available - using localhost default");
+        Server defaultServer = new Server();
+        defaultServer.setUrl("http://localhost:8081");
+        defaultServer.setDescription("API Gateway (default)");
+        return List.of(defaultServer);
     }
     
     /**
