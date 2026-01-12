@@ -1,12 +1,22 @@
 package com.tarcinapp.entitypersistencegateway.oas.transformation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
+import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -14,6 +24,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -91,6 +102,14 @@ public class OasTransformationEngine {
     
     private final OpenApiProperties openApiProperties;
     private final OasOrchestratorProperties orchestratorProperties;
+    private final TogglesProperties togglesProperties;
+    private final ObjectMapper objectMapper;
+    
+    @Value("${app.commonBaseSchema:#{null}}")
+    private String commonBaseSchema;
+    
+    @Value("${app.relationsBaseSchema:#{null}}")
+    private String relationsBaseSchema;
     
     // Thread-local storage for request context during transformation
     private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
@@ -134,9 +153,13 @@ public class OasTransformationEngine {
     
     public OasTransformationEngine(
             OpenApiProperties openApiProperties,
-            OasOrchestratorProperties orchestratorProperties) {
+            OasOrchestratorProperties orchestratorProperties,
+            TogglesProperties togglesProperties,
+            ObjectMapper objectMapper) {
         this.openApiProperties = openApiProperties;
         this.orchestratorProperties = orchestratorProperties;
+        this.togglesProperties = togglesProperties;
+        this.objectMapper = objectMapper;
     }
     
     /**
@@ -172,22 +195,28 @@ public class OasTransformationEngine {
             transformed.setServers(buildServers());
             transformed.setTags(buildTags());
         
-        // 2. Transform paths based on alias configurations
+        // 2. Transform paths based on alias configurations (with route toggle filtering)
         Paths virtualizedPaths = transformPaths(rawOas.getPaths());
         transformed.setPaths(virtualizedPaths);
         
-        // 3. Copy and optionally simplify schemas
+        // 3. Copy and optionally simplify schemas, then merge with base schemas
         if (rawOas.getComponents() != null) {
             transformed.setComponents(transformComponents(rawOas.getComponents()));
         }
         
-        // 4. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
+        // 4. Add merged domain schemas (base + alias-specific)
+        addMergedDomainSchemas(transformed);
+        
+        // 5. Add gateway error responses to all operations
+        addGatewayErrorResponses(transformed, rawOas);
+        
+        // 6. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
         fixBrokenRefs(transformed);
         
-        // 5. Fix schema validation keywords (uniqueItems must be on array, not items)
+        // 7. Fix schema validation keywords (uniqueItems must be on array, not items)
         fixSchemaValidationKeywords(transformed);
         
-        // 6. Deduplicate parameters (name+in must be unique per operation)
+        // 8. Deduplicate parameters (name+in must be unique per operation)
         deduplicateParameters(transformed);
         
         log.info("OAS transformation complete: {} paths virtualized", 
@@ -325,6 +354,7 @@ public class OasTransformationEngine {
     
     /**
      * Transforms all paths from the backend OAS.
+     * Applies route toggle filtering based on TogglesProperties configuration.
      */
     private Paths transformPaths(Paths rawPaths) {
         if (rawPaths == null) {
@@ -335,16 +365,36 @@ public class OasTransformationEngine {
         
         // Process each controller's aliases
         openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
+            // Check if controller is disabled by toggles
+            if (isControllerDisabled(controllerName)) {
+                log.debug("Skipping controller '{}' - disabled by toggles", controllerName);
+                return;
+            }
+            
             if (controllerConfig.getAliases() == null) {
                 return;
             }
             
             controllerConfig.getAliases().forEach(aliasConfig -> {
+                // Check if alias/tag is disabled by toggles
+                String tagName = capitalizeFirst(aliasConfig.getAlias());
+                if (isTagDisabled(tagName)) {
+                    log.debug("Skipping alias '{}' - tag '{}' disabled by toggles", 
+                        aliasConfig.getAlias(), tagName);
+                    return;
+                }
+                
                 List<TransformedPath> aliasPaths = generatePathsForAlias(
                     controllerName, aliasConfig, rawPaths
                 );
                 
                 aliasPaths.forEach(tp -> {
+                    // Check if specific route is disabled
+                    if (isRouteDisabled(tp.getRouteId())) {
+                        log.debug("Skipping route '{}' - disabled by toggles", tp.getRouteId());
+                        return;
+                    }
+                    
                     if (virtualizedPaths.containsKey(tp.getVirtualPath())) {
                         log.warn("Duplicate virtualized path: {}", tp.getVirtualPath());
                     } else {
@@ -930,6 +980,17 @@ public class OasTransformationEngine {
     private static class TransformedPath {
         private final String virtualPath;
         private final PathItem pathItem;
+        private final String routeId; // For toggle filtering
+        
+        TransformedPath(String virtualPath, PathItem pathItem) {
+            this(virtualPath, pathItem, null);
+        }
+        
+        TransformedPath(String virtualPath, PathItem pathItem, String routeId) {
+            this.virtualPath = virtualPath;
+            this.pathItem = pathItem;
+            this.routeId = routeId;
+        }
     }
     
     // ========================================================================
@@ -1382,5 +1443,503 @@ public class OasTransformationEngine {
         }
         
         return removedCount;
+    }
+    
+    // ============================================================================
+    // ROUTE TOGGLE CHECKING (mirrors CheckIfRouteEnabled filter logic)
+    // ============================================================================
+    
+    /**
+     * Checks if a controller is disabled by toggles configuration.
+     * Mirrors the logic from CheckIfRouteEnabled filter.
+     */
+    private boolean isControllerDisabled(String controllerName) {
+        if (controllerName == null || controllerName.trim().isEmpty()) {
+            return false;
+        }
+        
+        List<String> controllersOn = normalizeList(togglesProperties.getControllers().getOn());
+        List<String> controllersOff = normalizeList(togglesProperties.getControllers().getOff());
+        
+        controllerName = controllerName.trim();
+        
+        if (!controllersOn.isEmpty()) {
+            // Only controllers in controllersOn are enabled
+            return !controllersOn.contains(controllerName);
+        } else if (!controllersOff.isEmpty()) {
+            // Controllers in controllersOff are disabled
+            return controllersOff.contains(controllerName);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Checks if a tag is disabled by toggles configuration.
+     */
+    private boolean isTagDisabled(String tagName) {
+        if (tagName == null || tagName.trim().isEmpty()) {
+            return false;
+        }
+        
+        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
+        List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
+        
+        tagName = tagName.trim();
+        
+        if (!tagsOn.isEmpty()) {
+            return !tagsOn.contains(tagName);
+        } else if (!tagsOff.isEmpty()) {
+            return tagsOff.contains(tagName);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Checks if a specific route is disabled by toggles configuration.
+     */
+    private boolean isRouteDisabled(String routeId) {
+        if (routeId == null || routeId.trim().isEmpty()) {
+            return false;
+        }
+        
+        List<String> routesOn = normalizeList(togglesProperties.getRoutes().getOn());
+        List<String> routesOff = normalizeList(togglesProperties.getRoutes().getOff());
+        
+        routeId = routeId.trim();
+        
+        if (!routesOn.isEmpty()) {
+            return !routesOn.contains(routeId);
+        } else if (!routesOff.isEmpty()) {
+            return routesOff.contains(routeId);
+        }
+        
+        return false;
+    }
+    
+    private List<String> normalizeList(List<String> items) {
+        return items == null ? Collections.emptyList()
+            : items.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .collect(Collectors.toList());
+    }
+    
+    // ============================================================================
+    // SCHEMA MERGING (mirrors ValidateRequestBodyByKindSchema logic)
+    // ============================================================================
+    
+    /**
+     * Adds merged domain schemas (base + alias-specific) to the OAS components.
+     * This mirrors the schema merging logic from ValidateRequestBodyByKindSchema.
+     * Processes top-level aliases AND their children/parents hierarchies.
+     */
+    @SuppressWarnings("unchecked")
+    private void addMergedDomainSchemas(OpenAPI openApi) {
+        if (openApi.getComponents() == null) {
+            openApi.setComponents(new Components());
+        }
+        if (openApi.getComponents().getSchemas() == null) {
+            openApi.getComponents().setSchemas(new LinkedHashMap<>());
+        }
+        
+        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+        
+        try {
+            // Parse base schemas
+            JsonNode baseSchemaNode = commonBaseSchema != null 
+                ? objectMapper.readTree(commonBaseSchema) 
+                : objectMapper.createObjectNode();
+            
+            JsonNode relationsBaseNode = relationsBaseSchema != null 
+                ? objectMapper.readTree(relationsBaseSchema) 
+                : baseSchemaNode;
+            
+            // Process each controller's aliases
+            openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
+                if (controllerConfig.getAliases() == null) return;
+                
+                boolean isRelationsController = "relations".equals(controllerName);
+                JsonNode effectiveBase = isRelationsController ? relationsBaseNode : baseSchemaNode;
+                
+                controllerConfig.getAliases().forEach(aliasConfig -> {
+                    // Process the top-level alias
+                    addSchemaForAlias(schemas, aliasConfig, effectiveBase);
+                    
+                    // Process children hierarchy (e.g., replies under comments)
+                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase);
+                    
+                    // Process parents hierarchy (if any)
+                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase);
+                });
+            });
+            
+        } catch (Exception e) {
+            log.error("Failed to process base schemas: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Recursively processes hierarchy (children/parents) and adds their schemas.
+     */
+    private void processHierarchySchemas(Map<String, Schema> schemas, 
+            List<AliasConfig> hierarchy,
+            JsonNode effectiveBase) {
+        if (hierarchy == null || hierarchy.isEmpty()) return;
+        
+        for (var childConfig : hierarchy) {
+            // Add schema for this hierarchy level
+            addSchemaForAlias(schemas, childConfig, effectiveBase);
+            
+            // Recurse into nested children
+            processHierarchySchemas(schemas, childConfig.getChildren(), effectiveBase);
+            
+            // Recurse into nested parents
+            processHierarchySchemas(schemas, childConfig.getParents(), effectiveBase);
+        }
+    }
+    
+    /**
+     * Creates and adds merged schema for a single alias config.
+     */
+    private void addSchemaForAlias(Map<String, Schema> schemas,
+            AliasConfig aliasConfig,
+            JsonNode effectiveBase) {
+        if (aliasConfig == null || aliasConfig.getSchema() == null || aliasConfig.getKind() == null) {
+            return;
+        }
+        
+        try {
+            String schemaName = capitalizeFirst(aliasConfig.getKind());
+            
+            // Skip if already added (prevents duplicates from multiple paths)
+            if (schemas.containsKey(schemaName)) {
+                return;
+            }
+            
+            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase);
+            schemas.put(schemaName, mergedSchema);
+            
+            // Also add "New" variant without required base fields for POST
+            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase);
+            newSchema.setRequired(null); // No required for creation (gateway adds defaults)
+            schemas.put("New" + schemaName, newSchema);
+            
+            log.debug("Added merged domain schema: {} (from kind: {}, alias: {})", 
+                schemaName, aliasConfig.getKind(), aliasConfig.getAlias());
+        } catch (Exception e) {
+            log.warn("Failed to merge schema for kind '{}': {}", 
+                aliasConfig.getKind(), e.getMessage());
+        }
+    }
+    
+    /**
+     * Merges an alias-specific schema with the base schema.
+     * Properties from alias override base; required arrays are merged.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Schema mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode) 
+            throws JsonProcessingException {
+        
+        JsonNode aliasNode = objectMapper.readTree(aliasSchemaJson);
+        
+        Schema merged = new Schema();
+        merged.setType("object");
+        
+        // Merge properties
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        
+        // First add base properties
+        if (baseSchemaNode.has("properties")) {
+            baseSchemaNode.get("properties").fields().forEachRemaining(entry -> {
+                try {
+                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
+                    properties.put(entry.getKey(), propSchema);
+                } catch (Exception e) {
+                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
+                }
+            });
+        }
+        
+        // Then overlay alias properties (overrides base)
+        if (aliasNode.has("properties")) {
+            aliasNode.get("properties").fields().forEachRemaining(entry -> {
+                try {
+                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
+                    properties.put(entry.getKey(), propSchema);
+                } catch (Exception e) {
+                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
+                }
+            });
+        }
+        
+        merged.setProperties(properties);
+        
+        // Merge required arrays
+        Set<String> requiredSet = new LinkedHashSet<>();
+        if (baseSchemaNode.has("required") && baseSchemaNode.get("required").isArray()) {
+            for (JsonNode req : baseSchemaNode.get("required")) {
+                requiredSet.add(req.asText());
+            }
+        }
+        if (aliasNode.has("required") && aliasNode.get("required").isArray()) {
+            for (JsonNode req : aliasNode.get("required")) {
+                requiredSet.add(req.asText());
+            }
+        }
+        if (!requiredSet.isEmpty()) {
+            merged.setRequired(new ArrayList<>(requiredSet));
+        }
+        
+        // Copy additionalProperties if specified
+        if (aliasNode.has("additionalProperties")) {
+            JsonNode addProps = aliasNode.get("additionalProperties");
+            if (addProps.isBoolean()) {
+                merged.setAdditionalProperties(addProps.asBoolean());
+            }
+        }
+        
+        return merged;
+    }
+    
+    // ============================================================================
+    // ERROR RESPONSE HANDLING
+    // ============================================================================
+    
+    /**
+     * Adds gateway-standard error responses to all operations.
+     * Preserves backend error responses (409, 422, 429) and adds gateway errors (400, 500).
+     */
+    private void addGatewayErrorResponses(OpenAPI transformed, OpenAPI rawOas) {
+        // First, ensure error schemas exist in components
+        addErrorSchemas(transformed);
+        
+        if (transformed.getPaths() == null) return;
+        
+        // Collect backend error responses for reference
+        Map<String, Map<String, ApiResponse>> backendErrors = collectBackendErrorResponses(rawOas);
+        
+        // Add error responses to each operation
+        transformed.getPaths().forEach((path, pathItem) -> {
+            addErrorResponsesToPathItem(pathItem, backendErrors, path);
+        });
+        
+        log.debug("Added gateway error responses to all operations");
+    }
+    
+    /**
+     * Adds standard error schemas to components.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void addErrorSchemas(OpenAPI openApi) {
+        if (openApi.getComponents() == null) {
+            openApi.setComponents(new Components());
+        }
+        if (openApi.getComponents().getSchemas() == null) {
+            openApi.getComponents().setSchemas(new LinkedHashMap<>());
+        }
+        
+        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+        
+        // Gateway Validation Error schema
+        if (!schemas.containsKey("GatewayValidationError")) {
+            Schema validationError = new Schema();
+            validationError.setType("object");
+            validationError.setDescription("Gateway validation error response");
+            
+            Map<String, Schema> props = new LinkedHashMap<>();
+            props.put("statusCode", new Schema().type("integer").example(400));
+            props.put("error", new Schema().type("string").example("Bad Request"));
+            props.put("message", new Schema().type("string").example("Validation failed"));
+            props.put("validationErrors", new Schema().type("array")
+                .items(new Schema().$ref("#/components/schemas/ValidationErrorDetail")));
+            
+            validationError.setProperties(props);
+            validationError.setRequired(Arrays.asList("statusCode", "error", "message"));
+            schemas.put("GatewayValidationError", validationError);
+        }
+        
+        // Validation Error Detail schema
+        if (!schemas.containsKey("ValidationErrorDetail")) {
+            Schema detail = new Schema();
+            detail.setType("object");
+            
+            Map<String, Schema> props = new LinkedHashMap<>();
+            props.put("path", new Schema().type("string").example("$.name"));
+            props.put("message", new Schema().type("string").example("is required"));
+            props.put("code", new Schema().type("string").example("required"));
+            
+            detail.setProperties(props);
+            schemas.put("ValidationErrorDetail", detail);
+        }
+        
+        // Gateway Internal Error schema
+        if (!schemas.containsKey("GatewayInternalError")) {
+            Schema internalError = new Schema();
+            internalError.setType("object");
+            internalError.setDescription("Gateway internal server error");
+            
+            Map<String, Schema> props = new LinkedHashMap<>();
+            props.put("statusCode", new Schema().type("integer").example(500));
+            props.put("error", new Schema().type("string").example("Internal Server Error"));
+            props.put("message", new Schema().type("string").example("An unexpected error occurred"));
+            props.put("requestId", new Schema().type("string").description("Unique request identifier for tracing"));
+            
+            internalError.setProperties(props);
+            internalError.setRequired(Arrays.asList("statusCode", "error", "message"));
+            schemas.put("GatewayInternalError", internalError);
+        }
+        
+        // Rate Limit Error schema (429)
+        if (!schemas.containsKey("RateLimitError")) {
+            Schema rateLimitError = new Schema();
+            rateLimitError.setType("object");
+            rateLimitError.setDescription("Rate limit exceeded error");
+            
+            Map<String, Schema> props = new LinkedHashMap<>();
+            props.put("statusCode", new Schema().type("integer").example(429));
+            props.put("error", new Schema().type("string").example("Too Many Requests"));
+            props.put("message", new Schema().type("string").example("Rate limit exceeded"));
+            props.put("retryAfter", new Schema().type("integer").description("Seconds to wait before retrying"));
+            
+            rateLimitError.setProperties(props);
+            schemas.put("RateLimitError", rateLimitError);
+        }
+    }
+    
+    /**
+     * Collects error responses from backend OAS.
+     */
+    private Map<String, Map<String, ApiResponse>> collectBackendErrorResponses(OpenAPI rawOas) {
+        Map<String, Map<String, ApiResponse>> result = new HashMap<>();
+        
+        if (rawOas.getPaths() == null) return result;
+        
+        // Collect unique error responses by status code
+        rawOas.getPaths().forEach((path, pathItem) -> {
+            collectErrorsFromOperation(pathItem.getGet(), result);
+            collectErrorsFromOperation(pathItem.getPost(), result);
+            collectErrorsFromOperation(pathItem.getPut(), result);
+            collectErrorsFromOperation(pathItem.getPatch(), result);
+            collectErrorsFromOperation(pathItem.getDelete(), result);
+        });
+        
+        return result;
+    }
+    
+    private void collectErrorsFromOperation(Operation op, Map<String, Map<String, ApiResponse>> collector) {
+        if (op == null || op.getResponses() == null) return;
+        
+        op.getResponses().forEach((code, response) -> {
+            // Collect 4xx and 5xx responses
+            if (code.startsWith("4") || code.startsWith("5")) {
+                collector.computeIfAbsent(code, k -> new HashMap<>())
+                    .putIfAbsent("default", response);
+            }
+        });
+    }
+    
+    /**
+     * Adds error responses to all operations in a PathItem.
+     */
+    private void addErrorResponsesToPathItem(PathItem pathItem, 
+            Map<String, Map<String, ApiResponse>> backendErrors, String path) {
+        
+        if (pathItem.getGet() != null) addErrorResponsesToOperation(pathItem.getGet(), backendErrors, "GET");
+        if (pathItem.getPost() != null) addErrorResponsesToOperation(pathItem.getPost(), backendErrors, "POST");
+        if (pathItem.getPut() != null) addErrorResponsesToOperation(pathItem.getPut(), backendErrors, "PUT");
+        if (pathItem.getPatch() != null) addErrorResponsesToOperation(pathItem.getPatch(), backendErrors, "PATCH");
+        if (pathItem.getDelete() != null) addErrorResponsesToOperation(pathItem.getDelete(), backendErrors, "DELETE");
+    }
+    
+    /**
+     * Adds standard error responses to an operation.
+     * 400 validation errors are only added to POST/PUT/PATCH (methods with request bodies).
+     */
+    private void addErrorResponsesToOperation(Operation operation, 
+            Map<String, Map<String, ApiResponse>> backendErrors, String method) {
+        
+        if (operation.getResponses() == null) {
+            operation.setResponses(new ApiResponses());
+        }
+        
+        ApiResponses responses = operation.getResponses();
+        
+        // Check if this is a method that can have request body validation
+        boolean hasRequestBody = "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+        
+        // Add 400 Bad Request (gateway validation) - ONLY for methods with request bodies
+        if (hasRequestBody && !responses.containsKey("400")) {
+            ApiResponse badRequest = new ApiResponse();
+            badRequest.setDescription("Bad Request - Validation failed");
+            badRequest.setContent(createJsonContent("#/components/schemas/GatewayValidationError"));
+            responses.addApiResponse("400", badRequest);
+        }
+        
+        // Add 401 Unauthorized
+        if (!responses.containsKey("401")) {
+            ApiResponse unauthorized = new ApiResponse();
+            unauthorized.setDescription("Unauthorized - Authentication required");
+            responses.addApiResponse("401", unauthorized);
+        }
+        
+        // Add 403 Forbidden
+        if (!responses.containsKey("403")) {
+            ApiResponse forbidden = new ApiResponse();
+            forbidden.setDescription("Forbidden - Insufficient permissions");
+            responses.addApiResponse("403", forbidden);
+        }
+        
+        // Add 404 Not Found
+        if (!responses.containsKey("404")) {
+            ApiResponse notFound = new ApiResponse();
+            notFound.setDescription("Not Found - Resource does not exist");
+            responses.addApiResponse("404", notFound);
+        }
+        
+        // Add 409 Conflict (from backend, typically for POST)
+        if (!responses.containsKey("409") && backendErrors.containsKey("409")) {
+            if ("POST".equals(method) || "PUT".equals(method)) {
+                ApiResponse conflict = new ApiResponse();
+                conflict.setDescription("Conflict - Resource already exists or state conflict");
+                responses.addApiResponse("409", conflict);
+            }
+        }
+        
+        // Add 422 Unprocessable Entity (from backend) - ONLY for methods with request bodies
+        if (hasRequestBody && !responses.containsKey("422") && backendErrors.containsKey("422")) {
+            ApiResponse unprocessable = new ApiResponse();
+            unprocessable.setDescription("Unprocessable Entity - Semantic validation failed");
+            responses.addApiResponse("422", unprocessable);
+        }
+        
+        // Add 429 Too Many Requests (rate limiting)
+        if (!responses.containsKey("429")) {
+            ApiResponse rateLimit = new ApiResponse();
+            rateLimit.setDescription("Too Many Requests - Rate limit exceeded");
+            rateLimit.setContent(createJsonContent("#/components/schemas/RateLimitError"));
+            responses.addApiResponse("429", rateLimit);
+        }
+        
+        // Add 500 Internal Server Error
+        if (!responses.containsKey("500")) {
+            ApiResponse internalError = new ApiResponse();
+            internalError.setDescription("Internal Server Error");
+            internalError.setContent(createJsonContent("#/components/schemas/GatewayInternalError"));
+            responses.addApiResponse("500", internalError);
+        }
+    }
+    
+    /**
+     * Creates JSON content with a schema reference.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Content createJsonContent(String schemaRef) {
+        Content content = new Content();
+        MediaType mediaType = new MediaType();
+        mediaType.setSchema(new Schema().$ref(schemaRef));
+        content.addMediaType("application/json", mediaType);
+        return content;
     }
 }
