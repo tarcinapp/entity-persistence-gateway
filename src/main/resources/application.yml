@@ -59,22 +59,39 @@ spring:
 
   config:
     import:
+      # Authentication and authorization settings
       - classpath:application-auth.yml
+      # Inbound HTTP server configuration
       - classpath:app-inbound.yml
+      # Outbound service connections and dependencies
       - classpath:app-outbound.yml
+      # Request and response timeout configurations
       - classpath:application-timeouts.yml
+      # Dynamic route definitions for gateway
       - classpath:application-routes.yml
+      # Toggles for enabling/disabling routes
       - classpath:application-route-toggles.yml
+      # Logging configuration and levels
       - classpath:application-logging.yml
+      # Fieldset definitions for simpler field selection
       - classpath:application-fieldsets.yml
+      # Simpler queries configuration
       - classpath:application-queries.yml
+      # Request payload size limits
       - classpath:application-request-sizes.yml
+      # API rate limiting and throttling rules
       - classpath:application-rate-limits.yml
+      # Distributed locking configuration
       - classpath:application-locks.yml
+      # Local caching strategies and TTL settings
       - classpath:application-local-caching.yml
-      # MONITORING IMPORTS
+      # Actuator and health check endpoints
       - classpath:application-management.yml
+      # JMX monitoring and metrics exposure
       - classpath:application-jmx.yml
+      # OAS configuration (servers, title, version, contact)
+      - classpath:app-oas.yml
+      # OpenAPI specification generation settings
       - classpath:application-oas-orchestrator.yml
 
   application:

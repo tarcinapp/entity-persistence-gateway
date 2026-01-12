@@ -402,7 +402,11 @@ public class OasTransformationEngine {
         
         log.debug("Using base URI prefix for OAS paths: '{}'", baseUri);
         
-        // Process each controller's aliases
+        // 1. FIRST: Generate base controller routes (/entities, /lists, /relations, etc.)
+        // These are the raw controller paths that work with 'kind' parameter
+        generateBaseControllerRoutes(rawPaths, virtualizedPaths, baseUri);
+        
+        // 2. THEN: Process each controller's aliases (domain-specific paths)
         openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
             // Check if controller is disabled by toggles
             if (isControllerDisabled(controllerName)) {
@@ -457,6 +461,150 @@ public class OasTransformationEngine {
         }
         
         return virtualizedPaths;
+    }
+    
+    /**
+     * Generates base controller routes for all main controllers.
+     * These expose the raw controller paths like:
+     *   - /api/v1/entities, /api/v1/entities/{id}, /api/v1/entities/count
+     *   - /api/v1/lists, /api/v1/lists/{id}, /api/v1/lists/count
+     *   - /api/v1/relations, /api/v1/relations/{id}, /api/v1/relations/count
+     *   - /api/v1/entity-reactions, /api/v1/entity-reactions/{id}, /api/v1/entity-reactions/count
+     *   - /api/v1/list-reactions, /api/v1/list-reactions/{id}, /api/v1/list-reactions/count
+     */
+    private void generateBaseControllerRoutes(Paths rawPaths, Paths virtualizedPaths, String baseUri) {
+        // Map of controller names to their inbound paths and backend prefixes
+        Map<String, String[]> controllerMappings = Map.of(
+            "entities", new String[]{entitiesBasePath, "/entities"},
+            "lists", new String[]{listsBasePath, "/lists"},
+            "relations", new String[]{relationsBasePath, "/relations"},
+            "entityReactions", new String[]{entityReactionsBasePath, "/entity-reactions"},
+            "listReactions", new String[]{listReactionsBasePath, "/list-reactions"}
+        );
+        
+        controllerMappings.forEach((controllerName, paths) -> {
+            String inboundPath = paths[0];  // e.g., "entities"
+            String backendPrefix = paths[1]; // e.g., "/entities"
+            
+            // Check if controller is disabled by toggles
+            if (isControllerDisabled(controllerName)) {
+                log.debug("Skipping base routes for controller '{}' - disabled by toggles", controllerName);
+                return;
+            }
+            
+            // Build virtual path: baseUri already normalized, just append controller path
+            // baseUri ends without trailing slash, so add / before inboundPath
+            String virtualPathPrefix = baseUri + "/" + inboundPath;
+            String tagName = capitalizeFirst(inboundPath.replace("-", " "));
+            
+            // Collection route: GET/POST /entities
+            PathItem collectionPathItem = rawPaths.get(backendPrefix);
+            if (collectionPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(collectionPathItem, controllerName, tagName, false);
+                String fullPath = virtualPathPrefix;
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added base controller route: {}", fullPath);
+                }
+            }
+            
+            // Count route: GET /entities/count
+            PathItem countPathItem = rawPaths.get(backendPrefix + "/count");
+            if (countPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(countPathItem, controllerName, tagName, false);
+                String fullPath = virtualPathPrefix + "/count";
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added base controller route: {}", fullPath);
+                }
+            }
+            
+            // Instance route: GET/PUT/PATCH/DELETE /entities/{id}
+            PathItem instancePathItem = rawPaths.get(backendPrefix + "/{id}");
+            if (instancePathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(instancePathItem, controllerName, tagName, true);
+                String fullPath = virtualPathPrefix + "/{id}";
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added base controller route: {}", fullPath);
+                }
+            }
+            
+            // Children route: GET/POST /entities/{id}/children
+            PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
+            if (childrenPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
+                String fullPath = virtualPathPrefix + "/{id}/children";
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added base controller route: {}", fullPath);
+                }
+            }
+            
+            // Parents route: GET /entities/{id}/parents
+            PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
+            if (parentsPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
+                String fullPath = virtualPathPrefix + "/{id}/parents";
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added base controller route: {}", fullPath);
+                }
+            }
+        });
+    }
+    
+    /**
+     * Transforms a PathItem for base controller routes (non-aliased).
+     * These operations are tagged with the controller name (e.g., "Entities").
+     */
+    private PathItem transformBaseControllerPathItem(PathItem original, String controllerName, String tagName, boolean isInstancePath) {
+        PathItem transformed = new PathItem();
+        transformed.setDescription(original.getDescription());
+        
+        if (original.getGet() != null) {
+            transformed.setGet(transformBaseControllerOperation(original.getGet(), controllerName, tagName, "get", isInstancePath));
+        }
+        if (original.getPost() != null) {
+            transformed.setPost(transformBaseControllerOperation(original.getPost(), controllerName, tagName, "post", isInstancePath));
+        }
+        if (original.getPut() != null) {
+            transformed.setPut(transformBaseControllerOperation(original.getPut(), controllerName, tagName, "put", isInstancePath));
+        }
+        if (original.getPatch() != null) {
+            transformed.setPatch(transformBaseControllerOperation(original.getPatch(), controllerName, tagName, "patch", isInstancePath));
+        }
+        if (original.getDelete() != null) {
+            transformed.setDelete(transformBaseControllerOperation(original.getDelete(), controllerName, tagName, "delete", isInstancePath));
+        }
+        
+        return transformed;
+    }
+    
+    /**
+     * Transforms an operation for base controller routes.
+     */
+    private Operation transformBaseControllerOperation(Operation original, String controllerName, String tagName, String httpMethod, boolean isInstancePath) {
+        Operation transformed = new Operation();
+        
+        // Copy base properties
+        transformed.setOperationId(original.getOperationId());
+        transformed.setSummary(original.getSummary());
+        transformed.setDescription(original.getDescription());
+        transformed.setParameters(original.getParameters() != null 
+            ? new ArrayList<>(original.getParameters()) 
+            : new ArrayList<>());
+        
+        // Clone request body and responses to avoid shared references
+        transformed.setRequestBody(cloneRequestBody(original.getRequestBody()));
+        transformed.setResponses(original.getResponses() != null 
+            ? cloneResponses(original.getResponses()) 
+            : new ApiResponses());
+        
+        // Set tag for grouping
+        transformed.setTags(List.of(tagName));
+        
+        return transformed;
     }
     
     /**

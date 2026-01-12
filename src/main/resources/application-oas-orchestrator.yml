@@ -40,7 +40,7 @@ app:
         spec-path: /explorer/openapi.json
         
         # Connection timeout in milliseconds
-        connect-timeout-ms: 5000
+        connect-timeout-ms: 10000
         
         # Read timeout in milliseconds
         read-timeout-ms: 10000
