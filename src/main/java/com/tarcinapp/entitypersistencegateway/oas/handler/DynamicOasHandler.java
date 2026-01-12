@@ -194,19 +194,23 @@ public class DynamicOasHandler {
     
     /**
      * Extracts the security context from the request.
-     * Returns empty context for anonymous requests if allowed.
+     * Authentication is REQUIRED when TokenParserRegistry has configured providers.
+     * This aligns with the existing AuthenticateRequest filter logic.
      */
     private Mono<GatewaySecurityContext> extractSecurityContext(ServerRequest request) {
         String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
         
+        // Use existing auth configuration - if providers are configured, auth is required
+        boolean authRequired = tokenParserRegistry.isConfigured();
+        
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            if (properties.getEndpoints().isRequireAuthentication()) {
+            if (authRequired) {
                 return Mono.error(new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Authentication required for API documentation"
                 ));
             }
-            log.debug("No auth header, proceeding as anonymous");
+            log.debug("No auth header, proceeding as anonymous (auth not configured)");
             return Mono.just(new GatewaySecurityContext());
         }
         
@@ -236,7 +240,7 @@ public class DynamicOasHandler {
             })
             .onErrorResume(e -> {
                 log.warn("JWT authentication failed: {}", e.getMessage());
-                if (properties.getEndpoints().isRequireAuthentication()) {
+                if (authRequired) {
                     return Mono.error(new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
                         "Invalid authentication token"

@@ -28,8 +28,9 @@ app:
         # Path for YAML-formatted OpenAPI spec
         yaml: /openapi.yaml
         
-        # Whether to require authentication for accessing docs
-        require-authentication: false
+        # NOTE: Authentication requirement is controlled by app.auth.providers
+        # If providers are configured (via application-auth.yml or dev.properties),
+        # JWT is required. No separate OAS-specific toggle needed.
       
       # --------------------------------------------------------
       # Backend Service Configuration

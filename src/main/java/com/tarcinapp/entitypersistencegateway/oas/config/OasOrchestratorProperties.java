@@ -85,11 +85,10 @@ public class OasOrchestratorProperties {
          */
         private String yaml = "/openapi.yaml";
         
-        /**
-         * Whether to require authentication for OAS endpoints.
-         * When false, anonymous users receive a spec with public-only fields.
-         */
-        private boolean requireAuthentication = false;
+        // NOTE: Authentication requirement is NOT configurable here.
+        // It follows the same logic as all gateway routes:
+        // If app.auth.providers is configured, JWT is required.
+        // See TokenParserRegistry.isConfigured()
     }
     
     @Data

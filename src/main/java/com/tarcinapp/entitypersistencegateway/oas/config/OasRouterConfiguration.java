@@ -142,7 +142,7 @@ public class OasRouterConfiguration {
                 log.info("L1 Cache Size: {}", properties.getCache().getMaxLocalCacheSize());
                 log.info("OPA Fail-Closed: {}", properties.getOpa().isFailClosed());
                 log.info("OPA Policy Path: {}", properties.getOpa().getFieldPolicy());
-                log.info("Require Authentication: {}", properties.getEndpoints().isRequireAuthentication());
+                // Auth requirement follows app.auth.providers via TokenParserRegistry.isConfigured()
                 log.info("===============================================");
             }
         }

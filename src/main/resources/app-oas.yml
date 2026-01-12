@@ -66,9 +66,9 @@ app:
       url: "https://tarcinapp.com"
     
     servers:
-      - url: "https://api.tarcinapp.com/v1"
+      - url: "https://api.tarcinapp.com"
         description: "Production Environment"
-      - url: "http://localhost:8081/api/v1"
+      - url: "http://localhost:8081"
         description: "Local Development"
 
     # ----------------------------------------------------------------

@@ -12,6 +12,7 @@ import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperti
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
@@ -111,6 +112,37 @@ public class OasTransformationEngine {
     @Value("${app.relationsBaseSchema:#{null}}")
     private String relationsBaseSchema;
     
+    @Value("${app.inbound.baseUri:}")
+    private String inboundBaseUri;
+    
+    // Inbound controller base paths from configuration
+    @Value("${app.inbound.controllerBasePaths.entities:entities}")
+    private String entitiesBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.lists:lists}")
+    private String listsBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.relations:relations}")
+    private String relationsBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.entityReactions:entity-reactions}")
+    private String entityReactionsBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.listReactions:list-reactions}")
+    private String listReactionsBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.entitiesThroughList:entities}")
+    private String entitiesThroughListBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.listsThroughEntity:lists}")
+    private String listsThroughEntityBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.reactionsThroughEntity:reactions}")
+    private String reactionsThroughEntityBasePath;
+    
+    @Value("${app.inbound.controllerBasePaths.reactionsThroughList:reactions}")
+    private String reactionsThroughListBasePath;
+    
     // Thread-local storage for request context during transformation
     private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
     
@@ -207,16 +239,19 @@ public class OasTransformationEngine {
         // 4. Add merged domain schemas (base + alias-specific)
         addMergedDomainSchemas(transformed);
         
-        // 5. Add gateway error responses to all operations
+        // 5. CRITICAL: Bind request bodies to domain-specific schemas (not generic NewEntity)
+        bindRequestBodiesToDomainSchemas(transformed);
+        
+        // 6. Add gateway error responses to all operations
         addGatewayErrorResponses(transformed, rawOas);
         
-        // 6. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
+        // 7. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
         fixBrokenRefs(transformed);
         
-        // 7. Fix schema validation keywords (uniqueItems must be on array, not items)
+        // 8. Fix schema validation keywords (uniqueItems must be on array, not items)
         fixSchemaValidationKeywords(transformed);
         
-        // 8. Deduplicate parameters (name+in must be unique per operation)
+        // 9. Deduplicate parameters (name+in must be unique per operation)
         deduplicateParameters(transformed);
         
         log.info("OAS transformation complete: {} paths virtualized", 
@@ -355,6 +390,7 @@ public class OasTransformationEngine {
     /**
      * Transforms all paths from the backend OAS.
      * Applies route toggle filtering based on TogglesProperties configuration.
+     * Prefixes all virtualized paths with the configured base URI (e.g., /api/v1).
      */
     private Paths transformPaths(Paths rawPaths) {
         if (rawPaths == null) {
@@ -362,6 +398,9 @@ public class OasTransformationEngine {
         }
         
         Paths virtualizedPaths = new Paths();
+        String baseUri = getBaseUriPrefix();
+        
+        log.debug("Using base URI prefix for OAS paths: '{}'", baseUri);
         
         // Process each controller's aliases
         openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
@@ -395,20 +434,24 @@ public class OasTransformationEngine {
                         return;
                     }
                     
-                    if (virtualizedPaths.containsKey(tp.getVirtualPath())) {
-                        log.warn("Duplicate virtualized path: {}", tp.getVirtualPath());
+                    // Prefix the path with base URI (e.g., /books → /api/v1/books)
+                    String fullPath = baseUri + tp.getVirtualPath();
+                    
+                    if (virtualizedPaths.containsKey(fullPath)) {
+                        log.warn("Duplicate virtualized path: {}", fullPath);
                     } else {
-                        virtualizedPaths.addPathItem(tp.getVirtualPath(), tp.getPathItem());
+                        virtualizedPaths.addPathItem(fullPath, tp.getPathItem());
                     }
                 });
             });
         });
         
-        // Optionally include generic endpoints
+        // Optionally include generic endpoints (also prefixed with base URI)
         if (orchestratorProperties.getTransformation().isIncludeGenericEndpoints()) {
             rawPaths.forEach((path, pathItem) -> {
-                if (!isPathVirtualized(path, virtualizedPaths)) {
-                    virtualizedPaths.addPathItem(path, pathItem);
+                String fullPath = baseUri + path;
+                if (!isPathVirtualized(fullPath, virtualizedPaths)) {
+                    virtualizedPaths.addPathItem(fullPath, pathItem);
                 }
             });
         }
@@ -443,7 +486,8 @@ public class OasTransformationEngine {
     }
     
     /**
-     * Generates base paths (collection: /books, instance: /books/{id}).
+     * Generates base paths (collection: /entity-reactions/comments, instance: /entity-reactions/comments/{id}).
+     * The path structure is: /{controllerBasePath}/{alias}
      * @param parentAlias If not null, this is a nested resource under the parent
      */
     private List<TransformedPath> generateBasePaths(
@@ -454,7 +498,13 @@ public class OasTransformationEngine {
             AliasConfig parentAlias) {
         
         List<TransformedPath> result = new ArrayList<>();
-        String virtualPrefix = "/" + aliasConfig.getAlias();
+        
+        // Get the inbound controller base path (e.g., "entity-reactions" for entityReactions controller)
+        String controllerBasePath = getInboundControllerBasePath(controllerName);
+        
+        // Build virtual prefix: /{controllerBasePath}/{alias}
+        // e.g., /entity-reactions/comments (NOT just /comments)
+        String virtualPrefix = "/" + controllerBasePath + "/" + aliasConfig.getAlias();
         
         // Determine the tag - use parent's alias if this is a nested resource
         String tagName = parentAlias != null 
@@ -497,6 +547,7 @@ public class OasTransformationEngine {
     /**
      * Generates hierarchy paths for children and parents.
      * Children/parents are nested under the parent's tag for proper grouping.
+     * Path structure: /{controllerBasePath}/{parentAlias}/{id}/{childAlias}
      */
     private List<TransformedPath> generateHierarchyPaths(
             String backendPrefix,
@@ -506,7 +557,12 @@ public class OasTransformationEngine {
             AliasConfig rootParentAlias) {
         
         List<TransformedPath> result = new ArrayList<>();
-        String virtualPrefix = "/" + aliasConfig.getAlias();
+        
+        // Get the inbound controller base path (e.g., "entities" for entities controller)
+        String controllerBasePath = getInboundControllerBasePath(controllerName);
+        
+        // Build virtual prefix: /{controllerBasePath}/{alias}
+        String virtualPrefix = "/" + controllerBasePath + "/" + aliasConfig.getAlias();
         
         // The tag for all nested resources is the ROOT parent's alias
         String parentTagName = capitalizeFirst(rootParentAlias.getAlias());
@@ -628,11 +684,16 @@ public class OasTransformationEngine {
         transformed.setParameters(original.getParameters() != null 
             ? new ArrayList<>(original.getParameters()) 
             : new ArrayList<>());
-        transformed.setRequestBody(original.getRequestBody());
         
-        // MANDATORY: responses object is required per OpenAPI spec
+        // CRITICAL: Deep clone request body to avoid sharing between virtualized paths!
+        // Without this, /books/{id}/chapters and /authors/{id}/books would share the same
+        // RequestBody object, and binding one would overwrite the other.
+        transformed.setRequestBody(cloneRequestBody(original.getRequestBody()));
+        
+        // CRITICAL: Deep clone responses to avoid sharing response schemas between paths!
+        // Without this, GET /books and GET /authors would share response bindings.
         if (original.getResponses() != null && !original.getResponses().isEmpty()) {
-            transformed.setResponses(original.getResponses());
+            transformed.setResponses(cloneResponses(original.getResponses()));
         } else {
             io.swagger.v3.oas.models.responses.ApiResponses defaultResponses = 
                 new io.swagger.v3.oas.models.responses.ApiResponses();
@@ -746,11 +807,16 @@ public class OasTransformationEngine {
         transformed.setParameters(original.getParameters() != null 
             ? new ArrayList<>(original.getParameters()) 
             : new ArrayList<>());
-        transformed.setRequestBody(original.getRequestBody());
         
-        // MANDATORY: responses object is required per OpenAPI spec
+        // CRITICAL: Deep clone request body to avoid sharing between virtualized paths!
+        // Without this, /books and /authors would share the same RequestBody object,
+        // and binding /books→NewBook then /authors→NewAuthor would overwrite both.
+        transformed.setRequestBody(cloneRequestBody(original.getRequestBody()));
+        
+        // CRITICAL: Deep clone responses to avoid sharing response schemas between paths!
+        // Without this, GET /books and GET /authors would share response bindings.
         if (original.getResponses() != null && !original.getResponses().isEmpty()) {
-            transformed.setResponses(original.getResponses());
+            transformed.setResponses(cloneResponses(original.getResponses()));
         } else {
             // Provide default response if none exists
             io.swagger.v3.oas.models.responses.ApiResponses defaultResponses = 
@@ -971,6 +1037,163 @@ public class OasTransformationEngine {
             return plural.substring(0, plural.length() - 1);
         }
         return plural;
+    }
+    
+    /**
+     * Gets the normalized base URI path prefix for all API endpoints.
+     * Removes trailing slashes and returns empty string if not configured.
+     * 
+     * @return Normalized base URI (e.g., "/api/v1") or empty string
+     */
+    private String getBaseUriPrefix() {
+        if (inboundBaseUri == null || inboundBaseUri.isEmpty()) {
+            return "";
+        }
+        // Remove trailing slashes but keep leading slash
+        String normalized = inboundBaseUri.replaceAll("/+$", "");
+        // Ensure it starts with /
+        if (!normalized.isEmpty() && !normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        return normalized;
+    }
+    
+    /**
+     * Gets the inbound controller base path for the given controller name.
+     * This is the path segment used in actual gateway routes (e.g., "entity-reactions" for entityReactions).
+     * 
+     * @param controllerName The controller name (e.g., "entities", "entityReactions")
+     * @return The controller base path (e.g., "entities", "entity-reactions")
+     */
+    private String getInboundControllerBasePath(String controllerName) {
+        return switch (controllerName) {
+            case "entities" -> entitiesBasePath;
+            case "lists" -> listsBasePath;
+            case "relations" -> relationsBasePath;
+            case "entityReactions" -> entityReactionsBasePath;
+            case "listReactions" -> listReactionsBasePath;
+            case "entitiesThroughList" -> entitiesThroughListBasePath;
+            case "listsThroughEntity" -> listsThroughEntityBasePath;
+            case "reactionsThroughEntity" -> reactionsThroughEntityBasePath;
+            case "reactionsThroughList" -> reactionsThroughListBasePath;
+            default -> {
+                log.warn("Unknown controller name for inbound path: {}", controllerName);
+                yield controllerName;
+            }
+        };
+    }
+    
+    /**
+     * Deep clones a RequestBody to ensure virtualized paths don't share the same object.
+     * This is critical because multiple aliases (books, authors) come from the same
+     * backend path (/entities) and would otherwise share the same requestBody reference.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private io.swagger.v3.oas.models.parameters.RequestBody cloneRequestBody(
+            io.swagger.v3.oas.models.parameters.RequestBody original) {
+        if (original == null) {
+            return null;
+        }
+        
+        io.swagger.v3.oas.models.parameters.RequestBody cloned = 
+            new io.swagger.v3.oas.models.parameters.RequestBody();
+        cloned.setDescription(original.getDescription());
+        cloned.setRequired(original.getRequired());
+        cloned.set$ref(original.get$ref());
+        
+        if (original.getContent() != null) {
+            Content clonedContent = new Content();
+            original.getContent().forEach((mediaTypeName, mediaType) -> {
+                io.swagger.v3.oas.models.media.MediaType clonedMediaType = 
+                    new io.swagger.v3.oas.models.media.MediaType();
+                
+                // Clone schema (shallow is OK - we'll replace with $ref anyway)
+                if (mediaType.getSchema() != null) {
+                    Schema clonedSchema = new Schema();
+                    clonedSchema.set$ref(mediaType.getSchema().get$ref());
+                    clonedSchema.setType(mediaType.getSchema().getType());
+                    clonedSchema.setProperties(mediaType.getSchema().getProperties());
+                    clonedSchema.setRequired(mediaType.getSchema().getRequired());
+                    clonedSchema.setDescription(mediaType.getSchema().getDescription());
+                    clonedMediaType.setSchema(clonedSchema);
+                }
+                
+                clonedMediaType.setExample(mediaType.getExample());
+                clonedMediaType.setExamples(mediaType.getExamples());
+                clonedMediaType.setEncoding(mediaType.getEncoding());
+                
+                clonedContent.addMediaType(mediaTypeName, clonedMediaType);
+            });
+            cloned.setContent(clonedContent);
+        }
+        
+        return cloned;
+    }
+    
+    /**
+     * Deep clones ApiResponses to avoid sharing response objects between virtualized paths.
+     * CRITICAL: Without this cloning, binding response schemas for /books would also affect
+     * /authors if they share the same backend operation.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private io.swagger.v3.oas.models.responses.ApiResponses cloneResponses(
+            io.swagger.v3.oas.models.responses.ApiResponses original) {
+        if (original == null) {
+            return null;
+        }
+        
+        io.swagger.v3.oas.models.responses.ApiResponses cloned = 
+            new io.swagger.v3.oas.models.responses.ApiResponses();
+        
+        original.forEach((statusCode, response) -> {
+            io.swagger.v3.oas.models.responses.ApiResponse clonedResponse = 
+                new io.swagger.v3.oas.models.responses.ApiResponse();
+            clonedResponse.setDescription(response.getDescription());
+            clonedResponse.setHeaders(response.getHeaders());
+            clonedResponse.set$ref(response.get$ref());
+            clonedResponse.setExtensions(response.getExtensions());
+            clonedResponse.setLinks(response.getLinks());
+            
+            if (response.getContent() != null) {
+                Content clonedContent = new Content();
+                response.getContent().forEach((mediaTypeName, mediaType) -> {
+                    io.swagger.v3.oas.models.media.MediaType clonedMediaType = 
+                        new io.swagger.v3.oas.models.media.MediaType();
+                    
+                    // Clone schema (shallow is OK - we'll replace with $ref anyway)
+                    if (mediaType.getSchema() != null) {
+                        Schema clonedSchema = new Schema();
+                        clonedSchema.set$ref(mediaType.getSchema().get$ref());
+                        clonedSchema.setType(mediaType.getSchema().getType());
+                        clonedSchema.setProperties(mediaType.getSchema().getProperties());
+                        clonedSchema.setRequired(mediaType.getSchema().getRequired());
+                        clonedSchema.setDescription(mediaType.getSchema().getDescription());
+                        
+                        // Clone array items if present
+                        if (mediaType.getSchema().getItems() != null) {
+                            Schema itemsSchema = mediaType.getSchema().getItems();
+                            Schema clonedItems = new Schema();
+                            clonedItems.set$ref(itemsSchema.get$ref());
+                            clonedItems.setType(itemsSchema.getType());
+                            clonedSchema.setItems(clonedItems);
+                        }
+                        
+                        clonedMediaType.setSchema(clonedSchema);
+                    }
+                    
+                    clonedMediaType.setExample(mediaType.getExample());
+                    clonedMediaType.setExamples(mediaType.getExamples());
+                    clonedMediaType.setEncoding(mediaType.getEncoding());
+                    
+                    clonedContent.addMediaType(mediaTypeName, clonedMediaType);
+                });
+                clonedResponse.setContent(clonedContent);
+            }
+            
+            cloned.addApiResponse(statusCode, clonedResponse);
+        });
+        
+        return cloned;
     }
     
     /**
@@ -1564,14 +1787,16 @@ public class OasTransformationEngine {
                 JsonNode effectiveBase = isRelationsController ? relationsBaseNode : baseSchemaNode;
                 
                 controllerConfig.getAliases().forEach(aliasConfig -> {
-                    // Process the top-level alias
-                    addSchemaForAlias(schemas, aliasConfig, effectiveBase);
+                    String parentAlias = aliasConfig.getAlias();
                     
-                    // Process children hierarchy (e.g., replies under comments)
-                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase);
+                    // Process the top-level alias: /authors → Author
+                    addSchemaForAlias(schemas, aliasConfig, effectiveBase, null, null);
                     
-                    // Process parents hierarchy (if any)
-                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase);
+                    // Process children hierarchy: /books/{id}/chapters → BookChildChapter
+                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase, parentAlias, "Child");
+                    
+                    // Process parents hierarchy: /books/{id}/authors → BookParentAuthor
+                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase, parentAlias, "Parent");
                 });
             });
             
@@ -1582,40 +1807,67 @@ public class OasTransformationEngine {
     
     /**
      * Recursively processes hierarchy (children/parents) and adds their schemas.
+     * @param parentAlias The parent alias (e.g., "books")
+     * @param hierarchyType "Child" or "Parent" for naming
      */
     private void processHierarchySchemas(Map<String, Schema> schemas, 
             List<AliasConfig> hierarchy,
-            JsonNode effectiveBase) {
+            JsonNode effectiveBase,
+            String parentAlias,
+            String hierarchyType) {
         if (hierarchy == null || hierarchy.isEmpty()) return;
         
-        for (var childConfig : hierarchy) {
-            // Add schema for this hierarchy level
-            addSchemaForAlias(schemas, childConfig, effectiveBase);
+        for (var nestedConfig : hierarchy) {
+            // Add schema for this hierarchy level with path-specific name
+            // e.g., BookChildChapter, BookParentAuthor
+            addSchemaForAlias(schemas, nestedConfig, effectiveBase, parentAlias, hierarchyType);
             
-            // Recurse into nested children
-            processHierarchySchemas(schemas, childConfig.getChildren(), effectiveBase);
-            
-            // Recurse into nested parents
-            processHierarchySchemas(schemas, childConfig.getParents(), effectiveBase);
+            // Recurse into nested children (nested under the current hierarchy item)
+            String newParent = parentAlias + hierarchyType + capitalizeFirst(nestedConfig.getKind());
+            processHierarchySchemas(schemas, nestedConfig.getChildren(), effectiveBase, newParent, "Child");
+            processHierarchySchemas(schemas, nestedConfig.getParents(), effectiveBase, newParent, "Parent");
         }
     }
     
     /**
      * Creates and adds merged schema for a single alias config.
+     * @param parentAlias If not null, creates path-specific schema name (e.g., BookChildChapter)
+     * @param hierarchyType "Child" or "Parent" - used in naming for nested schemas
      */
     private void addSchemaForAlias(Map<String, Schema> schemas,
             AliasConfig aliasConfig,
-            JsonNode effectiveBase) {
-        if (aliasConfig == null || aliasConfig.getSchema() == null || aliasConfig.getKind() == null) {
+            JsonNode effectiveBase,
+            String parentAlias,
+            String hierarchyType) {
+        if (aliasConfig == null) {
+            log.info("addSchemaForAlias: aliasConfig is null, skipping");
+            return;
+        }
+        if (aliasConfig.getSchema() == null) {
+            log.info("addSchemaForAlias: schema is null for alias={}, kind={}, parent={}", 
+                aliasConfig.getAlias(), aliasConfig.getKind(), parentAlias);
+            return;
+        }
+        if (aliasConfig.getKind() == null) {
+            log.info("addSchemaForAlias: kind is null for alias={}", aliasConfig.getAlias());
             return;
         }
         
         try {
-            String schemaName = capitalizeFirst(aliasConfig.getKind());
+            // Build schema name based on path context
+            // Top-level: Author, Book
+            // Nested: BookChildChapter, BookParentAuthor
+            String kindName = capitalizeFirst(aliasConfig.getKind());
+            String schemaName;
+            if (parentAlias != null && hierarchyType != null) {
+                schemaName = capitalizeFirst(parentAlias) + hierarchyType + kindName;
+            } else {
+                schemaName = kindName;
+            }
             
-            // Skip if already added (prevents duplicates from multiple paths)
+            // Each path gets its own schema - no overwriting needed
             if (schemas.containsKey(schemaName)) {
-                return;
+                return; // Already added (same path processed twice somehow)
             }
             
             Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase);
@@ -1626,8 +1878,8 @@ public class OasTransformationEngine {
             newSchema.setRequired(null); // No required for creation (gateway adds defaults)
             schemas.put("New" + schemaName, newSchema);
             
-            log.debug("Added merged domain schema: {} (from kind: {}, alias: {})", 
-                schemaName, aliasConfig.getKind(), aliasConfig.getAlias());
+            log.debug("Added merged domain schema: {} (from kind: {}, alias: {}, parent: {})", 
+                schemaName, aliasConfig.getKind(), aliasConfig.getAlias(), parentAlias);
         } catch (Exception e) {
             log.warn("Failed to merge schema for kind '{}': {}", 
                 aliasConfig.getKind(), e.getMessage());
@@ -1701,6 +1953,344 @@ public class OasTransformationEngine {
         }
         
         return merged;
+    }
+    
+    // ============================================================================
+    // SCHEMA BINDING (REQUEST BODIES AND RESPONSES)
+    // ============================================================================
+    
+    /**
+     * CRITICAL: Binds request bodies AND responses to domain-specific schemas.
+     * 
+     * This replaces inline "NewEntity", "GenericEntity" schemas with $ref to the merged
+     * domain schemas (e.g., NewBook, Book, BooksChildChapter, BooksParentAuthor).
+     * 
+     * Schema naming:
+     * - Top-level /authors → Author, NewAuthor
+     * - Nested /books/{id}/chapters → BooksChildChapter, NewBooksChildChapter  
+     * - Nested /books/{id}/authors → BooksParentAuthor, NewBooksParentAuthor
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void bindRequestBodiesToDomainSchemas(OpenAPI openApi) {
+        if (openApi.getPaths() == null) return;
+        
+        // Build a map of path → aliasConfig for quick lookup
+        Map<String, AliasContext> pathToAliasContext = buildPathToAliasContextMap();
+        
+        int requestBindCount = 0;
+        int responseBindCount = 0;
+        
+        for (Map.Entry<String, PathItem> entry : openApi.getPaths().entrySet()) {
+            String path = entry.getKey();
+            PathItem pathItem = entry.getValue();
+            
+            AliasContext aliasContext = findAliasContextForPath(path, pathToAliasContext);
+            if (aliasContext == null) {
+                continue; // No alias config for this path, skip binding
+            }
+            
+            // Use path-specific schema name (e.g., Author, BooksChildChapter, BooksParentAuthor)
+            String schemaName = aliasContext.getSchemaName();
+            boolean isCollectionPath = !path.contains("{id}") && !path.endsWith("/count");
+            boolean isCountPath = path.endsWith("/count");
+            
+            // === BIND REQUEST BODIES ===
+            
+            // Bind POST request body → NewXxx schema
+            if (pathItem.getPost() != null) {
+                if (bindOperationRequestBody(pathItem.getPost(), "New" + schemaName, openApi)) {
+                    requestBindCount++;
+                    log.debug("Bound POST {} requestBody → New{}", path, schemaName);
+                }
+                // Bind POST 200/201 response → Xxx schema (single object)
+                if (bindOperationResponse(pathItem.getPost(), schemaName, openApi, false)) {
+                    responseBindCount++;
+                    log.debug("Bound POST {} response → {}", path, schemaName);
+                }
+            }
+            
+            // Bind PUT request body → Xxx schema (full replacement)
+            if (pathItem.getPut() != null) {
+                if (bindOperationRequestBody(pathItem.getPut(), schemaName, openApi)) {
+                    requestBindCount++;
+                    log.debug("Bound PUT {} requestBody → {}", path, schemaName);
+                }
+                // Bind PUT response → Xxx schema
+                if (bindOperationResponse(pathItem.getPut(), schemaName, openApi, false)) {
+                    responseBindCount++;
+                    log.debug("Bound PUT {} response → {}", path, schemaName);
+                }
+            }
+            
+            // Bind PATCH request body → Xxx schema (partial update)
+            if (pathItem.getPatch() != null) {
+                if (bindOperationRequestBody(pathItem.getPatch(), schemaName, openApi)) {
+                    requestBindCount++;
+                    log.debug("Bound PATCH {} requestBody → {}", path, schemaName);
+                }
+                // Bind PATCH response → Xxx schema
+                if (bindOperationResponse(pathItem.getPatch(), schemaName, openApi, false)) {
+                    responseBindCount++;
+                    log.debug("Bound PATCH {} response → {}", path, schemaName);
+                }
+            }
+            
+            // === BIND RESPONSE SCHEMAS FOR GET ===
+            
+            if (pathItem.getGet() != null && !isCountPath) {
+                // GET on collection → array of Xxx schema
+                // GET on instance → single Xxx schema
+                if (bindOperationResponse(pathItem.getGet(), schemaName, openApi, isCollectionPath)) {
+                    responseBindCount++;
+                    log.debug("Bound GET {} response → {}{}",  path, isCollectionPath ? "array of " : "", schemaName);
+                }
+            }
+            
+            // === BIND RESPONSE SCHEMAS FOR DELETE ===
+            
+            if (pathItem.getDelete() != null) {
+                // DELETE typically returns the deleted object
+                if (bindOperationResponse(pathItem.getDelete(), schemaName, openApi, false)) {
+                    responseBindCount++;
+                    log.debug("Bound DELETE {} response → {}", path, schemaName);
+                }
+            }
+        }
+        
+        log.info("Bound {} request bodies and {} responses to domain-specific schemas", 
+            requestBindCount, responseBindCount);
+    }
+    
+    /**
+     * Binds an operation's request body to a domain schema using $ref.
+     * Returns true if binding was performed.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private boolean bindOperationRequestBody(Operation operation, String schemaName, OpenAPI openApi) {
+        if (operation == null || operation.getRequestBody() == null) {
+            return false;
+        }
+        
+        // Check if the schema exists in components
+        if (openApi.getComponents() == null || 
+            openApi.getComponents().getSchemas() == null ||
+            !openApi.getComponents().getSchemas().containsKey(schemaName)) {
+            log.debug("Schema '{}' not found in components, skipping binding", schemaName);
+            return false;
+        }
+        
+        Content content = operation.getRequestBody().getContent();
+        if (content == null) return false;
+        
+        // Replace schema in application/json media type
+        io.swagger.v3.oas.models.media.MediaType mediaType = content.get("application/json");
+        if (mediaType == null) {
+            // Try to get any media type
+            mediaType = content.values().stream().findFirst().orElse(null);
+        }
+        
+        if (mediaType != null) {
+            // Replace inline schema with $ref
+            Schema refSchema = new Schema();
+            refSchema.set$ref("#/components/schemas/" + schemaName);
+            mediaType.setSchema(refSchema);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Binds operation response schemas to domain-specific schemas.
+     * 
+     * @param operation The operation to bind responses for
+     * @param schemaName The domain schema name (e.g., "Book", "Author")
+     * @param openApi The OpenAPI spec to reference schemas from
+     * @param isArray If true, wraps the schema reference in an array
+     * @return true if at least one response was bound
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private boolean bindOperationResponse(Operation operation, String schemaName, OpenAPI openApi, boolean isArray) {
+        if (operation == null || operation.getResponses() == null) {
+            return false;
+        }
+        
+        // Check if the schema exists in components
+        if (openApi.getComponents() == null || 
+            openApi.getComponents().getSchemas() == null ||
+            !openApi.getComponents().getSchemas().containsKey(schemaName)) {
+            log.debug("Schema '{}' not found in components, skipping response binding", schemaName);
+            return false;
+        }
+        
+        boolean bound = false;
+        
+        // Bind 200 OK response
+        ApiResponse response200 = operation.getResponses().get("200");
+        if (response200 != null && bindResponseContent(response200, schemaName, isArray)) {
+            bound = true;
+        }
+        
+        // Bind 201 Created response (for POST)
+        ApiResponse response201 = operation.getResponses().get("201");
+        if (response201 != null && bindResponseContent(response201, schemaName, false)) {
+            bound = true;
+        }
+        
+        return bound;
+    }
+    
+    /**
+     * Helper to bind a specific response's content to a schema reference.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private boolean bindResponseContent(ApiResponse response, String schemaName, boolean isArray) {
+        if (response == null || response.getContent() == null) {
+            return false;
+        }
+        
+        Content content = response.getContent();
+        
+        // Try application/json first, then any other media type
+        io.swagger.v3.oas.models.media.MediaType mediaType = content.get("application/json");
+        if (mediaType == null) {
+            mediaType = content.values().stream().findFirst().orElse(null);
+        }
+        
+        if (mediaType != null) {
+            Schema refSchema = new Schema();
+            refSchema.set$ref("#/components/schemas/" + schemaName);
+            
+            if (isArray) {
+                // Wrap in array schema for collection endpoints
+                ArraySchema arraySchema = new ArraySchema();
+                arraySchema.setItems(refSchema);
+                mediaType.setSchema(arraySchema);
+            } else {
+                mediaType.setSchema(refSchema);
+            }
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Context class to track alias information for schema binding.
+     */
+    @Data
+    @AllArgsConstructor
+    private static class AliasContext {
+        private String alias;
+        private String kind;
+        private String controllerName;
+        private boolean isNested;        // true if this is a child/parent path
+        private String parentAlias;      // the parent alias (e.g., "books" for /books/{id}/chapters)
+        private String hierarchyType;    // "Child" or "Parent" or null for top-level
+        
+        /**
+         * Gets the schema name for this context.
+         * Top-level: Author, Book
+         * Nested: BooksChildChapter, BooksParentAuthor
+         */
+        public String getSchemaName() {
+            String kindName = kind.substring(0, 1).toUpperCase() + kind.substring(1);
+            if (parentAlias != null && hierarchyType != null) {
+                String parentName = parentAlias.substring(0, 1).toUpperCase() + parentAlias.substring(1);
+                return parentName + hierarchyType + kindName;
+            }
+            return kindName;
+        }
+    }
+    
+    /**
+     * Builds a map of virtualized paths to their alias context.
+     * CRITICAL: Children/parent paths are NESTED under the parent alias.
+     * e.g., /authors/{id}/books, NOT /books (which is top-level)
+     */
+    private Map<String, AliasContext> buildPathToAliasContextMap() {
+        Map<String, AliasContext> map = new HashMap<>();
+        
+        openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
+            if (controllerConfig.getAliases() == null) return;
+            
+            for (AliasConfig aliasConfig : controllerConfig.getAliases()) {
+                String alias = aliasConfig.getAlias();
+                String kind = aliasConfig.getKind();
+                
+                if (alias == null || kind == null) continue;
+                
+                // Add paths for top-level alias
+                // /{alias} - collection (POST creates new)
+                map.put("/" + alias, new AliasContext(alias, kind, controllerName, false, null, null));
+                // /{alias}/count - count
+                map.put("/" + alias + "/count", new AliasContext(alias, kind, controllerName, false, null, null));
+                // /{alias}/{id} - instance (PUT/PATCH updates)
+                map.put("/" + alias + "/{id}", new AliasContext(alias, kind, controllerName, false, null, null));
+                
+                // Add paths for children - these are NESTED under THIS alias
+                // Path pattern: /{thisAlias}/{id}/{childAlias}
+                if (aliasConfig.getChildren() != null) {
+                    for (AliasConfig childConfig : aliasConfig.getChildren()) {
+                        String childAlias = childConfig.getAlias();
+                        String childKind = childConfig.getKind();
+                        
+                        if (childAlias == null || childKind == null) continue;
+                        
+                        // /{alias}/{id}/{childAlias} - creates child under this parent
+                        String childPath = "/" + alias + "/{id}/" + childAlias;
+                        map.put(childPath, new AliasContext(childAlias, childKind, controllerName, true, alias, "Child"));
+                    }
+                }
+                
+                // Add paths for parents - these are NESTED under THIS alias to query parents
+                // Path pattern: /{thisAlias}/{id}/{parentAlias}
+                if (aliasConfig.getParents() != null) {
+                    for (AliasConfig parentConfig : aliasConfig.getParents()) {
+                        String parentAlias = parentConfig.getAlias();
+                        String parentKind = parentConfig.getKind();
+                        
+                        if (parentAlias == null || parentKind == null) continue;
+                        
+                        // /{alias}/{id}/{parentAlias} - queries parents of this entity
+                        String parentPath = "/" + alias + "/{id}/" + parentAlias;
+                        map.put(parentPath, new AliasContext(parentAlias, parentKind, controllerName, true, alias, "Parent"));
+                    }
+                }
+            }
+        });
+        
+        log.debug("Built path-to-alias map with {} entries: {}", map.size(), map.keySet());
+        return map;
+    }
+    
+    /**
+     * Finds the alias context for a given path.
+     */
+    private AliasContext findAliasContextForPath(String path, Map<String, AliasContext> pathMap) {
+        // Direct match
+        if (pathMap.containsKey(path)) {
+            return pathMap.get(path);
+        }
+        
+        // Try pattern matching for paths with IDs
+        for (Map.Entry<String, AliasContext> entry : pathMap.entrySet()) {
+            String pattern = entry.getKey();
+            if (pathMatchesPattern(path, pattern)) {
+                return entry.getValue();
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Checks if a path matches a pattern (handles {id} placeholders).
+     */
+    private boolean pathMatchesPattern(String path, String pattern) {
+        // Simple pattern matching - convert {id} to regex
+        String regex = pattern.replaceAll("\\{[^}]+}", "[^/]+");
+        return path.matches("^" + regex + "$");
     }
     
     // ============================================================================
