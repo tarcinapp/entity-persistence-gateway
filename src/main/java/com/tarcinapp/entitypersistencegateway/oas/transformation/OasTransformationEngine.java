@@ -1938,13 +1938,13 @@ public class OasTransformationEngine {
                     String parentAlias = aliasConfig.getAlias();
                     
                     // Process the top-level alias: /authors → Author
-                    addSchemaForAlias(schemas, aliasConfig, effectiveBase, null, null);
+                    addSchemaForAlias(schemas, aliasConfig, effectiveBase, null, null, controllerName);
                     
                     // Process children hierarchy: /books/{id}/chapters → BookChildChapter
-                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase, parentAlias, "Child");
+                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase, parentAlias, "Child", controllerName);
                     
                     // Process parents hierarchy: /books/{id}/authors → BookParentAuthor
-                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase, parentAlias, "Parent");
+                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase, parentAlias, "Parent", controllerName);
                 });
             });
             
@@ -1957,23 +1957,25 @@ public class OasTransformationEngine {
      * Recursively processes hierarchy (children/parents) and adds their schemas.
      * @param parentAlias The parent alias (e.g., "books")
      * @param hierarchyType "Child" or "Parent" for naming
+     * @param controllerName The record type name (entities, lists, relations, etc.)
      */
     private void processHierarchySchemas(Map<String, Schema> schemas, 
             List<AliasConfig> hierarchy,
             JsonNode effectiveBase,
             String parentAlias,
-            String hierarchyType) {
+            String hierarchyType,
+            String controllerName) {
         if (hierarchy == null || hierarchy.isEmpty()) return;
         
         for (var nestedConfig : hierarchy) {
             // Add schema for this hierarchy level with path-specific name
             // e.g., BookChildChapter, BookParentAuthor
-            addSchemaForAlias(schemas, nestedConfig, effectiveBase, parentAlias, hierarchyType);
+            addSchemaForAlias(schemas, nestedConfig, effectiveBase, parentAlias, hierarchyType, controllerName);
             
             // Recurse into nested children (nested under the current hierarchy item)
             String newParent = parentAlias + hierarchyType + capitalizeFirst(nestedConfig.getKind());
-            processHierarchySchemas(schemas, nestedConfig.getChildren(), effectiveBase, newParent, "Child");
-            processHierarchySchemas(schemas, nestedConfig.getParents(), effectiveBase, newParent, "Parent");
+            processHierarchySchemas(schemas, nestedConfig.getChildren(), effectiveBase, newParent, "Child", controllerName);
+            processHierarchySchemas(schemas, nestedConfig.getParents(), effectiveBase, newParent, "Parent", controllerName);
         }
     }
     
@@ -1986,7 +1988,8 @@ public class OasTransformationEngine {
             AliasConfig aliasConfig,
             JsonNode effectiveBase,
             String parentAlias,
-            String hierarchyType) {
+            String hierarchyType,
+            String controllerName) {
         if (aliasConfig == null) {
             log.info("addSchemaForAlias: aliasConfig is null, skipping");
             return;
@@ -2018,16 +2021,16 @@ public class OasTransformationEngine {
                 return; // Already added (same path processed twice somehow)
             }
             
-            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase);
+            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
             schemas.put(schemaName, mergedSchema);
             
             // Also add "New" variant without required base fields for POST
-            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase);
+            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
             newSchema.setRequired(null); // No required for creation (gateway adds defaults)
             schemas.put("New" + schemaName, newSchema);
             
-            log.debug("Added merged domain schema: {} (from kind: {}, alias: {}, parent: {})", 
-                schemaName, aliasConfig.getKind(), aliasConfig.getAlias(), parentAlias);
+            log.debug("Added merged domain schema: {} (from kind: {}, alias: {}, parent: {}, recordType: {})", 
+                schemaName, aliasConfig.getKind(), aliasConfig.getAlias(), parentAlias, controllerName);
         } catch (Exception e) {
             log.warn("Failed to merge schema for kind '{}': {}", 
                 aliasConfig.getKind(), e.getMessage());
@@ -2037,9 +2040,15 @@ public class OasTransformationEngine {
     /**
      * Merges an alias-specific schema with the base schema.
      * Properties from alias override base; required arrays are merged.
+     * Injects x-record-type vendor extension for security policy evaluation.
+     * 
+     * @param aliasSchemaJson The alias-specific schema JSON
+     * @param baseSchemaNode The base schema node (entities or relations base)
+     * @param controllerName The record type (entities, lists, relations, entityReactions, listReactions)
+     * @return Merged schema with x-record-type extension
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private Schema mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode) 
+    private Schema mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode, String controllerName) 
             throws JsonProcessingException {
         
         JsonNode aliasNode = objectMapper.readTree(aliasSchemaJson);
@@ -2099,6 +2108,13 @@ public class OasTransformationEngine {
                 merged.setAdditionalProperties(addProps.asBoolean());
             }
         }
+        
+        // Inject x-record-type vendor extension for security policy evaluation
+        // This creates a deterministic link between schema and record type
+        if (merged.getExtensions() == null) {
+            merged.setExtensions(new LinkedHashMap<>());
+        }
+        merged.getExtensions().put("x-record-type", controllerName);
         
         return merged;
     }

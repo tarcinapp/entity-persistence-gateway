@@ -75,7 +75,7 @@ app:
         timeout: 500ms
         
         # Fail-closed mode (if true, OPA failure = 503)
-        fail-closed: false
+        fail-closed: true
       
       # --------------------------------------------------------
       # Transformation Configuration

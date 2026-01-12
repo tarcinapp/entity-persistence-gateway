@@ -11,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Component responsible for pruning OpenAPI schemas based on field-level permissions.
@@ -20,10 +18,16 @@ import java.util.regex.Pattern;
  * <p>This pruner removes properties from schemas that the user is forbidden to see,
  * ensuring the generated OAS only documents fields the user can actually access.</p>
  * 
+ * <h2>Schema Identification Strategy:</h2>
+ * <p>Uses OpenAPI vendor extension <code>x-record-type</code> to determine the record type
+ * of each schema. This extension is injected by OasTransformationEngine during schema
+ * generation and contains values: entities, lists, relations, entityReactions, listReactions.</p>
+ * 
  * <h2>Pruning Strategy:</h2>
  * <ol>
  *   <li>Deep clone the OpenAPI object to avoid mutating the cached version</li>
- *   <li>For each schema, determine the record type (entities, lists, etc.)</li>
+ *   <li>For each schema, read the x-record-type vendor extension</li>
+ *   <li>If x-record-type is missing, log CRITICAL error and skip schema (fail-safe)</li>
  *   <li>Retrieve forbidden fields from the permission context</li>
  *   <li>Recursively remove properties from the schema</li>
  *   <li>Also remove from 'required' arrays if present</li>
@@ -39,22 +43,8 @@ public class OasSchemaPruner {
     
     private final OasOrchestratorProperties properties;
     
-    // Pattern to extract record type from schema names
-    private static final Pattern RECORD_TYPE_PATTERN = Pattern.compile(
-        "^(GenericEntity|Entity|List|Relation|EntityReaction|ListReaction)",
-        Pattern.CASE_INSENSITIVE
-    );
-    
-    // Mapping from schema name patterns to record types
-    private static final Map<String, String> SCHEMA_TO_RECORD_TYPE = Map.of(
-        "entity", "entities",
-        "genericentity", "entities",
-        "list", "lists",
-        "relation", "relations",
-        "entityreaction", "entityReactions",
-        "listreaction", "listReactions",
-        "listtoentityrelation", "relations"
-    );
+    // Vendor extension property for record type identification
+    private static final String RECORD_TYPE_EXTENSION = "x-record-type";
     
     public OasSchemaPruner(OasOrchestratorProperties properties) {
         this.properties = properties;
@@ -92,14 +82,18 @@ public class OasSchemaPruner {
             String schemaName = entry.getKey();
             Schema<?> schema = entry.getValue();
             
-            String recordType = inferRecordType(schemaName);
+            // Read record type from x-record-type vendor extension
+            String recordType = getRecordTypeFromExtension(schema, schemaName);
             if (recordType == null) {
-                log.trace("Could not infer record type for schema: {}", schemaName);
+                // CRITICAL: Schema has no x-record-type extension
+                log.error("CRITICAL: Schema '{}' missing x-record-type vendor extension. " +
+                    "This is a security breach - schema pruning CANNOT proceed without explicit record type metadata. " +
+                    "All transformations must inject x-record-type extension.", schemaName);
+                // Skip this schema rather than guessing
                 continue;
             }
             
             // Get forbidden fields for this record type
-            // For schemas, we use getAllForbiddenFields since they're not kind-specific
             Set<String> forbiddenFields = permissions.getAllForbiddenFields(recordType);
             
             if (forbiddenFields.isEmpty()) {
@@ -118,6 +112,33 @@ public class OasSchemaPruner {
         log.info("Schema pruning complete: {} total fields pruned", totalPruned);
         
         return pruned;
+    }
+    
+    /**
+     * Reads the record type from the x-record-type vendor extension in the schema.
+     * 
+     * @param schema The schema to inspect
+     * @param schemaName The schema name (for logging)
+     * @return The record type string (entities, lists, relations, entityReactions, listReactions) or null if missing
+     */
+    private String getRecordTypeFromExtension(Schema<?> schema, String schemaName) {
+        if (schema == null || schema.getExtensions() == null) {
+            return null;
+        }
+        
+        Object extension = schema.getExtensions().get(RECORD_TYPE_EXTENSION);
+        if (extension == null) {
+            return null;
+        }
+        
+        String recordType = extension.toString();
+        if (recordType.isEmpty()) {
+            log.warn("Schema '{}' has empty x-record-type extension", schemaName);
+            return null;
+        }
+        
+        log.trace("Schema '{}' has x-record-type: {}", schemaName, recordType);
+        return recordType;
     }
     
     /**
@@ -234,35 +255,6 @@ public class OasSchemaPruner {
         if (required != null) {
             required.remove(field);
         }
-    }
-    
-    /**
-     * Infers the record type from a schema name.
-     * 
-     * @param schemaName The schema name (e.g., "GenericEntityWithRelations")
-     * @return The record type (e.g., "entities") or null if unrecognized
-     */
-    private String inferRecordType(String schemaName) {
-        if (schemaName == null) {
-            return null;
-        }
-        
-        String lowerName = schemaName.toLowerCase();
-        
-        for (Map.Entry<String, String> entry : SCHEMA_TO_RECORD_TYPE.entrySet()) {
-            if (lowerName.contains(entry.getKey())) {
-                return entry.getValue();
-            }
-        }
-        
-        // Try pattern matching
-        Matcher matcher = RECORD_TYPE_PATTERN.matcher(schemaName);
-        if (matcher.find()) {
-            String match = matcher.group(1).toLowerCase();
-            return SCHEMA_TO_RECORD_TYPE.get(match);
-        }
-        
-        return null;
     }
     
     /**
