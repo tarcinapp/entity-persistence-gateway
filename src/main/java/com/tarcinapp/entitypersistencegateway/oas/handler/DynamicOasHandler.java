@@ -297,12 +297,32 @@ public class DynamicOasHandler {
     /**
      * Computes the personalized OAS for a user.
      * This is the full transformation pipeline.
+     * 
+     * <p>The pipeline follows the EXACT same authorization pattern as gateway routes:</p>
+     * <ol>
+     *   <li>Fetch raw OAS from backend</li>
+     *   <li>Transform OAS (add paths, schemas, server info)</li>
+     *   <li>Query OPA for forbidden fields per operation (find, create, update)</li>
+     *   <li>Prune schemas based on operation-specific field permissions</li>
+     *   <li>Serialize to JSON/YAML</li>
+     * </ol>
+     * 
+     * <p>OPA is queried 3 times with different operation types:</p>
+     * <ul>
+     *   <li>find:   GET /entities, operation="find"</li>
+     *   <li>create: POST /entities, operation="create"</li>
+     *   <li>update: PATCH /entities, operation="update"</li>
+     * </ul>
      */
     private Mono<String> computePersonalizedOas(GatewaySecurityContext securityContext, RequestContext requestContext, OutputFormat format) {
         log.debug("Computing personalized OAS for user: {}",
             securityContext.getAuthSubject() != null ? securityContext.getAuthSubject() : "anonymous");
         
-        // Pipeline: Fetch → Transform (with request context) → Get Permissions → Prune → Serialize
+        // Use a base path for OPA queries (e.g., /entities)
+        // The actual path doesn't affect the forbidden fields rules - they're based on recordType
+        String basePath = "/entities";
+        
+        // Pipeline: Fetch → Transform (with request context) → Get Multi-Operation Permissions → Prune → Serialize
         return backendOasClient.fetchRawOas()
             .map(rawOas -> {
                 log.debug("Transforming raw OAS with {} paths",
@@ -310,10 +330,14 @@ public class DynamicOasHandler {
                 return transformationEngine.transform(rawOas, requestContext);
             })
             .flatMap(transformedOas -> 
-                fieldPermissionService.fetchFieldPermissions(securityContext, transformedOas)
+                // Fetch forbidden fields for ALL operations (find, create, update)
+                // OPA returns DIFFERENT rules for each operation!
+                // PolicyData contains: appShortcode, encodedJwt, operation, httpMethod, requestPath
+                // NO requestPayload - forbidden fields query must NOT contain payload
+                fieldPermissionService.fetchMultiOperationPermissions(securityContext, basePath)
                     .map(permissions -> {
-                        log.debug("Pruning OAS based on field permissions");
-                        return schemaPruner.prune(transformedOas, permissions);
+                        log.debug("Pruning OAS based on multi-operation field permissions");
+                        return schemaPruner.pruneWithMultiOperationPermissions(transformedOas, permissions);
                     })
             )
             .map(prunedOas -> serializeOas(prunedOas, format))

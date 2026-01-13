@@ -5,54 +5,37 @@ import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.media.Schema;
+import com.tarcinapp.entitypersistencegateway.oas.security.MultiOperationFieldPermissions.Operation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.server.RequestPath;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Service for querying OPA to obtain field-level visibility permissions.
  * 
- * <p>This service uses the SAME mechanism as {@link com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory}
- * to fetch forbidden fields, but augments the PolicyData with schema metadata (x-record-type mappings)
- * from the transformed OpenAPI spec.</p>
+ * <p>This service queries OPA separately for EACH operation type (find, create, update)
+ * because OPA returns DIFFERENT forbidden fields based on the operation.</p>
  * 
- * <h2>Mechanism:</h2>
- * <ol>
- *   <li>Build PolicyData from GatewaySecurityContext (JWT, claims)</li>
- *   <li>Extract schema metadata from OpenAPI spec (schema name → x-record-type)</li>
- *   <li>Set extracted metadata as PolicyData.requestPayload</li>
- *   <li>Set policy name from configuration (typically /policies/gateway/forbidden_fields/policy/result)</li>
- *   <li>Call authorizationClient.executePolicy(PolicyData, ForbiddenFieldsLibrary.class)</li>
- *   <li>Convert ForbiddenFieldsLibrary to FieldPermissionContext</li>
- * </ol>
- * 
- * <h2>PolicyData Structure Sent to OPA:</h2>
+ * <h2>Multi-Operation Query Strategy:</h2>
+ * <p>For OAS generation, we must query OPA 3 times with different inputs:</p>
  * <pre>
- * {
- *   "policyName": "/policies/gateway/forbidden_fields/policy/result",
- *   "encodedJwt": "eyJ...",
- *   "requestPayload": {
- *     "Book": "entities",
- *     "Author": "entities",
- *     "BookAuthor": "relations"
- *   }
- * }
+ * Query 1 (find):   { httpMethod: "GET",   requestPath: "/entities", operation: "find" }
+ * Query 2 (create): { httpMethod: "POST",  requestPath: "/entities", operation: "create" }
+ * Query 3 (update): { httpMethod: "PATCH", requestPath: "/entities", operation: "update" }
  * </pre>
  * 
- * <p><strong>Note:</strong> The requestPayload contains schema metadata (x-record-type mappings)
- * so OPA policies can make decisions based on which schemas exist in the API.</p>
+ * <h2>CRITICAL RULES:</h2>
+ * <ul>
+ *   <li><strong>NO requestPayload:</strong> Forbidden fields query must NOT contain request payload</li>
+ *   <li><strong>httpMethod is MANDATORY:</strong> Must match the operation (GET/POST/PATCH)</li>
+ *   <li><strong>requestPath is MANDATORY:</strong> Use base path for record type (e.g., /entities)</li>
+ *   <li><strong>appShortcode from config:</strong> Retrieved from app.shortcode, NEVER hardcoded</li>
+ * </ul>
  * 
- * <h2>Failure Handling:</h2>
- * <p>When OPA is unavailable or returns errors, this service defaults to
- * "full visibility" (fail-open) for documentation purposes. This is intentional
- * since blocking documentation access is generally worse than showing extra fields
- * that would be blocked at request time anyway.</p>
+ * @see com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory
  */
 @Service
 @Slf4j
@@ -60,6 +43,13 @@ public class OasFieldPermissionService {
     
     private final IAuthorizationClient authorizationClient;
     private final OasOrchestratorProperties properties;
+    
+    /**
+     * App shortcode from configuration. NEVER hardcoded.
+     * Used for OPA policy evaluation context.
+     */
+    @Value("${app.shortcode}")
+    private String appShortcode;
     
     public OasFieldPermissionService(
             IAuthorizationClient authorizationClient,
@@ -69,30 +59,202 @@ public class OasFieldPermissionService {
     }
     
     /**
-     * Fetches field-level permissions for OAS schema pruning.
+     * Fetches field permissions for ALL operations (find, create, update).
      * 
-     * <p>Queries OPA with the user's identity context AND the list of schemas
-     * in the OpenAPI spec to determine which fields should be hidden from the
-     * generated OpenAPI specification.</p>
+     * <p>OPA returns DIFFERENT forbidden fields for each operation type.
+     * This method queries OPA 3 times in parallel with different inputs:</p>
+     * <ul>
+     *   <li>find:   GET /entities, operation="find"</li>
+     *   <li>create: POST /entities, operation="create"</li>
+     *   <li>update: PATCH /entities, operation="update"</li>
+     * </ul>
      * 
      * @param securityContext The authenticated user's security context (may be null for anonymous)
-     * @param openApi The transformed OpenAPI spec with schemas
+     * @param basePath The base path for the record type (e.g., /entities)
+     * @return Mono containing permissions for all operations
+     */
+    public Mono<MultiOperationFieldPermissions> fetchMultiOperationPermissions(
+            GatewaySecurityContext securityContext, String basePath) {
+        
+        if (securityContext == null || securityContext.getEncodedJwt() == null) {
+            log.debug("No security context available, fetching anonymous multi-operation permissions");
+            return fetchAnonymousMultiOperationPermissions(basePath);
+        }
+        
+        log.debug("Fetching multi-operation field permissions for user: {} with {} roles",
+            securityContext.getAuthSubject(),
+            securityContext.getRoles() != null ? securityContext.getRoles().size() : 0);
+        
+        // Query OPA in parallel for all 3 operations
+        Mono<FieldPermissionContext> findPermissions = fetchPermissionsForOperation(
+            securityContext, basePath, Operation.FIND);
+        Mono<FieldPermissionContext> createPermissions = fetchPermissionsForOperation(
+            securityContext, basePath, Operation.CREATE);
+        Mono<FieldPermissionContext> updatePermissions = fetchPermissionsForOperation(
+            securityContext, basePath, Operation.UPDATE);
+        
+        // Combine all three results
+        return Mono.zip(findPermissions, createPermissions, updatePermissions)
+            .map(tuple -> {
+                MultiOperationFieldPermissions multiPerms = new MultiOperationFieldPermissions();
+                multiPerms.setPermissionsForOperation(Operation.FIND, tuple.getT1());
+                multiPerms.setPermissionsForOperation(Operation.CREATE, tuple.getT2());
+                multiPerms.setPermissionsForOperation(Operation.UPDATE, tuple.getT3());
+                
+                log.info("Fetched multi-operation permissions: find={} rules, create={} rules, update={} rules",
+                    tuple.getT1().getRules().size(),
+                    tuple.getT2().getRules().size(),
+                    tuple.getT3().getRules().size());
+                
+                return multiPerms;
+            })
+            .onErrorResume(e -> {
+                log.warn("Failed to fetch multi-operation permissions: {}. Using full visibility.", e.getMessage());
+                return Mono.just(MultiOperationFieldPermissions.fullVisibility());
+            });
+    }
+    
+    /**
+     * Fetches permissions for a specific operation.
+     */
+    private Mono<FieldPermissionContext> fetchPermissionsForOperation(
+            GatewaySecurityContext securityContext, String basePath, Operation operation) {
+        
+        PolicyData policyData = buildPolicyDataForOperation(securityContext, basePath, operation);
+        
+        log.debug("Querying OPA for operation '{}': httpMethod={}, requestPath={}", 
+            operation.getOperationName(), operation.getHttpMethod(), basePath);
+        
+        return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
+            .timeout(properties.getOpa().getTimeout())
+            .map(FieldPermissionContext::fromForbiddenFieldsLibrary)
+            .doOnNext(ctx -> {
+                log.debug("OPA response for operation '{}': fullVisibility={}, rules={}",
+                    operation.getOperationName(), ctx.isFullVisibility(), ctx.getRules().size());
+            })
+            .onErrorResume(e -> {
+                log.warn("OPA query failed for operation '{}': {}. Using full visibility.",
+                    operation.getOperationName(), e.getMessage());
+                return Mono.just(FieldPermissionContext.fullVisibility());
+            });
+    }
+    
+    /**
+     * Builds PolicyData for a specific operation type.
+     * 
+     * <p>Each operation has its own httpMethod and operation name:</p>
+     * <ul>
+     *   <li>find:   GET, "find"</li>
+     *   <li>create: POST, "create"</li>
+     *   <li>update: PATCH, "update"</li>
+     * </ul>
+     * 
+     * <p>CRITICAL: NO requestPayload - forbidden fields query must NOT contain payload.</p>
+     */
+    private PolicyData buildPolicyDataForOperation(
+            GatewaySecurityContext securityContext, String basePath, Operation operation) {
+        
+        PolicyData policyData = new PolicyData();
+        
+        // Policy name from configuration
+        policyData.setPolicyName(properties.getOpa().getFieldPolicy());
+        
+        // MANDATORY: appShortcode from configuration (NEVER hardcoded)
+        policyData.setAppShortcode(appShortcode);
+        
+        // MANDATORY: httpMethod matching the operation
+        policyData.setHttpMethod(HttpMethod.valueOf(operation.getHttpMethod()));
+        
+        // MANDATORY: requestPath (base path for the record type)
+        policyData.setRequestPath(RequestPath.parse(basePath, ""));
+        
+        // User's JWT token
+        if (securityContext != null) {
+            policyData.setEncodedJwt(securityContext.getEncodedJwt());
+        }
+        
+        // Operation type: find, create, or update
+        policyData.setOperation(operation.getOperationName());
+        
+        // CRITICAL: NO requestPayload - forbidden fields query must NOT contain payload
+        
+        log.trace("Built PolicyData for {}: appShortcode='{}', httpMethod='{}', requestPath='{}', operation='{}'",
+            operation, appShortcode, operation.getHttpMethod(), basePath, operation.getOperationName());
+        
+        return policyData;
+    }
+    
+    /**
+     * Fetches multi-operation permissions for anonymous users.
+     */
+    private Mono<MultiOperationFieldPermissions> fetchAnonymousMultiOperationPermissions(String basePath) {
+        log.debug("Fetching anonymous multi-operation permissions for path: {}", basePath);
+        
+        Mono<FieldPermissionContext> findPermissions = fetchAnonymousPermissionsForOperation(basePath, Operation.FIND);
+        Mono<FieldPermissionContext> createPermissions = fetchAnonymousPermissionsForOperation(basePath, Operation.CREATE);
+        Mono<FieldPermissionContext> updatePermissions = fetchAnonymousPermissionsForOperation(basePath, Operation.UPDATE);
+        
+        return Mono.zip(findPermissions, createPermissions, updatePermissions)
+            .map(tuple -> {
+                MultiOperationFieldPermissions multiPerms = new MultiOperationFieldPermissions();
+                multiPerms.setPermissionsForOperation(Operation.FIND, tuple.getT1());
+                multiPerms.setPermissionsForOperation(Operation.CREATE, tuple.getT2());
+                multiPerms.setPermissionsForOperation(Operation.UPDATE, tuple.getT3());
+                return multiPerms;
+            })
+            .onErrorResume(e -> {
+                log.warn("Failed to fetch anonymous multi-operation permissions: {}. Using full visibility.", 
+                    e.getMessage());
+                return Mono.just(MultiOperationFieldPermissions.fullVisibility());
+            });
+    }
+    
+    /**
+     * Fetches anonymous permissions for a specific operation.
+     */
+    private Mono<FieldPermissionContext> fetchAnonymousPermissionsForOperation(String basePath, Operation operation) {
+        PolicyData policyData = new PolicyData();
+        policyData.setPolicyName(properties.getOpa().getFieldPolicy());
+        policyData.setAppShortcode(appShortcode);
+        policyData.setHttpMethod(HttpMethod.valueOf(operation.getHttpMethod()));
+        policyData.setRequestPath(RequestPath.parse(basePath, ""));
+        policyData.setOperation(operation.getOperationName());
+        // NO encodedJwt for anonymous users
+        // NO requestPayload
+        
+        return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
+            .timeout(properties.getOpa().getTimeout())
+            .map(FieldPermissionContext::fromForbiddenFieldsLibrary)
+            .onErrorResume(e -> {
+                log.warn("Anonymous OPA query failed for operation '{}': {}. Using full visibility.",
+                    operation.getOperationName(), e.getMessage());
+                return Mono.just(FieldPermissionContext.fullVisibility());
+            });
+    }
+    
+    // ===================== LEGACY SINGLE-OPERATION METHOD (kept for backward compatibility) =====================
+    
+    /**
+     * Fetches field-level permissions for OAS schema pruning (single operation).
+     * 
+     * @deprecated Use {@link #fetchMultiOperationPermissions} instead for proper per-operation permissions.
+     * @param securityContext The authenticated user's security context (may be null for anonymous)
+     * @param requestPath The request path being accessed (e.g., /openapi.json)
      * @return Mono containing the field permission context
      */
-    public Mono<FieldPermissionContext> fetchFieldPermissions(GatewaySecurityContext securityContext, OpenAPI openApi) {
+    @Deprecated
+    public Mono<FieldPermissionContext> fetchFieldPermissions(GatewaySecurityContext securityContext, String requestPath) {
         // Anonymous users get a special anonymous permission context
         if (securityContext == null || securityContext.getEncodedJwt() == null) {
             log.debug("No security context available, fetching anonymous field permissions");
-            return fetchAnonymousPermissions(openApi);
+            return fetchAnonymousPermissions(requestPath);
         }
         
-        PolicyData policyData = buildPolicyData(securityContext, openApi);
+        PolicyData policyData = buildPolicyData(securityContext, requestPath);
         
-        log.debug("Fetching field permissions for user: {} with {} roles and {} schemas",
+        log.debug("Fetching field permissions for user: {} with {} roles",
             securityContext.getAuthSubject(),
-            securityContext.getRoles() != null ? securityContext.getRoles().size() : 0,
-            openApi.getComponents() != null && openApi.getComponents().getSchemas() != null
-                ? openApi.getComponents().getSchemas().size() : 0
+            securityContext.getRoles() != null ? securityContext.getRoles().size() : 0
         );
         
         return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
@@ -111,19 +273,17 @@ public class OasFieldPermissionService {
     
     /**
      * Fetches permissions for anonymous (unauthenticated) users.
-     * 
-     * <p>Anonymous users may have different visibility rules than authenticated users.
-     * This method queries OPA with empty claims but the full schema list to get
-     * the public-only field set.</p>
-     * 
-     * @param openApi The transformed OpenAPI spec with schemas
-     * @return Mono containing the anonymous permission context
      */
-    private Mono<FieldPermissionContext> fetchAnonymousPermissions(OpenAPI openApi) {
+    @Deprecated
+    private Mono<FieldPermissionContext> fetchAnonymousPermissions(String requestPath) {
         PolicyData policyData = new PolicyData();
         policyData.setPolicyName(properties.getOpa().getFieldPolicy());
-        // Include schemas even for anonymous users
-        policyData.setRequestPayload(extractSchemaMetadata(openApi));
+        policyData.setAppShortcode(appShortcode);
+        policyData.setHttpMethod(HttpMethod.GET);
+        policyData.setRequestPath(RequestPath.parse(requestPath, ""));
+        policyData.setOperation("find");
+        
+        log.debug("Fetching anonymous field permissions for path: {}", requestPath);
         
         return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
             .timeout(properties.getOpa().getTimeout())
@@ -135,106 +295,18 @@ public class OasFieldPermissionService {
             });
     }
     
-    /**
-     * Extracts schema metadata (record types) from the OpenAPI spec.
-     * 
-     * <p>This method extracts the x-record-type vendor extension from each schema
-     * and returns a map of schema names to their record types. This metadata is
-     * passed to OPA via PolicyData.requestPayload so OPA can make field visibility
-     * decisions based on which schemas exist and their types.</p>
-     * 
-     * <p>Example output:</p>
-     * <pre>
-     * {
-     *   "Book": "entities",
-     *   "Author": "entities",
-     *   "BookAuthor": "relations"
-     * }
-     * </pre>
-     * 
-     * @param openApi The transformed OpenAPI spec with x-record-type extensions
-     * @return Map of schema names to their record types (empty if no schemas or extensions)
-     */
-    private Map<String, Object> extractSchemaMetadata(OpenAPI openApi) {
-        Map<String, Object> metadata = new java.util.LinkedHashMap<>();
-        
-        if (openApi == null || openApi.getComponents() == null || 
-            openApi.getComponents().getSchemas() == null) {
-            return metadata;
-        }
-        
-        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
-        for (Map.Entry<String, Schema> entry : schemas.entrySet()) {
-            String schemaName = entry.getKey();
-            Schema<?> schema = entry.getValue();
-            
-            if (schema != null && schema.getExtensions() != null) {
-                Object recordType = schema.getExtensions().get("x-record-type");
-                if (recordType != null) {
-                    metadata.put(schemaName, recordType);
-                    log.trace("Schema '{}' has record type: {}", schemaName, recordType);
-                }
-            }
-        }
-        
-        log.debug("Extracted schema metadata for {} schemas", metadata.size());
-        return metadata;
-    }
-    
-    /**
-     * Builds the PolicyData object for OPA query.
-     * 
-     * <p>This follows the SAME pattern as {@link com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory}
-     * but adds schema metadata via requestPayload:</p>
-     * <ul>
-     *   <li><strong>policyName:</strong> Policy path from configuration (e.g., /policies/gateway/forbidden_fields/policy/result)</li>
-     *   <li><strong>encodedJwt:</strong> User's JWT token for authentication/authorization context</li>
-     *   <li><strong>requestPayload:</strong> Schema metadata (schema name → x-record-type) extracted from OpenAPI spec</li>
-     * </ul>
-     * 
-     * <p>OPA receives this PolicyData and returns ForbiddenFieldsLibrary with field restrictions.</p>
-     * 
-     * @param securityContext The user's security context with JWT
-     * @param openApi The transformed OpenAPI spec with x-record-type extensions
-     * @return PolicyData configured for field visibility query
-     */
-    private PolicyData buildPolicyData(GatewaySecurityContext securityContext, OpenAPI openApi) {
+    @Deprecated
+    private PolicyData buildPolicyData(GatewaySecurityContext securityContext, String requestPath) {
         PolicyData policyData = new PolicyData();
         policyData.setPolicyName(properties.getOpa().getFieldPolicy());
+        policyData.setAppShortcode(appShortcode);
+        policyData.setHttpMethod(HttpMethod.GET);
+        policyData.setRequestPath(RequestPath.parse(requestPath, ""));
         policyData.setEncodedJwt(securityContext.getEncodedJwt());
-        
-        // Extract schema metadata (x-record-type mappings) and set as requestPayload
-        // This allows OPA to make decisions based on which schemas exist in the API
-        Map<String, Object> schemaMetadata = extractSchemaMetadata(openApi);
-        policyData.setRequestPayload(schemaMetadata);
-        
-        log.trace("Built PolicyData with policy='{}', jwt={}, schemas={}",
-            properties.getOpa().getFieldPolicy(),
-            securityContext.getEncodedJwt() != null ? "present" : "null",
-            schemaMetadata.size());
-        
+        policyData.setOperation("find");
         return policyData;
     }
     
-    /**
-     * Handles OPA errors based on configuration.
-     * 
-     * <p>Default behavior (failClosed=false): Return full visibility on error.
-     * This is appropriate for documentation since:</p>
-     * <ul>
-     *   <li>Users can see the full API structure</li>
-     *   <li>Actual field filtering still happens at request time</li>
-     *   <li>Documentation availability is prioritized over field hiding</li>
-     * </ul>
-     * 
-     * <p>Strict mode (failClosed=true): Propagate the error and return 503.
-     * Use this in high-security environments where field visibility in docs
-     * is as sensitive as actual data access.</p>
-     * 
-     * @param error The error from OPA
-     * @param securityContext The user's security context
-     * @return Mono with fallback context or error
-     */
     private Mono<FieldPermissionContext> handleOpaError(Throwable error, GatewaySecurityContext securityContext) {
         String userInfo = securityContext != null ? securityContext.getAuthSubject() : "anonymous";
         

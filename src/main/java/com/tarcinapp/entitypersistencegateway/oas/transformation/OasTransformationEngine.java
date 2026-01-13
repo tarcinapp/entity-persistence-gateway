@@ -254,6 +254,9 @@ public class OasTransformationEngine {
         // 9. Deduplicate parameters (name+in must be unique per operation)
         deduplicateParameters(transformed);
         
+        // 10. Apply global security requirement (JWT Bearer Auth)
+        applyGlobalSecurity(transformed);
+        
         log.info("OAS transformation complete: {} paths virtualized", 
             virtualizedPaths != null ? virtualizedPaths.size() : 0);
         
@@ -1081,6 +1084,14 @@ public class OasTransformationEngine {
     
     /**
      * Transforms components (schemas, etc.).
+     * 
+     * <p>This method performs the following transformations:</p>
+     * <ul>
+     *   <li>Optionally simplifies schema names</li>
+     *   <li>Removes tsType references from schema descriptions (internal TS type hints)</li>
+     *   <li>Removes x-typescript-type extensions</li>
+     *   <li>Adds JWT Bearer security scheme if not already present</li>
+     * </ul>
      */
     private Components transformComponents(Components original) {
         Components transformed = new Components();
@@ -1092,14 +1103,36 @@ public class OasTransformationEngine {
                 String newName = orchestratorProperties.getTransformation().isSimplifySchemaNames()
                     ? simplifySchemaName(name)
                     : name;
-                transformedSchemas.put(newName, schema);
+                
+                // Clean up schema: remove tsType from descriptions and x-typescript-type extension
+                Schema<?> cleanedSchema = cleanupSchema(schema);
+                transformedSchemas.put(newName, cleanedSchema);
             });
             
             transformed.setSchemas(transformedSchemas);
         }
         
+        // Add JWT Bearer security scheme
+        Map<String, io.swagger.v3.oas.models.security.SecurityScheme> securitySchemes = 
+            original.getSecuritySchemes() != null 
+                ? new LinkedHashMap<>(original.getSecuritySchemes())
+                : new LinkedHashMap<>();
+        
+        // Ensure bearerAuth scheme exists
+        if (!securitySchemes.containsKey("bearerAuth")) {
+            io.swagger.v3.oas.models.security.SecurityScheme bearerScheme = 
+                new io.swagger.v3.oas.models.security.SecurityScheme();
+            bearerScheme.setType(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP);
+            bearerScheme.setScheme("bearer");
+            bearerScheme.setBearerFormat("JWT");
+            bearerScheme.setDescription("JWT Bearer Authentication. Include 'Authorization: Bearer <token>' header.");
+            securitySchemes.put("bearerAuth", bearerScheme);
+            log.debug("Added bearerAuth security scheme to OAS");
+        }
+        
+        transformed.setSecuritySchemes(securitySchemes);
+        
         // Copy other component types as-is
-        transformed.setSecuritySchemes(original.getSecuritySchemes());
         transformed.setParameters(original.getParameters());
         transformed.setRequestBodies(original.getRequestBodies());
         transformed.setResponses(original.getResponses());
@@ -1109,6 +1142,93 @@ public class OasTransformationEngine {
         transformed.setCallbacks(original.getCallbacks());
         
         return transformed;
+    }
+    
+    /**
+     * Cleans up a schema by removing tsType references from descriptions
+     * and removing x-typescript-type extensions.
+     * 
+     * <p>The backend LoopBack OAS includes internal TypeScript type hints like:</p>
+     * <pre>
+     * "description": "(tsType: Omit&lt;Entity, '_id'&gt;, schemaOptions: {...})"
+     * "x-typescript-type": "Omit&lt;Entity, '_id'&gt;"
+     * </pre>
+     * 
+     * <p>These internal references must be removed from the public API documentation.</p>
+     * 
+     * @param schema The original schema from backend
+     * @return Cleaned schema without tsType references
+     */
+    @SuppressWarnings("unchecked")
+    private Schema<?> cleanupSchema(Schema<?> schema) {
+        if (schema == null) {
+            return null;
+        }
+        
+        // Remove tsType from description
+        String description = schema.getDescription();
+        if (description != null && description.contains("tsType:")) {
+            // Pattern: "(tsType: ..., schemaOptions: {...})" or just "(tsType: ...)"
+            // Remove the entire tsType block from description
+            String cleaned = description.replaceAll("\\(tsType:.*?\\)", "").trim();
+            // If description becomes empty or only whitespace, set to null
+            if (cleaned.isEmpty()) {
+                schema.setDescription(null);
+            } else {
+                schema.setDescription(cleaned);
+            }
+        }
+        
+        // Remove x-typescript-type extension
+        if (schema.getExtensions() != null) {
+            schema.getExtensions().remove("x-typescript-type");
+        }
+        
+        // Recursively clean nested schemas (properties, items, allOf, etc.)
+        if (schema.getProperties() != null) {
+            schema.getProperties().forEach((propName, propSchema) -> {
+                cleanupSchema((Schema<?>) propSchema);
+            });
+        }
+        
+        if (schema.getItems() != null) {
+            cleanupSchema(schema.getItems());
+        }
+        
+        if (schema.getAllOf() != null) {
+            schema.getAllOf().forEach(s -> cleanupSchema((Schema<?>) s));
+        }
+        
+        if (schema.getAnyOf() != null) {
+            schema.getAnyOf().forEach(s -> cleanupSchema((Schema<?>) s));
+        }
+        
+        if (schema.getOneOf() != null) {
+            schema.getOneOf().forEach(s -> cleanupSchema((Schema<?>) s));
+        }
+        
+        return schema;
+    }
+    
+    /**
+     * Applies global security requirement to the OpenAPI specification.
+     * 
+     * <p>This sets the JWT Bearer authentication as required for all endpoints
+     * at the root level. Individual operations can override this if needed.</p>
+     * 
+     * <p>The security scheme 'bearerAuth' must be defined in components/securitySchemes
+     * (this is done in transformComponents()).</p>
+     */
+    private void applyGlobalSecurity(OpenAPI openApi) {
+        // Create security requirement referencing the bearerAuth scheme
+        io.swagger.v3.oas.models.security.SecurityRequirement securityRequirement = 
+            new io.swagger.v3.oas.models.security.SecurityRequirement();
+        securityRequirement.addList("bearerAuth"); // Empty list = no specific scopes required
+        
+        // Apply at root level (applies to all operations)
+        openApi.setSecurity(java.util.Collections.singletonList(securityRequirement));
+        
+        log.debug("Applied global JWT Bearer security requirement to OAS");
     }
     
     /**
