@@ -1160,6 +1160,13 @@ public class OasTransformationEngine {
             return null;
         }
         
+        // Clean up verbose titles that reveal internal field names
+        // These patterns indicate auto-generated internal schema names that expose hidden fields
+        String title = schema.getTitle();
+        if (title != null && shouldRemoveTitle(title)) {
+            schema.setTitle(null);
+        }
+        
         // Remove tsType from description
         String description = schema.getDescription();
         if (description != null && description.contains("tsType:")) {
@@ -1203,6 +1210,45 @@ public class OasTransformationEngine {
         }
         
         return schema;
+    }
+    
+    /**
+     * Determines if a schema title should be removed because it exposes internal implementation details.
+     * 
+     * Patterns that indicate internal/verbose titles:
+     * - Contains "Excluding__" (LoopBack generated exclusion types)
+     * - Contains "__" (double underscores - internal naming)
+     * - Contains "-_" (field exclusion patterns)
+     * - Contains "idempotencyKey" (internal field name)
+     * - Contains "ownerUsers" or "ownerGroups" (internal permission fields)
+     * - Contains "viewerUsers" or "viewerGroups" (internal permission fields)
+     * - Contains "parentsCount" or "childrenCount" (internal count fields)
+     * - Excessively long (> 60 characters - likely auto-generated)
+     * - Contains "Count_" pattern (internal count field exposure)
+     */
+    private boolean shouldRemoveTitle(String title) {
+        if (title == null) {
+            return false;
+        }
+        
+        // Excessively long titles are auto-generated and expose internal details
+        if (title.length() > 60) {
+            return true;
+        }
+        
+        // Patterns that indicate internal field exposure
+        return title.contains("Excluding__")
+            || title.contains("__")
+            || title.contains("-_")
+            || title.contains("idempotencyKey")
+            || title.contains("ownerUsers")
+            || title.contains("ownerGroups")
+            || title.contains("viewerUsers")
+            || title.contains("viewerGroups")
+            || title.contains("parentsCount")
+            || title.contains("childrenCount")
+            || title.contains("Count_")
+            || title.contains("_Count");
     }
     
     /**
@@ -1320,9 +1366,32 @@ public class OasTransformationEngine {
     /**
      * Simplifies verbose backend schema names.
      * E.g., "GenericEntityExcluding__idempotencyKey-..." → "Entity"
+     * 
+     * IMPORTANT: Filter schemas (e.g., GenericEntityFilter) are preserved as filters
+     * and should NOT be simplified to entity schemas.
      */
     private String simplifySchemaName(String name) {
-        // Common simplifications
+        // CRITICAL: Filter schemas must NOT be simplified to entity schemas!
+        // These are for query parameters, not response/request bodies
+        if (name.contains("Filter")) {
+            // Keep filter schemas with their "Filter" suffix, just clean up the name
+            if (name.startsWith("GenericEntity")) {
+                return "GenericEntityFilter";
+            }
+            if (name.startsWith("List") && name.contains("Relation")) {
+                return "ListToEntityRelationFilter";
+            }
+            if (name.startsWith("EntityReaction")) {
+                return "EntityReactionFilter";
+            }
+            if (name.startsWith("ListReaction")) {
+                return "ListReactionFilter";
+            }
+            // Keep other filters as-is
+            return name.replaceAll("Excluding__.*?_", "");
+        }
+        
+        // Common simplifications for entity/response schemas (NOT filters)
         if (name.startsWith("GenericEntity")) {
             if (name.contains("WithRelations")) {
                 return "EntityWithRelations";
@@ -1441,6 +1510,8 @@ public class OasTransformationEngine {
      * Deep clones a RequestBody to ensure virtualized paths don't share the same object.
      * This is critical because multiple aliases (books, authors) come from the same
      * backend path (/entities) and would otherwise share the same requestBody reference.
+     * 
+     * Also updates $ref paths to use simplified schema names.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private io.swagger.v3.oas.models.parameters.RequestBody cloneRequestBody(
@@ -1461,10 +1532,17 @@ public class OasTransformationEngine {
                 io.swagger.v3.oas.models.media.MediaType clonedMediaType = 
                     new io.swagger.v3.oas.models.media.MediaType();
                 
-                // Clone schema (shallow is OK - we'll replace with $ref anyway)
+                // Clone schema with $ref update to simplified names
                 if (mediaType.getSchema() != null) {
                     Schema clonedSchema = new Schema();
-                    clonedSchema.set$ref(mediaType.getSchema().get$ref());
+                    
+                    // Update $ref to use simplified schema name
+                    String originalRef = mediaType.getSchema().get$ref();
+                    if (originalRef != null) {
+                        String simplifiedRef = transformSchemaRef(originalRef);
+                        clonedSchema.set$ref(simplifiedRef);
+                    }
+                    
                     clonedSchema.setType(mediaType.getSchema().getType());
                     clonedSchema.setProperties(mediaType.getSchema().getProperties());
                     clonedSchema.setRequired(mediaType.getSchema().getRequired());
@@ -1497,6 +1575,8 @@ public class OasTransformationEngine {
      * Deep clones ApiResponses to avoid sharing response objects between virtualized paths.
      * CRITICAL: Without this cloning, binding response schemas for /books would also affect
      * /authors if they share the same backend operation.
+     * 
+     * Also updates $ref paths to use simplified schema names.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private io.swagger.v3.oas.models.responses.ApiResponses cloneResponses(
@@ -1523,10 +1603,17 @@ public class OasTransformationEngine {
                     io.swagger.v3.oas.models.media.MediaType clonedMediaType = 
                         new io.swagger.v3.oas.models.media.MediaType();
                     
-                    // Clone schema (shallow is OK - we'll replace with $ref anyway)
+                    // Clone schema with $ref update to simplified names
                     if (mediaType.getSchema() != null) {
                         Schema clonedSchema = new Schema();
-                        clonedSchema.set$ref(mediaType.getSchema().get$ref());
+                        
+                        // Update $ref to use simplified schema name
+                        String originalRef = mediaType.getSchema().get$ref();
+                        if (originalRef != null) {
+                            String simplifiedRef = transformSchemaRef(originalRef);
+                            clonedSchema.set$ref(simplifiedRef);
+                        }
+                        
                         clonedSchema.setType(mediaType.getSchema().getType());
                         clonedSchema.setProperties(mediaType.getSchema().getProperties());
                         clonedSchema.setRequired(mediaType.getSchema().getRequired());
@@ -1544,7 +1631,12 @@ public class OasTransformationEngine {
                         if (mediaType.getSchema().getItems() != null) {
                             Schema itemsSchema = mediaType.getSchema().getItems();
                             Schema clonedItems = new Schema();
-                            clonedItems.set$ref(itemsSchema.get$ref());
+                            
+                            // Update item $ref too
+                            String itemRef = itemsSchema.get$ref();
+                            if (itemRef != null) {
+                                clonedItems.set$ref(transformSchemaRef(itemRef));
+                            }
                             clonedItems.setType(itemsSchema.getType());
                             clonedSchema.setItems(clonedItems);
                         }
@@ -1565,6 +1657,23 @@ public class OasTransformationEngine {
         });
         
         return cloned;
+    }
+    
+    /**
+     * Transforms a schema $ref to use simplified schema name.
+     * E.g., "#/components/schemas/GenericEntityExcluding..." → "#/components/schemas/Entity"
+     */
+    private String transformSchemaRef(String ref) {
+        if (ref == null || !ref.startsWith("#/components/schemas/")) {
+            return ref;
+        }
+        
+        String schemaName = ref.substring("#/components/schemas/".length());
+        String simplifiedName = orchestratorProperties.getTransformation().isSimplifySchemaNames()
+            ? simplifySchemaName(schemaName)
+            : schemaName;
+        
+        return "#/components/schemas/" + simplifiedName;
     }
     
     /**
@@ -2812,12 +2921,33 @@ public class OasTransformationEngine {
         
         /**
          * Gets the schema name for this context.
-         * Top-level: Author, Book
-         * Nested: BooksChildChapter, BooksParentAuthor
+         * 
+         * For aliases with specific schemas: Author, Book, BooksChildChapter
+         * For base controllers (entities, lists, etc.): Entity, List (even for children/parents)
+         * 
+         * IMPORTANT: Base controller children/parents paths use the simple kind name
+         * because there are no alias-specific nested schemas defined.
          */
         public String getSchemaName() {
             String kindName = kind.substring(0, 1).toUpperCase() + kind.substring(1);
+            
+            // For base controller paths (parentAlias matches the controller path like "entities"),
+            // children/parents should use the simple type name (Entity, List, etc.)
+            // because no alias-specific nested schemas are defined.
             if (parentAlias != null && hierarchyType != null) {
+                // Check if this is a base controller path (parent alias is controller base path)
+                boolean isBaseControllerPath = parentAlias.equals("entities") 
+                    || parentAlias.equals("lists")
+                    || parentAlias.equals("relations")
+                    || parentAlias.equals("entity-reactions")
+                    || parentAlias.equals("list-reactions");
+                
+                if (isBaseControllerPath) {
+                    // Base controller children/parents use simple kind name
+                    return kindName;
+                }
+                
+                // Alias-specific nested schemas: BooksChildChapter, BooksParentAuthor
                 String parentName = parentAlias.substring(0, 1).toUpperCase() + parentAlias.substring(1);
                 return parentName + hierarchyType + kindName;
             }
@@ -2914,11 +3044,17 @@ public class OasTransformationEngine {
         map.put(baseUri + "/" + entitiesBasePath, new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
         map.put(baseUri + "/" + entitiesBasePath + "/count", new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
         map.put(baseUri + "/" + entitiesBasePath + "/{id}", new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
+        // Add children/parents paths for entities - these return Entity arrays
+        map.put(baseUri + "/" + entitiesBasePath + "/{id}/children", new AliasContext("children", "Entity", "entities", true, entitiesBasePath, "Child"));
+        map.put(baseUri + "/" + entitiesBasePath + "/{id}/parents", new AliasContext("parents", "Entity", "entities", true, entitiesBasePath, "Parent"));
         
         // List controller: uses listsBasePath (e.g., "lists")
         map.put(baseUri + "/" + listsBasePath, new AliasContext(listsBasePath, "List", "lists", false, null, null));
         map.put(baseUri + "/" + listsBasePath + "/count", new AliasContext(listsBasePath, "List", "lists", false, null, null));
         map.put(baseUri + "/" + listsBasePath + "/{id}", new AliasContext(listsBasePath, "List", "lists", false, null, null));
+        // Add children/parents paths for lists
+        map.put(baseUri + "/" + listsBasePath + "/{id}/children", new AliasContext("children", "List", "lists", true, listsBasePath, "Child"));
+        map.put(baseUri + "/" + listsBasePath + "/{id}/parents", new AliasContext("parents", "List", "lists", true, listsBasePath, "Parent"));
         
         // Relation controller: uses relationsBasePath (e.g., "relations")
         map.put(baseUri + "/" + relationsBasePath, new AliasContext(relationsBasePath, "Relation", "relations", false, null, null));
@@ -2929,11 +3065,17 @@ public class OasTransformationEngine {
         map.put(baseUri + "/" + entityReactionsBasePath, new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
         map.put(baseUri + "/" + entityReactionsBasePath + "/count", new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
         map.put(baseUri + "/" + entityReactionsBasePath + "/{id}", new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
+        // Add children/parents paths for entity-reactions
+        map.put(baseUri + "/" + entityReactionsBasePath + "/{id}/children", new AliasContext("children", "EntityReaction", "entityReactions", true, entityReactionsBasePath, "Child"));
+        map.put(baseUri + "/" + entityReactionsBasePath + "/{id}/parents", new AliasContext("parents", "EntityReaction", "entityReactions", true, entityReactionsBasePath, "Parent"));
         
         // List Reaction controller: uses listReactionsBasePath (e.g., "list-reactions")
         map.put(baseUri + "/" + listReactionsBasePath, new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
         map.put(baseUri + "/" + listReactionsBasePath + "/count", new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
         map.put(baseUri + "/" + listReactionsBasePath + "/{id}", new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
+        // Add children/parents paths for list-reactions
+        map.put(baseUri + "/" + listReactionsBasePath + "/{id}/children", new AliasContext("children", "ListReaction", "listReactions", true, listReactionsBasePath, "Child"));
+        map.put(baseUri + "/" + listReactionsBasePath + "/{id}/parents", new AliasContext("parents", "ListReaction", "listReactions", true, listReactionsBasePath, "Parent"));
         
         log.debug("Added base controller paths: {}, {}, {}, {}, {}", 
             entitiesBasePath, listsBasePath, relationsBasePath, entityReactionsBasePath, listReactionsBasePath);
