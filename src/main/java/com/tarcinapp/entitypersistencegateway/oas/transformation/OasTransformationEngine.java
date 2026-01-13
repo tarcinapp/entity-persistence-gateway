@@ -1233,7 +1233,8 @@ public class OasTransformationEngine {
     }
     
     /**
-     * Cleans all parameters in a list, removing tsType from inline schemas.
+     * Cleans all parameters in a list, removing tsType from inline schemas
+     * and applying deepObject style for complex query parameters.
      * 
      * @param params List of parameters to clean
      * @return The same list with cleaned parameters
@@ -1243,8 +1244,56 @@ public class OasTransformationEngine {
             return new ArrayList<>();
         }
         List<Parameter> result = new ArrayList<>(params);
-        result.forEach(this::cleanParameterSchemas);
+        result.forEach(param -> {
+            cleanParameterSchemas(param);
+            applyDeepObjectStyleIfNeeded(param);
+        });
         return result;
+    }
+    
+    /**
+     * Parameter names that should use deepObject style with explode=true.
+     * These are complex object parameters passed as query strings.
+     */
+    private static final Set<String> DEEP_OBJECT_PARAMS = Set.of(
+        "filter", "set", "where",
+        "listFilter", "listSet", "listWhere",
+        "entityFilter", "entitySet", "entityWhere"
+    );
+    
+    /**
+     * Applies deepObject style and explode=true to complex query parameters.
+     * 
+     * <p>While backend OAS defines these parameters with content/application-json,
+     * they are actually passed as deepObject with explode=true in front of the gateway.
+     * When using style/explode, the 'content' field is NOT allowed - schema must be
+     * used directly on the parameter.</p>
+     * 
+     * @param param The parameter to potentially transform
+     */
+    private void applyDeepObjectStyleIfNeeded(Parameter param) {
+        if (param == null || param.getName() == null) {
+            return;
+        }
+        
+        // Only apply to query parameters with matching names
+        if ("query".equals(param.getIn()) && DEEP_OBJECT_PARAMS.contains(param.getName())) {
+            // If parameter uses content (application/json), extract the schema and use it directly
+            // OpenAPI spec: "content" and "style/explode" are mutually exclusive
+            if (param.getContent() != null && !param.getContent().isEmpty()) {
+                // Extract schema from content/application-json
+                MediaType jsonMediaType = param.getContent().get("application/json");
+                if (jsonMediaType != null && jsonMediaType.getSchema() != null) {
+                    param.setSchema(jsonMediaType.getSchema());
+                }
+                // Remove content - cannot have both content and style/explode
+                param.setContent(null);
+            }
+            
+            param.setStyle(Parameter.StyleEnum.DEEPOBJECT);
+            param.setExplode(true);
+            log.trace("Applied deepObject style to parameter: {}", param.getName());
+        }
     }
     
     /**
@@ -2958,35 +3007,51 @@ public class OasTransformationEngine {
         
         Map<String, Schema> schemas = openApi.getComponents().getSchemas();
         
-        // Gateway Validation Error schema
+        // Gateway Validation Error schema - matches createErrorResponse() in ValidateRequestBodyByKindSchema
+        // Actual structure: { error: { name, status, message, details: [{code, field, message}] } }
         if (!schemas.containsKey("GatewayValidationError")) {
             Schema validationError = new Schema();
             validationError.setType("object");
             validationError.setDescription("Gateway validation error response");
             
+            // Build the nested error object structure
+            Schema errorObject = new Schema();
+            errorObject.setType("object");
+            
+            Map<String, Schema> errorProps = new LinkedHashMap<>();
+            errorProps.put("name", new Schema().type("string").example("ValidationError"));
+            errorProps.put("status", new Schema().type("integer").example(422));
+            errorProps.put("message", new Schema().type("string").example("The request is not valid."));
+            
+            // details is an array of ValidationErrorDetail
+            ArraySchema detailsArray = new ArraySchema();
+            detailsArray.setItems(new Schema().$ref("#/components/schemas/ValidationErrorDetail"));
+            errorProps.put("details", detailsArray);
+            
+            errorObject.setProperties(errorProps);
+            errorObject.setRequired(Arrays.asList("name", "status", "message", "details"));
+            
+            // Root object has single "error" property
             Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("statusCode", new Schema().type("integer").example(400));
-            props.put("error", new Schema().type("string").example("Bad Request"));
-            props.put("message", new Schema().type("string").example("Validation failed"));
-            props.put("validationErrors", new Schema().type("array")
-                .items(new Schema().$ref("#/components/schemas/ValidationErrorDetail")));
+            props.put("error", errorObject);
             
             validationError.setProperties(props);
-            validationError.setRequired(Arrays.asList("statusCode", "error", "message"));
+            validationError.setRequired(Arrays.asList("error"));
             schemas.put("GatewayValidationError", validationError);
         }
         
-        // Validation Error Detail schema
+        // Validation Error Detail schema - matches ValidationMessage structure: {code, field, message}
         if (!schemas.containsKey("ValidationErrorDetail")) {
             Schema detail = new Schema();
             detail.setType("object");
             
             Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("path", new Schema().type("string").example("$.name"));
-            props.put("message", new Schema().type("string").example("is required"));
             props.put("code", new Schema().type("string").example("required"));
+            props.put("field", new Schema().type("string").example("$.name").description("JSON path to the field"));
+            props.put("message", new Schema().type("string").example("is required"));
             
             detail.setProperties(props);
+            detail.setRequired(Arrays.asList("code", "field", "message"));
             schemas.put("ValidationErrorDetail", detail);
         }
         
@@ -3007,21 +3072,7 @@ public class OasTransformationEngine {
             schemas.put("GatewayInternalError", internalError);
         }
         
-        // Rate Limit Error schema (429)
-        if (!schemas.containsKey("RateLimitError")) {
-            Schema rateLimitError = new Schema();
-            rateLimitError.setType("object");
-            rateLimitError.setDescription("Rate limit exceeded error");
-            
-            Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("statusCode", new Schema().type("integer").example(429));
-            props.put("error", new Schema().type("string").example("Too Many Requests"));
-            props.put("message", new Schema().type("string").example("Rate limit exceeded"));
-            props.put("retryAfter", new Schema().type("integer").description("Seconds to wait before retrying"));
-            
-            rateLimitError.setProperties(props);
-            schemas.put("RateLimitError", rateLimitError);
-        }
+        // NOTE: RateLimitError schema removed - DynamicRateLimiter returns 429 status with NO body
     }
     
     /**
@@ -3130,11 +3181,11 @@ public class OasTransformationEngine {
             responses.addApiResponse("422", unprocessable);
         }
         
-        // Add 429 Too Many Requests (rate limiting)
+        // Add 429 Too Many Requests (rate limiting) - NO body returned by DynamicRateLimiter
         if (!responses.containsKey("429")) {
             ApiResponse rateLimit = new ApiResponse();
-            rateLimit.setDescription("Too Many Requests - Rate limit exceeded");
-            rateLimit.setContent(createJsonContent("#/components/schemas/RateLimitError"));
+            rateLimit.setDescription("Too Many Requests - Rate limit exceeded. No response body is returned.");
+            // No content - DynamicRateLimiter returns only 429 status with no body
             responses.addApiResponse("429", rateLimit);
         }
         

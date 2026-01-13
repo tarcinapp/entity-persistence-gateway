@@ -107,11 +107,9 @@ public class OasFieldPermissionService {
                     tuple.getT3().getRules().size());
                 
                 return multiPerms;
-            })
-            .onErrorResume(e -> {
-                log.warn("Failed to fetch multi-operation permissions: {}. Using full visibility.", e.getMessage());
-                return Mono.just(MultiOperationFieldPermissions.fullVisibility());
             });
+            // OPA errors are propagated - no onErrorResume here
+            // Individual operation errors are handled by fetchPermissionsForOperation via handleOpaError
     }
     
     /**
@@ -132,11 +130,7 @@ public class OasFieldPermissionService {
                 log.debug("OPA response for operation '{}': fullVisibility={}, rules={}",
                     operation.getOperationName(), ctx.isFullVisibility(), ctx.getRules().size());
             })
-            .onErrorResume(e -> {
-                log.warn("OPA query failed for operation '{}': {}. Using full visibility.",
-                    operation.getOperationName(), e.getMessage());
-                return Mono.just(FieldPermissionContext.fullVisibility());
-            });
+            .onErrorResume(e -> handleOpaError(e, securityContext));
     }
     
     /**
@@ -201,12 +195,9 @@ public class OasFieldPermissionService {
                 multiPerms.setPermissionsForOperation(Operation.CREATE, tuple.getT2());
                 multiPerms.setPermissionsForOperation(Operation.UPDATE, tuple.getT3());
                 return multiPerms;
-            })
-            .onErrorResume(e -> {
-                log.warn("Failed to fetch anonymous multi-operation permissions: {}. Using full visibility.", 
-                    e.getMessage());
-                return Mono.just(MultiOperationFieldPermissions.fullVisibility());
             });
+            // OPA errors are propagated - no onErrorResume here
+            // Individual operation errors are handled by fetchAnonymousPermissionsForOperation via handleOpaError
     }
     
     /**
@@ -225,11 +216,7 @@ public class OasFieldPermissionService {
         return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
             .timeout(properties.getOpa().getTimeout())
             .map(FieldPermissionContext::fromForbiddenFieldsLibrary)
-            .onErrorResume(e -> {
-                log.warn("Anonymous OPA query failed for operation '{}': {}. Using full visibility.",
-                    operation.getOperationName(), e.getMessage());
-                return Mono.just(FieldPermissionContext.fullVisibility());
-            });
+            .onErrorResume(e -> handleOpaError(e, null));
     }
     
     // ===================== LEGACY SINGLE-OPERATION METHOD (kept for backward compatibility) =====================
