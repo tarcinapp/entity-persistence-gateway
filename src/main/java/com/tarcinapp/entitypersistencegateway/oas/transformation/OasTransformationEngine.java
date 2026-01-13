@@ -2169,6 +2169,16 @@ public class OasTransformationEngine {
                     schemas.put(newSchemaName, newSchema);
                     log.debug("Added New variant schema: {} (recordType: {})", newSchemaName, controllerName);
                 }
+                
+                // Always add "Patch" variant for PATCH operations if it doesn't exist
+                // PATCH allows partial updates, so required fields must be removed
+                String patchSchemaName = "Patch" + schemaName;
+                if (!schemas.containsKey(patchSchemaName)) {
+                    Schema patchSchema = createSchemaFromJsonNode(baseNode, controllerName);
+                    patchSchema.setRequired(null); // No required for partial update
+                    schemas.put(patchSchemaName, patchSchema);
+                    log.debug("Added Patch variant schema: {} (recordType: {})", patchSchemaName, controllerName);
+                }
             } catch (Exception e) {
                 log.warn("Failed to create base controller schema '{}': {}", schemaName, e.getMessage());
             }
@@ -2187,12 +2197,8 @@ public class OasTransformationEngine {
         
         if (baseNode.has("properties")) {
             baseNode.get("properties").fields().forEachRemaining(entry -> {
-                try {
-                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
-                    properties.put(entry.getKey(), propSchema);
-                } catch (Exception e) {
-                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
-                }
+                Schema propSchema = convertJsonNodeToSchema(entry.getValue());
+                properties.put(entry.getKey(), propSchema);
             });
         }
         
@@ -2214,6 +2220,142 @@ public class OasTransformationEngine {
             schema.setExtensions(new LinkedHashMap<>());
         }
         schema.getExtensions().put("x-record-type", controllerName);
+        
+        return schema;
+    }
+    
+    /**
+     * Converts a JsonNode to a Schema object, properly handling all nested properties
+     * including 'items' for array types. Uses ArraySchema for array types to ensure
+     * proper serialization of items.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Schema convertJsonNodeToSchema(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return new Schema();
+        }
+        
+        // Determine the type first
+        String type = null;
+        boolean nullable = false;
+        
+        if (node.has("type")) {
+            JsonNode typeNode = node.get("type");
+            if (typeNode.isArray()) {
+                // Handle nullable types like ["string", "null"]
+                for (JsonNode t : typeNode) {
+                    if (!"null".equals(t.asText())) {
+                        type = t.asText();
+                        break;
+                    }
+                }
+                nullable = true;
+            } else {
+                type = typeNode.asText();
+            }
+        }
+        
+        // Use ArraySchema for array types to properly serialize items
+        Schema schema;
+        if ("array".equals(type) && node.has("items")) {
+            ArraySchema arraySchema = new ArraySchema();
+            Schema itemsSchema = convertJsonNodeToSchema(node.get("items"));
+            arraySchema.setItems(itemsSchema);
+            schema = arraySchema;
+            // ArraySchema already sets type to "array"
+        } else {
+            schema = new Schema();
+            if (type != null) {
+                schema.setType(type);
+            }
+            // Handle items for non-ArraySchema (fallback, shouldn't happen)
+            if (node.has("items")) {
+                Schema itemsSchema = convertJsonNodeToSchema(node.get("items"));
+                schema.setItems(itemsSchema);
+            }
+        }
+        
+        if (nullable) {
+            schema.setNullable(true);
+        }
+        
+        // Handle format
+        if (node.has("format")) {
+            schema.setFormat(node.get("format").asText());
+        }
+        
+        // Handle pattern
+        if (node.has("pattern")) {
+            schema.setPattern(node.get("pattern").asText());
+        }
+        
+        // Handle enum
+        if (node.has("enum") && node.get("enum").isArray()) {
+            List<Object> enumValues = new ArrayList<>();
+            for (JsonNode e : node.get("enum")) {
+                enumValues.add(e.asText());
+            }
+            schema.setEnum(enumValues);
+        }
+        
+        // Handle properties for objects
+        if (node.has("properties")) {
+            Map<String, Schema> props = new LinkedHashMap<>();
+            node.get("properties").fields().forEachRemaining(entry -> {
+                props.put(entry.getKey(), convertJsonNodeToSchema(entry.getValue()));
+            });
+            schema.setProperties(props);
+        }
+        
+        // Handle additionalProperties
+        if (node.has("additionalProperties")) {
+            JsonNode addProps = node.get("additionalProperties");
+            if (addProps.isBoolean()) {
+                schema.setAdditionalProperties(addProps.asBoolean());
+            } else if (addProps.isObject()) {
+                schema.setAdditionalProperties(convertJsonNodeToSchema(addProps));
+            }
+        }
+        
+        // Handle required
+        if (node.has("required") && node.get("required").isArray()) {
+            List<String> required = new ArrayList<>();
+            for (JsonNode r : node.get("required")) {
+                required.add(r.asText());
+            }
+            schema.setRequired(required);
+        }
+        
+        // Handle minimum/maximum
+        if (node.has("minimum")) {
+            schema.setMinimum(node.get("minimum").decimalValue());
+        }
+        if (node.has("maximum")) {
+            schema.setMaximum(node.get("maximum").decimalValue());
+        }
+        
+        // Handle minLength/maxLength
+        if (node.has("minLength")) {
+            schema.setMinLength(node.get("minLength").asInt());
+        }
+        if (node.has("maxLength")) {
+            schema.setMaxLength(node.get("maxLength").asInt());
+        }
+        
+        // Handle description
+        if (node.has("description")) {
+            schema.setDescription(node.get("description").asText());
+        }
+        
+        // Handle example
+        if (node.has("example")) {
+            schema.setExample(node.get("example").asText());
+        }
+        
+        // Handle default
+        if (node.has("default")) {
+            schema.setDefault(node.get("default").asText());
+        }
         
         return schema;
     }
@@ -2294,6 +2436,11 @@ public class OasTransformationEngine {
             newSchema.setRequired(null); // No required for creation (gateway adds defaults)
             schemas.put("New" + schemaName, newSchema);
             
+            // Also add "Patch" variant without required fields for PATCH (partial updates)
+            Schema patchSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
+            patchSchema.setRequired(null); // No required for partial update
+            schemas.put("Patch" + schemaName, patchSchema);
+            
             log.debug("Added merged domain schema: {} (from kind: {}, alias: {}, parent: {}, recordType: {})", 
                 schemaName, aliasConfig.getKind(), aliasConfig.getAlias(), parentAlias, controllerName);
         } catch (Exception e) {
@@ -2324,27 +2471,19 @@ public class OasTransformationEngine {
         // Merge properties
         Map<String, Schema> properties = new LinkedHashMap<>();
         
-        // First add base properties
+        // First add base properties - use proper conversion to handle items, etc.
         if (baseSchemaNode.has("properties")) {
             baseSchemaNode.get("properties").fields().forEachRemaining(entry -> {
-                try {
-                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
-                    properties.put(entry.getKey(), propSchema);
-                } catch (Exception e) {
-                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
-                }
+                Schema propSchema = convertJsonNodeToSchema(entry.getValue());
+                properties.put(entry.getKey(), propSchema);
             });
         }
         
         // Then overlay alias properties (overrides base)
         if (aliasNode.has("properties")) {
             aliasNode.get("properties").fields().forEachRemaining(entry -> {
-                try {
-                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
-                    properties.put(entry.getKey(), propSchema);
-                } catch (Exception e) {
-                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
-                }
+                Schema propSchema = convertJsonNodeToSchema(entry.getValue());
+                properties.put(entry.getKey(), propSchema);
             });
         }
         
@@ -2456,13 +2595,13 @@ public class OasTransformationEngine {
                 }
             }
             
-            // Bind PATCH request body → Xxx schema (partial update)
+            // Bind PATCH request body → PatchXxx schema (partial update - no required fields)
             if (pathItem.getPatch() != null) {
-                if (bindOperationRequestBody(pathItem.getPatch(), schemaName, openApi)) {
+                if (bindOperationRequestBody(pathItem.getPatch(), "Patch" + schemaName, openApi)) {
                     requestBindCount++;
-                    log.debug("Bound PATCH {} requestBody → {}", path, schemaName);
+                    log.debug("Bound PATCH {} requestBody → Patch{}", path, schemaName);
                 }
-                // Bind PATCH response → Xxx schema
+                // Bind PATCH response → Xxx schema (returns full object)
                 if (bindOperationResponse(pathItem.getPatch(), schemaName, openApi, false)) {
                     responseBindCount++;
                     log.debug("Bound PATCH {} response → {}", path, schemaName);
