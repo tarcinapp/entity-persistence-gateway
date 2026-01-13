@@ -16,6 +16,7 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
@@ -594,9 +595,7 @@ public class OasTransformationEngine {
         transformed.setOperationId(original.getOperationId());
         transformed.setSummary(original.getSummary());
         transformed.setDescription(original.getDescription());
-        transformed.setParameters(original.getParameters() != null 
-            ? new ArrayList<>(original.getParameters()) 
-            : new ArrayList<>());
+        transformed.setParameters(cleanParameters(original.getParameters()));
         
         // Clone request body and responses to avoid shared references
         transformed.setRequestBody(cloneRequestBody(original.getRequestBody()));
@@ -831,10 +830,8 @@ public class OasTransformationEngine {
         
         Operation transformed = new Operation();
         
-        // Copy base properties
-        transformed.setParameters(original.getParameters() != null 
-            ? new ArrayList<>(original.getParameters()) 
-            : new ArrayList<>());
+        // Copy and clean parameters (remove tsType from inline schemas)
+        transformed.setParameters(cleanParameters(original.getParameters()));
         
         // CRITICAL: Deep clone request body to avoid sharing between virtualized paths!
         // Without this, /books/{id}/chapters and /authors/{id}/books would share the same
@@ -954,10 +951,8 @@ public class OasTransformationEngine {
         
         Operation transformed = new Operation();
         
-        // Copy base properties
-        transformed.setParameters(original.getParameters() != null 
-            ? new ArrayList<>(original.getParameters()) 
-            : new ArrayList<>());
+        // Copy and clean parameters (remove tsType from inline schemas)
+        transformed.setParameters(cleanParameters(original.getParameters()));
         
         // CRITICAL: Deep clone request body to avoid sharing between virtualized paths!
         // Without this, /books and /authors would share the same RequestBody object,
@@ -1170,7 +1165,7 @@ public class OasTransformationEngine {
         if (description != null && description.contains("tsType:")) {
             // Pattern: "(tsType: ..., schemaOptions: {...})" or just "(tsType: ...)"
             // Remove the entire tsType block from description
-            String cleaned = description.replaceAll("\\(tsType:.*?\\)", "").trim();
+            String cleaned = description.replaceAll("(?s)\\(tsType:.*?\\)", "").trim();
             // If description becomes empty or only whitespace, set to null
             if (cleaned.isEmpty()) {
                 schema.setDescription(null);
@@ -1208,6 +1203,48 @@ public class OasTransformationEngine {
         }
         
         return schema;
+    }
+    
+    /**
+     * Cleans parameter schemas to remove tsType references from inline schemas.
+     * Parameters may contain inline schemas in their content (e.g., filter parameter
+     * with complex JSON schema) that have tsType descriptions that need cleaning.
+     * 
+     * @param param The parameter to clean
+     */
+    private void cleanParameterSchemas(Parameter param) {
+        if (param == null) {
+            return;
+        }
+        
+        // Clean schema directly on parameter
+        if (param.getSchema() != null) {
+            cleanupSchema(param.getSchema());
+        }
+        
+        // Clean schemas in content (e.g., application/json content with complex schemas)
+        if (param.getContent() != null) {
+            param.getContent().forEach((mediaTypeName, mediaType) -> {
+                if (mediaType != null && mediaType.getSchema() != null) {
+                    cleanupSchema(mediaType.getSchema());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Cleans all parameters in a list, removing tsType from inline schemas.
+     * 
+     * @param params List of parameters to clean
+     * @return The same list with cleaned parameters
+     */
+    private List<Parameter> cleanParameters(List<Parameter> params) {
+        if (params == null) {
+            return new ArrayList<>();
+        }
+        List<Parameter> result = new ArrayList<>(params);
+        result.forEach(this::cleanParameterSchemas);
+        return result;
     }
     
     /**
@@ -1382,7 +1419,16 @@ public class OasTransformationEngine {
                     clonedSchema.setType(mediaType.getSchema().getType());
                     clonedSchema.setProperties(mediaType.getSchema().getProperties());
                     clonedSchema.setRequired(mediaType.getSchema().getRequired());
-                    clonedSchema.setDescription(mediaType.getSchema().getDescription());
+                    
+                    // Clean up description to remove tsType references (use DOTALL for multiline)
+                    String desc = mediaType.getSchema().getDescription();
+                    if (desc != null && desc.contains("tsType:")) {
+                        String cleaned = desc.replaceAll("(?s)\\(tsType:.*?\\)", "").trim();
+                        clonedSchema.setDescription(cleaned.isEmpty() ? null : cleaned);
+                    } else {
+                        clonedSchema.setDescription(desc);
+                    }
+                    
                     clonedMediaType.setSchema(clonedSchema);
                 }
                 
@@ -1435,7 +1481,15 @@ public class OasTransformationEngine {
                         clonedSchema.setType(mediaType.getSchema().getType());
                         clonedSchema.setProperties(mediaType.getSchema().getProperties());
                         clonedSchema.setRequired(mediaType.getSchema().getRequired());
-                        clonedSchema.setDescription(mediaType.getSchema().getDescription());
+                        
+                        // Clean up description to remove tsType references (use DOTALL for multiline)
+                        String desc = mediaType.getSchema().getDescription();
+                        if (desc != null && desc.contains("tsType:")) {
+                            String cleaned = desc.replaceAll("(?s)\\(tsType:.*?\\)", "").trim();
+                            clonedSchema.setDescription(cleaned.isEmpty() ? null : cleaned);
+                        } else {
+                            clonedSchema.setDescription(desc);
+                        }
                         
                         // Clone array items if present
                         if (mediaType.getSchema().getItems() != null) {
@@ -2024,7 +2078,9 @@ public class OasTransformationEngine {
     /**
      * Adds merged domain schemas (base + alias-specific) to the OAS components.
      * This mirrors the schema merging logic from ValidateRequestBodyByKindSchema.
-     * Processes top-level aliases AND their children/parents hierarchies.
+     * Processes:
+     * 1. Base controller schemas (Entity, List, Relation, EntityReaction, ListReaction)
+     * 2. Top-level aliases AND their children/parents hierarchies
      */
     @SuppressWarnings("unchecked")
     private void addMergedDomainSchemas(OpenAPI openApi) {
@@ -2047,7 +2103,10 @@ public class OasTransformationEngine {
                 ? objectMapper.readTree(relationsBaseSchema) 
                 : baseSchemaNode;
             
-            // Process each controller's aliases
+            // 1. Add BASE CONTROLLER schemas first (for /entities, /lists, /relations, etc.)
+            addBaseControllerSchemas(schemas, baseSchemaNode, relationsBaseNode);
+            
+            // 2. Process each controller's aliases
             openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
                 if (controllerConfig.getAliases() == null) return;
                 
@@ -2071,6 +2130,92 @@ public class OasTransformationEngine {
         } catch (Exception e) {
             log.error("Failed to process base schemas: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * Adds base controller schemas (Entity, List, Relation, EntityReaction, ListReaction).
+     * These are used for base controller paths like /api/v1/entities, /api/v1/relations.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void addBaseControllerSchemas(Map<String, Schema> schemas, JsonNode baseSchemaNode, JsonNode relationsBaseNode) {
+        log.debug("addBaseControllerSchemas: baseSchemaNode={}, relationsBaseNode={}", baseSchemaNode, relationsBaseNode);
+        
+        // Define base controller schema mappings: schemaName -> (baseNode, controllerName)
+        Map<String, Object[]> baseControllerSchemas = new LinkedHashMap<>();
+        baseControllerSchemas.put("Entity", new Object[]{baseSchemaNode, "entities"});
+        baseControllerSchemas.put("List", new Object[]{baseSchemaNode, "lists"});
+        baseControllerSchemas.put("Relation", new Object[]{relationsBaseNode, "relations"});
+        baseControllerSchemas.put("EntityReaction", new Object[]{baseSchemaNode, "entityReactions"});
+        baseControllerSchemas.put("ListReaction", new Object[]{baseSchemaNode, "listReactions"});
+        
+        baseControllerSchemas.forEach((schemaName, config) -> {
+            JsonNode baseNode = (JsonNode) config[0];
+            String controllerName = (String) config[1];
+            
+            try {
+                // Add base schema if it doesn't exist
+                if (!schemas.containsKey(schemaName)) {
+                    // Create schema from base (no alias-specific properties)
+                    Schema schema = createSchemaFromJsonNode(baseNode, controllerName);
+                    schemas.put(schemaName, schema);
+                    log.debug("Added base controller schema: {} (recordType: {})", schemaName, controllerName);
+                }
+                
+                // Always add "New" variant for POST operations if it doesn't exist
+                String newSchemaName = "New" + schemaName;
+                if (!schemas.containsKey(newSchemaName)) {
+                    Schema newSchema = createSchemaFromJsonNode(baseNode, controllerName);
+                    newSchema.setRequired(null); // No required for creation
+                    schemas.put(newSchemaName, newSchema);
+                    log.debug("Added New variant schema: {} (recordType: {})", newSchemaName, controllerName);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to create base controller schema '{}': {}", schemaName, e.getMessage());
+            }
+        });
+    }
+    
+    /**
+     * Creates a Schema object from a JsonNode base schema.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Schema createSchemaFromJsonNode(JsonNode baseNode, String controllerName) {
+        Schema schema = new Schema();
+        schema.setType("object");
+        
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        
+        if (baseNode.has("properties")) {
+            baseNode.get("properties").fields().forEachRemaining(entry -> {
+                try {
+                    Schema propSchema = objectMapper.treeToValue(entry.getValue(), Schema.class);
+                    properties.put(entry.getKey(), propSchema);
+                } catch (Exception e) {
+                    log.debug("Could not convert property {}: {}", entry.getKey(), e.getMessage());
+                }
+            });
+        }
+        
+        schema.setProperties(properties);
+        
+        // Add required fields
+        if (baseNode.has("required") && baseNode.get("required").isArray()) {
+            java.util.List<String> required = new ArrayList<>();
+            for (JsonNode req : baseNode.get("required")) {
+                required.add(req.asText());
+            }
+            if (!required.isEmpty()) {
+                schema.setRequired(required);
+            }
+        }
+        
+        // Inject x-record-type vendor extension
+        if (schema.getExtensions() == null) {
+            schema.setExtensions(new LinkedHashMap<>());
+        }
+        schema.getExtensions().put("x-record-type", controllerName);
+        
+        return schema;
     }
     
     /**
@@ -2261,6 +2406,9 @@ public class OasTransformationEngine {
         // Build a map of path → aliasConfig for quick lookup
         Map<String, AliasContext> pathToAliasContext = buildPathToAliasContextMap();
         
+        log.debug("bindRequestBodiesToDomainSchemas: pathToAliasContext map = {}", pathToAliasContext.keySet());
+        log.debug("bindRequestBodiesToDomainSchemas: OAS paths = {}", openApi.getPaths().keySet());
+        
         int requestBindCount = 0;
         int responseBindCount = 0;
         
@@ -2270,11 +2418,13 @@ public class OasTransformationEngine {
             
             AliasContext aliasContext = findAliasContextForPath(path, pathToAliasContext);
             if (aliasContext == null) {
+                log.debug("bindRequestBodiesToDomainSchemas: No alias context for path {}", path);
                 continue; // No alias config for this path, skip binding
             }
             
             // Use path-specific schema name (e.g., Author, BooksChildChapter, BooksParentAuthor)
             String schemaName = aliasContext.getSchemaName();
+            log.debug("bindRequestBodiesToDomainSchemas: path={} → schemaName={}", path, schemaName);
             boolean isCollectionPath = !path.contains("{id}") && !path.endsWith("/count");
             boolean isCountPath = path.endsWith("/count");
             
@@ -2491,12 +2641,25 @@ public class OasTransformationEngine {
      * Builds a map of virtualized paths to their alias context.
      * CRITICAL: Children/parent paths are NESTED under the parent alias.
      * e.g., /authors/{id}/books, NOT /books (which is top-level)
+     * 
+     * IMPORTANT: Paths include the base URI prefix (e.g., /api/v1/books)
+     * Also includes base controller paths (e.g., /api/v1/entities, /api/v1/relations)
      */
     private Map<String, AliasContext> buildPathToAliasContextMap() {
         Map<String, AliasContext> map = new HashMap<>();
+        String baseUri = getBaseUriPrefix();
         
+        // 1. Add BASE CONTROLLER paths (for generic /entities, /relations, etc.)
+        addBaseControllerPathsToMap(map, baseUri);
+        
+        // 2. Add ALIAS paths (for /entities/books, /relations/contains, etc.)
+        // CRITICAL: Alias paths include the controller base path!
+        // e.g., /api/v1/entities/books, NOT /api/v1/books
         openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
             if (controllerConfig.getAliases() == null) return;
+            
+            // Get the controller base path (e.g., "entities", "relations", "entity-reactions")
+            String controllerBasePath = getInboundControllerBasePath(controllerName);
             
             for (AliasConfig aliasConfig : controllerConfig.getAliases()) {
                 String alias = aliasConfig.getAlias();
@@ -2504,16 +2667,18 @@ public class OasTransformationEngine {
                 
                 if (alias == null || kind == null) continue;
                 
-                // Add paths for top-level alias
-                // /{alias} - collection (POST creates new)
-                map.put("/" + alias, new AliasContext(alias, kind, controllerName, false, null, null));
-                // /{alias}/count - count
-                map.put("/" + alias + "/count", new AliasContext(alias, kind, controllerName, false, null, null));
-                // /{alias}/{id} - instance (PUT/PATCH updates)
-                map.put("/" + alias + "/{id}", new AliasContext(alias, kind, controllerName, false, null, null));
+                // Add paths for top-level alias WITH controller base path
+                // /{baseUri}/{controllerBasePath}/{alias} - collection (POST creates new)
+                // e.g., /api/v1/entities/books, /api/v1/relations/contains
+                String aliasBasePath = baseUri + "/" + controllerBasePath + "/" + alias;
+                map.put(aliasBasePath, new AliasContext(alias, kind, controllerName, false, null, null));
+                // /{baseUri}/{controllerBasePath}/{alias}/count - count
+                map.put(aliasBasePath + "/count", new AliasContext(alias, kind, controllerName, false, null, null));
+                // /{baseUri}/{controllerBasePath}/{alias}/{id} - instance (PUT/PATCH updates)
+                map.put(aliasBasePath + "/{id}", new AliasContext(alias, kind, controllerName, false, null, null));
                 
                 // Add paths for children - these are NESTED under THIS alias
-                // Path pattern: /{thisAlias}/{id}/{childAlias}
+                // Path pattern: /{baseUri}/{controllerBasePath}/{thisAlias}/{id}/{childAlias}
                 if (aliasConfig.getChildren() != null) {
                     for (AliasConfig childConfig : aliasConfig.getChildren()) {
                         String childAlias = childConfig.getAlias();
@@ -2521,14 +2686,14 @@ public class OasTransformationEngine {
                         
                         if (childAlias == null || childKind == null) continue;
                         
-                        // /{alias}/{id}/{childAlias} - creates child under this parent
-                        String childPath = "/" + alias + "/{id}/" + childAlias;
+                        // /{baseUri}/{controllerBasePath}/{alias}/{id}/{childAlias}
+                        String childPath = aliasBasePath + "/{id}/" + childAlias;
                         map.put(childPath, new AliasContext(childAlias, childKind, controllerName, true, alias, "Child"));
                     }
                 }
                 
                 // Add paths for parents - these are NESTED under THIS alias to query parents
-                // Path pattern: /{thisAlias}/{id}/{parentAlias}
+                // Path pattern: /{baseUri}/{controllerBasePath}/{thisAlias}/{id}/{parentAlias}
                 if (aliasConfig.getParents() != null) {
                     for (AliasConfig parentConfig : aliasConfig.getParents()) {
                         String parentAlias = parentConfig.getAlias();
@@ -2536,8 +2701,8 @@ public class OasTransformationEngine {
                         
                         if (parentAlias == null || parentKind == null) continue;
                         
-                        // /{alias}/{id}/{parentAlias} - queries parents of this entity
-                        String parentPath = "/" + alias + "/{id}/" + parentAlias;
+                        // /{baseUri}/{controllerBasePath}/{alias}/{id}/{parentAlias}
+                        String parentPath = aliasBasePath + "/{id}/" + parentAlias;
                         map.put(parentPath, new AliasContext(parentAlias, parentKind, controllerName, true, alias, "Parent"));
                     }
                 }
@@ -2546,6 +2711,44 @@ public class OasTransformationEngine {
         
         log.debug("Built path-to-alias map with {} entries: {}", map.size(), map.keySet());
         return map;
+    }
+    
+    /**
+     * Adds base controller paths to the path-to-alias map.
+     * These are generic paths like /entities, /relations that use base schemas.
+     * Uses the configured controller base paths (e.g., entity-reactions instead of entityReactions).
+     * 
+     * @param map The map to add paths to
+     * @param baseUri The base URI prefix (e.g., /api/v1)
+     */
+    private void addBaseControllerPathsToMap(Map<String, AliasContext> map, String baseUri) {
+        // Entity controller: uses entitiesBasePath (e.g., "entities")
+        map.put(baseUri + "/" + entitiesBasePath, new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
+        map.put(baseUri + "/" + entitiesBasePath + "/count", new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
+        map.put(baseUri + "/" + entitiesBasePath + "/{id}", new AliasContext(entitiesBasePath, "Entity", "entities", false, null, null));
+        
+        // List controller: uses listsBasePath (e.g., "lists")
+        map.put(baseUri + "/" + listsBasePath, new AliasContext(listsBasePath, "List", "lists", false, null, null));
+        map.put(baseUri + "/" + listsBasePath + "/count", new AliasContext(listsBasePath, "List", "lists", false, null, null));
+        map.put(baseUri + "/" + listsBasePath + "/{id}", new AliasContext(listsBasePath, "List", "lists", false, null, null));
+        
+        // Relation controller: uses relationsBasePath (e.g., "relations")
+        map.put(baseUri + "/" + relationsBasePath, new AliasContext(relationsBasePath, "Relation", "relations", false, null, null));
+        map.put(baseUri + "/" + relationsBasePath + "/count", new AliasContext(relationsBasePath, "Relation", "relations", false, null, null));
+        map.put(baseUri + "/" + relationsBasePath + "/{id}", new AliasContext(relationsBasePath, "Relation", "relations", false, null, null));
+        
+        // Entity Reaction controller: uses entityReactionsBasePath (e.g., "entity-reactions")
+        map.put(baseUri + "/" + entityReactionsBasePath, new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
+        map.put(baseUri + "/" + entityReactionsBasePath + "/count", new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
+        map.put(baseUri + "/" + entityReactionsBasePath + "/{id}", new AliasContext(entityReactionsBasePath, "EntityReaction", "entityReactions", false, null, null));
+        
+        // List Reaction controller: uses listReactionsBasePath (e.g., "list-reactions")
+        map.put(baseUri + "/" + listReactionsBasePath, new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
+        map.put(baseUri + "/" + listReactionsBasePath + "/count", new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
+        map.put(baseUri + "/" + listReactionsBasePath + "/{id}", new AliasContext(listReactionsBasePath, "ListReaction", "listReactions", false, null, null));
+        
+        log.debug("Added base controller paths: {}, {}, {}, {}, {}", 
+            entitiesBasePath, listsBasePath, relationsBasePath, entityReactionsBasePath, listReactionsBasePath);
     }
     
     /**
