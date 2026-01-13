@@ -5,37 +5,48 @@ import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Service for querying OPA to obtain field-level visibility permissions.
  * 
- * <p>This service queries OPA with the user's identity context (JWT claims)
- * to determine which fields should be hidden from the OpenAPI specification.
- * Unlike request-time authorization, this query does NOT include request payloads
- * or query parameters since they don't exist during spec generation.</p>
+ * <p>This service uses the SAME mechanism as {@link com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory}
+ * to fetch forbidden fields, but augments the PolicyData with schema metadata (x-record-type mappings)
+ * from the transformed OpenAPI spec.</p>
  * 
- * <h2>OPA Policy Contract:</h2>
+ * <h2>Mechanism:</h2>
+ * <ol>
+ *   <li>Build PolicyData from GatewaySecurityContext (JWT, claims)</li>
+ *   <li>Extract schema metadata from OpenAPI spec (schema name → x-record-type)</li>
+ *   <li>Set extracted metadata as PolicyData.requestPayload</li>
+ *   <li>Set policy name from configuration (typically /policies/gateway/forbidden_fields/policy/result)</li>
+ *   <li>Call authorizationClient.executePolicy(PolicyData, ForbiddenFieldsLibrary.class)</li>
+ *   <li>Convert ForbiddenFieldsLibrary to FieldPermissionContext</li>
+ * </ol>
+ * 
+ * <h2>PolicyData Structure Sent to OPA:</h2>
  * <pre>
- * package policies.oas.field_visibility
- * 
- * # Input structure:
- * # {
- * #   "encodedJwt": "eyJ...",
- * #   "roles": ["admin", "user"],
- * #   "groups": ["engineering"]
- * # }
- * 
- * # Output structure (same as ForbiddenFieldsLibrary):
- * # {
- * #   "entities": {
- * #     "default": ["_idempotencyKey"],
- * #     "kinds": { "user": ["password"] }
- * #   }
- * # }
+ * {
+ *   "policyName": "/policies/gateway/forbidden_fields/policy/result",
+ *   "encodedJwt": "eyJ...",
+ *   "requestPayload": {
+ *     "Book": "entities",
+ *     "Author": "entities",
+ *     "BookAuthor": "relations"
+ *   }
+ * }
  * </pre>
+ * 
+ * <p><strong>Note:</strong> The requestPayload contains schema metadata (x-record-type mappings)
+ * so OPA policies can make decisions based on which schemas exist in the API.</p>
  * 
  * <h2>Failure Handling:</h2>
  * <p>When OPA is unavailable or returns errors, this service defaults to
@@ -60,24 +71,28 @@ public class OasFieldPermissionService {
     /**
      * Fetches field-level permissions for OAS schema pruning.
      * 
-     * <p>Queries OPA with the user's identity context to determine which fields
-     * should be hidden from the generated OpenAPI specification.</p>
+     * <p>Queries OPA with the user's identity context AND the list of schemas
+     * in the OpenAPI spec to determine which fields should be hidden from the
+     * generated OpenAPI specification.</p>
      * 
      * @param securityContext The authenticated user's security context (may be null for anonymous)
+     * @param openApi The transformed OpenAPI spec with schemas
      * @return Mono containing the field permission context
      */
-    public Mono<FieldPermissionContext> fetchFieldPermissions(GatewaySecurityContext securityContext) {
+    public Mono<FieldPermissionContext> fetchFieldPermissions(GatewaySecurityContext securityContext, OpenAPI openApi) {
         // Anonymous users get a special anonymous permission context
         if (securityContext == null || securityContext.getEncodedJwt() == null) {
             log.debug("No security context available, fetching anonymous field permissions");
-            return fetchAnonymousPermissions();
+            return fetchAnonymousPermissions(openApi);
         }
         
-        PolicyData policyData = buildPolicyData(securityContext);
+        PolicyData policyData = buildPolicyData(securityContext, openApi);
         
-        log.debug("Fetching field permissions for user: {} with {} roles",
+        log.debug("Fetching field permissions for user: {} with {} roles and {} schemas",
             securityContext.getAuthSubject(),
-            securityContext.getRoles() != null ? securityContext.getRoles().size() : 0
+            securityContext.getRoles() != null ? securityContext.getRoles().size() : 0,
+            openApi.getComponents() != null && openApi.getComponents().getSchemas() != null
+                ? openApi.getComponents().getSchemas().size() : 0
         );
         
         return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
@@ -98,14 +113,17 @@ public class OasFieldPermissionService {
      * Fetches permissions for anonymous (unauthenticated) users.
      * 
      * <p>Anonymous users may have different visibility rules than authenticated users.
-     * This method queries OPA with empty claims to get the public-only field set.</p>
+     * This method queries OPA with empty claims but the full schema list to get
+     * the public-only field set.</p>
      * 
+     * @param openApi The transformed OpenAPI spec with schemas
      * @return Mono containing the anonymous permission context
      */
-    private Mono<FieldPermissionContext> fetchAnonymousPermissions() {
+    private Mono<FieldPermissionContext> fetchAnonymousPermissions(OpenAPI openApi) {
         PolicyData policyData = new PolicyData();
         policyData.setPolicyName(properties.getOpa().getFieldPolicy());
-        // Empty JWT and null roles/groups indicate anonymous user
+        // Include schemas even for anonymous users
+        policyData.setRequestPayload(extractSchemaMetadata(openApi));
         
         return authorizationClient.executePolicy(policyData, ForbiddenFieldsLibrary.class)
             .timeout(properties.getOpa().getTimeout())
@@ -118,27 +136,82 @@ public class OasFieldPermissionService {
     }
     
     /**
+     * Extracts schema metadata (record types) from the OpenAPI spec.
+     * 
+     * <p>This method extracts the x-record-type vendor extension from each schema
+     * and returns a map of schema names to their record types. This metadata is
+     * passed to OPA via PolicyData.requestPayload so OPA can make field visibility
+     * decisions based on which schemas exist and their types.</p>
+     * 
+     * <p>Example output:</p>
+     * <pre>
+     * {
+     *   "Book": "entities",
+     *   "Author": "entities",
+     *   "BookAuthor": "relations"
+     * }
+     * </pre>
+     * 
+     * @param openApi The transformed OpenAPI spec with x-record-type extensions
+     * @return Map of schema names to their record types (empty if no schemas or extensions)
+     */
+    private Map<String, Object> extractSchemaMetadata(OpenAPI openApi) {
+        Map<String, Object> metadata = new java.util.LinkedHashMap<>();
+        
+        if (openApi == null || openApi.getComponents() == null || 
+            openApi.getComponents().getSchemas() == null) {
+            return metadata;
+        }
+        
+        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+        for (Map.Entry<String, Schema> entry : schemas.entrySet()) {
+            String schemaName = entry.getKey();
+            Schema<?> schema = entry.getValue();
+            
+            if (schema != null && schema.getExtensions() != null) {
+                Object recordType = schema.getExtensions().get("x-record-type");
+                if (recordType != null) {
+                    metadata.put(schemaName, recordType);
+                    log.trace("Schema '{}' has record type: {}", schemaName, recordType);
+                }
+            }
+        }
+        
+        log.debug("Extracted schema metadata for {} schemas", metadata.size());
+        return metadata;
+    }
+    
+    /**
      * Builds the PolicyData object for OPA query.
      * 
-     * <p>Note: Unlike request-time authorization, we do NOT include:
+     * <p>This follows the SAME pattern as {@link com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory}
+     * but adds schema metadata via requestPayload:</p>
      * <ul>
-     *   <li>Request payload (doesn't exist)</li>
-     *   <li>Query parameters (doesn't exist)</li>
-     *   <li>Original record (not applicable)</li>
+     *   <li><strong>policyName:</strong> Policy path from configuration (e.g., /policies/gateway/forbidden_fields/policy/result)</li>
+     *   <li><strong>encodedJwt:</strong> User's JWT token for authentication/authorization context</li>
+     *   <li><strong>requestPayload:</strong> Schema metadata (schema name → x-record-type) extracted from OpenAPI spec</li>
      * </ul>
-     * This is intentional - we're querying for field visibility based solely
-     * on user identity, not request-specific data.</p>
      * 
-     * @param securityContext The user's security context
+     * <p>OPA receives this PolicyData and returns ForbiddenFieldsLibrary with field restrictions.</p>
+     * 
+     * @param securityContext The user's security context with JWT
+     * @param openApi The transformed OpenAPI spec with x-record-type extensions
      * @return PolicyData configured for field visibility query
      */
-    private PolicyData buildPolicyData(GatewaySecurityContext securityContext) {
+    private PolicyData buildPolicyData(GatewaySecurityContext securityContext, OpenAPI openApi) {
         PolicyData policyData = new PolicyData();
         policyData.setPolicyName(properties.getOpa().getFieldPolicy());
         policyData.setEncodedJwt(securityContext.getEncodedJwt());
         
-        // Note: We deliberately do not set operation, httpMethod, requestPath, etc.
-        // These are request-time concepts that don't apply to spec generation.
+        // Extract schema metadata (x-record-type mappings) and set as requestPayload
+        // This allows OPA to make decisions based on which schemas exist in the API
+        Map<String, Object> schemaMetadata = extractSchemaMetadata(openApi);
+        policyData.setRequestPayload(schemaMetadata);
+        
+        log.trace("Built PolicyData with policy='{}', jwt={}, schemas={}",
+            properties.getOpa().getFieldPolicy(),
+            securityContext.getEncodedJwt() != null ? "present" : "null",
+            schemaMetadata.size());
         
         return policyData;
     }

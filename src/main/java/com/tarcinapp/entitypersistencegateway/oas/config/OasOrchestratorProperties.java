@@ -156,15 +156,31 @@ public class OasOrchestratorProperties {
     public static class OpaConfig {
         /**
          * OPA policy path for field-level visibility decisions.
-         * This policy receives JWT claims and returns forbidden fields per record type.
+         * This policy receives JWT claims and schema metadata, then returns forbidden fields per record type.
          * 
-         * <p>Policy Contract:</p>
+         * <p><strong>Default:</strong> Uses the same policy as FetchForbiddenFieldsGatewayFilterFactory</p>
+         * <p><strong>Override:</strong> Set app.oas.orchestrator.opa.field-policy in application-oas-orchestrator.yml</p>
+         * 
+         * <p>Policy Contract (Same as FetchForbiddenFieldsGatewayFilterFactory):</p>
          * <pre>
-         * Input: { "encodedJwt": "...", "roles": [...], "groups": [...] }
-         * Output: { "entities": { "default": [...], "kinds": { "book": [...] } }, ... }
+         * Input PolicyData: {
+         *   "policyName": "/policies/gateway/forbidden_fields/policy/result",
+         *   "encodedJwt": "eyJ...",
+         *   "requestPayload": {
+         *     "Book": "entities",
+         *     "Author": "entities"
+         *   }
+         * }
+         * 
+         * Output ForbiddenFieldsLibrary: {
+         *   "entities": {
+         *     "default": ["_idempotencyKey"],
+         *     "kinds": { "book": ["secretField"] }
+         *   }
+         * }
          * </pre>
          */
-        private String fieldPolicy = "/policies/oas/field_visibility/policy/result";
+        private String fieldPolicy = "/policies/gateway/forbidden_fields/policy/result";
         
         /**
          * Timeout for OPA field permission queries.

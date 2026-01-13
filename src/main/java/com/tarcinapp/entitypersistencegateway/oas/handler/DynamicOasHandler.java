@@ -310,7 +310,7 @@ public class DynamicOasHandler {
                 return transformationEngine.transform(rawOas, requestContext);
             })
             .flatMap(transformedOas -> 
-                fieldPermissionService.fetchFieldPermissions(securityContext)
+                fieldPermissionService.fetchFieldPermissions(securityContext, transformedOas)
                     .map(permissions -> {
                         log.debug("Pruning OAS based on field permissions");
                         return schemaPruner.prune(transformedOas, permissions);

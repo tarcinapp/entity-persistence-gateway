@@ -69,7 +69,9 @@ app:
       # --------------------------------------------------------
       opa:
         # OPA policy path for field permissions
-        field-policy: /v1/data/tarcinapp/epg/forbidden_fields
+        # Uses the SAME policy as FetchForbiddenFieldsGatewayFilterFactory
+        # This ensures consistent field visibility between gateway routes and OpenAPI docs
+        field-policy: /policies/gateway/forbidden_fields/policy/result
         
         # Timeout for OPA queries
         timeout: 500ms
