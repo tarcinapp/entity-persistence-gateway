@@ -839,6 +839,11 @@ public class OasTransformationEngine {
         // Copy and clean parameters (remove tsType from inline schemas)
         transformed.setParameters(cleanParameters(original.getParameters()));
         
+        // Add advanced 'set' parameter to GET operations (list operations for children/parents)
+        if ("get".equalsIgnoreCase(httpMethod)) {
+            addSetParameterIfNeeded(transformed);
+        }
+        
         // CRITICAL: Deep clone request body to avoid sharing between virtualized paths!
         // Without this, /books/{id}/chapters and /authors/{id}/books would share the same
         // RequestBody object, and binding one would overwrite the other.
@@ -1342,9 +1347,176 @@ public class OasTransformationEngine {
                 param.setContent(null);
             }
             
+            // Enhance "set" parameter with detailed schema
+            if ("set".equals(param.getName())) {
+                enhanceSetParameterSchema(param);
+            }
+            
             param.setStyle(Parameter.StyleEnum.DEEPOBJECT);
             param.setExplode(true);
             log.trace("Applied deepObject style to parameter: {}", param.getName());
+        }
+    }
+    
+    /**
+     * Enhances the "set" parameter schema with detailed properties for:
+     * 1. Static boolean flags (publics, privates, protecteds, actives, expireds, pendings, roots)
+     * 2. Nested parametric objects (owners, viewers, audience with userIds and groupIds)
+     * 3. Dynamic time-bounded sets via additionalProperties
+     */
+    private void enhanceSetParameterSchema(Parameter param) {
+        Schema<?> schema = param.getSchema();
+        if (schema == null) {
+            schema = new Schema<>();
+            schema.setType("object");
+            param.setSchema(schema);
+        }
+        
+        // Add static boolean properties
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        for (String flag : List.of("publics", "privates", "protecteds", "actives", "expireds", "pendings", "roots")) {
+            Schema<Boolean> boolSchema = new Schema<>();
+            boolSchema.setType("boolean");
+            boolSchema.setDescription("Filter by " + flag + " records");
+            properties.put(flag, boolSchema);
+        }
+        
+        // Add nested parametric objects (owners, viewers, audience)
+        for (String nestedKey : List.of("owners", "viewers", "audience")) {
+            Schema<Object> nestedSchema = new Schema<>();
+            nestedSchema.setType("object");
+            nestedSchema.setDescription(capitalizeFirst(nestedKey) + " filtering parameters");
+            
+            Map<String, Schema> nestedProps = new LinkedHashMap<>();
+            
+            Schema<String> userIdsSchema = new Schema<>();
+            userIdsSchema.setType("string");
+            userIdsSchema.setDescription("Comma-separated user IDs, e.g., user1,user2");
+            nestedProps.put("userIds", userIdsSchema);
+            
+            Schema<String> groupIdsSchema = new Schema<>();
+            groupIdsSchema.setType("string");
+            groupIdsSchema.setDescription("Comma-separated group IDs, e.g., group1,group2");
+            nestedProps.put("groupIds", groupIdsSchema);
+            
+            nestedSchema.setProperties(nestedProps);
+            properties.put(nestedKey, nestedSchema);
+        }
+        
+        schema.setProperties(properties);
+        
+        // Ensure additionalProperties is set for dynamic time-bounded sets
+        if (schema.getAdditionalProperties() == null || schema.getAdditionalProperties() instanceof Boolean) {
+            Schema<Boolean> additionalPropsSchema = new Schema<>();
+            additionalPropsSchema.setType("boolean");
+            additionalPropsSchema.setDescription("Supports dynamic keys following the pattern <base>-<N><unit> " +
+                "(e.g., createds-10m, expireds-2w). Base must be one of: createds, expireds, actives, pendings. " +
+                "Units: m/min (minutes), d/day (days), w (weeks), mo/mon (months).");
+            schema.setAdditionalProperties(additionalPropsSchema);
+        }
+        
+        // Update parameter description
+        param.setDescription("Advanced filtering with boolean flags, parametric objects (owners/viewers/audience), " +
+            "and dynamic time-bounded sets (e.g., createds-10m, expireds-2w)");
+        
+        log.trace("Enhanced 'set' parameter schema with {} properties", properties.size());
+    }
+    
+    /**
+     * Creates an advanced 'set' query parameter with complex schema supporting:
+     * 1. Static boolean flags (publics, privates, protecteds, actives, expireds, pendings, roots)
+     * 2. Nested parametric objects (owners, viewers, audience with userIds and groupIds)
+     * 3. Dynamic time-bounded sets via additionalProperties
+     * 
+     * @return A Parameter configured with deepObject style and explode=true
+     */
+    private Parameter createAdvancedSetParameter() {
+        Parameter setParam = new Parameter();
+        setParam.setName("set");
+        setParam.setIn("query");
+        setParam.setDescription("Advanced filtering with boolean flags, parametric objects (owners/viewers/audience), " +
+            "and dynamic time-bounded sets (e.g., createds-10m, expireds-2w)");
+        setParam.setStyle(Parameter.StyleEnum.DEEPOBJECT);
+        setParam.setExplode(true);
+        setParam.setRequired(false);
+        
+        // Create main object schema
+        Schema<Object> setSchema = new Schema<>();
+        setSchema.setType("object");
+        
+        // Add static boolean properties
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        for (String flag : List.of("publics", "privates", "protecteds", "actives", "expireds", "pendings", "roots")) {
+            Schema<Boolean> boolSchema = new Schema<>();
+            boolSchema.setType("boolean");
+            boolSchema.setDescription("Filter by " + flag + " records");
+            properties.put(flag, boolSchema);
+        }
+        
+        // Add nested parametric objects (owners, viewers, audience)
+        for (String nestedKey : List.of("owners", "viewers", "audience")) {
+            Schema<Object> nestedSchema = new Schema<>();
+            nestedSchema.setType("object");
+            nestedSchema.setDescription(capitalizeFirst(nestedKey) + " filtering parameters");
+            
+            Map<String, Schema> nestedProps = new LinkedHashMap<>();
+            
+            Schema<String> userIdsSchema = new Schema<>();
+            userIdsSchema.setType("string");
+            userIdsSchema.setDescription("Comma-separated user IDs, e.g., user1,user2");
+            nestedProps.put("userIds", userIdsSchema);
+            
+            Schema<String> groupIdsSchema = new Schema<>();
+            groupIdsSchema.setType("string");
+            groupIdsSchema.setDescription("Comma-separated group IDs, e.g., group1,group2");
+            nestedProps.put("groupIds", groupIdsSchema);
+            
+            nestedSchema.setProperties(nestedProps);
+            properties.put(nestedKey, nestedSchema);
+        }
+        
+        setSchema.setProperties(properties);
+        
+        log.debug("Created 'set' schema with {} properties: {}", 
+            properties.size(), properties.keySet());
+        
+        // Add additionalProperties for dynamic time-bounded sets
+        Schema<Boolean> additionalPropsSchema = new Schema<>();
+        additionalPropsSchema.setType("boolean");
+        additionalPropsSchema.setDescription("Supports dynamic keys following the pattern <base>-<N><unit> " +
+            "(e.g., createds-10m, expireds-2w). Base must be one of: createds, expireds, actives, pendings. " +
+            "Units: m/min (minutes), d/day (days), w (weeks), mo/mon (months).");
+        setSchema.setAdditionalProperties(additionalPropsSchema);
+        
+        setParam.setSchema(setSchema);
+        
+        log.trace("Created advanced 'set' query parameter with deepObject style");
+        return setParam;
+    }
+    
+    /**
+     * Adds the advanced 'set' parameter to an operation if it doesn't already exist.
+     * Only adds to GET operations (list/query operations).
+     * 
+     * @param operation The operation to enhance with the set parameter
+     */
+    private void addSetParameterIfNeeded(Operation operation) {
+        if (operation == null) {
+            return;
+        }
+        
+        // Initialize parameters list if null
+        if (operation.getParameters() == null) {
+            operation.setParameters(new ArrayList<>());
+        }
+        
+        // Check if 'set' parameter already exists
+        boolean hasSetParam = operation.getParameters().stream()
+            .anyMatch(p -> "set".equals(p.getName()));
+        
+        if (!hasSetParam) {
+            operation.getParameters().add(createAdvancedSetParameter());
+            log.trace("Added advanced 'set' parameter to operation: {}", operation.getOperationId());
         }
     }
     
