@@ -496,6 +496,12 @@ public class OasTransformationEngine {
                 return;
             }
             
+            // Check if "generic" tag is disabled (base controller routes are generic, using kind parameter)
+            if (isTagDisabled("generic")) {
+                log.debug("Skipping base routes for controller '{}' - 'generic' tag is disabled by toggles", controllerName);
+                return;
+            }
+            
             // Build virtual path: baseUri already normalized, just append controller path
             // baseUri ends without trailing slash, so add / before inboundPath
             String virtualPathPrefix = baseUri + "/" + inboundPath;
