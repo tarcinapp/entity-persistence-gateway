@@ -1569,8 +1569,15 @@ public class OasTransformationEngine {
             return name.replaceAll("Excluding__.*?_", "");
         }
         
+        // Strip noisy count suffixes that leak internal permission fields
+        String cleanedName = name.replaceAll("(ownerUsersCount|ownerGroupsCount|viewerUsersCount|viewerGroupsCount|parentsCount|childrenCount)[-_]*", "");
+        // If everything got stripped, fall back to original to avoid empty names
+        if (cleanedName == null || cleanedName.isBlank()) {
+            cleanedName = name;
+        }
+
         // Common simplifications for entity/response schemas (NOT filters)
-        if (name.startsWith("GenericEntity")) {
+        if (cleanedName.startsWith("GenericEntity")) {
             if (name.contains("WithRelations")) {
                 return "EntityWithRelations";
             } else if (name.contains("Partial")) {
@@ -1581,15 +1588,15 @@ public class OasTransformationEngine {
             return "Entity";
         }
         
-        if (name.startsWith("List") && !name.equals("List")) {
-            if (name.contains("Reaction")) {
+        if (cleanedName.startsWith("List") && !cleanedName.equals("List")) {
+            if (cleanedName.contains("Reaction")) {
                 return name.contains("New") ? "NewListReaction" : "ListReaction";
             }
             return name.contains("New") ? "NewList" : "List";
         }
         
         // Keep other names as-is or apply minimal cleanup
-        return name.replaceAll("Excluding__.*?_", "");
+        return cleanedName.replaceAll("Excluding__.*?_", "");
     }
     
     /**
