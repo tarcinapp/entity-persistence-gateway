@@ -44,7 +44,15 @@ app:
         
         # Read timeout in milliseconds
         read-timeout-ms: 10000
-      
+        
+        # Application Startup Retry Logic
+        # We must fetch the backend schema at startup. If it fails, we retry.
+        retry:
+          max-attempts: 5
+          initial-interval-ms: 2000
+          multiplier: 1.5
+          max-interval-ms: 10000
+
       # --------------------------------------------------------
       # Cache Configuration
       # --------------------------------------------------------
