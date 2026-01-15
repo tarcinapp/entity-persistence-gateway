@@ -144,6 +144,9 @@ public class OasTransformationEngine {
     @Value("${app.inbound.controllerBasePaths.reactionsThroughList:reactions}")
     private String reactionsThroughListBasePath;
     
+    @Value("${app.shortcode:app}")
+    private String appShortcode;
+    
     // Thread-local storage for request context during transformation
     private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
     
@@ -245,6 +248,9 @@ public class OasTransformationEngine {
         
         // 6. Add gateway error responses to all operations
         addGatewayErrorResponses(transformed, rawOas);
+        
+        // 6b. Add standard 403 Forbidden responses to all operations
+        addForbiddenResponseToAllOperations(transformed);
         
         // 7. Fix broken $ref references (e.g., #/definitions/X → #/components/schemas/X)
         fixBrokenRefs(transformed);
@@ -1097,6 +1103,7 @@ public class OasTransformationEngine {
      *   <li>Removes tsType references from schema descriptions (internal TS type hints)</li>
      *   <li>Removes x-typescript-type extensions</li>
      *   <li>Adds JWT Bearer security scheme if not already present</li>
+     *   <li>Adds standard error response schemas (403 Forbidden)</li>
      * </ul>
      */
     private Components transformComponents(Components original) {
@@ -1106,16 +1113,30 @@ public class OasTransformationEngine {
             Map<String, Schema> transformedSchemas = new LinkedHashMap<>();
             
             original.getSchemas().forEach((name, schema) -> {
+                // Replace "loopback" in schema names with app shortcode
+                String renamedSchema = name
+                    .replace("loopback.", "")
+                    .replace("Loopback.", "")
+                    .replace("loopback", appShortcode)
+                    .replace("Loopback", capitalizeFirst(appShortcode));
+                
                 String newName = orchestratorProperties.getTransformation().isSimplifySchemaNames()
-                    ? simplifySchemaName(name)
-                    : name;
+                    ? simplifySchemaName(renamedSchema)
+                    : renamedSchema;
                 
                 // Clean up schema: remove tsType from descriptions and x-typescript-type extension
                 Schema<?> cleanedSchema = cleanupSchema(schema);
                 transformedSchemas.put(newName, cleanedSchema);
             });
             
+            // Add standard error response schemas
+            addStandardErrorSchemas(transformedSchemas);
+            
             transformed.setSchemas(transformedSchemas);
+        } else {
+            Map<String, Schema> schemas = new LinkedHashMap<>();
+            addStandardErrorSchemas(schemas);
+            transformed.setSchemas(schemas);
         }
         
         // Add JWT Bearer security scheme
@@ -1151,6 +1172,120 @@ public class OasTransformationEngine {
     }
     
     /**
+     * Adds standard error response schemas to components.
+     * Currently adds the 403 Forbidden error schema.
+     */
+    private void addStandardErrorSchemas(Map<String, Schema> schemas) {
+        // Create 403 Forbidden Error schema
+        Schema<Object> errorDetailsSchema = new Schema<>();
+        errorDetailsSchema.setType("object");
+        errorDetailsSchema.setDescription("Error response details");
+        
+        Map<String, Schema> errorProperties = new LinkedHashMap<>();
+        
+        Schema<Integer> statusCodeSchema = new Schema<>();
+        statusCodeSchema.setType("integer");
+        statusCodeSchema.setDescription("HTTP status code");
+        statusCodeSchema.setExample(403);
+        errorProperties.put("statusCode", statusCodeSchema);
+        
+        Schema<String> nameSchema = new Schema<>();
+        nameSchema.setType("string");
+        nameSchema.setDescription("Error name");
+        nameSchema.setExample("ForbiddenError");
+        errorProperties.put("name", nameSchema);
+        
+        Schema<String> messageSchema = new Schema<>();
+        messageSchema.setType("string");
+        messageSchema.setDescription("Human-readable error message");
+        messageSchema.setExample("Access Denied by Policy");
+        errorProperties.put("message", messageSchema);
+        
+        Schema<String> codeSchema = new Schema<>();
+        codeSchema.setType("string");
+        codeSchema.setDescription("Application error code");
+        codeSchema.setExample("GATEWAY-FORBIDDEN");
+        errorProperties.put("code", codeSchema);
+        
+        Schema<String> requestIdSchema = new Schema<>();
+        requestIdSchema.setType("string");
+        requestIdSchema.setDescription("Unique request identifier for tracking");
+        String requestIdExample = appShortcode.toUpperCase() + "-POSTMAN-20260114173558214-FXBOM";
+        requestIdSchema.setExample(requestIdExample);
+        errorProperties.put("requestId", requestIdSchema);
+        
+        Schema<String> pathSchema = new Schema<>();
+        pathSchema.setType("string");
+        pathSchema.setDescription("Request path that was denied");
+        pathSchema.setExample("/api/v1/entities");
+        errorProperties.put("path", pathSchema);
+        
+        errorDetailsSchema.setProperties(errorProperties);
+        
+        // Create wrapper schema with error property
+        Schema<Object> forbiddenErrorSchema = new Schema<>();
+        forbiddenErrorSchema.setType("object");
+        forbiddenErrorSchema.setDescription("403 Forbidden error response");
+        
+        Map<String, Schema> wrapperProperties = new LinkedHashMap<>();
+        wrapperProperties.put("error", errorDetailsSchema);
+        forbiddenErrorSchema.setProperties(wrapperProperties);
+        
+        schemas.put("ForbiddenErrorResponse", forbiddenErrorSchema);
+        log.debug("Added ForbiddenErrorResponse schema");
+    }
+    
+    /**
+     * Adds 403 Forbidden response to all operations.
+     * This ensures consistent error response documentation across all protected endpoints.
+     */
+    private void addForbiddenResponseToAllOperations(OpenAPI openApi) {
+        if (openApi.getPaths() == null) {
+            return;
+        }
+        
+        openApi.getPaths().forEach((path, pathItem) -> {
+            if (pathItem != null) {
+                addForbiddenResponseToOperation(pathItem.getGet());
+                addForbiddenResponseToOperation(pathItem.getPost());
+                addForbiddenResponseToOperation(pathItem.getPut());
+                addForbiddenResponseToOperation(pathItem.getPatch());
+                addForbiddenResponseToOperation(pathItem.getDelete());
+            }
+        });
+    }
+    
+    /**
+     * Adds 403 Forbidden response to a single operation if it doesn't already have one.
+     */
+    private void addForbiddenResponseToOperation(Operation operation) {
+        if (operation == null) {
+            return;
+        }
+        
+        if (operation.getResponses() == null) {
+            operation.setResponses(new ApiResponses());
+        }
+        
+        // Add 403 response if not already present
+        if (!operation.getResponses().containsKey("403")) {
+            ApiResponse forbiddenResponse = new ApiResponse();
+            forbiddenResponse.setDescription("Access Denied by Policy - User not authorized to access this resource");
+            
+            // Create content with schema reference
+            Content content = new Content();
+            MediaType mediaType = new MediaType();
+            Schema<Object> schemaRef = new Schema<>();
+            schemaRef.set$ref("#/components/schemas/ForbiddenErrorResponse");
+            mediaType.setSchema(schemaRef);
+            content.addMediaType("application/json", mediaType);
+            forbiddenResponse.setContent(content);
+            
+            operation.getResponses().addApiResponse("403", forbiddenResponse);
+        }
+    }
+    
+    /**
      * Cleans up a schema by removing tsType references from descriptions
      * and removing x-typescript-type extensions.
      * 
@@ -1171,11 +1306,20 @@ public class OasTransformationEngine {
             return null;
         }
         
-        // Clean up verbose titles that reveal internal field names
-        // These patterns indicate auto-generated internal schema names that expose hidden fields
+        // Replace "loopback" in schema title with app shortcode
         String title = schema.getTitle();
-        if (title != null && shouldRemoveTitle(title)) {
-            schema.setTitle(null);
+        if (title != null) {
+            if (title.contains("loopback") || title.contains("Loopback")) {
+                String newTitle = title
+                    .replace("loopback.", "")
+                    .replace("Loopback.", "")
+                    .replace("loopback", appShortcode)
+                    .replace("Loopback", capitalizeFirst(appShortcode));
+                schema.setTitle(newTitle);
+            } else if (shouldRemoveTitle(title)) {
+                // Clean up verbose titles that reveal internal field names
+                schema.setTitle(null);
+            }
         }
         
         // Remove tsType from description
