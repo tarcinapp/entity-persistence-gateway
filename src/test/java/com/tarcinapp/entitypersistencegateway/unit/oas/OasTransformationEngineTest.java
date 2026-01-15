@@ -5,6 +5,7 @@ import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
+import com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService;
 import com.tarcinapp.entitypersistencegateway.oas.transformation.OasTransformationEngine;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
@@ -20,10 +21,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for OasTransformationEngine.
- * Verifies baseUri prefix AND controllerBasePath are applied to all virtualized paths.
+ * Verifies baseUri prefix AND controllerBasePath are applied to all virtualized
+ * paths.
  */
 @DisplayName("OasTransformationEngine Unit Tests")
 class OasTransformationEngineTest {
@@ -33,6 +37,7 @@ class OasTransformationEngineTest {
     private OasOrchestratorProperties orchestratorProperties;
     private TogglesProperties togglesProperties;
     private ObjectMapper objectMapper;
+    private BackendSchemaService backendSchemaService;
 
     @BeforeEach
     void setUp() {
@@ -40,15 +45,22 @@ class OasTransformationEngineTest {
         orchestratorProperties = new OasOrchestratorProperties();
         togglesProperties = new TogglesProperties();
         objectMapper = new ObjectMapper();
-        
+        backendSchemaService = mock(BackendSchemaService.class);
+
+        // Mock BackendSchemaService to return empty schemas (tests don't rely on schema
+        // merging)
+        when(backendSchemaService.getBackendSchemaForController(anyString(), anyString()))
+                .thenReturn(objectMapper.createObjectNode());
+
         engine = new OasTransformationEngine(
-            openApiProperties,
-            orchestratorProperties,
-            togglesProperties,
-            objectMapper
-        );
-        
+                openApiProperties,
+                orchestratorProperties,
+                togglesProperties,
+                objectMapper,
+                backendSchemaService);
+
         // Set default controller base paths
+        ReflectionTestUtils.setField(engine, "appShortcode", "test");
         ReflectionTestUtils.setField(engine, "entitiesBasePath", "entities");
         ReflectionTestUtils.setField(engine, "listsBasePath", "lists");
         ReflectionTestUtils.setField(engine, "relationsBasePath", "relations");
@@ -70,13 +82,13 @@ class OasTransformationEngineTest {
             // Given: Configure baseUri and entity alias
             ReflectionTestUtils.setField(engine, "inboundBaseUri", "/api/v1/");
             configureAlias("entities", "books", "book");
-            
+
             // When: Transform the OAS
             OpenAPI transformed = engine.transform(createRawOasWithEntitiesPath());
-            
+
             // Then: Path should be /api/v1/entities/books
             assertThat(transformed.getPaths().keySet())
-                .contains("/api/v1/entities/books", "/api/v1/entities/books/{id}");
+                    .contains("/api/v1/entities/books", "/api/v1/entities/books/{id}");
         }
 
         @Test
@@ -85,17 +97,17 @@ class OasTransformationEngineTest {
             // Given: Configure baseUri and entityReaction alias
             ReflectionTestUtils.setField(engine, "inboundBaseUri", "/api/v1/");
             configureAlias("entityReactions", "comments", "comment");
-            
+
             // When: Transform the OAS
             OpenAPI transformed = engine.transform(createRawOasWithEntityReactionsPath());
-            
+
             // Then: Path should be /api/v1/entity-reactions/comments (NOT /api/v1/comments)
             assertThat(transformed.getPaths().keySet())
-                .contains("/api/v1/entity-reactions/comments", "/api/v1/entity-reactions/comments/{id}");
-            
+                    .contains("/api/v1/entity-reactions/comments", "/api/v1/entity-reactions/comments/{id}");
+
             // And: Should NOT contain the wrong path
             assertThat(transformed.getPaths().keySet())
-                .doesNotContain("/api/v1/comments");
+                    .doesNotContain("/api/v1/comments");
         }
 
         @Test
@@ -104,13 +116,13 @@ class OasTransformationEngineTest {
             // Given: Configure baseUri and list alias
             ReflectionTestUtils.setField(engine, "inboundBaseUri", "/api/v1/");
             configureAlias("lists", "playlists", "playlist");
-            
+
             // When: Transform the OAS
             OpenAPI transformed = engine.transform(createRawOasWithListsPath());
-            
+
             // Then: Path should be /api/v1/lists/playlists
             assertThat(transformed.getPaths().keySet())
-                .contains("/api/v1/lists/playlists", "/api/v1/lists/playlists/{id}");
+                    .contains("/api/v1/lists/playlists", "/api/v1/lists/playlists/{id}");
         }
 
         @Test
@@ -119,33 +131,33 @@ class OasTransformationEngineTest {
             // Given: Configure baseUri and entity with children
             ReflectionTestUtils.setField(engine, "inboundBaseUri", "/api/v1/");
             configureAliasWithChildren("entities", "books", "book", "chapters", "chapter");
-            
+
             // When: Transform the OAS
             OpenAPI transformed = engine.transform(createRawOasWithHierarchyPaths());
-            
+
             // Then: Hierarchy path should include controllerBasePath
             assertThat(transformed.getPaths().keySet())
-                .contains("/api/v1/entities/books/{id}/chapters");
+                    .contains("/api/v1/entities/books/{id}/chapters");
         }
-        
+
         @Test
         @DisplayName("Should handle empty baseUri with controllerBasePath")
         void shouldHandleEmptyBaseUri() {
             // Given: Empty baseUri but valid controller base path
             ReflectionTestUtils.setField(engine, "inboundBaseUri", "");
             configureAlias("entityReactions", "comments", "comment");
-            
+
             // When
             OpenAPI transformed = engine.transform(createRawOasWithEntityReactionsPath());
-            
+
             // Then: Path should still have controller base path
             assertThat(transformed.getPaths().keySet())
-                .contains("/entity-reactions/comments", "/entity-reactions/comments/{id}");
+                    .contains("/entity-reactions/comments", "/entity-reactions/comments/{id}");
         }
     }
 
     // Helper methods
-    
+
     private void configureAlias(String controller, String alias, String kind) {
         ControllerConfig controllerConfig = new ControllerConfig();
         AliasConfig aliasConfig = new AliasConfig();
@@ -153,10 +165,10 @@ class OasTransformationEngineTest {
         aliasConfig.setKind(kind);
         aliasConfig.setDescription("Test " + alias);
         controllerConfig.setAliases(List.of(aliasConfig));
-        
+
         openApiProperties.setControllers(Map.of(controller, controllerConfig));
     }
-    
+
     private void configureAliasWithChildren(
             String controller, String alias, String kind, String childAlias, String childKind) {
         ControllerConfig controllerConfig = new ControllerConfig();
@@ -164,75 +176,75 @@ class OasTransformationEngineTest {
         aliasConfig.setAlias(alias);
         aliasConfig.setKind(kind);
         aliasConfig.setDescription("Test " + alias);
-        
+
         AliasConfig childConfig = new AliasConfig();
         childConfig.setAlias(childAlias);
         childConfig.setKind(childKind);
         childConfig.setDescription("Test " + childAlias);
-        
+
         aliasConfig.setChildren(List.of(childConfig));
         controllerConfig.setAliases(List.of(aliasConfig));
-        
+
         openApiProperties.setControllers(Map.of(controller, controllerConfig));
     }
-    
+
     private OpenAPI createRawOasWithEntitiesPath() {
         OpenAPI openAPI = new OpenAPI();
         Paths paths = new Paths();
-        
+
         paths.addPathItem("/entities", createCollectionPathItem());
         paths.addPathItem("/entities/{id}", createInstancePathItem());
-        
+
         openAPI.setPaths(paths);
         openAPI.setComponents(createComponents());
-        
+
         return openAPI;
     }
-    
+
     private OpenAPI createRawOasWithEntityReactionsPath() {
         OpenAPI openAPI = new OpenAPI();
         Paths paths = new Paths();
-        
+
         paths.addPathItem("/entity-reactions", createCollectionPathItem());
         paths.addPathItem("/entity-reactions/{id}", createInstancePathItem());
-        
+
         openAPI.setPaths(paths);
         openAPI.setComponents(createComponents());
-        
+
         return openAPI;
     }
-    
+
     private OpenAPI createRawOasWithListsPath() {
         OpenAPI openAPI = new OpenAPI();
         Paths paths = new Paths();
-        
+
         paths.addPathItem("/lists", createCollectionPathItem());
         paths.addPathItem("/lists/{id}", createInstancePathItem());
-        
+
         openAPI.setPaths(paths);
         openAPI.setComponents(createComponents());
-        
+
         return openAPI;
     }
-    
+
     private OpenAPI createRawOasWithHierarchyPaths() {
         OpenAPI openAPI = createRawOasWithEntitiesPath();
-        
+
         PathItem childrenPath = new PathItem();
         childrenPath.setGet(createGetOperation("Find entity children"));
         childrenPath.setPost(createPostOperation("Add entity child"));
         openAPI.getPaths().addPathItem("/entities/{id}/children", childrenPath);
-        
+
         return openAPI;
     }
-    
+
     private PathItem createCollectionPathItem() {
         PathItem pathItem = new PathItem();
         pathItem.setGet(createGetOperation("Find all"));
         pathItem.setPost(createPostOperation("Create"));
         return pathItem;
     }
-    
+
     private PathItem createInstancePathItem() {
         PathItem pathItem = new PathItem();
         pathItem.setGet(createGetOperation("Find by ID"));
@@ -240,7 +252,7 @@ class OasTransformationEngineTest {
         pathItem.setDelete(createDeleteOperation("Delete"));
         return pathItem;
     }
-    
+
     private Operation createGetOperation(String summary) {
         Operation op = new Operation();
         op.setSummary(summary);
@@ -248,7 +260,7 @@ class OasTransformationEngineTest {
         op.setResponses(createResponses());
         return op;
     }
-    
+
     private Operation createPostOperation(String summary) {
         Operation op = new Operation();
         op.setSummary(summary);
@@ -256,7 +268,7 @@ class OasTransformationEngineTest {
         op.setResponses(createResponses());
         return op;
     }
-    
+
     private Operation createPutOperation(String summary) {
         Operation op = new Operation();
         op.setSummary(summary);
@@ -264,7 +276,7 @@ class OasTransformationEngineTest {
         op.setResponses(createResponses());
         return op;
     }
-    
+
     private Operation createDeleteOperation(String summary) {
         Operation op = new Operation();
         op.setSummary(summary);
@@ -272,7 +284,7 @@ class OasTransformationEngineTest {
         op.setResponses(createResponses());
         return op;
     }
-    
+
     private ApiResponses createResponses() {
         ApiResponses responses = new ApiResponses();
         ApiResponse okResponse = new ApiResponse();
@@ -280,7 +292,7 @@ class OasTransformationEngineTest {
         responses.addApiResponse("200", okResponse);
         return responses;
     }
-    
+
     private Components createComponents() {
         Components components = new Components();
         Map<String, Schema> schemas = new HashMap<>();
@@ -288,16 +300,15 @@ class OasTransformationEngineTest {
         components.setSchemas(schemas);
         return components;
     }
-    
+
     @SuppressWarnings("rawtypes")
     private Schema createEntitySchema() {
         Schema<Object> schema = new Schema<>();
         schema.setType("object");
         schema.setProperties(Map.of(
-            "_id", new StringSchema(),
-            "_kind", new StringSchema(),
-            "_name", new StringSchema()
-        ));
+                "_id", new StringSchema(),
+                "_kind", new StringSchema(),
+                "_name", new StringSchema()));
         return schema;
     }
 }

@@ -37,35 +37,40 @@ import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.AliasConf
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.ControllerConfig;
 import com.tarcinapp.entitypersistencegateway.exceptions.JsonResponseStatusException;
 import com.tarcinapp.entitypersistencegateway.helpers.JsonValidationException;
+import com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * ValidateRequestBodyByKindSchema validates the request payload against the schema 
+ * ValidateRequestBodyByKindSchema validates the request payload against the
+ * schema
  * defined in the OpenAPI configuration for the resolved kind.
  */
 @Component
 @Slf4j
-public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactory<ValidateRequestBodyByKindSchema.Config> {
-
-    @Value("${app.commonBaseSchema:#{null}}")
-    private String commonBaseSchema;
-
-    @Value("${app.relationsBaseSchema:#{null}}")
-    private String relationsBaseSchemaString;
+public class ValidateRequestBodyByKindSchema
+        extends AbstractGatewayFilterFactory<ValidateRequestBodyByKindSchema.Config> {
 
     @Autowired
     private OpenApiProperties openApiProperties;
 
+    // New service for dynamic schema loading
+    @Autowired
+    private BackendSchemaService backendSchemaService;
+
     private static JsonSchema baseSchema;
     private static JsonSchema relationsBaseSchema;
 
-    // Stores schemas with "required" fields enforced (for POST/PUT)
-    private Map<String, JsonSchema> combinedSchemasCommon;
-    private Map<String, JsonSchema> combinedSchemasRelations;
+    // Stores schemas for POST (Creation) - based on Backend POST schema
+    private Map<String, JsonSchema> postSchemasCommon;
+    private Map<String, JsonSchema> postSchemasRelations;
 
-    // Stores schemas with root-level "required" fields removed (for PATCH)
+    // Stores schemas for PUT (Replacement) - based on Backend Resource (GET) schema
+    private Map<String, JsonSchema> putSchemasCommon;
+    private Map<String, JsonSchema> putSchemasRelations;
+
+    // Stores schemas for PATCH (Partial Update) - based on Backend PATCH schema
     private Map<String, JsonSchema> patchSchemasCommon;
     private Map<String, JsonSchema> patchSchemasRelations;
 
@@ -90,24 +95,15 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             return;
         }
 
-        combinedSchemasCommon = new HashMap<>();
+        postSchemasCommon = new HashMap<>();
+        postSchemasRelations = new HashMap<>();
+        putSchemasCommon = new HashMap<>();
+        putSchemasRelations = new HashMap<>();
         patchSchemasCommon = new HashMap<>();
-        combinedSchemasRelations = new HashMap<>();
         patchSchemasRelations = new HashMap<>();
 
         try {
-            // Init the base schemas
-            if (this.commonBaseSchema != null) {
-                baseSchema = SCHEMA_FACTORY.getSchema(this.commonBaseSchema);
-            }
-            if (this.relationsBaseSchemaString != null) {
-                relationsBaseSchema = SCHEMA_FACTORY.getSchema(this.relationsBaseSchemaString);
-            }
-
-            JsonNode defaultBaseSchemaNode = baseSchema != null ? baseSchema.getSchemaNode() : objectMapper.createObjectNode();
-            JsonNode relationsBaseSchemaNode = relationsBaseSchema != null ? relationsBaseSchema.getSchemaNode() : defaultBaseSchemaNode;
-
-            // Merge each given schema with base schema from app.oas.controllers
+            // Iterate all controllers to build combined schemas
             for (Map.Entry<String, ControllerConfig> controllerEntry : openApiProperties.getControllers().entrySet()) {
                 String controllerName = controllerEntry.getKey();
                 ControllerConfig controllerConfig = controllerEntry.getValue();
@@ -116,10 +112,38 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                     continue;
                 }
 
+                // Fetch Backend Schemas for this specific controller
+                // POST Schema (Creation) -> used for POST validation
+                JsonNode backendPostSchema = backendSchemaService.getBackendSchemaForController(controllerName, "POST");
+
+                // PATCH Schema (Partial Update) -> used for PATCH validation
+                JsonNode backendPatchSchema = backendSchemaService.getBackendSchemaForController(controllerName,
+                        "PATCH");
+
+                // Resource Schema (GET) -> used for PUT validation (Replacement usually
+                // requires full resource)
+                JsonNode backendResourceSchema = backendSchemaService.getBackendSchemaForController(controllerName,
+                        "GET");
+
+                // Fallbacks
+                if (backendPostSchema == null) {
+                    log.warn("No POST schema found for controller '{}'. Using empty schema.", controllerName);
+                    backendPostSchema = objectMapper.createObjectNode();
+                }
+                if (backendPatchSchema == null) {
+                    log.warn("No PATCH schema found for controller '{}'. Using empty schema.", controllerName);
+                    backendPatchSchema = objectMapper.createObjectNode();
+                }
+                if (backendResourceSchema == null) {
+                    log.warn("No Resource (GET) schema found for controller '{}'. Using empty schema.", controllerName);
+                    backendResourceSchema = objectMapper.createObjectNode();
+                }
+
                 for (AliasConfig aliasConfig : controllerConfig.getAliases()) {
-                    // Register BOTH variants at initialization; runtime will choose based on route metadata
-                    registerSchemasForAlias(controllerName, aliasConfig, defaultBaseSchemaNode, true);
-                    registerSchemasForAlias(controllerName, aliasConfig, relationsBaseSchemaNode, false);
+                    registerSchemasForAlias(controllerName, aliasConfig,
+                            backendPostSchema, backendPatchSchema, backendResourceSchema, true);
+                    registerSchemasForAlias(controllerName, aliasConfig,
+                            backendPostSchema, backendPatchSchema, backendResourceSchema, false);
                 }
             }
 
@@ -128,7 +152,11 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
     }
 
-    private void registerSchemasForAlias(String controllerName, AliasConfig aliasConfig, JsonNode baseSchemaNode, boolean registerToCommon)
+    private void registerSchemasForAlias(String controllerName, AliasConfig aliasConfig,
+            JsonNode basePostSchemaNode,
+            JsonNode basePatchSchemaNode,
+            JsonNode baseResourceSchemaNode,
+            boolean registerToCommon)
             throws JsonProcessingException {
 
         if (aliasConfig == null) {
@@ -136,28 +164,45 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
 
         // Process Alias Schema
-        boolean aliasValidationEnabled = aliasConfig.getValidationEnabled() == null || aliasConfig.getValidationEnabled();
+        boolean aliasValidationEnabled = aliasConfig.getValidationEnabled() == null
+                || aliasConfig.getValidationEnabled();
         if (aliasValidationEnabled && aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
-            ObjectNode aliasSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), baseSchemaNode);
             String aliasSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
-            
-            JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(aliasSchemaNode);
+
+            // 1. Create POST Schema (Creation)
+            ObjectNode aliasPostSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), basePostSchemaNode);
+            JsonNode sanitizedPostSchema = sanitizeSchema(aliasPostSchemaNode);
+            JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedPostSchema);
             if (registerToCommon) {
-                combinedSchemasCommon.put(aliasSchemaKey, combinedSchema);
+                postSchemasCommon.put(aliasSchemaKey, postSchema);
             } else {
-                combinedSchemasRelations.put(aliasSchemaKey, combinedSchema);
+                postSchemasRelations.put(aliasSchemaKey, postSchema);
             }
-            
-            ObjectNode patchSchemaNode = aliasSchemaNode.deepCopy();
-            patchSchemaNode.remove("required");
-            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+
+            // 2. Create PUT Schema (Replacement)
+            ObjectNode aliasPutSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), baseResourceSchemaNode);
+            JsonNode sanitizedPutSchema = sanitizeSchema(aliasPutSchemaNode);
+            JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedPutSchema);
+            if (registerToCommon) {
+                putSchemasCommon.put(aliasSchemaKey, putSchema);
+            } else {
+                putSchemasRelations.put(aliasSchemaKey, putSchema);
+            }
+
+            // 3. Create Patch Schema
+            ObjectNode aliasPatchSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), basePatchSchemaNode);
+            // Explicitly remove required fields for PATCH variants to allow partial updates
+            aliasPatchSchemaNode.remove("required");
+            JsonNode sanitizedPatchSchema = sanitizeSchema(aliasPatchSchemaNode);
+
+            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedPatchSchema);
             if (registerToCommon) {
                 patchSchemasCommon.put(aliasSchemaKey, patchSchema);
             } else {
                 patchSchemasRelations.put(aliasSchemaKey, patchSchema);
             }
-            
-            log.debug("Registered alias-level schema: {}", aliasSchemaKey);
+
+            log.debug("Registered alias-level schemas: {}", aliasSchemaKey);
         }
 
         // Process Route-level Schemas
@@ -165,48 +210,76 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             for (Map.Entry<String, OpenApiProperties.RouteConfig> routeEntry : aliasConfig.getRoutes().entrySet()) {
                 String routeId = routeEntry.getKey();
                 OpenApiProperties.RouteConfig routeConfig = routeEntry.getValue();
-                
-                boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null || routeConfig.getValidationEnabled();
+
+                boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
+                        || routeConfig.getValidationEnabled();
                 if (routeValidationEnabled && routeConfig.getSchema() != null && aliasConfig.getKind() != null) {
-                    ObjectNode routeSchemaNode = mergeSchemaWithBase(routeConfig.getSchema(), baseSchemaNode);
                     String routeSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind(), routeId);
-                    
-                    JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(routeSchemaNode);
+
+                    // POST Version
+                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
+                    JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
                     if (registerToCommon) {
-                        combinedSchemasCommon.put(routeSchemaKey, combinedSchema);
+                        postSchemasCommon.put(routeSchemaKey, postSchema);
                     } else {
-                        combinedSchemasRelations.put(routeSchemaKey, combinedSchema);
+                        postSchemasRelations.put(routeSchemaKey, postSchema);
                     }
-                    
-                    ObjectNode patchSchemaNode = routeSchemaNode.deepCopy();
-                    patchSchemaNode.remove("required");
-                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
+
+                    // PUT Version
+                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
+                    JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
+                    if (registerToCommon) {
+                        putSchemasCommon.put(routeSchemaKey, putSchema);
+                    } else {
+                        putSchemasRelations.put(routeSchemaKey, putSchema);
+                    }
+
+                    // PATCH Version
+                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    routePatchNode.remove("required");
+                    JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
+                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
                     if (registerToCommon) {
                         patchSchemasCommon.put(routeSchemaKey, patchSchema);
                     } else {
                         patchSchemasRelations.put(routeSchemaKey, patchSchema);
                     }
-                    
+
                     log.debug("Registered route-level schema: {}", routeSchemaKey);
                 }
             }
         }
 
-        // Register hierarchy-level schemas from children[] and parents[]
-        // These are registered with "hierarchy:" prefix for priority lookup
-        registerHierarchySchemas(controllerName, aliasConfig, baseSchemaNode, registerToCommon);
+        // Register hierarchy-level schemas
+        registerHierarchySchemas(controllerName, aliasConfig,
+                basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
     }
 
     /**
-     * Registers hierarchy-level schemas from children[] and parents[] configurations.
-     * These schemas have the highest priority when resolving validation for hierarchical requests.
+     * Registers hierarchy-level schemas from children[] and parents[]
+     * configurations.
+     * These schemas have the highest priority when resolving validation for
+     * hierarchical requests.
      * 
      * Key format: "hierarchy:{controller}:{rootKind}:{targetAlias}"
      */
-    private void registerHierarchySchemas(String controllerName, AliasConfig parentAliasConfig, 
-                                          JsonNode baseSchemaNode, boolean registerToCommon)
+    /**
+     * Registers hierarchy-level schemas from children[] and parents[]
+     * configurations.
+     * These schemas have the highest priority when resolving validation for
+     * hierarchical requests.
+     * 
+     * Key format: "hierarchy:{controller}:{rootKind}:{targetAlias}"
+     */
+    private void registerHierarchySchemas(String controllerName, AliasConfig parentAliasConfig,
+            JsonNode basePostSchemaNode,
+            JsonNode basePatchSchemaNode,
+            JsonNode baseResourceSchemaNode,
+            boolean registerToCommon)
             throws JsonProcessingException {
-        
+
         String rootKind = parentAliasConfig.getKind();
         if (rootKind == null) {
             return;
@@ -215,26 +288,32 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         // Process children hierarchy schemas
         if (parentAliasConfig.getChildren() != null) {
             for (AliasConfig child : parentAliasConfig.getChildren()) {
-                registerSingleHierarchySchema(controllerName, rootKind, child, baseSchemaNode, registerToCommon);
+                registerSingleHierarchySchema(controllerName, rootKind, child,
+                        basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
             }
         }
 
         // Process parents hierarchy schemas
         if (parentAliasConfig.getParents() != null) {
             for (AliasConfig parent : parentAliasConfig.getParents()) {
-                registerSingleHierarchySchema(controllerName, rootKind, parent, baseSchemaNode, registerToCommon);
+                registerSingleHierarchySchema(controllerName, rootKind, parent,
+                        basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
             }
         }
     }
 
     /**
-     * Registers a single hierarchy-level schema for a child or parent alias configuration.
+     * Registers a single hierarchy-level schema for a child or parent alias
+     * configuration.
      */
-    private void registerSingleHierarchySchema(String controllerName, String rootKind, 
-                                                AliasConfig targetAliasConfig, JsonNode baseSchemaNode, 
-                                                boolean registerToCommon)
+    private void registerSingleHierarchySchema(String controllerName, String rootKind,
+            AliasConfig targetAliasConfig,
+            JsonNode basePostSchemaNode,
+            JsonNode basePatchSchemaNode,
+            JsonNode baseResourceSchemaNode,
+            boolean registerToCommon)
             throws JsonProcessingException {
-        
+
         if (targetAliasConfig == null || targetAliasConfig.getAlias() == null) {
             return;
         }
@@ -242,27 +321,41 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         // Only register if hierarchy-level has its own schema defined
         if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
             String hierarchySchemaKey = buildHierarchySchemaKey(controllerName, rootKind, targetAliasConfig.getAlias());
-            
-            ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseSchemaNode);
-            JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(schemaNode);
-            
+
+            // 1. Create POST Schema
+            ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+            JsonNode sanitizedHierarchyPost = sanitizeSchema(schemaNode);
+            JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPost);
+
             if (registerToCommon) {
-                combinedSchemasCommon.put(hierarchySchemaKey, combinedSchema);
+                postSchemasCommon.put(hierarchySchemaKey, postSchema);
             } else {
-                combinedSchemasRelations.put(hierarchySchemaKey, combinedSchema);
+                postSchemasRelations.put(hierarchySchemaKey, postSchema);
             }
-            
-            // Also register PATCH variant
-            ObjectNode patchSchemaNode = schemaNode.deepCopy();
+
+            // 2. Create PUT Schema
+            ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+            JsonNode sanitizedHierarchyPut = sanitizeSchema(putSchemaNode);
+            JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPut);
+
+            if (registerToCommon) {
+                putSchemasCommon.put(hierarchySchemaKey, putSchema);
+            } else {
+                putSchemasRelations.put(hierarchySchemaKey, putSchema);
+            }
+
+            // 3. Create Patch Schema
+            ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
             patchSchemaNode.remove("required");
-            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-            
+            JsonNode sanitizedHierarchyPatch = sanitizeSchema(patchSchemaNode);
+            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPatch);
+
             if (registerToCommon) {
                 patchSchemasCommon.put(hierarchySchemaKey, patchSchema);
             } else {
                 patchSchemasRelations.put(hierarchySchemaKey, patchSchema);
             }
-            
+
             log.debug("Registered hierarchy-level schema: {}", hierarchySchemaKey);
         }
 
@@ -270,46 +363,119 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         // This supports Priority 3 fallback: target kind's alias-level schema
         if (targetAliasConfig.getKind() != null && targetAliasConfig.getSchema() != null) {
             String targetAliasKey = buildSchemaKey(controllerName, targetAliasConfig.getKind());
-            
-            // Only register if not already registered by a top-level alias
-            Map<String, JsonSchema> targetMap = registerToCommon ? combinedSchemasCommon : combinedSchemasRelations;
-            if (!targetMap.containsKey(targetAliasKey)) {
-                ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseSchemaNode);
-                JsonSchema combinedSchema = SCHEMA_FACTORY.getSchema(schemaNode);
-                
+
+            // Check if already registered (in respective maps)
+            // Since we have multiple maps, need to check strictly.
+            // But this block is fallback logic. Priority 3.
+            Map<String, JsonSchema> targetPostMap = registerToCommon ? postSchemasCommon : postSchemasRelations;
+
+            if (!targetPostMap.containsKey(targetAliasKey)) {
+
+                // POST Version
+                ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+                JsonNode sanitizedFallbackPost = sanitizeSchema(schemaNode);
+                JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPost);
+
                 if (registerToCommon) {
-                    combinedSchemasCommon.put(targetAliasKey, combinedSchema);
+                    postSchemasCommon.put(targetAliasKey, postSchema);
                 } else {
-                    combinedSchemasRelations.put(targetAliasKey, combinedSchema);
+                    postSchemasRelations.put(targetAliasKey, postSchema);
                 }
-                
-                ObjectNode patchSchemaNode = schemaNode.deepCopy();
+
+                // PUT Version
+                ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+                JsonNode sanitizedFallbackPut = sanitizeSchema(putSchemaNode);
+                JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPut);
+
+                if (registerToCommon) {
+                    putSchemasCommon.put(targetAliasKey, putSchema);
+                } else {
+                    putSchemasRelations.put(targetAliasKey, putSchema);
+                }
+
+                // PATCH Version
+                ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
                 patchSchemaNode.remove("required");
-                JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(patchSchemaNode);
-                
+                JsonNode sanitizedFallbackPatch = sanitizeSchema(patchSchemaNode);
+                JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPatch);
+
                 if (registerToCommon) {
                     patchSchemasCommon.put(targetAliasKey, patchSchema);
                 } else {
                     patchSchemasRelations.put(targetAliasKey, patchSchema);
                 }
-                
+
                 log.debug("Registered alias-level schema for hierarchy target: {}", targetAliasKey);
             }
         }
-        
-        // NOTE: We intentionally DO NOT process targetAliasConfig.getRoutes()
-        // Route-level schemas are only defined at the top-level alias, not within hierarchy configs
     }
 
     /**
-     * Merges a given schema string with the base schema using property/required merging.
+     * Sanitizes a JSON schema by removing invalid constraint values.
+     * The backend may return schemas with numeric constraints (minimum, maximum,
+     * etc.)
+     * that have string values, which causes the JSON schema validator to fail.
+     */
+    private JsonNode sanitizeSchema(JsonNode schema) {
+        if (schema == null || !schema.isObject()) {
+            return schema;
+        }
+
+        ObjectNode sanitized = ((ObjectNode) schema).deepCopy();
+
+        // List of numeric constraint keywords that must have numeric values
+        String[] numericConstraints = { "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum",
+                "multipleOf", "minLength", "maxLength", "minItems", "maxItems",
+                "minProperties", "maxProperties" };
+
+        for (String constraint : numericConstraints) {
+            if (sanitized.has(constraint)) {
+                JsonNode value = sanitized.get(constraint);
+                // Remove if not a number
+                if (!value.isNumber()) {
+                    sanitized.remove(constraint);
+                    log.debug("Removed invalid {} constraint with non-numeric value: {}", constraint, value);
+                }
+            }
+        }
+
+        // Recursively sanitize nested schemas
+        if (sanitized.has("properties") && sanitized.get("properties").isObject()) {
+            ObjectNode properties = (ObjectNode) sanitized.get("properties");
+            ObjectNode sanitizedProps = objectMapper.createObjectNode();
+            properties.fields().forEachRemaining(entry -> {
+                sanitizedProps.set(entry.getKey(), sanitizeSchema(entry.getValue()));
+            });
+            sanitized.set("properties", sanitizedProps);
+        }
+
+        // Sanitize array items
+        if (sanitized.has("items")) {
+            sanitized.set("items", sanitizeSchema(sanitized.get("items")));
+        }
+
+        // Sanitize allOf, anyOf, oneOf
+        for (String combiner : new String[] { "allOf", "anyOf", "oneOf" }) {
+            if (sanitized.has(combiner) && sanitized.get(combiner).isArray()) {
+                ArrayNode combinedSchemas = objectMapper.createArrayNode();
+                sanitized.get(combiner).forEach(subSchema -> combinedSchemas.add(sanitizeSchema(subSchema)));
+                sanitized.set(combiner, combinedSchemas);
+            }
+        }
+
+        return sanitized;
+    }
+
+    /**
+     * Merges a given schema string with the base schema using property/required
+     * merging.
      * Returns the combined ObjectNode ready for conversion to JsonSchema.
      */
     private ObjectNode mergeSchemaWithBase(String schemaString, JsonNode baseSchemaNode)
             throws JsonProcessingException {
-        
+
         JsonNode userSchema = objectMapper.readTree(schemaString);
-        
+
         boolean userRestrictsAdditionalProps = false;
         if (userSchema.has("additionalProperties")) {
             JsonNode additionalPropsNode = userSchema.get("additionalProperties");
@@ -386,7 +552,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             // Early exit: Check pre-computed validation flag from resolution filters
             // This prevents expensive body buffering if validation is disabled
             KindAliasConfigAttr attr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
-            
+
             if (attr != null && attr.getEffectiveValidationEnabled() != null && !attr.getEffectiveValidationEnabled()) {
                 log.debug("Validation disabled by effectiveValidationEnabled=false. Skipping body buffering.");
                 return chain.filter(exchange);
@@ -404,14 +570,16 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     }
 
     /**
-     * Validates the payload against the configured schema using priority-based lookup.
+     * Validates the payload against the configured schema using priority-based
+     * lookup.
      * 
      * Schema Resolution Priority:
      * 1. Hierarchy-level schema (if hierarchySchemaKey is set)
      * 2. Route-level schema for TARGET kind (targetKind + routeId)
      * 3. Alias-level schema for TARGET kind (targetKind only)
      * 
-     * Error handling is scoped ONLY to validation logic - downstream chain errors are NOT caught here.
+     * Error handling is scoped ONLY to validation logic - downstream chain errors
+     * are NOT caught here.
      */
     private Mono<String> validatePayload(ServerWebExchange exchange, String payload) {
         KindAliasConfigAttr attr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
@@ -432,28 +600,29 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         if (controllerName == null || controllerName.isBlank()) {
             controllerName = attr.getRecordType();
         }
-        
+
         // Get route info from exchange
         Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         String routeId = (route != null) ? route.getId() : null;
-        String recordType = (route != null && route.getMetadata().get("recordType") != null) 
-            ? route.getMetadata().get("recordType").toString() 
-            : null;
+        String recordType = (route != null && route.getMetadata().get("recordType") != null)
+                ? route.getMetadata().get("recordType").toString()
+                : null;
 
         HttpMethod method = exchange.getRequest().getMethod();
         boolean isPatch = HttpMethod.PATCH.equals(method);
+        boolean isPut = HttpMethod.PUT.equals(method);
 
         try {
             JsonNode requestJsonNode = objectMapper.readTree(payload);
-            
+
             // Perform priority-based schema lookup
-            JsonSchema schema = lookupSchema(controllerName, targetKind, hierarchySchemaKey, 
-                                             routeId, recordType, isPatch);
+            JsonSchema schema = lookupSchema(controllerName, targetKind, hierarchySchemaKey,
+                    routeId, recordType, isPatch, isPut);
 
             // If no schema found, skip validation with warning
             if (schema == null) {
-                log.warn("No schema found for kind '{}' in controller '{}'. Skipping validation.", 
-                         targetKind, controllerName);
+                log.warn("No schema found for kind '{}' in controller '{}'. Skipping validation.",
+                        targetKind, controllerName);
                 return Mono.just(payload);
             }
 
@@ -475,7 +644,8 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
                 Set<ValidationMessage> uniqueErrors = uniqueErrorsMap.values().stream()
                         .collect(Collectors.toCollection(LinkedHashSet::new));
 
-                // Return validation error response using the generic JsonResponseStatusException
+                // Return validation error response using the generic
+                // JsonResponseStatusException
                 return handleValidationError(new JsonValidationException(uniqueErrors), exchange);
             }
 
@@ -489,27 +659,12 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
         }
     }
 
-    /**
-     * Performs priority-based schema lookup:
-     * 
-     * Priority 1: Hierarchy-level schema (inline schema from children[]/parents[])
-     * Priority 2: Route-level schema for TARGET kind
-     * Priority 3: Alias-level schema for TARGET kind
-     * 
-     * @param controllerName The controller context for lookup
-     * @param targetKind The target kind name (e.g., "chapter")
-     * @param hierarchySchemaKey Pre-built hierarchy schema key (may be null)
-     * @param routeId The current route ID for route-level lookup
-     * @param recordType The record type for selecting common vs relations schema
-     * @param isPatch Whether to use PATCH-specific schema (without required fields)
-     * @return The resolved JsonSchema, or null if not found
-     */
     private JsonSchema lookupSchema(String controllerName, String targetKind, String hierarchySchemaKey,
-                                    String routeId, String recordType, boolean isPatch) {
-        
+            String routeId, String recordType, boolean isPatch, boolean isPut) {
+
         // Select appropriate schema maps based on record type and HTTP method
-        Map<String, JsonSchema> schemaMap = selectSchemaMap(recordType, isPatch);
-        
+        Map<String, JsonSchema> schemaMap = selectSchemaMap(recordType, isPatch, isPut);
+
         // PRIORITY 1: Hierarchy-level schema (inline schema from children[]/parents[])
         if (hierarchySchemaKey != null) {
             JsonSchema schema = schemaMap.get(hierarchySchemaKey);
@@ -519,7 +674,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             }
             log.debug("Hierarchy-level schema not found for key: {}", hierarchySchemaKey);
         }
-        
+
         // PRIORITY 2: Route-level schema for TARGET kind
         if (routeId != null && targetKind != null) {
             String routeSchemaKey = buildSchemaKey(controllerName, targetKind, routeId);
@@ -530,7 +685,7 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             }
             log.debug("Route-level schema not found for key: {}", routeSchemaKey);
         }
-        
+
         // PRIORITY 3: Alias-level schema for TARGET kind
         if (targetKind != null) {
             String aliasSchemaKey = buildSchemaKey(controllerName, targetKind);
@@ -541,21 +696,26 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
             }
             log.debug("Alias-level schema not found for key: {}", aliasSchemaKey);
         }
-        
+
         // NOT FOUND - no cross-kind fallback
         return null;
     }
 
-    /**
-     * Selects the appropriate schema map based on record type and HTTP method.
-     */
-    private Map<String, JsonSchema> selectSchemaMap(String recordType, boolean isPatch) {
+    private Map<String, JsonSchema> selectSchemaMap(String recordType, boolean isPatch, boolean isPut) {
         boolean isRelations = "relations".equalsIgnoreCase(recordType);
-        
+
         if (isRelations) {
-            return isPatch ? patchSchemasRelations : combinedSchemasRelations;
+            if (isPatch)
+                return patchSchemasRelations;
+            if (isPut)
+                return putSchemasRelations;
+            return postSchemasRelations;
         } else {
-            return isPatch ? patchSchemasCommon : combinedSchemasCommon;
+            if (isPatch)
+                return patchSchemasCommon;
+            if (isPut)
+                return putSchemasCommon;
+            return postSchemasCommon;
         }
     }
 
@@ -564,18 +724,21 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
      * This method is called ONLY for errors from this filter's validation logic.
      */
     private Mono<String> handleValidationError(JsonValidationException jve, ServerWebExchange exchange) {
-        // For validation errors, we need to short-circuit the chain and return a custom response
-        // We do this by throwing a ResponseStatusException that will be handled by the global error handler
+        // For validation errors, we need to short-circuit the chain and return a custom
+        // response
+        // We do this by throwing a ResponseStatusException that will be handled by the
+        // global error handler
         // or by returning an error Mono that will propagate upstream
         try {
             ObjectNode errorResponse = createErrorResponse(jve);
             String errorJson = objectMapper.writeValueAsString(errorResponse);
-            
-            // USE GENERIC EXCEPTION: Using JsonResponseStatusException instead of custom inner class
+
+            // USE GENERIC EXCEPTION: Using JsonResponseStatusException instead of custom
+            // inner class
             return Mono.error(new JsonResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, errorJson));
         } catch (JsonProcessingException ex) {
             log.error("Failed to serialize validation error response", ex);
-            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Failed to process validation errors", ex));
         }
     }
@@ -614,7 +777,8 @@ public class ValidateRequestBodyByKindSchema extends AbstractGatewayFilterFactor
     }
 
     /**
-     * Builds a composite key for route-specific schema lookup using controllerName, kindName, and routeId.
+     * Builds a composite key for route-specific schema lookup using controllerName,
+     * kindName, and routeId.
      */
     private static String buildSchemaKey(String controllerName, String kindName, String routeId) {
         return controllerName + ":" + kindName + ":" + routeId;

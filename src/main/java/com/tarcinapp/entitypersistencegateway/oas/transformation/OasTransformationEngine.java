@@ -107,12 +107,8 @@ public class OasTransformationEngine {
     private final TogglesProperties togglesProperties;
     private final ObjectMapper objectMapper;
     
-    @Value("${app.commonBaseSchema:#{null}}")
-    private String commonBaseSchema;
-    
-    @Value("${app.relationsBaseSchema:#{null}}")
-    private String relationsBaseSchema;
-    
+    private final com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService;
+
     @Value("${app.inbound.baseUri:}")
     private String inboundBaseUri;
     
@@ -191,11 +187,13 @@ public class OasTransformationEngine {
             OpenApiProperties openApiProperties,
             OasOrchestratorProperties orchestratorProperties,
             TogglesProperties togglesProperties,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService) {
         this.openApiProperties = openApiProperties;
         this.orchestratorProperties = orchestratorProperties;
         this.togglesProperties = togglesProperties;
         this.objectMapper = objectMapper;
+        this.backendSchemaService = backendSchemaService;
     }
     
     /**
@@ -2581,36 +2579,52 @@ public class OasTransformationEngine {
         Map<String, Schema> schemas = openApi.getComponents().getSchemas();
         
         try {
-            // Parse base schemas
-            JsonNode baseSchemaNode = commonBaseSchema != null 
-                ? objectMapper.readTree(commonBaseSchema) 
-                : objectMapper.createObjectNode();
-            
-            JsonNode relationsBaseNode = relationsBaseSchema != null 
-                ? objectMapper.readTree(relationsBaseSchema) 
-                : baseSchemaNode;
-            
-            // 1. Add BASE CONTROLLER schemas first (for /entities, /lists, /relations, etc.)
-            addBaseControllerSchemas(schemas, baseSchemaNode, relationsBaseNode);
+            // 1. Add BASE CONTROLLER schemas first
+            // We fetch the GET (Resource) schema for the respective controllers to serve as the base "Entity", "List", etc. schemas.
+            // This ensures the base schemas include read-only fields like ID, createdAt, etc.
+            JsonNode entityResourceBase = backendSchemaService.getBackendSchemaForController("entities", "GET");
+            JsonNode listResourceBase = backendSchemaService.getBackendSchemaForController("lists", "GET");
+            JsonNode relationResourceBase = backendSchemaService.getBackendSchemaForController("relations", "GET");
+            JsonNode entityReactionResourceBase = backendSchemaService.getBackendSchemaForController("entityReactions", "GET");
+            JsonNode listReactionResourceBase = backendSchemaService.getBackendSchemaForController("listReactions", "GET");
+
+            // Fallback to empty if fetch failed
+            if (entityResourceBase == null) entityResourceBase = objectMapper.createObjectNode();
+            if (listResourceBase == null) listResourceBase = objectMapper.createObjectNode();
+            if (relationResourceBase == null) relationResourceBase = entityResourceBase;
+            if (entityReactionResourceBase == null) entityReactionResourceBase = entityResourceBase;
+            if (listReactionResourceBase == null) listReactionResourceBase = entityResourceBase;
+
+            addBaseControllerSchemas(schemas, entityResourceBase, listResourceBase, relationResourceBase, entityReactionResourceBase, listReactionResourceBase);
             
             // 2. Process each controller's aliases
             openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
                 if (controllerConfig.getAliases() == null) return;
                 
-                boolean isRelationsController = "relations".equals(controllerName);
-                JsonNode effectiveBase = isRelationsController ? relationsBaseNode : baseSchemaNode;
+                // Fetch controller-specific bases
+                JsonNode postBase = backendSchemaService.getBackendSchemaForController(controllerName, "POST"); // Create
+                JsonNode patchBase = backendSchemaService.getBackendSchemaForController(controllerName, "PATCH"); // Update
+                JsonNode resourceBase = backendSchemaService.getBackendSchemaForController(controllerName, "GET"); // Resource
+                
+                if (postBase == null) postBase = objectMapper.createObjectNode();
+                if (patchBase == null) patchBase = objectMapper.createObjectNode();
+                if (resourceBase == null) resourceBase = objectMapper.createObjectNode();
+                
+                final JsonNode effectivePostBase = postBase;
+                final JsonNode effectivePatchBase = patchBase;
+                final JsonNode effectiveResourceBase = resourceBase;
                 
                 controllerConfig.getAliases().forEach(aliasConfig -> {
                     String parentAlias = aliasConfig.getAlias();
                     
                     // Process the top-level alias: /authors → Author
-                    addSchemaForAlias(schemas, aliasConfig, effectiveBase, null, null, controllerName);
+                    addSchemaForAlias(schemas, aliasConfig, effectivePostBase, effectivePatchBase, effectiveResourceBase, null, null, controllerName);
                     
                     // Process children hierarchy: /books/{id}/chapters → BookChildChapter
-                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectiveBase, parentAlias, "Child", controllerName);
+                    processHierarchySchemas(schemas, aliasConfig.getChildren(), effectivePostBase, effectivePatchBase, effectiveResourceBase, parentAlias, "Child", controllerName);
                     
                     // Process parents hierarchy: /books/{id}/authors → BookParentAuthor
-                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectiveBase, parentAlias, "Parent", controllerName);
+                    processHierarchySchemas(schemas, aliasConfig.getParents(), effectivePostBase, effectivePatchBase, effectiveResourceBase, parentAlias, "Parent", controllerName);
                 });
             });
             
@@ -2624,16 +2638,17 @@ public class OasTransformationEngine {
      * These are used for base controller paths like /api/v1/entities, /api/v1/relations.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private void addBaseControllerSchemas(Map<String, Schema> schemas, JsonNode baseSchemaNode, JsonNode relationsBaseNode) {
-        log.debug("addBaseControllerSchemas: baseSchemaNode={}, relationsBaseNode={}", baseSchemaNode, relationsBaseNode);
+    private void addBaseControllerSchemas(Map<String, Schema> schemas, JsonNode entityBase, JsonNode listBase, 
+                                          JsonNode relationBase, JsonNode entityReactionBase, JsonNode listReactionBase) {
+        log.debug("addBaseControllerSchemas invoked with specific bases");
         
         // Define base controller schema mappings: schemaName -> (baseNode, controllerName)
         Map<String, Object[]> baseControllerSchemas = new LinkedHashMap<>();
-        baseControllerSchemas.put("Entity", new Object[]{baseSchemaNode, "entities"});
-        baseControllerSchemas.put("List", new Object[]{baseSchemaNode, "lists"});
-        baseControllerSchemas.put("Relation", new Object[]{relationsBaseNode, "relations"});
-        baseControllerSchemas.put("EntityReaction", new Object[]{baseSchemaNode, "entityReactions"});
-        baseControllerSchemas.put("ListReaction", new Object[]{baseSchemaNode, "listReactions"});
+        baseControllerSchemas.put("Entity", new Object[]{entityBase, "entities"});
+        baseControllerSchemas.put("List", new Object[]{listBase, "lists"});
+        baseControllerSchemas.put("Relation", new Object[]{relationBase, "relations"});
+        baseControllerSchemas.put("EntityReaction", new Object[]{entityReactionBase, "entityReactions"});
+        baseControllerSchemas.put("ListReaction", new Object[]{listReactionBase, "listReactions"});
         
         baseControllerSchemas.forEach((schemaName, config) -> {
             JsonNode baseNode = (JsonNode) config[0];
@@ -2855,7 +2870,9 @@ public class OasTransformationEngine {
      */
     private void processHierarchySchemas(Map<String, Schema> schemas, 
             List<AliasConfig> hierarchy,
-            JsonNode effectiveBase,
+            JsonNode effectivePostBase,
+            JsonNode effectivePatchBase,
+            JsonNode effectiveResourceBase,
             String parentAlias,
             String hierarchyType,
             String controllerName) {
@@ -2864,12 +2881,12 @@ public class OasTransformationEngine {
         for (var nestedConfig : hierarchy) {
             // Add schema for this hierarchy level with path-specific name
             // e.g., BookChildChapter, BookParentAuthor
-            addSchemaForAlias(schemas, nestedConfig, effectiveBase, parentAlias, hierarchyType, controllerName);
+            addSchemaForAlias(schemas, nestedConfig, effectivePostBase, effectivePatchBase, effectiveResourceBase, parentAlias, hierarchyType, controllerName);
             
             // Recurse into nested children (nested under the current hierarchy item)
             String newParent = parentAlias + hierarchyType + capitalizeFirst(nestedConfig.getKind());
-            processHierarchySchemas(schemas, nestedConfig.getChildren(), effectiveBase, newParent, "Child", controllerName);
-            processHierarchySchemas(schemas, nestedConfig.getParents(), effectiveBase, newParent, "Parent", controllerName);
+            processHierarchySchemas(schemas, nestedConfig.getChildren(), effectivePostBase, effectivePatchBase, effectiveResourceBase, newParent, "Child", controllerName);
+            processHierarchySchemas(schemas, nestedConfig.getParents(), effectivePostBase, effectivePatchBase, effectiveResourceBase, newParent, "Parent", controllerName);
         }
     }
     
@@ -2880,7 +2897,9 @@ public class OasTransformationEngine {
      */
     private void addSchemaForAlias(Map<String, Schema> schemas,
             AliasConfig aliasConfig,
-            JsonNode effectiveBase,
+            JsonNode effectivePostBase,
+            JsonNode effectivePatchBase,
+            JsonNode effectiveResourceBase,
             String parentAlias,
             String hierarchyType,
             String controllerName) {
@@ -2915,21 +2934,24 @@ public class OasTransformationEngine {
                 return; // Already added (same path processed twice somehow)
             }
             
-            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
+            // 1. Resource Schema (GET/PUT) - use Resource Base (includes ID, read-only fields)
+            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveResourceBase, controllerName);
             schemas.put(schemaName, mergedSchema);
             
+            // 2. New Variant (POST) - use POST Base (excludes ID, uses create constraints)
             // Also add "New" variant without required base fields for POST
-            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
+            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePostBase, controllerName);
             newSchema.setRequired(null); // No required for creation (gateway adds defaults)
             schemas.put("New" + schemaName, newSchema);
             
+            // 3. Patch Variant (PATCH) - use PATCH Base (partial update)
             // Also add "Patch" variant without required fields for PATCH (partial updates)
-            Schema patchSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveBase, controllerName);
+            Schema patchSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePatchBase, controllerName);
             patchSchema.setRequired(null); // No required for partial update
             schemas.put("Patch" + schemaName, patchSchema);
             
-            log.debug("Added merged domain schema: {} (from kind: {}, alias: {}, parent: {}, recordType: {})", 
-                schemaName, aliasConfig.getKind(), aliasConfig.getAlias(), parentAlias, controllerName);
+            log.debug("Added merged domain schemas: {}, New{}, Patch{} (from kind: {})", 
+                schemaName, schemaName, schemaName, aliasConfig.getKind());
         } catch (Exception e) {
             log.warn("Failed to merge schema for kind '{}': {}", 
                 aliasConfig.getKind(), e.getMessage());

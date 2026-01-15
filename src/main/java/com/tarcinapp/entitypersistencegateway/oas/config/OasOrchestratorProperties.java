@@ -150,6 +150,34 @@ public class OasOrchestratorProperties {
          * Overall response timeout for backend OAS fetch.
          */
         private Duration responseTimeout = Duration.ofSeconds(5);
+        
+        /**
+         * Startup retry configuration for fetching backend OAS.
+         */
+        private RetryConfig retry = new RetryConfig();
+    }
+    
+    @Data
+    public static class RetryConfig {
+        /**
+         * Maximum number of retry attempts.
+         */
+        private int maxAttempts = 5;
+        
+        /**
+         * Initial interval between retries.
+         */
+        private long initialIntervalMs = 2000;
+        
+        /**
+         * Multiplier for exponential backoff (not used in simple retry, but good for future).
+         */
+        private double multiplier = 1.5;
+        
+        /**
+         * Maximum interval between retries.
+         */
+        private long maxIntervalMs = 10000;
     }
     
     @Data
