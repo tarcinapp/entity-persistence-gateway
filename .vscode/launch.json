@@ -2,12 +2,6 @@
     "configurations": [
         {
             "type": "java",
-            "request": "attach",
-            "name": "Attach by Process ID",
-            "processId": "${command:PickJavaProcess}"
-        },
-        {
-            "type": "java",
             "name": "Debug with DEV Profile",
             "request": "launch",
             "cwd": "${workspaceFolder}",
@@ -16,6 +10,12 @@
             "projectName": "entity-persistence-gateway",
             "args": "--spring.profiles.active=dev",
             "vmArgs": "-Dlog4j2.isThreadContextMapInheritable=true"
+        },
+        {
+            "type": "java",
+            "request": "attach",
+            "name": "Attach by Process ID",
+            "processId": "${command:PickJavaProcess}"
         },
         {
             "type": "java",
