@@ -259,7 +259,7 @@ public class OasTransformationEngine {
         // 9. Deduplicate parameters (name+in must be unique per operation)
         deduplicateParameters(transformed);
         
-        // 10. Apply global security requirement (JWT Bearer Auth)
+        // 11. Apply global security requirement (JWT Bearer Auth)
         applyGlobalSecurity(transformed);
         
         log.info("OAS transformation complete: {} paths virtualized", 
@@ -2402,6 +2402,188 @@ public class OasTransformationEngine {
         }
         
         return count;
+    }
+    
+    // ========================================================================
+    // NULL EXAMPLE REMOVAL
+    // ========================================================================
+    
+    /**
+     * Removes null example values from schemas to reduce OAS spec size.
+     * Null examples don't provide value and prevent tools from extracting meaningful samples.
+     * 
+     * Uses Jackson's serialization filtering to ensure nulls are not included in output.
+     */
+    private void removeNullExamples(OpenAPI openApi) {
+        try {
+            // Use Jackson to filter out null values
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+            
+            // Serialize to JSON, then deserialize back - this removes all null values
+            String json = mapper.writeValueAsString(openApi);
+            OpenAPI filtered = mapper.readValue(json, OpenAPI.class);
+            
+            // Copy all non-null fields back to the original object
+            if (filtered.getPaths() != null) {
+                openApi.setPaths(filtered.getPaths());
+            }
+            if (filtered.getComponents() != null) {
+                openApi.setComponents(filtered.getComponents());
+            }
+            if (filtered.getInfo() != null) {
+                openApi.setInfo(filtered.getInfo());
+            }
+            if (filtered.getServers() != null) {
+                openApi.setServers(filtered.getServers());
+            }
+            if (filtered.getExternalDocs() != null) {
+                openApi.setExternalDocs(filtered.getExternalDocs());
+            }
+            if (filtered.getSecurity() != null) {
+                openApi.setSecurity(filtered.getSecurity());
+            }
+            if (filtered.getTags() != null) {
+                openApi.setTags(filtered.getTags());
+            }
+            if (filtered.getWebhooks() != null) {
+                openApi.setWebhooks(filtered.getWebhooks());
+            }
+            
+            log.debug("Removed null examples from OAS using Jackson serialization filtering");
+        } catch (Exception e) {
+            log.warn("Failed to remove null examples using Jackson filtering: {}", e.getMessage());
+            // Fallback to direct traversal if Jackson filtering fails
+            removeNullExamplesDirectly(openApi);
+        }
+    }
+    
+    /**
+     * Fallback method to remove null examples by direct traversal.
+     */
+    private void removeNullExamplesDirectly(OpenAPI openApi) {
+        // Remove from schemas in components
+        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+            for (Schema<?> schema : openApi.getComponents().getSchemas().values()) {
+                removeNullExamplesFromSchema(schema);
+            }
+        }
+        
+        // Remove from all paths
+        if (openApi.getPaths() != null) {
+            for (PathItem pathItem : openApi.getPaths().values()) {
+                removeNullExamplesFromPathItem(pathItem);
+            }
+        }
+    }
+    
+    /**
+     * Removes null examples from all operations in a PathItem.
+     */
+    private void removeNullExamplesFromPathItem(PathItem pathItem) {
+        if (pathItem.getGet() != null) removeNullExamplesFromOperation(pathItem.getGet());
+        if (pathItem.getPost() != null) removeNullExamplesFromOperation(pathItem.getPost());
+        if (pathItem.getPut() != null) removeNullExamplesFromOperation(pathItem.getPut());
+        if (pathItem.getPatch() != null) removeNullExamplesFromOperation(pathItem.getPatch());
+        if (pathItem.getDelete() != null) removeNullExamplesFromOperation(pathItem.getDelete());
+        if (pathItem.getHead() != null) removeNullExamplesFromOperation(pathItem.getHead());
+        if (pathItem.getOptions() != null) removeNullExamplesFromOperation(pathItem.getOptions());
+        if (pathItem.getTrace() != null) removeNullExamplesFromOperation(pathItem.getTrace());
+    }
+    
+    /**
+     * Removes null examples from an operation's parameters and responses.
+     */
+    private void removeNullExamplesFromOperation(Operation operation) {
+        if (operation == null) return;
+        
+        // Remove from parameters
+        if (operation.getParameters() != null) {
+            for (io.swagger.v3.oas.models.parameters.Parameter param : operation.getParameters()) {
+                if (param.getSchema() != null) {
+                    removeNullExamplesFromSchema(param.getSchema());
+                }
+            }
+        }
+        
+        // Remove from request body
+        if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+            for (io.swagger.v3.oas.models.media.MediaType mediaType : operation.getRequestBody().getContent().values()) {
+                removeNullExamplesFromMediaType(mediaType);
+            }
+        }
+        
+        // Remove from responses
+        if (operation.getResponses() != null) {
+            for (io.swagger.v3.oas.models.responses.ApiResponse response : operation.getResponses().values()) {
+                if (response.getContent() != null) {
+                    for (io.swagger.v3.oas.models.media.MediaType mediaType : response.getContent().values()) {
+                        removeNullExamplesFromMediaType(mediaType);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Removes null examples from a MediaType object.
+     */
+    private void removeNullExamplesFromMediaType(io.swagger.v3.oas.models.media.MediaType mediaType) {
+        if (mediaType == null) return;
+        
+        // Also remove from the schema within this media type
+        if (mediaType.getSchema() != null) {
+            removeNullExamplesFromSchema(mediaType.getSchema());
+        }
+    }
+    
+    /**
+     * Recursively removes null examples from a schema and all nested schemas.
+     */
+    @SuppressWarnings("unchecked")
+    private void removeNullExamplesFromSchema(Schema<?> schema) {
+        if (schema == null) {
+            return;
+        }
+        
+        // Recursively handle properties
+        if (schema.getProperties() != null) {
+            for (Object propSchema : schema.getProperties().values()) {
+                if (propSchema instanceof Schema) {
+                    removeNullExamplesFromSchema((Schema<?>) propSchema);
+                }
+            }
+        }
+        
+        // Handle items (for arrays)
+        if (schema.getItems() != null) {
+            removeNullExamplesFromSchema(schema.getItems());
+        }
+        
+        // Handle additionalProperties
+        if (schema.getAdditionalProperties() instanceof Schema) {
+            removeNullExamplesFromSchema((Schema<?>) schema.getAdditionalProperties());
+        }
+        
+        // Handle oneOf/anyOf/allOf/not
+        if (schema.getOneOf() != null) {
+            for (Schema<?> s : schema.getOneOf()) {
+                removeNullExamplesFromSchema(s);
+            }
+        }
+        if (schema.getAnyOf() != null) {
+            for (Schema<?> s : schema.getAnyOf()) {
+                removeNullExamplesFromSchema(s);
+            }
+        }
+        if (schema.getAllOf() != null) {
+            for (Schema<?> s : schema.getAllOf()) {
+                removeNullExamplesFromSchema(s);
+            }
+        }
+        if (schema.getNot() != null) {
+            removeNullExamplesFromSchema(schema.getNot());
+        }
     }
     
     // ========================================================================
