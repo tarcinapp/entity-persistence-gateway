@@ -346,19 +346,35 @@ public class DynamicOasHandler {
     
     /**
      * Serializes the OpenAPI object to JSON or YAML.
-     * Uses Swagger's native serializers which properly handle internal fields.
+     * Simple approach: Use Jackson with NON_NULL, then regex-scrub any lingering null examples.
      */
     private String serializeOas(OpenAPI openApi, OutputFormat format) {
         try {
-            if (format == OutputFormat.YAML) {
-                // Use Swagger's native YAML serializer - handles internal fields properly
-                return io.swagger.v3.core.util.Yaml.pretty(openApi);
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+            
+            String output;
+            if (format == OutputFormat.JSON) {
+                output = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(openApi);
             } else {
-                // Use Swagger's native JSON serializer - handles internal fields properly
-                return io.swagger.v3.core.util.Json.pretty(openApi);
+                // YAML: serialize to JSON first, then convert tree to YAML
+                com.fasterxml.jackson.databind.JsonNode tree = mapper.readTree(
+                    mapper.writeValueAsString(openApi)
+                );
+                var yamlFactory = new com.fasterxml.jackson.dataformat.yaml.YAMLFactory();
+                var yamlMapper = new com.fasterxml.jackson.databind.ObjectMapper(yamlFactory);
+                yamlMapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+                output = yamlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(tree);
             }
+            
+            // Final safety: remove any lingering "example: null" or "example": null
+            output = output.replaceAll("(?m)^\\s*example:\\s*null\\s*$\\n?", "")
+                           .replaceAll("\\s*,\\s*\"example\"\\s*:\\s*null", "")
+                           .replaceAll("\\s*\"example\"\\s*:\\s*null\\s*,", "");
+            
+            return output;
         } catch (Exception e) {
-            log.error("Failed to serialize OpenAPI: {}", e.getMessage());
+            log.error("Failed to serialize OpenAPI", e);
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Failed to serialize OpenAPI specification"
