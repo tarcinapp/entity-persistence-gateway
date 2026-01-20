@@ -384,6 +384,13 @@ public class DynamicOasHandler {
             output = output.replaceAll("\\s*,\\s*\"types\"\\s*:\\s*\\[[^\\]]+\\]", "")
                            .replaceAll("\\s*\"types\"\\s*:\\s*\\[[^\\]]+\\]\\s*,", "");
             
+            // Remove empty extensions objects
+            // YAML format: extensions: {}
+            output = output.replaceAll("(?m)^\\s*extensions:\\s*\\{\\}\\s*$\\n?", "");
+            // JSON format: "extensions": {}
+            output = output.replaceAll("\\s*,\\s*\"extensions\"\\s*:\\s*\\{\\}", "")
+                           .replaceAll("\\s*\"extensions\"\\s*:\\s*\\{\\}\\s*,", "");
+            
             // FIX: Lowercase all style field values (Swagger enums serialize as uppercase)
             output = output.replace("style: \"SIMPLE\"", "style: \"simple\"")
                            .replace("style: \"FORM\"", "style: \"form\"")
@@ -392,6 +399,16 @@ public class DynamicOasHandler {
                            .replace("style: \"SPACEDELIMITED\"", "style: \"spaceDelimited\"")
                            .replace("style: \"PIPEDELIMITED\"", "style: \"pipeDelimited\"")
                            .replace("style: \"DEEPOBJECT\"", "style: \"deepObject\"");
+            
+            // FIX: Security scheme type must be lowercase per OpenAPI 3.0 spec
+            output = output.replace("type: \"HTTP\"", "type: \"http\"")
+                           .replace("type: \"APIKEY\"", "type: \"apiKey\"")
+                           .replace("type: \"OAUTH2\"", "type: \"oauth2\"")
+                           .replace("type: \"OPENIDCONNECT\"", "type: \"openIdConnect\"");
+            output = output.replace("\"type\": \"HTTP\"", "\"type\": \"http\"")
+                           .replace("\"type\": \"APIKEY\"", "\"type\": \"apiKey\"")
+                           .replace("\"type\": \"OAUTH2\"", "\"type\": \"oauth2\"")
+                           .replace("\"type\": \"OPENIDCONNECT\"", "\"type\": \"openIdConnect\"");
             
             return output;
         } catch (Exception e) {
