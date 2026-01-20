@@ -574,25 +574,35 @@ public class OasTransformationEngine {
             }
             
             // Children route: GET/POST /entities/{id}/children
-            PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
-            if (childrenPathItem != null) {
-                PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
-                String fullPath = virtualPathPrefix + "/{id}/children";
-                if (!virtualizedPaths.containsKey(fullPath)) {
-                    virtualizedPaths.addPathItem(fullPath, transformed);
-                    log.debug("Added base controller route: {}", fullPath);
+            // Skip if 'hierarchical' tag is disabled
+            if (!isTagDisabled("hierarchical")) {
+                PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
+                if (childrenPathItem != null) {
+                    PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
+                    String fullPath = virtualPathPrefix + "/{id}/children";
+                    if (!virtualizedPaths.containsKey(fullPath)) {
+                        virtualizedPaths.addPathItem(fullPath, transformed);
+                        log.debug("Added base controller route: {}", fullPath);
+                    }
                 }
+            } else {
+                log.debug("Skipping children paths for controller '{}' - 'hierarchical' tag is disabled", controllerName);
             }
             
             // Parents route: GET /entities/{id}/parents
-            PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
-            if (parentsPathItem != null) {
-                PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
-                String fullPath = virtualPathPrefix + "/{id}/parents";
-                if (!virtualizedPaths.containsKey(fullPath)) {
-                    virtualizedPaths.addPathItem(fullPath, transformed);
-                    log.debug("Added base controller route: {}", fullPath);
+            // Skip if 'hierarchical' tag is disabled
+            if (!isTagDisabled("hierarchical")) {
+                PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
+                if (parentsPathItem != null) {
+                    PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
+                    String fullPath = virtualPathPrefix + "/{id}/parents";
+                    if (!virtualizedPaths.containsKey(fullPath)) {
+                        virtualizedPaths.addPathItem(fullPath, transformed);
+                        log.debug("Added base controller route: {}", fullPath);
+                    }
                 }
+            } else {
+                log.debug("Skipping parents paths for controller '{}' - 'hierarchical' tag is disabled", controllerName);
             }
         });
     }
