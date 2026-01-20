@@ -372,6 +372,11 @@ public class DynamicOasHandler {
                            .replaceAll("\\s*,\\s*\"example\"\\s*:\\s*null", "")
                            .replaceAll("\\s*\"example\"\\s*:\\s*null\\s*,", "");
             
+            // Remove non-standard exampleSetFlag field (internal Swagger generator artifact)
+            output = output.replaceAll("(?m)^\\s*exampleSetFlag:\\s*(true|false)\\s*$\\n?", "")
+                           .replaceAll("\\s*,\\s*\"exampleSetFlag\"\\s*:\\s*(true|false)", "")
+                           .replaceAll("\\s*\"exampleSetFlag\"\\s*:\\s*(true|false)\\s*,", "");
+            
             // FIX: Lowercase all style field values (Swagger enums serialize as uppercase)
             output = output.replace("style: \"SIMPLE\"", "style: \"simple\"")
                            .replace("style: \"FORM\"", "style: \"form\"")
