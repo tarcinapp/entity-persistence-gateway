@@ -2,6 +2,29 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Kill Port 8081",
+            "type": "shell",
+            "command": "lsof -t -i:8081 | xargs kill -9 2>/dev/null || echo 'Port 8081 is already free'",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Redis Flush DB (Dynamic Password)",
+            "type": "shell",
+            "command": "REDIS_PASS=$(grep 'app.outbound.redis.password=' ${workspaceFolder}/src/main/resources/application-dev.properties | cut -d'=' -f2); redis-cli -a $REDIS_PASS FLUSHDB 2>/dev/null && echo 'Redis flushed' || echo 'Redis flush failed'",
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Start All Dependencies",
             "type": "shell",
             "command": "${workspaceFolder}/dev.sh",
