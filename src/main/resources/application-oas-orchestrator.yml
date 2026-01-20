@@ -82,7 +82,7 @@ app:
         field-policy: /policies/gateway/forbidden_fields/policy/result
         
         # Timeout for OPA queries
-        timeout: 500ms
+        timeout: 2000ms
         
         # Fail-closed mode (if true, OPA failure = 503)
         fail-closed: true

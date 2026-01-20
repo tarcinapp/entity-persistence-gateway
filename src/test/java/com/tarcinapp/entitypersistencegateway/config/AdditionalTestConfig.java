@@ -1,8 +1,6 @@
 package com.tarcinapp.entitypersistencegateway.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 
 /**
  * Additional test configuration for common beans and overrides.

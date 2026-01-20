@@ -1,6 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.unit.filters;
 
-import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.filters.common.request.AuthenticateRequest;
 import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
@@ -20,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ServerWebExchange;

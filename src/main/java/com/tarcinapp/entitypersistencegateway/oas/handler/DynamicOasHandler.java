@@ -329,7 +329,7 @@ public class DynamicOasHandler {
                     rawOas.getPaths() != null ? rawOas.getPaths().size() : 0);
                 return transformationEngine.transform(rawOas, requestContext);
             })
-            .flatMap(transformedOas -> 
+            .flatMap(transformedOas ->
                 // Fetch forbidden fields for ALL operations (find, create, update)
                 // OPA returns DIFFERENT rules for each operation!
                 // PolicyData contains: appShortcode, encodedJwt, operation, httpMethod, requestPath
@@ -371,6 +371,15 @@ public class DynamicOasHandler {
             output = output.replaceAll("(?m)^\\s*example:\\s*null\\s*$\\n?", "")
                            .replaceAll("\\s*,\\s*\"example\"\\s*:\\s*null", "")
                            .replaceAll("\\s*\"example\"\\s*:\\s*null\\s*,", "");
+            
+            // FIX: Lowercase all style field values (Swagger enums serialize as uppercase)
+            output = output.replace("style: \"SIMPLE\"", "style: \"simple\"")
+                           .replace("style: \"FORM\"", "style: \"form\"")
+                           .replace("style: \"MATRIX\"", "style: \"matrix\"")
+                           .replace("style: \"LABEL\"", "style: \"label\"")
+                           .replace("style: \"SPACEDELIMITED\"", "style: \"spaceDelimited\"")
+                           .replace("style: \"PIPEDELIMITED\"", "style: \"pipeDelimited\"")
+                           .replace("style: \"DEEPOBJECT\"", "style: \"deepObject\"");
             
             return output;
         } catch (Exception e) {

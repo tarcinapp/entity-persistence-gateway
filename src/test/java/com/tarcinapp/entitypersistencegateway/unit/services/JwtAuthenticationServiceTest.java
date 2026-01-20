@@ -6,7 +6,6 @@ import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
 import com.tarcinapp.entitypersistencegateway.util.MockExchangeBuilder;
 import com.tarcinapp.entitypersistencegateway.util.TestJwtGenerator;
 import com.tarcinapp.entitypersistencegateway.fixtures.JwtFixtures;
-import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,12 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**

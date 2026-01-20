@@ -208,6 +208,7 @@ public class BackendSchemaService {
     /**
      * Helper to get the full components section if needed for $ref resolution
      */
+    @SuppressWarnings("rawtypes")
     public Map<String, Schema> getComponentsSchemas() {
         // We might want to cache this too if we need to manually resolve refs
         return null; // TODO implement if needed

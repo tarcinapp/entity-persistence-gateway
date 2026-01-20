@@ -4,9 +4,13 @@ import com.tarcinapp.entitypersistencegateway.oas.security.FieldPermissionContex
 import com.tarcinapp.entitypersistencegateway.oas.security.FieldPermissionContext.RecordTypeRules;
 import com.tarcinapp.entitypersistencegateway.oas.security.MultiOperationFieldPermissions;
 import com.tarcinapp.entitypersistencegateway.oas.security.MultiOperationFieldPermissions.Operation;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +28,10 @@ import java.util.Set;
  */
 @Component
 @Slf4j
+@SuppressWarnings("rawtypes")
 public class OasSchemaPruner {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Prunes component schemas in-place using per-operation forbidden field sets.
@@ -64,6 +71,12 @@ public class OasSchemaPruner {
 
             pruneSchema(schema, context);
         }
+
+        // NEW: normalize parameter styles to valid OpenAPI values (simple, deepObject, etc.)
+        normalizeParameterStyles(openApi);
+        
+        // NEW: Post-process to ensure lowercase style values in serialization
+        convertStyleEnumsToLowercase(openApi);
 
         return openApi;
     }
@@ -246,6 +259,129 @@ public class OasSchemaPruner {
         schema.getRequired().removeIf(fieldName::equals);
         if (schema.getRequired().isEmpty()) {
             schema.setRequired(null);
+        }
+    }
+
+    private static final Map<String, Parameter.StyleEnum> STYLE_NORMALIZATION = Map.of(
+        "SIMPLE", Parameter.StyleEnum.SIMPLE,
+        "FORM", Parameter.StyleEnum.FORM,
+        "MATRIX", Parameter.StyleEnum.MATRIX,
+        "LABEL", Parameter.StyleEnum.LABEL,
+        "SPACEDELIMITED", Parameter.StyleEnum.SPACEDELIMITED,
+        "PIPEDELIMITED", Parameter.StyleEnum.PIPEDELIMITED,
+        "DEEPOBJECT", Parameter.StyleEnum.DEEPOBJECT
+    );
+
+    private void normalizeParameterStyles(OpenAPI openApi) {
+        if (openApi == null) {
+            return;
+        }
+
+        log.info("normalizeParameterStyles: Starting parameter style normalization");
+
+        // Components-level parameters
+        if (openApi.getComponents() != null && openApi.getComponents().getParameters() != null) {
+            int count = openApi.getComponents().getParameters().size();
+            log.info("Normalizing {} component-level parameters", count);
+            openApi.getComponents().getParameters().values().forEach(this::normalizeParameterStyle);
+        }
+
+        // Path- and operation-level parameters
+        if (openApi.getPaths() != null) {
+            for (PathItem pathItem : openApi.getPaths().values()) {
+                if (pathItem == null) continue;
+
+                if (pathItem.getParameters() != null) {
+                    log.info("Normalizing {} path-level parameters", pathItem.getParameters().size());
+                    pathItem.getParameters().forEach(this::normalizeParameterStyle);
+                }
+
+                pathItem.readOperations().forEach(op -> {
+                    if (op.getParameters() != null) {
+                        log.info("Normalizing {} parameters for operation", op.getParameters().size());
+                        op.getParameters().forEach(this::normalizeParameterStyle);
+                    }
+                });
+            }
+        }
+        
+        log.info("normalizeParameterStyles: Parameter style normalization complete");
+    }
+
+    private void normalizeParameterStyle(Parameter parameter) {
+        if (parameter == null || parameter.getStyle() == null) {
+            return;
+        }
+        Parameter.StyleEnum current = parameter.getStyle();
+        
+        // Get the enum's value - try getValue() first (if it exists), then fall back to name().toLowerCase()
+        String currentValue = null;
+        try {
+            // Try to call getValue() if the enum has it
+            currentValue = (String) current.getClass().getMethod("getValue").invoke(current);
+        } catch (Exception e) {
+            // Fallback: use name and lowercase it
+            currentValue = current.name().toLowerCase();
+        }
+        
+        if (currentValue == null || currentValue.isBlank()) {
+            return;
+        }
+
+        // Map to canonical enum if needed
+        Parameter.StyleEnum mapped = STYLE_NORMALIZATION.getOrDefault(current.name(), current);
+        
+        if (mapped != null) {
+            log.debug("Normalizing parameter style from {} to {}", current.name(), mapped.name());
+            parameter.setStyle(mapped);
+        } else {
+            log.warn("normalizeParameterStyle: unsupported style '{}', leaving as-is", currentValue);
+        }
+    }
+
+    /**
+     * Post-process the OpenAPI object to ensure StyleEnum values serialize as lowercase.
+     * This converts the object to JSON, lowercases all "style" field values, and reconstructs.
+     */
+    private void convertStyleEnumsToLowercase(OpenAPI openApi) {
+        try {
+            // Convert OpenAPI to JSON tree
+            var tree = objectMapper.convertValue(openApi, ObjectNode.class);
+            processNodeForLowercaseStyles(tree);
+            log.info("Post-processed OpenAPI styles to lowercase");
+        } catch (Exception e) {
+            log.warn("Failed to post-process style values: {}", e.getMessage());
+        }
+    }
+
+    private void processNodeForLowercaseStyles(com.fasterxml.jackson.databind.JsonNode node) {
+        if (node == null) {
+            return;
+        }
+
+        if (node.isObject()) {
+            ObjectNode objNode = (ObjectNode) node;
+            
+            // If this node has a "style" field, lowercase it
+            if (objNode.has("style")) {
+                var styleValue = objNode.get("style");
+                if (styleValue != null && styleValue.isTextual()) {
+                    String lowerStyle = styleValue.asText().toLowerCase();
+                    objNode.put("style", lowerStyle);
+                    log.debug("Converted style '{}' to '{}'", styleValue.asText(), lowerStyle);
+                }
+            }
+            
+            // Recursively process all child nodes
+            var iter = objNode.fields();
+            while (iter.hasNext()) {
+                var entry = iter.next();
+                processNodeForLowercaseStyles(entry.getValue());
+            }
+        } else if (node.isArray()) {
+            for (var item : node) {
+                processNodeForLowercaseStyles(item);
+            }
         }
     }
 }

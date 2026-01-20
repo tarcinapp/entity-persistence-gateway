@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
@@ -58,9 +57,6 @@ public class ValidateRequestBodyByKindSchema
     // New service for dynamic schema loading
     @Autowired
     private BackendSchemaService backendSchemaService;
-
-    private static JsonSchema baseSchema;
-    private static JsonSchema relationsBaseSchema;
 
     // Stores schemas for POST (Creation) - based on Backend POST schema
     private Map<String, JsonSchema> postSchemasCommon;

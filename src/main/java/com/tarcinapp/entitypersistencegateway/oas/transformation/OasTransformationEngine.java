@@ -3,8 +3,6 @@ package com.tarcinapp.entitypersistencegateway.oas.transformation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
@@ -58,6 +56,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class OasTransformationEngine {
     
     /**
@@ -1298,7 +1297,6 @@ public class OasTransformationEngine {
      * @param schema The original schema from backend
      * @return Cleaned schema without tsType references
      */
-    @SuppressWarnings("unchecked")
     private Schema<?> cleanupSchema(Schema<?> schema) {
         if (schema == null) {
             return null;
@@ -1840,7 +1838,7 @@ public class OasTransformationEngine {
      * 
      * Also updates $ref paths to use simplified schema names.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private io.swagger.v3.oas.models.parameters.RequestBody cloneRequestBody(
             io.swagger.v3.oas.models.parameters.RequestBody original) {
         if (original == null) {
@@ -1905,7 +1903,7 @@ public class OasTransformationEngine {
      * 
      * Also updates $ref paths to use simplified schema names.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private io.swagger.v3.oas.models.responses.ApiResponses cloneResponses(
             io.swagger.v3.oas.models.responses.ApiResponses original) {
         if (original == null) {
@@ -2141,7 +2139,6 @@ public class OasTransformationEngine {
      * Recursively fixes broken refs in a Schema.
      * This handles nested schemas, arrays, oneOf, anyOf, allOf, etc.
      */
-    @SuppressWarnings("unchecked")
     private int fixRefsInSchema(Schema<?> schema, Set<String> existingSchemas) {
         if (schema == null) {
             return 0;
@@ -2346,7 +2343,6 @@ public class OasTransformationEngine {
      * Recursively fixes validation keywords in a schema.
      * If this is an array with items, and items has uniqueItems, move it to parent.
      */
-    @SuppressWarnings("unchecked")
     private int fixValidationKeywordsInSchema(Schema<?> schema) {
         if (schema == null) {
             return 0;
@@ -2407,184 +2403,7 @@ public class OasTransformationEngine {
     // ========================================================================
     // NULL EXAMPLE REMOVAL
     // ========================================================================
-    
-    /**
-     * Removes null example values from schemas to reduce OAS spec size.
-     * Null examples don't provide value and prevent tools from extracting meaningful samples.
-     * 
-     * Uses Jackson's serialization filtering to ensure nulls are not included in output.
-     */
-    private void removeNullExamples(OpenAPI openApi) {
-        try {
-            // Use Jackson to filter out null values
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
-            
-            // Serialize to JSON, then deserialize back - this removes all null values
-            String json = mapper.writeValueAsString(openApi);
-            OpenAPI filtered = mapper.readValue(json, OpenAPI.class);
-            
-            // Copy all non-null fields back to the original object
-            if (filtered.getPaths() != null) {
-                openApi.setPaths(filtered.getPaths());
-            }
-            if (filtered.getComponents() != null) {
-                openApi.setComponents(filtered.getComponents());
-            }
-            if (filtered.getInfo() != null) {
-                openApi.setInfo(filtered.getInfo());
-            }
-            if (filtered.getServers() != null) {
-                openApi.setServers(filtered.getServers());
-            }
-            if (filtered.getExternalDocs() != null) {
-                openApi.setExternalDocs(filtered.getExternalDocs());
-            }
-            if (filtered.getSecurity() != null) {
-                openApi.setSecurity(filtered.getSecurity());
-            }
-            if (filtered.getTags() != null) {
-                openApi.setTags(filtered.getTags());
-            }
-            if (filtered.getWebhooks() != null) {
-                openApi.setWebhooks(filtered.getWebhooks());
-            }
-            
-            log.debug("Removed null examples from OAS using Jackson serialization filtering");
-        } catch (Exception e) {
-            log.warn("Failed to remove null examples using Jackson filtering: {}", e.getMessage());
-            // Fallback to direct traversal if Jackson filtering fails
-            removeNullExamplesDirectly(openApi);
-        }
-    }
-    
-    /**
-     * Fallback method to remove null examples by direct traversal.
-     */
-    private void removeNullExamplesDirectly(OpenAPI openApi) {
-        // Remove from schemas in components
-        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
-            for (Schema<?> schema : openApi.getComponents().getSchemas().values()) {
-                removeNullExamplesFromSchema(schema);
-            }
-        }
-        
-        // Remove from all paths
-        if (openApi.getPaths() != null) {
-            for (PathItem pathItem : openApi.getPaths().values()) {
-                removeNullExamplesFromPathItem(pathItem);
-            }
-        }
-    }
-    
-    /**
-     * Removes null examples from all operations in a PathItem.
-     */
-    private void removeNullExamplesFromPathItem(PathItem pathItem) {
-        if (pathItem.getGet() != null) removeNullExamplesFromOperation(pathItem.getGet());
-        if (pathItem.getPost() != null) removeNullExamplesFromOperation(pathItem.getPost());
-        if (pathItem.getPut() != null) removeNullExamplesFromOperation(pathItem.getPut());
-        if (pathItem.getPatch() != null) removeNullExamplesFromOperation(pathItem.getPatch());
-        if (pathItem.getDelete() != null) removeNullExamplesFromOperation(pathItem.getDelete());
-        if (pathItem.getHead() != null) removeNullExamplesFromOperation(pathItem.getHead());
-        if (pathItem.getOptions() != null) removeNullExamplesFromOperation(pathItem.getOptions());
-        if (pathItem.getTrace() != null) removeNullExamplesFromOperation(pathItem.getTrace());
-    }
-    
-    /**
-     * Removes null examples from an operation's parameters and responses.
-     */
-    private void removeNullExamplesFromOperation(Operation operation) {
-        if (operation == null) return;
-        
-        // Remove from parameters
-        if (operation.getParameters() != null) {
-            for (io.swagger.v3.oas.models.parameters.Parameter param : operation.getParameters()) {
-                if (param.getSchema() != null) {
-                    removeNullExamplesFromSchema(param.getSchema());
-                }
-            }
-        }
-        
-        // Remove from request body
-        if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
-            for (io.swagger.v3.oas.models.media.MediaType mediaType : operation.getRequestBody().getContent().values()) {
-                removeNullExamplesFromMediaType(mediaType);
-            }
-        }
-        
-        // Remove from responses
-        if (operation.getResponses() != null) {
-            for (io.swagger.v3.oas.models.responses.ApiResponse response : operation.getResponses().values()) {
-                if (response.getContent() != null) {
-                    for (io.swagger.v3.oas.models.media.MediaType mediaType : response.getContent().values()) {
-                        removeNullExamplesFromMediaType(mediaType);
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Removes null examples from a MediaType object.
-     */
-    private void removeNullExamplesFromMediaType(io.swagger.v3.oas.models.media.MediaType mediaType) {
-        if (mediaType == null) return;
-        
-        // Also remove from the schema within this media type
-        if (mediaType.getSchema() != null) {
-            removeNullExamplesFromSchema(mediaType.getSchema());
-        }
-    }
-    
-    /**
-     * Recursively removes null examples from a schema and all nested schemas.
-     */
-    @SuppressWarnings("unchecked")
-    private void removeNullExamplesFromSchema(Schema<?> schema) {
-        if (schema == null) {
-            return;
-        }
-        
-        // Recursively handle properties
-        if (schema.getProperties() != null) {
-            for (Object propSchema : schema.getProperties().values()) {
-                if (propSchema instanceof Schema) {
-                    removeNullExamplesFromSchema((Schema<?>) propSchema);
-                }
-            }
-        }
-        
-        // Handle items (for arrays)
-        if (schema.getItems() != null) {
-            removeNullExamplesFromSchema(schema.getItems());
-        }
-        
-        // Handle additionalProperties
-        if (schema.getAdditionalProperties() instanceof Schema) {
-            removeNullExamplesFromSchema((Schema<?>) schema.getAdditionalProperties());
-        }
-        
-        // Handle oneOf/anyOf/allOf/not
-        if (schema.getOneOf() != null) {
-            for (Schema<?> s : schema.getOneOf()) {
-                removeNullExamplesFromSchema(s);
-            }
-        }
-        if (schema.getAnyOf() != null) {
-            for (Schema<?> s : schema.getAnyOf()) {
-                removeNullExamplesFromSchema(s);
-            }
-        }
-        if (schema.getAllOf() != null) {
-            for (Schema<?> s : schema.getAllOf()) {
-                removeNullExamplesFromSchema(s);
-            }
-        }
-        if (schema.getNot() != null) {
-            removeNullExamplesFromSchema(schema.getNot());
-        }
-    }
+    // (Removed: removeNullExamplesDirectly and helpers - not currently used)
     
     // ========================================================================
     // PARAMETER DEDUPLICATION
@@ -2749,7 +2568,6 @@ public class OasTransformationEngine {
      * 1. Base controller schemas (Entity, List, Relation, EntityReaction, ListReaction)
      * 2. Top-level aliases AND their children/parents hierarchies
      */
-    @SuppressWarnings("unchecked")
     private void addMergedDomainSchemas(OpenAPI openApi) {
         if (openApi.getComponents() == null) {
             openApi.setComponents(new Components());
@@ -2819,7 +2637,7 @@ public class OasTransformationEngine {
      * Adds base controller schemas (Entity, List, Relation, EntityReaction, ListReaction).
      * These are used for base controller paths like /api/v1/entities, /api/v1/relations.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private void addBaseControllerSchemas(Map<String, Schema> schemas, JsonNode entityBase, JsonNode listBase, 
                                           JsonNode relationBase, JsonNode entityReactionBase, JsonNode listReactionBase) {
         log.debug("addBaseControllerSchemas invoked with specific bases");
@@ -2872,8 +2690,8 @@ public class OasTransformationEngine {
     /**
      * Creates a Schema object from a JsonNode base schema.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private Schema createSchemaFromJsonNode(JsonNode baseNode, String controllerName) {
+    @SuppressWarnings({"rawtypes"})
+    private Schema<?> createSchemaFromJsonNode(JsonNode baseNode, String controllerName) {
         Schema schema = new Schema();
         schema.setType("object");
         
@@ -3150,8 +2968,8 @@ public class OasTransformationEngine {
      * @param controllerName The record type (entities, lists, relations, entityReactions, listReactions)
      * @return Merged schema with x-record-type extension
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private Schema mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode, String controllerName) 
+    @SuppressWarnings({"rawtypes"})
+    private Schema<?> mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode, String controllerName) 
             throws JsonProcessingException {
         
         JsonNode aliasNode = objectMapper.readTree(aliasSchemaJson);
@@ -3160,7 +2978,7 @@ public class OasTransformationEngine {
         merged.setType("object");
         
         // Merge properties
-        Map<String, Schema> properties = new LinkedHashMap<>();
+        Map<String, Schema<?>> properties = new LinkedHashMap<>();
         
         // First add base properties - use proper conversion to handle items, etc.
         if (baseSchemaNode.has("properties")) {
@@ -3229,7 +3047,7 @@ public class OasTransformationEngine {
      * - Nested /books/{id}/chapters → BooksChildChapter, NewBooksChildChapter  
      * - Nested /books/{id}/authors → BooksParentAuthor, NewBooksParentAuthor
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private void bindRequestBodiesToDomainSchemas(OpenAPI openApi) {
         if (openApi.getPaths() == null) return;
         
@@ -3329,7 +3147,7 @@ public class OasTransformationEngine {
      * Binds an operation's request body to a domain schema using $ref.
      * Returns true if binding was performed.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private boolean bindOperationRequestBody(Operation operation, String schemaName, OpenAPI openApi) {
         if (operation == null || operation.getRequestBody() == null) {
             return false;

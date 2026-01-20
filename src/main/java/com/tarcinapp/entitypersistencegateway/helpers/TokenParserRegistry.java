@@ -1,6 +1,5 @@
 package com.tarcinapp.entitypersistencegateway.helpers;
 
-import java.net.URL;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.spec.X509EncodedKeySpec;
@@ -63,7 +62,7 @@ public class TokenParserRegistry {
 
         try {
             // Build JWKS Provider with cache (so it doesn't call Google every time)
-            JwkProvider jwkProvider = new JwkProviderBuilder(new URL(provider.getJwkSetUri()))
+            JwkProvider jwkProvider = new JwkProviderBuilder(new java.net.URI(provider.getJwkSetUri()).toURL())
                     .cached(10, 24, TimeUnit.HOURS) // Keep 10 keys for 24 hours
                     .rateLimited(10, 1, TimeUnit.MINUTES) // Rate limit protection
                     .build();
@@ -71,6 +70,7 @@ public class TokenParserRegistry {
             return Jwts.parserBuilder()
                     .setSigningKeyResolver(new SigningKeyResolverAdapter() {
                         @Override
+                        @SuppressWarnings("rawtypes")
                         public Key resolveSigningKey(JwsHeader header, Claims claims) {
                             try {
                                 String kid = header.getKeyId();

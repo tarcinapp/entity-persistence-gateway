@@ -2,8 +2,6 @@ package com.tarcinapp.entitypersistencegateway.filters.base;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR;
 
-import java.security.Key;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.auth.IAuthorizationClient;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;

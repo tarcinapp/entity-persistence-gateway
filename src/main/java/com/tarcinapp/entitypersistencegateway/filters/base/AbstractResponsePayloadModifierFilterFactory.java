@@ -22,7 +22,6 @@ import org.springframework.web.reactive.function.server.HandlerStrategies;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebExchangeDecorator;
 
-import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.config.MdcContextLifterConfiguration;
 
 import lombok.extern.slf4j.Slf4j;

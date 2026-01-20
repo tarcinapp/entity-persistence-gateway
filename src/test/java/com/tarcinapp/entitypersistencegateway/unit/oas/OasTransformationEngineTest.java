@@ -292,7 +292,7 @@ class OasTransformationEngineTest {
         responses.addApiResponse("200", okResponse);
         return responses;
     }
-
+    @SuppressWarnings("rawtypes")
     private Components createComponents() {
         Components components = new Components();
         Map<String, Schema> schemas = new HashMap<>();

@@ -212,13 +212,8 @@ public class BackendOasClient {
         OpenAPI getOpenApi() {
             return openApi;
         }
-
         boolean isExpired() {
             return System.currentTimeMillis() > expiresAt;
-        }
-
-        long getRemainingTtlMs() {
-            return Math.max(0, expiresAt - System.currentTimeMillis());
         }
     }
 }
