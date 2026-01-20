@@ -377,6 +377,13 @@ public class DynamicOasHandler {
                            .replaceAll("\\s*,\\s*\"exampleSetFlag\"\\s*:\\s*(true|false)", "")
                            .replaceAll("\\s*\"exampleSetFlag\"\\s*:\\s*(true|false)\\s*,", "");
             
+            // Remove non-standard "types" field (should be "type" singular, not "types" array)
+            // YAML format: types:\n- "object" or types:\n- "string"
+            output = output.replaceAll("(?m)^\\s*types:\\s*\\n\\s*-\\s*\"[^\"]+\"\\s*$\\n?", "");
+            // JSON format: "types": ["object"] or "types": ["string", "null"]
+            output = output.replaceAll("\\s*,\\s*\"types\"\\s*:\\s*\\[[^\\]]+\\]", "")
+                           .replaceAll("\\s*\"types\"\\s*:\\s*\\[[^\\]]+\\]\\s*,", "");
+            
             // FIX: Lowercase all style field values (Swagger enums serialize as uppercase)
             output = output.replace("style: \"SIMPLE\"", "style: \"simple\"")
                            .replace("style: \"FORM\"", "style: \"form\"")
