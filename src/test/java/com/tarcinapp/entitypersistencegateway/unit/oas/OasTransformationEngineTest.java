@@ -6,6 +6,7 @@ import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
 import com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService;
+import com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService;
 import com.tarcinapp.entitypersistencegateway.oas.transformation.OasTransformationEngine;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
@@ -38,6 +39,7 @@ class OasTransformationEngineTest {
     private TogglesProperties togglesProperties;
     private ObjectMapper objectMapper;
     private BackendSchemaService backendSchemaService;
+    private RouteMetadataService routeMetadataService;
 
     @BeforeEach
     void setUp() {
@@ -46,18 +48,24 @@ class OasTransformationEngineTest {
         togglesProperties = new TogglesProperties();
         objectMapper = new ObjectMapper();
         backendSchemaService = mock(BackendSchemaService.class);
+        routeMetadataService = mock(RouteMetadataService.class);
 
         // Mock BackendSchemaService to return empty schemas (tests don't rely on schema
         // merging)
         when(backendSchemaService.getBackendSchemaForController(anyString(), anyString()))
                 .thenReturn(objectMapper.createObjectNode());
+        
+        // Mock RouteMetadataService to return empty metadata map
+        when(routeMetadataService.getAllRouteMetadata())
+                .thenReturn(new HashMap<>());
 
         engine = new OasTransformationEngine(
                 openApiProperties,
                 orchestratorProperties,
                 togglesProperties,
                 objectMapper,
-                backendSchemaService);
+                backendSchemaService,
+                routeMetadataService);
 
         // Set default controller base paths
         ReflectionTestUtils.setField(engine, "appShortcode", "test");

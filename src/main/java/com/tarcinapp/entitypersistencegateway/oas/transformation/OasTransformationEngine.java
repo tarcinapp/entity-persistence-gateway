@@ -107,6 +107,10 @@ public class OasTransformationEngine {
     private final ObjectMapper objectMapper;
     
     private final com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService;
+    private final com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService routeMetadataService;
+    
+    // Cache of route metadata for tag-based filtering
+    private final Map<String, com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata> routeMetadataCache;
 
     @Value("${app.inbound.baseUri:}")
     private String inboundBaseUri;
@@ -187,12 +191,18 @@ public class OasTransformationEngine {
             OasOrchestratorProperties orchestratorProperties,
             TogglesProperties togglesProperties,
             ObjectMapper objectMapper,
-            com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService) {
+            com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService,
+            com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService routeMetadataService) {
         this.openApiProperties = openApiProperties;
         this.orchestratorProperties = orchestratorProperties;
         this.togglesProperties = togglesProperties;
         this.objectMapper = objectMapper;
         this.backendSchemaService = backendSchemaService;
+        this.routeMetadataService = routeMetadataService;
+        
+        // Pre-load route metadata for efficient tag-based filtering
+        this.routeMetadataCache = routeMetadataService.getAllRouteMetadata();
+        log.info("Loaded metadata for {} routes", routeMetadataCache.size());
     }
     
     /**
@@ -434,6 +444,20 @@ public class OasTransformationEngine {
                     return;
                 }
                 
+                // Skip entityReactions if tag is disabled
+                if ("entityReactions".equals(controllerName) && isTagDisabled("entityReactions")) {
+                    log.debug("Skipping entityReactions alias '{}' - 'entityReactions' tag is disabled", 
+                        aliasConfig.getAlias());
+                    return;
+                }
+                
+                // Skip listReactions if tag is disabled
+                if ("listReactions".equals(controllerName) && isTagDisabled("listReactions")) {
+                    log.debug("Skipping listReactions alias '{}' - 'listReactions' tag is disabled", 
+                        aliasConfig.getAlias());
+                    return;
+                }
+                
                 List<TransformedPath> aliasPaths = generatePathsForAlias(
                     controllerName, aliasConfig, rawPaths
                 );
@@ -496,6 +520,12 @@ public class OasTransformationEngine {
             // Check if controller is disabled by toggles
             if (isControllerDisabled(controllerName)) {
                 log.debug("Skipping base routes for controller '{}' - disabled by toggles", controllerName);
+                return;
+            }
+            
+            // Check if the controller's own tag is disabled (e.g., "entityReactions", "listReactions")
+            if (isTagDisabled(controllerName)) {
+                log.debug("Skipping base routes for controller '{}' - '{}' tag is disabled by toggles", controllerName, controllerName);
                 return;
             }
             
@@ -639,7 +669,12 @@ public class OasTransformationEngine {
         result.addAll(generateBasePaths(pathPrefix, aliasConfig, rawPaths, controllerName, null));
         
         // Generate hierarchy paths (children and parents) - pass parent alias for correct tagging
-        result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
+        // Skip if 'hierarchy' tag is disabled
+        if (!isTagDisabled("hierarchy")) {
+            result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
+        } else {
+            log.debug("Skipping hierarchy paths for alias '{}' - 'hierarchy' tag is disabled", aliasConfig.getAlias());
+        }
         
         return result;
     }
@@ -923,33 +958,69 @@ public class OasTransformationEngine {
         transformed.setDescription(aliasConfig.getDescription());
         
         // Transform each HTTP method's operation
+        // Filter based on route metadata (tags) if applicable
         if (original.getGet() != null) {
-            transformed.setGet(transformOperation(
+            Operation op = transformOperation(
                 original.getGet(), aliasConfig, controllerName, "get", isInstancePath, tagName
-            ));
+            );
+            // Check if this operation's route should be filtered by tags
+            String routeId = original.getGet().getOperationId();
+            if (op != null && !isOperationFilteredByTags(routeId)) {
+                transformed.setGet(op);
+            }
         }
         if (original.getPost() != null) {
-            transformed.setPost(transformOperation(
+            Operation op = transformOperation(
                 original.getPost(), aliasConfig, controllerName, "post", isInstancePath, tagName
-            ));
+            );
+            String routeId = original.getPost().getOperationId();
+            if (op != null && !isOperationFilteredByTags(routeId)) {
+                transformed.setPost(op);
+            }
         }
         if (original.getPut() != null) {
-            transformed.setPut(transformOperation(
+            Operation op = transformOperation(
                 original.getPut(), aliasConfig, controllerName, "put", isInstancePath, tagName
-            ));
+            );
+            String routeId = original.getPut().getOperationId();
+            if (op != null && !isOperationFilteredByTags(routeId)) {
+                transformed.setPut(op);
+            }
         }
         if (original.getPatch() != null) {
-            transformed.setPatch(transformOperation(
+            Operation op = transformOperation(
                 original.getPatch(), aliasConfig, controllerName, "patch", isInstancePath, tagName
-            ));
+            );
+            String routeId = original.getPatch().getOperationId();
+            if (op != null && !isOperationFilteredByTags(routeId)) {
+                transformed.setPatch(op);
+            }
         }
         if (original.getDelete() != null) {
-            transformed.setDelete(transformOperation(
+            Operation op = transformOperation(
                 original.getDelete(), aliasConfig, controllerName, "delete", isInstancePath, tagName
-            ));
+            );
+            String routeId = original.getDelete().getOperationId();
+            if (op != null && !isOperationFilteredByTags(routeId)) {
+                transformed.setDelete(op);
+            }
         }
         
         return transformed;
+    }
+    
+    /**
+     * Checks if an operation should be filtered based on tag-based route toggles.
+     * Uses the original operation ID to lookup route metadata and check tags.
+     */
+    private boolean isOperationFilteredByTags(String originalOperationId) {
+        if (originalOperationId == null) {
+            return false;
+        }
+        
+        // The originalOperationId in backend OAS typically matches route IDs
+        // E.g., "findEntities", "createEntity", "findEntityChildren", etc.
+        return isRouteFilteredByTags(originalOperationId);
     }
     
     /**
@@ -2544,6 +2615,41 @@ public class OasTransformationEngine {
             return !routesOn.contains(routeId);
         } else if (!routesOff.isEmpty()) {
             return routesOff.contains(routeId);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Checks if a route should be filtered based on its tags matching disabled tags.
+     * Uses route metadata from Spring Cloud Gateway configuration.
+     * 
+     * @param routeId The route ID to check
+     * @return true if the route has any disabled tags, false otherwise
+     */
+    private boolean isRouteFilteredByTags(String routeId) {
+        if (routeId == null || routeId.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Get route metadata
+        com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata = 
+            routeMetadataCache.get(routeId);
+        
+        if (metadata == null || metadata.getTags() == null || metadata.getTags().isEmpty()) {
+            return false;
+        }
+        
+        // Check if route has any disabled tags
+        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
+        List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
+        
+        if (!tagsOn.isEmpty()) {
+            // Whitelist mode: route is filtered if it has NO enabled tags
+            return !metadata.hasAnyTag(tagsOn);
+        } else if (!tagsOff.isEmpty()) {
+            // Blacklist mode: route is filtered if it has ANY disabled tags
+            return metadata.hasAnyTag(tagsOff);
         }
         
         return false;
