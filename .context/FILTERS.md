@@ -49,6 +49,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `PlaceKindNameIntoPayload` | Transformation | Injects kind into request body |
 | `ValidateRequestBodyByKindSchema` | Validation | Schema validation by kind |
 | `KindResolution` | Transformation | Resolves kind aliases to names |
+| `HierarchyKindAliasResolver` | Routing | Resolves hierarchical kind aliases to technical paths |
 | `ConvertKindAliasToKindQuery` | Transformation | Converts kind alias in queries |
 | `DynamicTimeout` | Configuration | Sets request timeouts dynamically |
 | `DynamicRequestSizeFilter` | Validation | Dynamic request size limits |
@@ -599,6 +600,28 @@ This document provides a comprehensive reference for all filters used in the Ent
 **Configuration:** None
 
 **Used in:** Kind alias routes
+
+---
+
+#### `HierarchyKindAliasResolver`
+**Purpose:** Resolves hierarchical alias segments in domain-driven URLs to technical children/parents paths.
+
+**Configuration:**
+```yaml
+- name: HierarchyKindAliasResolver
+  args:
+    childrenAccessorSegment: ${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
+    parentsAccessorSegment: ${app.inbound.controllerBasePaths.entitiesParentsAccessor}
+```
+
+**Behavior:**
+- Reads the root kind alias from `KindResolution`
+- Resolves `{hierarchyAlias}` against configured children/parents in `OpenApiProperties`
+- Rewrites the path to technical children/parents accessors
+- Injects `filter[where][_kind]=<targetKind>` for the resolved hierarchy kind
+- Updates kind alias attributes for downstream validation and authorization
+
+**Used in:** Dynamic hierarchy kind-alias routes (domain-driven URLs)
 
 ---
 
@@ -1242,6 +1265,24 @@ AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPa
 AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader
 ```
 
+#### `findEntityHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → CheckIfRouteEnabled → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → FieldFilter → DynamicLocalCache
+```
+
+#### `createEntityHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
 **Note:** Kind alias routes follow similar patterns for other operations (count, update, find by ID, delete, children, parents, etc.)
 
 ---
@@ -1380,6 +1421,7 @@ Some filters depend on data set by previous filters in the chain:
 - `PreventQueryByForbiddenFields` requires `FetchForbiddenFields`
 - `FieldFilter` requires `FetchForbiddenFields` (for permission-based filtering)
 - `AddForbiddenFieldsFromOriginalToPayloadInReplace` requires `FetchForbiddenFields`
+- `HierarchyKindAliasResolver` requires `KindResolution` (root alias context)
 - All `AddSets...` filters require `AuthenticateRequest` for user context
 
 ---
@@ -1408,6 +1450,3 @@ Some filters depend on data set by previous filters in the chain:
 - [Configuration Files](src/main/resources/) - Filter configuration properties
 - [Gateway Filter Implementation](src/main/java/com/tarcinapp/entitypersistencegateway/filters/) - Source code
 
----
-
-**Last Updated:** February 3, 2026
