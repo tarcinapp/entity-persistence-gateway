@@ -155,6 +155,7 @@ Features described in the System Manifest are implemented here as specific **Gat
 | `PlaceKindNameIntoPayload` | Transformation | Injects kind into request body |
 | `ValidateRequestBodyByKindSchema` | Validation | Schema validation by kind |
 | `KindResolution` | Transformation | Resolves kind aliases to names |
+| `HierarchyKindAliasResolver` | Routing | Resolves hierarchical kind aliases to technical paths |
 | `ConvertKindAliasToKindQuery` | Transformation | Converts kind alias in queries |
 | `DynamicTimeout` | Configuration | Sets request timeouts dynamically |
 | `DynamicRequestSizeFilter` | Validation | Dynamic request size limits |
@@ -248,7 +249,7 @@ System-managed fields like creation timestamps, modification dates, and ownershi
 #### 11. Domain Mapping (Kind Aliasing)
 This is the engine that transforms a generic backend into domain-specific APIs. When a request arrives at `/products`, the gateway resolves "products" to the underlying kind name (e.g., "product"), injects `"_kind": "product"` into the request body, and rewrites queries to filter by that kind. This allows exposing business-specific REST APIs without writing custom backend code. Each domain endpoint can have its own validation schema, rate limits, and timeout configurations.
 
-**Filters:** `KindResolution`, `PlaceKindNameIntoPayload`, `ConvertKindAliasToKindQuery`
+**Filters:** `KindResolution`, `HierarchyKindAliasResolver`, `PlaceKindNameIntoPayload`, `ConvertKindAliasToKindQuery`
 
 ---
 

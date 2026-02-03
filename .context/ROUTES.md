@@ -412,8 +412,17 @@ All routes that accept a `{recordId}` parameter expect a UUID in the format:
 
 ### Configuration
 
-- **Controller Paths** are configurable via:
-  - `app.inbound.controllerPaths.entities` (default: `entities`)
-  - `app.inbound.controllerPaths.lists` (default: `lists`)
-  - `app.inbound.controllerPaths.relations` (default: `relations`)
-  - `app.inbound.controllerPaths.explorer` (default: `explorer`)
+- **Base URI** is configurable via `app.inbound.baseUri` (default: `/api/v1/`).
+- **Controller base paths** are configurable via:
+  - `app.inbound.controllerBasePaths.entities` (default: `entities`)
+  - `app.inbound.controllerBasePaths.lists` (default: `lists`)
+  - `app.inbound.controllerBasePaths.relations` (default: `relations`)
+  - `app.inbound.controllerBasePaths.entityReactions` (default: `entity-reactions`)
+  - `app.inbound.controllerBasePaths.listReactions` (default: `list-reactions`)
+  - `app.inbound.controllerBasePaths.reactionsThroughEntity` (default: `reactions`)
+  - `app.inbound.controllerBasePaths.reactionsThroughList` (default: `reactions`)
+  - `app.inbound.controllerBasePaths.explorer` (default: `explorer`)
+- **Hierarchy accessor segments** are configurable via:
+  - `app.inbound.controllerBasePaths.defaultChildrenAccessor` (default: `children`)
+  - `app.inbound.controllerBasePaths.defaultParentsAccessor` (default: `parents`)
+  - Per-controller overrides (e.g., `entitiesChildrenAccessor`, `listsParentsAccessor`, `entityReactionsChildrenAccessor`)
