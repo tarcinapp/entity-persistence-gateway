@@ -225,42 +225,49 @@ Developers can use a simpler, friendly query syntax at the gateway edge. The gat
 
 ---
 
-#### 8. Policy-Based Authorization
+#### 9. Policy-Based Authorization
 Every authenticated request is evaluated against authorization policies using Open Policy Agent (OPA). The gateway sends the user context, request details, and route metadata to OPA and waits for an allow/deny decision. This enables fine-grained, policy-driven access control that can be updated without code changes.
 
 **Filters:** `AuthorizeRequest`
 
 ---
 
-#### 9. Field-Level Security & Response Filtering
+#### 10. Field-Level Security & Response Filtering
 Data privacy is enforced through multiple layers. First, the gateway fetches field-level access policies from OPA to determine which fields the current user should not see. Then, before queries execute, the gateway modifies user queries to exclude forbidden fields, making the system behave as if those fields don't exist for that user. After the backend responds, the gateway physically removes any forbidden fields from the JSON response to ensure users never see data they shouldn't. During replacement operations (PUT), since forbidden fields are hidden from the user, the gateway preserves values of forbidden fields from the original record by injecting them into the replacement payload, preventing accidental deletion of those restricted fields.
 
 **Filters:** `FetchForbiddenFields`, `PreventQueryByForbiddenFields`, `FieldFilter`, `AddForbiddenFieldsFromOriginalToPayloadInReplace`
 
 ---
 
-#### 10. System Metadata Management
+#### 11. System Metadata Management
 System-managed fields like creation timestamps, modification dates, and ownership information are protected by default and cannot be directly set by regular users. During creation operations, the gateway automatically injects these fields, pulling data from the authenticated user context and system clock. However, authorized users (such as administrators or users with field-level edit permissions) may be allowed to modify these fields. During replacement (PUT) operations, the gateway fetches the original record and preserves all managed fields unless the user has explicit authorization to modify them, preventing unauthorized tampering with audit trails while allowing legitimate administrative overrides.
 
 **Filters:** `AddManagedFieldsInCreation`, `AddManagedFieldsFromOriginalToPayloadInReplace`
 
 ---
 
-#### 11. Domain Mapping (Kind Aliasing)
+#### 12. Domain Mapping (Kind Aliasing)
 This is the engine that transforms a generic backend into domain-specific APIs. When a request arrives at `/products`, the gateway resolves "products" to the underlying kind name (e.g., "product"), injects `"_kind": "product"` into the request body, and rewrites queries to filter by that kind. This allows exposing business-specific REST APIs without writing custom backend code. Each domain endpoint can have its own validation schema, rate limits, and timeout configurations.
 
 **Filters:** `KindResolution`, `HierarchyKindAliasResolver`, `PlaceKindNameIntoPayload`, `ConvertKindAliasToKindQuery`
 
 ---
 
-#### 12. Distributed Concurrency Control
+#### 13. Dynamic OpenAPI Generation
+The gateway can generate a personalized OpenAPI specification at runtime (`/openapi.json` or `/openapi.yaml`). The spec is virtualized to match configured domain aliases and route toggles, and it is pruned based on the caller’s field-level visibility so the documentation reflects exactly what the user can see and do.
+
+**Components:** `DynamicOasHandler`, `BackendOasClient`, `OasTransformationEngine`, `OasFieldPermissionService`, `OasSchemaPruner`, `OasCacheService`
+
+---
+
+#### 14. Distributed Concurrency Control
 To prevent race conditions in a distributed system, the gateway uses Redis-based distributed locks. When creating resources, a lock ensures no duplicate creates happen simultaneously. When updating resources, a lock prevents lost updates from concurrent modifications. Lock keys are often dynamic (e.g., based on list ID), ensuring operations on different resources don't block each other while operations on the same resource are properly serialized.
 
 **Filters:** `AcquireLockForCreation`, `AcquireLockForUpdate`
 
 ---
 
-#### 13. Performance Optimization
+#### 15. Performance Optimization
 The gateway maintains a local in-memory cache for GET responses, with configurable TTL and size per route. Cache keys include the URL and query parameters to ensure different queries don't collide. Additionally, the gateway allows configuring connection and response timeouts per route, preventing slow operations from tying up resources. These timeout configurations can be dynamically adjusted for kind-specific endpoints.
 
 **Filters:** `DynamicLocalCache`, `DynamicTimeout`
