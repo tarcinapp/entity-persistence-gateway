@@ -203,6 +203,7 @@ public class OasTransformationEngine {
         // Pre-load route metadata for efficient tag-based filtering
         this.routeMetadataCache = routeMetadataService.getAllRouteMetadata();
         log.info("Loaded metadata for {} routes", routeMetadataCache.size());
+        log.debug("Route IDs in cache: {}", routeMetadataCache.keySet());
     }
     
     /**
@@ -574,8 +575,8 @@ public class OasTransformationEngine {
             }
             
             // Children route: GET/POST /entities/{id}/children
-            // Skip if 'hierarchical' tag is disabled
-            if (!isTagDisabled("hierarchical")) {
+            // Check route metadata to see if any of its tags are disabled
+            if (!isRouteDisabledByTags(controllerName, "children")) {
                 PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
                 if (childrenPathItem != null) {
                     PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
@@ -585,13 +586,11 @@ public class OasTransformationEngine {
                         log.debug("Added base controller route: {}", fullPath);
                     }
                 }
-            } else {
-                log.debug("Skipping children paths for controller '{}' - 'hierarchical' tag is disabled", controllerName);
             }
             
             // Parents route: GET /entities/{id}/parents
-            // Skip if 'hierarchical' tag is disabled
-            if (!isTagDisabled("hierarchical")) {
+            // Check route metadata to see if any of its tags are disabled
+            if (!isRouteDisabledByTags(controllerName, "parents")) {
                 PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
                 if (parentsPathItem != null) {
                     PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
@@ -601,8 +600,6 @@ public class OasTransformationEngine {
                         log.debug("Added base controller route: {}", fullPath);
                     }
                 }
-            } else {
-                log.debug("Skipping parents paths for controller '{}' - 'hierarchical' tag is disabled", controllerName);
             }
         });
     }
@@ -679,11 +676,9 @@ public class OasTransformationEngine {
         result.addAll(generateBasePaths(pathPrefix, aliasConfig, rawPaths, controllerName, null));
         
         // Generate hierarchy paths (children and parents) - pass parent alias for correct tagging
-        // Skip if 'hierarchy' tag is disabled
-        if (!isTagDisabled("hierarchy")) {
+        // Check route metadata to see if hierarchy paths should be generated
+        if (!isRouteDisabledByTags(controllerName, "children") || !isRouteDisabledByTags(controllerName, "parents")) {
             result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
-        } else {
-            log.debug("Skipping hierarchy paths for alias '{}' - 'hierarchy' tag is disabled", aliasConfig.getAlias());
         }
         
         return result;
@@ -2605,6 +2600,61 @@ public class OasTransformationEngine {
             return tagsOff.contains(tagName);
         }
         
+        return false;
+    }
+    
+    /**
+     * Checks if a route should be disabled based on its metadata tags.
+     * This is a metadata-driven approach that reads tags from route configuration
+     * and checks if any of those tags are disabled in toggles.
+     * 
+     * @param controllerName The controller name (e.g., "entities", "lists", "relations")
+     * @param hierarchyType The hierarchy type ("children" or "parents")
+     * @return true if the route should be disabled, false otherwise
+     */
+    private boolean isRouteDisabledByTags(String controllerName, String hierarchyType) {
+        if (controllerName == null || hierarchyType == null) {
+            return false;
+        }
+
+        log.debug("Checking if {} {} routes should be disabled", controllerName, hierarchyType);
+
+        // Find all routes for this controller that match the hierarchy type
+        List<com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata> matchingRoutes =
+            routeMetadataCache.values().stream()
+                .filter(metadata -> metadata.getControllerName() != null
+                        && metadata.getControllerName().equals(controllerName))
+                .filter(metadata -> metadata.getRouteId() != null
+                        && metadata.getRouteId().toLowerCase().contains(hierarchyType.toLowerCase()))
+                .collect(Collectors.toList());
+
+        if (matchingRoutes.isEmpty()) {
+            log.debug("No routes found for controller '{}' with hierarchy type '{}'", controllerName, hierarchyType);
+            return false;
+        }
+
+        // Get disabled tags (blacklist)
+        List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
+        if (tagsOff.isEmpty()) {
+            // Nothing is disabled by tags
+            return false;
+        }
+
+        // If any matching route has a disabled tag, consider it disabled
+        for (com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata : matchingRoutes) {
+            if (metadata.getTags() == null || metadata.getTags().isEmpty()) {
+                continue;
+            }
+
+            for (String tag : metadata.getTags()) {
+                if (tagsOff.contains(tag)) {
+                    log.debug("Route '{}' DISABLED - has disabled tag '{}'", metadata.getRouteId(), tag);
+                    return true;
+                }
+            }
+        }
+
+        log.debug("No disabled tags found for {} {} routes", controllerName, hierarchyType);
         return false;
     }
     

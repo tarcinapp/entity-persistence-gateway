@@ -578,9 +578,3 @@ src/main/java/com/tarcinapp/entitypersistencegateway/
 | OPA latency spikes | Slow spec generation | Aggressive caching, OPA failure returns full visibility |
 | Memory pressure from large specs | OOM | Caffeine size limits, streaming JSON serialization |
 | Cache invalidation complexity | Stale specs | TTL-based expiry, admin endpoint for manual flush |
-
----
-
-*Document Version: 1.0*
-*Author: Lead Systems Architect*
-*Date: 2026-01-11*
