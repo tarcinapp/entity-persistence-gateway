@@ -203,7 +203,6 @@ public class OasTransformationEngine {
         // Pre-load route metadata for efficient tag-based filtering
         this.routeMetadataCache = routeMetadataService.getAllRouteMetadata();
         log.info("Loaded metadata for {} routes", routeMetadataCache.size());
-        log.debug("Route IDs in cache: {}", routeMetadataCache.keySet());
     }
     
     /**
@@ -505,6 +504,9 @@ public class OasTransformationEngine {
      *   - /api/v1/list-reactions, /api/v1/list-reactions/{id}, /api/v1/list-reactions/count
      */
     private void generateBaseControllerRoutes(Paths rawPaths, Paths virtualizedPaths, String baseUri) {
+        log.info("generateBaseControllerRoutes called: rawPaths.size={}, baseUri={}", 
+            rawPaths != null ? rawPaths.size() : 0, baseUri);
+        
         // Map of controller names to their inbound paths and backend prefixes
         Map<String, String[]> controllerMappings = Map.of(
             "entities", new String[]{entitiesBasePath, "/entities"},
@@ -518,21 +520,23 @@ public class OasTransformationEngine {
             String inboundPath = paths[0];  // e.g., "entities"
             String backendPrefix = paths[1]; // e.g., "/entities"
             
+            log.info("Processing controller: {}, inboundPath={}, backendPrefix={}", controllerName, inboundPath, backendPrefix);
+            
             // Check if controller is disabled by toggles
             if (isControllerDisabled(controllerName)) {
-                log.debug("Skipping base routes for controller '{}' - disabled by toggles", controllerName);
+                log.info("Skipping base routes for controller '{}' - disabled by toggles", controllerName);
                 return;
             }
             
             // Check if the controller's own tag is disabled (e.g., "entityReactions", "listReactions")
             if (isTagDisabled(controllerName)) {
-                log.debug("Skipping base routes for controller '{}' - '{}' tag is disabled by toggles", controllerName, controllerName);
+                log.info("Skipping base routes for controller '{}' - '{}' tag is disabled by toggles", controllerName, controllerName);
                 return;
             }
             
             // Check if "generic" tag is disabled (base controller routes are generic, using kind parameter)
             if (isTagDisabled("generic")) {
-                log.debug("Skipping base routes for controller '{}' - 'generic' tag is disabled by toggles", controllerName);
+                log.info("Skipping base routes for controller '{}' - 'generic' tag is disabled by toggles", controllerName);
                 return;
             }
             
@@ -575,11 +579,12 @@ public class OasTransformationEngine {
             }
             
             // Children route: GET/POST /entities/{id}/children
-            // Check route metadata to see if any of its tags are disabled
-            if (!isRouteDisabledByTags(controllerName, "children")) {
-                PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
-                if (childrenPathItem != null) {
-                    PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
+            // Operation-level filtering is handled by transformBaseControllerPathItem
+            PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
+            if (childrenPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(childrenPathItem, controllerName, tagName, true);
+                // Only add if at least one operation remains after filtering
+                if (hasAnyOperation(transformed)) {
                     String fullPath = virtualPathPrefix + "/{id}/children";
                     if (!virtualizedPaths.containsKey(fullPath)) {
                         virtualizedPaths.addPathItem(fullPath, transformed);
@@ -589,11 +594,12 @@ public class OasTransformationEngine {
             }
             
             // Parents route: GET /entities/{id}/parents
-            // Check route metadata to see if any of its tags are disabled
-            if (!isRouteDisabledByTags(controllerName, "parents")) {
-                PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
-                if (parentsPathItem != null) {
-                    PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
+            // Operation-level filtering is handled by transformBaseControllerPathItem
+            PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
+            if (parentsPathItem != null) {
+                PathItem transformed = transformBaseControllerPathItem(parentsPathItem, controllerName, tagName, true);
+                // Only add if at least one operation remains after filtering
+                if (hasAnyOperation(transformed)) {
                     String fullPath = virtualPathPrefix + "/{id}/parents";
                     if (!virtualizedPaths.containsKey(fullPath)) {
                         virtualizedPaths.addPathItem(fullPath, transformed);
@@ -607,28 +613,70 @@ public class OasTransformationEngine {
     /**
      * Transforms a PathItem for base controller routes (non-aliased).
      * These operations are tagged with the controller name (e.g., "Entities").
+     * Operations are filtered based on route tag configuration (tagsOn/tagsOff).
      */
     private PathItem transformBaseControllerPathItem(PathItem original, String controllerName, String tagName, boolean isInstancePath) {
         PathItem transformed = new PathItem();
         transformed.setDescription(original.getDescription());
         
+        log.info("transformBaseControllerPathItem: controller={}, tagName={}, isInstancePath={}", 
+            controllerName, tagName, isInstancePath);
+        
+        // For each operation, check if it should be filtered based on route tags
         if (original.getGet() != null) {
-            transformed.setGet(transformBaseControllerOperation(original.getGet(), controllerName, tagName, "get", isInstancePath));
+            String routeId = original.getGet().getOperationId();
+            boolean filtered = isOperationFilteredByTags(routeId);
+            log.info("  GET operation: routeId={}, filtered={}", routeId, filtered);
+            if (!filtered) {
+                transformed.setGet(transformBaseControllerOperation(original.getGet(), controllerName, tagName, "get", isInstancePath));
+            }
         }
         if (original.getPost() != null) {
-            transformed.setPost(transformBaseControllerOperation(original.getPost(), controllerName, tagName, "post", isInstancePath));
+            String routeId = original.getPost().getOperationId();
+            boolean filtered = isOperationFilteredByTags(routeId);
+            log.info("  POST operation: routeId={}, filtered={}", routeId, filtered);
+            if (!filtered) {
+                transformed.setPost(transformBaseControllerOperation(original.getPost(), controllerName, tagName, "post", isInstancePath));
+            }
         }
         if (original.getPut() != null) {
-            transformed.setPut(transformBaseControllerOperation(original.getPut(), controllerName, tagName, "put", isInstancePath));
+            String routeId = original.getPut().getOperationId();
+            boolean filtered = isOperationFilteredByTags(routeId);
+            log.info("  PUT operation: routeId={}, filtered={}", routeId, filtered);
+            if (!filtered) {
+                transformed.setPut(transformBaseControllerOperation(original.getPut(), controllerName, tagName, "put", isInstancePath));
+            }
         }
         if (original.getPatch() != null) {
-            transformed.setPatch(transformBaseControllerOperation(original.getPatch(), controllerName, tagName, "patch", isInstancePath));
+            String routeId = original.getPatch().getOperationId();
+            boolean filtered = isOperationFilteredByTags(routeId);
+            log.info("  PATCH operation: routeId={}, filtered={}", routeId, filtered);
+            if (!filtered) {
+                transformed.setPatch(transformBaseControllerOperation(original.getPatch(), controllerName, tagName, "patch", isInstancePath));
+            }
         }
         if (original.getDelete() != null) {
-            transformed.setDelete(transformBaseControllerOperation(original.getDelete(), controllerName, tagName, "delete", isInstancePath));
+            String routeId = original.getDelete().getOperationId();
+            boolean filtered = isOperationFilteredByTags(routeId);
+            log.info("  DELETE operation: routeId={}, filtered={}", routeId, filtered);
+            if (!filtered) {
+                transformed.setDelete(transformBaseControllerOperation(original.getDelete(), controllerName, tagName, "delete", isInstancePath));
+            }
         }
         
         return transformed;
+    }
+    
+    /**
+     * Checks if a PathItem has at least one operation (GET, POST, PUT, PATCH, DELETE).
+     * Used to avoid adding empty path items after operation-level filtering.
+     */
+    private boolean hasAnyOperation(PathItem pathItem) {
+        return pathItem.getGet() != null 
+            || pathItem.getPost() != null 
+            || pathItem.getPut() != null 
+            || pathItem.getPatch() != null 
+            || pathItem.getDelete() != null;
     }
     
     /**
@@ -676,10 +724,8 @@ public class OasTransformationEngine {
         result.addAll(generateBasePaths(pathPrefix, aliasConfig, rawPaths, controllerName, null));
         
         // Generate hierarchy paths (children and parents) - pass parent alias for correct tagging
-        // Check route metadata to see if hierarchy paths should be generated
-        if (!isRouteDisabledByTags(controllerName, "children") || !isRouteDisabledByTags(controllerName, "parents")) {
-            result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
-        }
+        // Operation-level filtering is handled inside generateHierarchyPaths
+        result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
         
         return result;
     }
@@ -818,6 +864,9 @@ public class OasTransformationEngine {
     /**
      * Transforms a PathItem for hierarchy (children/parents) endpoints.
      * These get special summary/description treatment and are tagged under the parent.
+     * 
+     * Tag filtering is applied using the KindAlias route IDs from application-routes.yml
+     * to ensure OAS generation matches runtime behavior of CheckIfRouteEnabled filter.
      */
     private PathItem transformPathItemForHierarchy(
             PathItem original,
@@ -836,34 +885,146 @@ public class OasTransformationEngine {
             "%s of a %s", childResourceName, parentResourceName.toLowerCase()
         ));
         
-        // Transform each HTTP method's operation with hierarchy-aware summaries
+        // Determine the base controller name for mapping to KindAlias route IDs
+        // e.g., "entities" from "entitiesKindAlias" or just "entities"
+        String baseController = controllerName.replace("KindAlias", "");
+        
+        // Transform each HTTP method's operation with tag filtering and hierarchy-aware summaries
         if (original.getGet() != null) {
-            transformed.setGet(transformHierarchyOperation(
-                original.getGet(), childAlias, parentAlias, parentTagName, "get", relationType
-            ));
+            // Map to KindAlias route: e.g., findEntityChildrenByKindAlias or findEntityParentsByKindAlias
+            String backendOpId = original.getGet().getOperationId();
+            String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "get");
+            
+            if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
+                transformed.setGet(transformHierarchyOperation(
+                    original.getGet(), childAlias, parentAlias, parentTagName, "get", relationType
+                ));
+            }
         }
         if (original.getPost() != null) {
-            transformed.setPost(transformHierarchyOperation(
-                original.getPost(), childAlias, parentAlias, parentTagName, "post", relationType
-            ));
+            String backendOpId = original.getPost().getOperationId();
+            String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "post");
+            
+            if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
+                transformed.setPost(transformHierarchyOperation(
+                    original.getPost(), childAlias, parentAlias, parentTagName, "post", relationType
+                ));
+            }
         }
         if (original.getPut() != null) {
-            transformed.setPut(transformHierarchyOperation(
-                original.getPut(), childAlias, parentAlias, parentTagName, "put", relationType
-            ));
+            String backendOpId = original.getPut().getOperationId();
+            String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "put");
+            
+            if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
+                transformed.setPut(transformHierarchyOperation(
+                    original.getPut(), childAlias, parentAlias, parentTagName, "put", relationType
+                ));
+            }
         }
         if (original.getPatch() != null) {
-            transformed.setPatch(transformHierarchyOperation(
-                original.getPatch(), childAlias, parentAlias, parentTagName, "patch", relationType
-            ));
+            String backendOpId = original.getPatch().getOperationId();
+            String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "patch");
+            
+            if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
+                transformed.setPatch(transformHierarchyOperation(
+                    original.getPatch(), childAlias, parentAlias, parentTagName, "patch", relationType
+                ));
+            }
         }
         if (original.getDelete() != null) {
-            transformed.setDelete(transformHierarchyOperation(
-                original.getDelete(), childAlias, parentAlias, parentTagName, "delete", relationType
-            ));
+            String backendOpId = original.getDelete().getOperationId();
+            String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "delete");
+            
+            if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
+                transformed.setDelete(transformHierarchyOperation(
+                    original.getDelete(), childAlias, parentAlias, parentTagName, "delete", relationType
+                ));
+            }
         }
         
         return transformed;
+    }
+    
+    /**
+     * Maps a hierarchy operation to its KindAlias route ID.
+     * 
+     * @param backendOpId The backend operationId (e.g., findChildrenByEntityId)
+     * @param baseController The base controller name (e.g., entities, lists)
+     * @param relationType "children" or "parents"
+     * @param httpMethod The HTTP method (get, post, etc.)
+     * @return The KindAlias route ID (e.g., findEntityChildrenByKindAlias)
+     */
+    private String mapHierarchyOperationToKindAliasRouteId(String backendOpId, String baseController, String relationType, String httpMethod) {
+        // Normalize controller name to singular capitalized form
+        String controllerSingular = capitalizeFirst(singularize(baseController));
+        
+        if ("children".equals(relationType)) {
+            if ("get".equalsIgnoreCase(httpMethod)) {
+                // findChildrenByEntityId → findEntityChildrenByKindAlias
+                return "find" + controllerSingular + "ChildrenByKindAlias";
+            } else if ("post".equalsIgnoreCase(httpMethod)) {
+                // createChildEntity → createEntityChildByKindAlias
+                return "create" + controllerSingular + "ChildByKindAlias";
+            }
+        } else if ("parents".equals(relationType)) {
+            if ("get".equalsIgnoreCase(httpMethod)) {
+                // findParentsByEntityId → findEntityParentsByKindAlias
+                return "find" + controllerSingular + "ParentsByKindAlias";
+            }
+        }
+        
+        // Fallback for unknown combinations
+        log.warn("Unknown hierarchy operation mapping: backendOpId={}, controller={}, relationType={}, httpMethod={}", 
+            backendOpId, baseController, relationType, httpMethod);
+        return backendOpId;
+    }
+    
+    /**
+     * Checks if a KindAlias operation should be filtered based on tag-based route toggles.
+     * This is a simpler version that directly uses the KindAlias route ID for lookup.
+     */
+    private boolean isKindAliasOperationFilteredByTags(String kindAliasRouteId, String backendOpId) {
+        // Get tag filtering configuration
+        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
+        List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
+        
+        // If no tag filtering is configured, don't filter anything
+        if (tagsOn.isEmpty() && tagsOff.isEmpty()) {
+            return false;
+        }
+        
+        // Get metadata for the KindAlias route
+        com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata kindAliasMetadata = 
+            routeMetadataCache.get(kindAliasRouteId);
+        
+        List<String> effectiveTags;
+        
+        if (kindAliasMetadata != null && kindAliasMetadata.getTags() != null && !kindAliasMetadata.getTags().isEmpty()) {
+            effectiveTags = kindAliasMetadata.getTags();
+            log.debug("Tag filter for hierarchy route '{}': using tags: {}", kindAliasRouteId, effectiveTags);
+        } else {
+            // No metadata found - allow by default
+            log.warn("Tag filter for hierarchy route '{}': no metadata found, allowing by default", kindAliasRouteId);
+            return false;
+        }
+        
+        // Apply tag filtering logic
+        if (!tagsOn.isEmpty()) {
+            boolean hasTag = effectiveTags.stream().anyMatch(tag -> 
+                tagsOn.stream().anyMatch(enabledTag -> enabledTag.equalsIgnoreCase(tag)));
+            boolean filtered = !hasTag;
+            log.debug("Tag filter (whitelist) for hierarchy route '{}': hasTag={}, filtered={}", 
+                kindAliasRouteId, hasTag, filtered);
+            return filtered;
+        } else if (!tagsOff.isEmpty()) {
+            boolean hasTag = effectiveTags.stream().anyMatch(tag -> 
+                tagsOff.stream().anyMatch(disabledTag -> disabledTag.equalsIgnoreCase(tag)));
+            log.debug("Tag filter (blacklist) for hierarchy route '{}': hasDisabledTag={}, filtered={}", 
+                kindAliasRouteId, hasTag, hasTag);
+            return hasTag;
+        }
+        
+        return false;
     }
     
     /**
@@ -947,7 +1108,20 @@ public class OasTransformationEngine {
     }
     
     /**
-     * Transforms a PathItem by rewriting operations.
+     * Transforms a PathItem by rewriting operations for aliased routes.
+     * 
+     * Tag filtering for aliased routes works as follows:
+     * 1. First, compute the aliased operationId (e.g., "listBook" for books alias)
+     * 2. Check if there's route metadata for that aliased operationId
+     * 3. If yes, use those tags for filtering
+     * 4. If no, derive tags from the base generic route but EXCLUDE 'generic' tag
+     *    (since aliased routes are domain-specific, not generic)
+     * 
+     * This allows users to:
+     * - Define specific tags for aliased routes in application-routes.yml
+     * - Use tagsOn/tagsOff to filter any route including aliased ones
+     * - Filter out generic routes while keeping aliased routes visible
+     * 
      * @param tagName The tag to use for operations (may be parent's tag for nested resources)
      * @param parentAlias If not null, indicates this is a nested resource
      */
@@ -962,56 +1136,230 @@ public class OasTransformationEngine {
         PathItem transformed = new PathItem();
         transformed.setDescription(aliasConfig.getDescription());
         
-        // Transform each HTTP method's operation
-        // Filter based on route metadata (tags) if applicable
+        // Transform each HTTP method's operation with proper tag filtering for aliased routes
         if (original.getGet() != null) {
-            Operation op = transformOperation(
-                original.getGet(), aliasConfig, controllerName, "get", isInstancePath, tagName
-            );
-            // Check if this operation's route should be filtered by tags
-            String routeId = original.getGet().getOperationId();
-            if (op != null && !isOperationFilteredByTags(routeId)) {
-                transformed.setGet(op);
+            String originalOpId = original.getGet().getOperationId();
+            String aliasedOpId = generateOperationId(originalOpId, aliasConfig);
+            if (!isAliasedOperationFilteredByTags(aliasedOpId, originalOpId)) {
+                Operation op = transformOperation(
+                    original.getGet(), aliasConfig, controllerName, "get", isInstancePath, tagName
+                );
+                if (op != null) {
+                    transformed.setGet(op);
+                }
             }
         }
         if (original.getPost() != null) {
-            Operation op = transformOperation(
-                original.getPost(), aliasConfig, controllerName, "post", isInstancePath, tagName
-            );
-            String routeId = original.getPost().getOperationId();
-            if (op != null && !isOperationFilteredByTags(routeId)) {
-                transformed.setPost(op);
+            String originalOpId = original.getPost().getOperationId();
+            String aliasedOpId = generateOperationId(originalOpId, aliasConfig);
+            if (!isAliasedOperationFilteredByTags(aliasedOpId, originalOpId)) {
+                Operation op = transformOperation(
+                    original.getPost(), aliasConfig, controllerName, "post", isInstancePath, tagName
+                );
+                if (op != null) {
+                    transformed.setPost(op);
+                }
             }
         }
         if (original.getPut() != null) {
-            Operation op = transformOperation(
-                original.getPut(), aliasConfig, controllerName, "put", isInstancePath, tagName
-            );
-            String routeId = original.getPut().getOperationId();
-            if (op != null && !isOperationFilteredByTags(routeId)) {
-                transformed.setPut(op);
+            String originalOpId = original.getPut().getOperationId();
+            String aliasedOpId = generateOperationId(originalOpId, aliasConfig);
+            if (!isAliasedOperationFilteredByTags(aliasedOpId, originalOpId)) {
+                Operation op = transformOperation(
+                    original.getPut(), aliasConfig, controllerName, "put", isInstancePath, tagName
+                );
+                if (op != null) {
+                    transformed.setPut(op);
+                }
             }
         }
         if (original.getPatch() != null) {
-            Operation op = transformOperation(
-                original.getPatch(), aliasConfig, controllerName, "patch", isInstancePath, tagName
-            );
-            String routeId = original.getPatch().getOperationId();
-            if (op != null && !isOperationFilteredByTags(routeId)) {
-                transformed.setPatch(op);
+            String originalOpId = original.getPatch().getOperationId();
+            String aliasedOpId = generateOperationId(originalOpId, aliasConfig);
+            if (!isAliasedOperationFilteredByTags(aliasedOpId, originalOpId)) {
+                Operation op = transformOperation(
+                    original.getPatch(), aliasConfig, controllerName, "patch", isInstancePath, tagName
+                );
+                if (op != null) {
+                    transformed.setPatch(op);
+                }
             }
         }
         if (original.getDelete() != null) {
-            Operation op = transformOperation(
-                original.getDelete(), aliasConfig, controllerName, "delete", isInstancePath, tagName
-            );
-            String routeId = original.getDelete().getOperationId();
-            if (op != null && !isOperationFilteredByTags(routeId)) {
-                transformed.setDelete(op);
+            String originalOpId = original.getDelete().getOperationId();
+            String aliasedOpId = generateOperationId(originalOpId, aliasConfig);
+            if (!isAliasedOperationFilteredByTags(aliasedOpId, originalOpId)) {
+                Operation op = transformOperation(
+                    original.getDelete(), aliasConfig, controllerName, "delete", isInstancePath, tagName
+                );
+                if (op != null) {
+                    transformed.setDelete(op);
+                }
             }
         }
         
         return transformed;
+    }
+    
+    /**
+     * Checks if an aliased operation should be filtered based on tag-based route toggles.
+     * 
+     * This method implements proper tag filtering for aliased routes:
+     * 1. First checks if there's specific route metadata for the aliased operationId
+     * 2. If yes, uses those tags for filtering
+     * 3. If no, derives tags from the base generic route but EXCLUDES 'generic' tag
+     *    (since aliased routes are domain-specific, not generic)
+     * 
+     * @param aliasedOperationId The generated aliased operation ID (e.g., "listBook")
+     * @param originalOperationId The original backend operation ID (e.g., "findEntities")
+     * @return true if the operation should be filtered out, false otherwise
+     */
+    private boolean isAliasedOperationFilteredByTags(String aliasedOperationId, String originalOperationId) {
+        // Get tag filtering configuration
+        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
+        List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
+        
+        // If no tag filtering is configured, don't filter anything
+        if (tagsOn.isEmpty() && tagsOff.isEmpty()) {
+            return false;
+        }
+        
+        // Map the backend operationId to the correct KindAlias route ID
+        // This is the route ID that CheckIfRouteEnabled filter uses at runtime
+        String kindAliasRouteId = mapBackendOperationIdToKindAliasRouteId(originalOperationId);
+        
+        // Get metadata for the KindAlias route
+        com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata kindAliasMetadata = 
+            routeMetadataCache.get(kindAliasRouteId);
+        
+        List<String> effectiveTags;
+        
+        if (kindAliasMetadata != null && kindAliasMetadata.getTags() != null && !kindAliasMetadata.getTags().isEmpty()) {
+            // Use the KindAlias route's tags (these don't have 'generic' tag)
+            effectiveTags = kindAliasMetadata.getTags();
+            log.info("Tag filter for aliased route '{}': using KindAlias route '{}' tags: {}", 
+                aliasedOperationId, kindAliasRouteId, effectiveTags);
+        } else {
+            // Fallback: no specific KindAlias route metadata found
+            // This shouldn't happen if application-routes.yml is complete
+            log.warn("Tag filter for aliased route '{}': no metadata found for KindAlias route '{}', allowing by default", 
+                aliasedOperationId, kindAliasRouteId);
+            return false;
+        }
+        
+        // Apply tag filtering logic
+        if (!tagsOn.isEmpty()) {
+            // Whitelist mode: keep only routes that have at least one of the enabled tags
+            boolean hasTag = effectiveTags.stream().anyMatch(tag -> 
+                tagsOn.stream().anyMatch(enabledTag -> enabledTag.equalsIgnoreCase(tag)));
+            boolean filtered = !hasTag;
+            log.info("Tag filter (whitelist) for aliased route '{}': hasTag={}, filtered={}", 
+                aliasedOperationId, hasTag, filtered);
+            return filtered;
+        } else if (!tagsOff.isEmpty()) {
+            // Blacklist mode: filter out routes that have any of the disabled tags
+            boolean hasTag = effectiveTags.stream().anyMatch(tag -> 
+                tagsOff.stream().anyMatch(disabledTag -> disabledTag.equalsIgnoreCase(tag)));
+            log.info("Tag filter (blacklist) for aliased route '{}': hasDisabledTag={}, filtered={}", 
+                aliasedOperationId, hasTag, hasTag);
+            return hasTag;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Maps a backend operationId to the corresponding KindAlias route ID.
+     * These are the route IDs that CheckIfRouteEnabled filter uses at runtime.
+     * 
+     * Mapping pattern (for entities controller):
+     * - findEntities → findAllEntitiesByKindAlias
+     * - createEntity → createEntityByKindAlias
+     * - findEntityById → findEntityByIdByKindAlias
+     * - replaceEntityById → replaceEntityByIdByKindAlias
+     * - updateEntityById → updateEntityByIdByKindAlias
+     * - deleteEntityById → deleteEntityByIdByKindAlias
+     * - countEntities → countEntitiesByKindAlias
+     * - updateEntities → updateAllEntitiesByKindAlias
+     * - findChildrenByEntityId → findEntityChildrenByKindAlias
+     * - createChildEntity → createEntityChildByKindAlias
+     * - findParentsByEntityId → findEntityParentsByKindAlias
+     * 
+     * Similar patterns apply for lists, relations, entityReactions, listReactions controllers.
+     */
+    private String mapBackendOperationIdToKindAliasRouteId(String backendOperationId) {
+        if (backendOperationId == null) {
+            return null;
+        }
+        
+        // Define mappings for all controller types
+        // The pattern: backend operationId -> KindAlias route ID
+        
+        // Entities
+        if (backendOperationId.equals("findEntities")) return "findAllEntitiesByKindAlias";
+        if (backendOperationId.equals("createEntity")) return "createEntityByKindAlias";
+        if (backendOperationId.equals("findEntityById")) return "findEntityByIdByKindAlias";
+        if (backendOperationId.equals("replaceEntityById")) return "replaceEntityByIdByKindAlias";
+        if (backendOperationId.equals("updateEntityById")) return "updateEntityByIdByKindAlias";
+        if (backendOperationId.equals("deleteEntityById")) return "deleteEntityByIdByKindAlias";
+        if (backendOperationId.equals("countEntities")) return "countEntitiesByKindAlias";
+        if (backendOperationId.equals("updateEntities")) return "updateAllEntitiesByKindAlias";
+        if (backendOperationId.equals("findChildrenByEntityId")) return "findEntityChildrenByKindAlias";
+        if (backendOperationId.equals("createChildEntity")) return "createEntityChildByKindAlias";
+        if (backendOperationId.equals("findParentsByEntityId")) return "findEntityParentsByKindAlias";
+        
+        // Lists
+        if (backendOperationId.equals("findLists")) return "findAllListsByKindAlias";
+        if (backendOperationId.equals("createList")) return "createListByKindAlias";
+        if (backendOperationId.equals("findListById")) return "findListByIdByKindAlias";
+        if (backendOperationId.equals("replaceListById")) return "replaceListByIdByKindAlias";
+        if (backendOperationId.equals("updateListById")) return "updateListByIdByKindAlias";
+        if (backendOperationId.equals("deleteListById")) return "deleteListByIdByKindAlias";
+        if (backendOperationId.equals("countLists")) return "countListsByKindAlias";
+        if (backendOperationId.equals("updateLists")) return "updateAllListsByKindAlias";
+        if (backendOperationId.equals("findChildrenByListId")) return "findListChildrenByKindAlias";
+        if (backendOperationId.equals("createChildList")) return "createListChildByKindAlias";
+        if (backendOperationId.equals("findParentsByListId")) return "findListParentsByKindAlias";
+        
+        // Relations
+        if (backendOperationId.equals("findRelations")) return "findAllRelationsByKindAlias";
+        if (backendOperationId.equals("createRelation")) return "createRelationByKindAlias";
+        if (backendOperationId.equals("findRelationById")) return "findRelationByIdByKindAlias";
+        if (backendOperationId.equals("replaceRelationById")) return "replaceRelationByIdByKindAlias";
+        if (backendOperationId.equals("updateRelationById")) return "updateRelationByIdByKindAlias";
+        if (backendOperationId.equals("deleteRelationById")) return "deleteRelationByIdByKindAlias";
+        if (backendOperationId.equals("countRelations")) return "countRelationsByKindAlias";
+        if (backendOperationId.equals("updateRelations")) return "updateAllRelationsByKindAlias";
+        
+        // Entity Reactions
+        if (backendOperationId.equals("findEntityReactions")) return "findAllEntityReactionsByKindAlias";
+        if (backendOperationId.equals("createEntityReaction")) return "createEntityReactionByKindAlias";
+        if (backendOperationId.equals("findEntityReactionById")) return "findEntityReactionByIdByKindAlias";
+        if (backendOperationId.equals("replaceEntityReactionById")) return "replaceEntityReactionByIdByKindAlias";
+        if (backendOperationId.equals("updateEntityReactionById")) return "updateEntityReactionByIdByKindAlias";
+        if (backendOperationId.equals("deleteEntityReactionById")) return "deleteEntityReactionByIdByKindAlias";
+        if (backendOperationId.equals("countEntityReactions")) return "countEntityReactionsByKindAlias";
+        if (backendOperationId.equals("updateEntityReactions")) return "updateAllEntityReactionsByKindAlias";
+        if (backendOperationId.equals("findChildrenByEntityReactionId")) return "findEntityReactionChildrenByKindAlias";
+        if (backendOperationId.equals("createChildEntityReaction")) return "createEntityReactionChildByKindAlias";
+        if (backendOperationId.equals("findParentsByEntityReactionId")) return "findEntityReactionParentsByKindAlias";
+        
+        // List Reactions
+        if (backendOperationId.equals("findListReactions")) return "findAllListReactionsByKindAlias";
+        if (backendOperationId.equals("createListReaction")) return "createListReactionByKindAlias";
+        if (backendOperationId.equals("findListReactionById")) return "findListReactionByIdByKindAlias";
+        if (backendOperationId.equals("replaceListReactionById")) return "replaceListReactionByIdByKindAlias";
+        if (backendOperationId.equals("updateListReactionById")) return "updateListReactionByIdByKindAlias";
+        if (backendOperationId.equals("deleteListReactionById")) return "deleteListReactionByIdByKindAlias";
+        if (backendOperationId.equals("countListReactions")) return "countListReactionsByKindAlias";
+        if (backendOperationId.equals("updateListReactions")) return "updateAllListReactionsByKindAlias";
+        if (backendOperationId.equals("findChildrenByListReactionId")) return "findListReactionChildrenByKindAlias";
+        if (backendOperationId.equals("createChildListReaction")) return "createListReactionChildByKindAlias";
+        if (backendOperationId.equals("findParentsByListReactionId")) return "findListReactionParentsByKindAlias";
+        
+        // Unknown - return original (will likely fail metadata lookup, which is correct behavior)
+        log.warn("No KindAlias route mapping found for backend operationId: {}", backendOperationId);
+        return backendOperationId;
     }
     
     /**
@@ -1394,12 +1742,18 @@ public class OasTransformationEngine {
             }
         }
         
-        // Remove tsType from description
+        // Remove tsType and schemaOptions from description
         String description = schema.getDescription();
-        if (description != null && description.contains("tsType:")) {
-            // Pattern: "(tsType: ..., schemaOptions: {...})" or just "(tsType: ...)"
-            // Remove the entire tsType block from description
-            String cleaned = description.replaceAll("(?s)\\(tsType:.*?\\)", "").trim();
+        if (description != null && (description.contains("tsType:") || description.contains("schemaOptions:"))) {
+            // Pattern 1: "(tsType: ..., schemaOptions: {...})" or just "(tsType: ...)"
+            // Pattern 2: "(schemaOptions: {...})" alone
+            // Pattern 3: Raw TypeScript type definitions like "Omit<Partial<Entity>,...>"
+            String cleaned = description
+                .replaceAll("(?s)\\(tsType:.*?\\)", "")  // Remove (tsType: ...)
+                .replaceAll("(?s)\\(schemaOptions:.*?\\)", "")  // Remove (schemaOptions: ...)
+                .replaceAll("(?s)Omit<[^>]+>", "")  // Remove Omit<...>
+                .replaceAll("(?s)Partial<[^>]+>", "")  // Remove Partial<...>
+                .trim();
             // If description becomes empty or only whitespace, set to null
             if (cleaned.isEmpty()) {
                 schema.setDescription(null);
@@ -2582,21 +2936,33 @@ public class OasTransformationEngine {
     }
     
     /**
-     * Checks if a tag is disabled by toggles configuration.
+     * Checks if a controller-level tag (like "generic", "entityReactions", "listReactions") is disabled.
+     * 
+     * IMPORTANT: This method is for controller-level tag filtering only.
+     * It only uses the tagsOff (blacklist) configuration, NOT tagsOn (whitelist).
+     * 
+     * The tagsOn/tagsOff whitelist/blacklist logic for route-level tags (like "write", "read-only")
+     * is handled separately by isRouteFilteredByTags(), which reads tags from route metadata.
+     * 
+     * This distinction exists because:
+     * - Controller-level tags (generic, entityReactions) control entire categories of routes
+     * - Route-level tags (write, read-only) control individual operations based on their purpose
+     * 
+     * When tagsOn=write, we still want to show all controllers (entities, relations, etc.),
+     * but only show the operations within them that have the "write" tag.
      */
     private boolean isTagDisabled(String tagName) {
         if (tagName == null || tagName.trim().isEmpty()) {
             return false;
         }
         
-        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
         List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
         
         tagName = tagName.trim();
         
-        if (!tagsOn.isEmpty()) {
-            return !tagsOn.contains(tagName);
-        } else if (!tagsOff.isEmpty()) {
+        // Only use blacklist mode for controller-level tags
+        // tagsOn is for route-level filtering, handled by isRouteFilteredByTags()
+        if (!tagsOff.isEmpty()) {
             return tagsOff.contains(tagName);
         }
         
@@ -2607,6 +2973,11 @@ public class OasTransformationEngine {
      * Checks if a route should be disabled based on its metadata tags.
      * This is a metadata-driven approach that reads tags from route configuration
      * and checks if any of those tags are disabled in toggles.
+     * 
+     * Mirrors the logic in CheckIfRouteEnabled filter:
+     * - If tagsOn is set (whitelist mode): routes are disabled unless they have at least one enabled tag
+     * - If tagsOff is set (blacklist mode): routes are disabled if they have any disabled tag
+     * - tagsOn takes precedence over tagsOff
      * 
      * @param controllerName The controller name (e.g., "entities", "lists", "relations")
      * @param hierarchyType The hierarchy type ("children" or "parents")
@@ -2633,23 +3004,45 @@ public class OasTransformationEngine {
             return false;
         }
 
-        // Get disabled tags (blacklist)
+        List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
         List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
-        if (tagsOff.isEmpty()) {
-            // Nothing is disabled by tags
+
+        // Whitelist mode (tagsOn): routes are enabled only if they have at least one enabled tag
+        // This takes precedence over blacklist mode
+        if (!tagsOn.isEmpty()) {
+            for (com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata : matchingRoutes) {
+                List<String> routeTags = metadata.getTags();
+                
+                // Route has no tags but tagsOn is set - route is disabled
+                if (routeTags == null || routeTags.isEmpty()) {
+                    log.debug("Route '{}' DISABLED - has no tags but tagsOn whitelist is active", metadata.getRouteId());
+                    return true;
+                }
+                
+                // Check if route has any tag from the whitelist
+                boolean hasEnabledTag = routeTags.stream().anyMatch(tagsOn::contains);
+                if (!hasEnabledTag) {
+                    log.debug("Route '{}' DISABLED - none of its tags {} are in whitelist {}", 
+                        metadata.getRouteId(), routeTags, tagsOn);
+                    return true;
+                }
+            }
+            log.debug("All {} {} routes have enabled tags", controllerName, hierarchyType);
             return false;
         }
 
-        // If any matching route has a disabled tag, consider it disabled
-        for (com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata : matchingRoutes) {
-            if (metadata.getTags() == null || metadata.getTags().isEmpty()) {
-                continue;
-            }
+        // Blacklist mode (tagsOff): routes are disabled if they have any disabled tag
+        if (!tagsOff.isEmpty()) {
+            for (com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata : matchingRoutes) {
+                if (metadata.getTags() == null || metadata.getTags().isEmpty()) {
+                    continue;
+                }
 
-            for (String tag : metadata.getTags()) {
-                if (tagsOff.contains(tag)) {
-                    log.debug("Route '{}' DISABLED - has disabled tag '{}'", metadata.getRouteId(), tag);
-                    return true;
+                for (String tag : metadata.getTags()) {
+                    if (tagsOff.contains(tag)) {
+                        log.debug("Route '{}' DISABLED - has disabled tag '{}'", metadata.getRouteId(), tag);
+                        return true;
+                    }
                 }
             }
         }
@@ -2681,10 +3074,91 @@ public class OasTransformationEngine {
     }
     
     /**
+     * Maps backend operationId to gateway route ID.
+     * Backend uses patterns like "findChildrenByEntityId" while gateway uses "findEntityChildren".
+     * 
+     * @param backendOperationId The operationId from backend OAS
+     * @return The matching gateway route ID, or the original operationId if no mapping found
+     */
+    private String mapBackendOperationIdToGatewayRouteId(String backendOperationId) {
+        if (backendOperationId == null) {
+            return null;
+        }
+        
+        // Direct match - most common case (e.g., "findEntities", "createEntity")
+        if (routeMetadataCache.containsKey(backendOperationId)) {
+            return backendOperationId;
+        }
+        
+        // Backend hierarchical operationId patterns:
+        // - findChildrenBy{Controller}Id  → find{Controller}Children
+        // - findParentsBy{Controller}Id   → find{Controller}Parents
+        // - createChild{Controller}       → createChild{Controller} (usually matches)
+        
+        // Handle findChildrenBy{X}Id -> find{X}Children pattern
+        if (backendOperationId.startsWith("findChildrenBy") && backendOperationId.endsWith("Id")) {
+            // Extract controller name: findChildrenByEntityId -> Entity
+            String controllerPart = backendOperationId.substring("findChildrenBy".length(), backendOperationId.length() - 2);
+            
+            // Try standard pattern first: findEntityChildren
+            String mappedId = "find" + controllerPart + "Children";
+            if (routeMetadataCache.containsKey(mappedId)) {
+                return mappedId;
+            }
+            
+            // Try reaction pattern: findChildrenByEntityReactionId -> findChildrenEntityReactionsByReactionId
+            // This is for entity-reactions and list-reactions controllers
+            if (controllerPart.endsWith("Reaction")) {
+                // findChildrenByEntityReactionId -> findChildrenEntityReactionsByReactionId
+                String reactionMappedId = "findChildren" + controllerPart + "sByReactionId";
+                if (routeMetadataCache.containsKey(reactionMappedId)) {
+                    return reactionMappedId;
+                }
+            }
+        }
+        
+        // Handle findParentsBy{X}Id -> find{X}Parents pattern
+        if (backendOperationId.startsWith("findParentsBy") && backendOperationId.endsWith("Id")) {
+            // Extract controller name: findParentsByEntityId -> Entity
+            String controllerPart = backendOperationId.substring("findParentsBy".length(), backendOperationId.length() - 2);
+            
+            // Try standard pattern first: findEntityParents
+            String mappedId = "find" + controllerPart + "Parents";
+            if (routeMetadataCache.containsKey(mappedId)) {
+                return mappedId;
+            }
+            
+            // Try reaction pattern: findParentsByEntityReactionId -> findParentsEntityReactionsByReactionId
+            if (controllerPart.endsWith("Reaction")) {
+                String reactionMappedId = "findParents" + controllerPart + "sByReactionId";
+                if (routeMetadataCache.containsKey(reactionMappedId)) {
+                    return reactionMappedId;
+                }
+            }
+        }
+        
+        // Handle createChild{X} -> createChild{X} (try different variations)
+        if (backendOperationId.startsWith("createChild")) {
+            // Already matches format, but try finding it
+            if (routeMetadataCache.containsKey(backendOperationId)) {
+                return backendOperationId;
+            }
+            // Try with "Entity" suffix variation: createChildEntity
+            String entitySuffix = backendOperationId + "Entity";
+            if (routeMetadataCache.containsKey(entitySuffix)) {
+                return entitySuffix;
+            }
+        }
+        
+        // No mapping found, return original
+        return backendOperationId;
+    }
+    
+    /**
      * Checks if a route should be filtered based on its tags matching disabled tags.
      * Uses route metadata from Spring Cloud Gateway configuration.
      * 
-     * @param routeId The route ID to check
+     * @param routeId The route ID to check (can be backend operationId)
      * @return true if the route has any disabled tags, false otherwise
      */
     private boolean isRouteFilteredByTags(String routeId) {
@@ -2692,24 +3166,51 @@ public class OasTransformationEngine {
             return false;
         }
         
-        // Get route metadata
-        com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata = 
-            routeMetadataCache.get(routeId);
-        
-        if (metadata == null || metadata.getTags() == null || metadata.getTags().isEmpty()) {
-            return false;
-        }
-        
-        // Check if route has any disabled tags
+        // Get tag filtering configuration
         List<String> tagsOn = normalizeList(togglesProperties.getTags().getOn());
         List<String> tagsOff = normalizeList(togglesProperties.getTags().getOff());
         
+        // If no tag filtering is configured, don't filter anything
+        if (tagsOn.isEmpty() && tagsOff.isEmpty()) {
+            return false;
+        }
+        
+        // Map backend operationId to gateway route ID
+        String mappedRouteId = mapBackendOperationIdToGatewayRouteId(routeId);
+        
+        // Get route metadata
+        com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata = 
+            routeMetadataCache.get(mappedRouteId);
+        
+        // DEBUG: Log routing decisions (using INFO to ensure visibility)
+        if (metadata != null) {
+            log.debug("Tag filter check: routeId={}, mappedRouteId={}, routeTags={}, tagsOn={}, tagsOff={}", 
+                routeId, mappedRouteId, metadata.getTags(), tagsOn, tagsOff);
+        } else {
+            log.debug("Tag filter check: routeId={}, mappedRouteId={}, metadata=NULL, tagsOn={}, tagsOff={}", 
+                routeId, mappedRouteId, tagsOn, tagsOff);
+        }
+        
+        // Handle case where metadata is not found or has no tags
+        if (metadata == null || metadata.getTags() == null || metadata.getTags().isEmpty()) {
+            // In whitelist mode (tagsOn), routes without tags should be filtered OUT
+            // In blacklist mode (tagsOff), routes without tags should NOT be filtered
+            boolean filtered = !tagsOn.isEmpty();
+            log.debug("Tag filter result: routeId={} -> filtered={} (no tags/metadata)", routeId, filtered);
+            return filtered;
+        }
+        
         if (!tagsOn.isEmpty()) {
             // Whitelist mode: route is filtered if it has NO enabled tags
-            return !metadata.hasAnyTag(tagsOn);
+            boolean hasTag = metadata.hasAnyTag(tagsOn);
+            boolean filtered = !hasTag;
+            log.debug("Tag filter result (whitelist): routeId={}, hasTag={}, filtered={}", routeId, hasTag, filtered);
+            return filtered;
         } else if (!tagsOff.isEmpty()) {
             // Blacklist mode: route is filtered if it has ANY disabled tags
-            return metadata.hasAnyTag(tagsOff);
+            boolean hasTag = metadata.hasAnyTag(tagsOff);
+            log.debug("Tag filter result (blacklist): routeId={}, hasTag={}, filtered={}", routeId, hasTag, hasTag);
+            return hasTag;
         }
         
         return false;
@@ -2746,22 +3247,61 @@ public class OasTransformationEngine {
         
         try {
             // 1. Add BASE CONTROLLER schemas first
-            // We fetch the GET (Resource) schema for the respective controllers to serve as the base "Entity", "List", etc. schemas.
-            // This ensures the base schemas include read-only fields like ID, createdAt, etc.
+            // Fetch POST, PATCH, and GET schemas separately for each controller to ensure
+            // correct schema variants: Resource uses GET, New uses POST, Patch uses PATCH
+            
+            // Entities controller
+            JsonNode entityPostBase = backendSchemaService.getBackendSchemaForController("entities", "POST");
+            JsonNode entityPatchBase = backendSchemaService.getBackendSchemaForController("entities", "PATCH");
             JsonNode entityResourceBase = backendSchemaService.getBackendSchemaForController("entities", "GET");
+            
+            // Lists controller
+            JsonNode listPostBase = backendSchemaService.getBackendSchemaForController("lists", "POST");
+            JsonNode listPatchBase = backendSchemaService.getBackendSchemaForController("lists", "PATCH");
             JsonNode listResourceBase = backendSchemaService.getBackendSchemaForController("lists", "GET");
+            
+            // Relations controller
+            JsonNode relationPostBase = backendSchemaService.getBackendSchemaForController("relations", "POST");
+            JsonNode relationPatchBase = backendSchemaService.getBackendSchemaForController("relations", "PATCH");
             JsonNode relationResourceBase = backendSchemaService.getBackendSchemaForController("relations", "GET");
+            
+            // EntityReactions controller
+            JsonNode entityReactionPostBase = backendSchemaService.getBackendSchemaForController("entityReactions", "POST");
+            JsonNode entityReactionPatchBase = backendSchemaService.getBackendSchemaForController("entityReactions", "PATCH");
             JsonNode entityReactionResourceBase = backendSchemaService.getBackendSchemaForController("entityReactions", "GET");
+            
+            // ListReactions controller
+            JsonNode listReactionPostBase = backendSchemaService.getBackendSchemaForController("listReactions", "POST");
+            JsonNode listReactionPatchBase = backendSchemaService.getBackendSchemaForController("listReactions", "PATCH");
             JsonNode listReactionResourceBase = backendSchemaService.getBackendSchemaForController("listReactions", "GET");
 
-            // Fallback to empty if fetch failed
+            // Fallback to empty ObjectNode if fetch failed
+            if (entityPostBase == null) entityPostBase = objectMapper.createObjectNode();
+            if (entityPatchBase == null) entityPatchBase = objectMapper.createObjectNode();
             if (entityResourceBase == null) entityResourceBase = objectMapper.createObjectNode();
+            
+            if (listPostBase == null) listPostBase = objectMapper.createObjectNode();
+            if (listPatchBase == null) listPatchBase = objectMapper.createObjectNode();
             if (listResourceBase == null) listResourceBase = objectMapper.createObjectNode();
+            
+            if (relationPostBase == null) relationPostBase = entityPostBase;
+            if (relationPatchBase == null) relationPatchBase = entityPatchBase;
             if (relationResourceBase == null) relationResourceBase = entityResourceBase;
+            
+            if (entityReactionPostBase == null) entityReactionPostBase = entityPostBase;
+            if (entityReactionPatchBase == null) entityReactionPatchBase = entityPatchBase;
             if (entityReactionResourceBase == null) entityReactionResourceBase = entityResourceBase;
+            
+            if (listReactionPostBase == null) listReactionPostBase = entityPostBase;
+            if (listReactionPatchBase == null) listReactionPatchBase = entityPatchBase;
             if (listReactionResourceBase == null) listReactionResourceBase = entityResourceBase;
 
-            addBaseControllerSchemas(schemas, entityResourceBase, listResourceBase, relationResourceBase, entityReactionResourceBase, listReactionResourceBase);
+            addBaseControllerSchemas(schemas, 
+                entityPostBase, entityPatchBase, entityResourceBase,
+                listPostBase, listPatchBase, listResourceBase,
+                relationPostBase, relationPatchBase, relationResourceBase,
+                entityReactionPostBase, entityReactionPatchBase, entityReactionResourceBase,
+                listReactionPostBase, listReactionPatchBase, listReactionResourceBase);
             
             // 2. Process each controller's aliases
             openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
@@ -2802,50 +3342,59 @@ public class OasTransformationEngine {
     /**
      * Adds base controller schemas (Entity, List, Relation, EntityReaction, ListReaction).
      * These are used for base controller paths like /api/v1/entities, /api/v1/relations.
+     * Each schema variant uses the appropriate backend schema:
+     * - Resource (GET response) for base schema (includes read-only fields)
+     * - New (POST request) for creation schema
+     * - Patch (PATCH request) for partial update schema
      */
     @SuppressWarnings({"rawtypes"})
-    private void addBaseControllerSchemas(Map<String, Schema> schemas, JsonNode entityBase, JsonNode listBase, 
-                                          JsonNode relationBase, JsonNode entityReactionBase, JsonNode listReactionBase) {
-        log.debug("addBaseControllerSchemas invoked with specific bases");
+    private void addBaseControllerSchemas(Map<String, Schema> schemas, 
+            JsonNode entityPostBase, JsonNode entityPatchBase, JsonNode entityResourceBase,
+            JsonNode listPostBase, JsonNode listPatchBase, JsonNode listResourceBase,
+            JsonNode relationPostBase, JsonNode relationPatchBase, JsonNode relationResourceBase,
+            JsonNode entityReactionPostBase, JsonNode entityReactionPatchBase, JsonNode entityReactionResourceBase,
+            JsonNode listReactionPostBase, JsonNode listReactionPatchBase, JsonNode listReactionResourceBase) {
+        log.debug("addBaseControllerSchemas invoked with POST/PATCH/GET bases");
         
-        // Define base controller schema mappings: schemaName -> (baseNode, controllerName)
+        // Define base controller schema mappings: schemaName -> (postBase, patchBase, resourceBase, controllerName)
         Map<String, Object[]> baseControllerSchemas = new LinkedHashMap<>();
-        baseControllerSchemas.put("Entity", new Object[]{entityBase, "entities"});
-        baseControllerSchemas.put("List", new Object[]{listBase, "lists"});
-        baseControllerSchemas.put("Relation", new Object[]{relationBase, "relations"});
-        baseControllerSchemas.put("EntityReaction", new Object[]{entityReactionBase, "entityReactions"});
-        baseControllerSchemas.put("ListReaction", new Object[]{listReactionBase, "listReactions"});
+        baseControllerSchemas.put("Entity", new Object[]{entityPostBase, entityPatchBase, entityResourceBase, "entities"});
+        baseControllerSchemas.put("List", new Object[]{listPostBase, listPatchBase, listResourceBase, "lists"});
+        baseControllerSchemas.put("Relation", new Object[]{relationPostBase, relationPatchBase, relationResourceBase, "relations"});
+        baseControllerSchemas.put("EntityReaction", new Object[]{entityReactionPostBase, entityReactionPatchBase, entityReactionResourceBase, "entityReactions"});
+        baseControllerSchemas.put("ListReaction", new Object[]{listReactionPostBase, listReactionPatchBase, listReactionResourceBase, "listReactions"});
         
         baseControllerSchemas.forEach((schemaName, config) -> {
-            JsonNode baseNode = (JsonNode) config[0];
-            String controllerName = (String) config[1];
+            JsonNode postBase = (JsonNode) config[0];
+            JsonNode patchBase = (JsonNode) config[1];
+            JsonNode resourceBase = (JsonNode) config[2];
+            String controllerName = (String) config[3];
             
             try {
-                // Add base schema if it doesn't exist
+                // Add base schema (Resource/GET) if it doesn't exist - includes read-only fields
                 if (!schemas.containsKey(schemaName)) {
-                    // Create schema from base (no alias-specific properties)
-                    Schema schema = createSchemaFromJsonNode(baseNode, controllerName);
+                    Schema schema = createSchemaFromJsonNode(resourceBase, controllerName);
                     schemas.put(schemaName, schema);
-                    log.debug("Added base controller schema: {} (recordType: {})", schemaName, controllerName);
+                    log.debug("Added base controller schema: {} from GET (recordType: {})", schemaName, controllerName);
                 }
                 
-                // Always add "New" variant for POST operations if it doesn't exist
+                // Add "New" variant for POST operations using POST base schema
                 String newSchemaName = "New" + schemaName;
                 if (!schemas.containsKey(newSchemaName)) {
-                    Schema newSchema = createSchemaFromJsonNode(baseNode, controllerName);
-                    newSchema.setRequired(null); // No required for creation
+                    Schema newSchema = createSchemaFromJsonNode(postBase, controllerName);
+                    newSchema.setRequired(null); // No required for creation (gateway adds defaults)
                     schemas.put(newSchemaName, newSchema);
-                    log.debug("Added New variant schema: {} (recordType: {})", newSchemaName, controllerName);
+                    log.debug("Added New variant schema: {} from POST (recordType: {})", newSchemaName, controllerName);
                 }
                 
-                // Always add "Patch" variant for PATCH operations if it doesn't exist
+                // Add "Patch" variant for PATCH operations using PATCH base schema
                 // PATCH allows partial updates, so required fields must be removed
                 String patchSchemaName = "Patch" + schemaName;
                 if (!schemas.containsKey(patchSchemaName)) {
-                    Schema patchSchema = createSchemaFromJsonNode(baseNode, controllerName);
+                    Schema patchSchema = createSchemaFromJsonNode(patchBase, controllerName);
                     patchSchema.setRequired(null); // No required for partial update
                     schemas.put(patchSchemaName, patchSchema);
-                    log.debug("Added Patch variant schema: {} (recordType: {})", patchSchemaName, controllerName);
+                    log.debug("Added Patch variant schema: {} from PATCH (recordType: {})", patchSchemaName, controllerName);
                 }
             } catch (Exception e) {
                 log.warn("Failed to create base controller schema '{}': {}", schemaName, e.getMessage());
@@ -2888,6 +3437,9 @@ public class OasTransformationEngine {
             schema.setExtensions(new LinkedHashMap<>());
         }
         schema.getExtensions().put("x-record-type", controllerName);
+        
+        // Clean up any tsType/schemaOptions artifacts from the schema
+        cleanupSchema(schema);
         
         return schema;
     }
@@ -3833,10 +4385,12 @@ public class OasTransformationEngine {
             }
         }
         
-        // Add 422 Unprocessable Entity (from backend) - ONLY for methods with request bodies
-        if (hasRequestBody && !responses.containsKey("422") && backendErrors.containsKey("422")) {
+        // Add 422 Unprocessable Entity - ONLY for methods with request bodies
+        // Gateway validates all request bodies, so 422 is always possible for POST/PUT/PATCH
+        if (hasRequestBody && !responses.containsKey("422")) {
             ApiResponse unprocessable = new ApiResponse();
             unprocessable.setDescription("Unprocessable Entity - Semantic validation failed");
+            unprocessable.setContent(createJsonContent("#/components/schemas/GatewayValidationError"));
             responses.addApiResponse("422", unprocessable);
         }
         

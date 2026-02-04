@@ -73,7 +73,7 @@ public class RouteMetadataService {
                 .build();
         }
         
-        // Extract tags
+        // Extract tags - handle both List and Map (YAML parsing sometimes creates LinkedHashMap)
         List<String> tags = new ArrayList<>();
         Object tagsObj = metadata.get("tags");
         if (tagsObj instanceof List) {
@@ -82,6 +82,14 @@ public class RouteMetadataService {
                     tags.add(tag.toString());
                 }
             }
+        } else if (tagsObj instanceof java.util.Map) {
+            // Handle LinkedHashMap with numeric keys (YAML parsing sometimes does this)
+            java.util.Map<?, ?> tagsMap = (java.util.Map<?, ?>) tagsObj;
+            tagsMap.values().forEach(tag -> {
+                if (tag != null) {
+                    tags.add(tag.toString());
+                }
+            });
         }
         
         // Extract controller name
