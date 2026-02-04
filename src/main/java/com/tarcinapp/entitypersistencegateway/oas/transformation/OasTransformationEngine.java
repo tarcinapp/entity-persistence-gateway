@@ -549,10 +549,13 @@ public class OasTransformationEngine {
             PathItem collectionPathItem = rawPaths.get(backendPrefix);
             if (collectionPathItem != null) {
                 PathItem transformed = transformBaseControllerPathItem(collectionPathItem, controllerName, tagName, false);
-                String fullPath = virtualPathPrefix;
-                if (!virtualizedPaths.containsKey(fullPath)) {
-                    virtualizedPaths.addPathItem(fullPath, transformed);
-                    log.debug("Added base controller route: {}", fullPath);
+                // Only add if at least one operation remains after filtering
+                if (hasAnyOperation(transformed)) {
+                    String fullPath = virtualPathPrefix;
+                    if (!virtualizedPaths.containsKey(fullPath)) {
+                        virtualizedPaths.addPathItem(fullPath, transformed);
+                        log.debug("Added base controller route: {}", fullPath);
+                    }
                 }
             }
             
@@ -560,10 +563,13 @@ public class OasTransformationEngine {
             PathItem countPathItem = rawPaths.get(backendPrefix + "/count");
             if (countPathItem != null) {
                 PathItem transformed = transformBaseControllerPathItem(countPathItem, controllerName, tagName, false);
-                String fullPath = virtualPathPrefix + "/count";
-                if (!virtualizedPaths.containsKey(fullPath)) {
-                    virtualizedPaths.addPathItem(fullPath, transformed);
-                    log.debug("Added base controller route: {}", fullPath);
+                // Only add if at least one operation remains after filtering
+                if (hasAnyOperation(transformed)) {
+                    String fullPath = virtualPathPrefix + "/count";
+                    if (!virtualizedPaths.containsKey(fullPath)) {
+                        virtualizedPaths.addPathItem(fullPath, transformed);
+                        log.debug("Added base controller route: {}", fullPath);
+                    }
                 }
             }
             
@@ -571,10 +577,13 @@ public class OasTransformationEngine {
             PathItem instancePathItem = rawPaths.get(backendPrefix + "/{id}");
             if (instancePathItem != null) {
                 PathItem transformed = transformBaseControllerPathItem(instancePathItem, controllerName, tagName, true);
-                String fullPath = virtualPathPrefix + "/{id}";
-                if (!virtualizedPaths.containsKey(fullPath)) {
-                    virtualizedPaths.addPathItem(fullPath, transformed);
-                    log.debug("Added base controller route: {}", fullPath);
+                // Only add if at least one operation remains after filtering
+                if (hasAnyOperation(transformed)) {
+                    String fullPath = virtualPathPrefix + "/{id}";
+                    if (!virtualizedPaths.containsKey(fullPath)) {
+                        virtualizedPaths.addPathItem(fullPath, transformed);
+                        log.debug("Added base controller route: {}", fullPath);
+                    }
                 }
             }
             
@@ -3076,6 +3085,7 @@ public class OasTransformationEngine {
     /**
      * Maps backend operationId to gateway route ID.
      * Backend uses patterns like "findChildrenByEntityId" while gateway uses "findEntityChildren".
+     * Also handles bulk update operations: "updateEntities" -> "updateAllEntities".
      * 
      * @param backendOperationId The operationId from backend OAS
      * @return The matching gateway route ID, or the original operationId if no mapping found
@@ -3088,6 +3098,25 @@ public class OasTransformationEngine {
         // Direct match - most common case (e.g., "findEntities", "createEntity")
         if (routeMetadataCache.containsKey(backendOperationId)) {
             return backendOperationId;
+        }
+        
+        // CRITICAL: Map bulk update operations
+        // Backend uses "updateEntities" but gateway route is "updateAllEntities"
+        // This applies to all controllers: entities, lists, relations, entityReactions, listReactions
+        if (backendOperationId.equals("updateEntities")) {
+            return "updateAllEntities";
+        }
+        if (backendOperationId.equals("updateLists")) {
+            return "updateAllLists";
+        }
+        if (backendOperationId.equals("updateRelations")) {
+            return "updateAllRelations";
+        }
+        if (backendOperationId.equals("updateEntityReactions")) {
+            return "updateAllEntityReactions";
+        }
+        if (backendOperationId.equals("updateListReactions")) {
+            return "updateAllListReactions";
         }
         
         // Backend hierarchical operationId patterns:
@@ -3137,17 +3166,19 @@ public class OasTransformationEngine {
             }
         }
         
-        // Handle createChild{X} -> createChild{X} (try different variations)
-        if (backendOperationId.startsWith("createChild")) {
-            // Already matches format, but try finding it
-            if (routeMetadataCache.containsKey(backendOperationId)) {
-                return backendOperationId;
-            }
-            // Try with "Entity" suffix variation: createChildEntity
-            String entitySuffix = backendOperationId + "Entity";
-            if (routeMetadataCache.containsKey(entitySuffix)) {
-                return entitySuffix;
-            }
+        // Handle createChild{X} -> create{X}Child pattern
+        // Backend: createChildEntity -> Gateway: createEntityChild
+        if (backendOperationId.equals("createChildEntity")) {
+            return "createEntityChild";
+        }
+        if (backendOperationId.equals("createChildList")) {
+            return "createListChild";
+        }
+        if (backendOperationId.equals("createChildEntityReaction")) {
+            return "createChildEntityReaction";  // Same name for reactions
+        }
+        if (backendOperationId.equals("createChildListReaction")) {
+            return "createChildListReaction";  // Same name for reactions
         }
         
         // No mapping found, return original
