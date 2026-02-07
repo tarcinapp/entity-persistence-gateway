@@ -1428,6 +1428,12 @@ public class OasTransformationEngine {
         String originalOpId = original.getOperationId();
         String routeId = inferRouteId(originalOpId, controllerName);
         
+        // Store original route ID as extension for later schema binding
+        // This allows us to map from aliased operation back to route-specific schemas
+        if (routeId != null) {
+            transformed.addExtension("x-original-route-id", routeId);
+        }
+        
         // Check for route-specific configuration
         RouteConfig routeConfig = aliasConfig.getRoutes() != null 
             ? aliasConfig.getRoutes().get(routeId) 
@@ -3742,9 +3748,96 @@ public class OasTransformationEngine {
             
             log.debug("Added merged domain schemas: {}, New{}, Patch{} (from kind: {})", 
                 schemaName, schemaName, schemaName, aliasConfig.getKind());
+            
+            // 4. Route-specific schemas - override kind-level for specific operations
+            // If a route has a custom schema, create a route-specific variant
+            addRouteSpecificSchemas(schemas, aliasConfig, schemaName, 
+                effectivePostBase, effectivePatchBase, effectiveResourceBase, controllerName);
         } catch (Exception e) {
             log.warn("Failed to merge schema for kind '{}': {}", 
                 aliasConfig.getKind(), e.getMessage());
+        }
+    }
+    
+    /**
+     * Creates route-specific schemas when routes have custom schema overrides.
+     * 
+     * <p>When a route (e.g., createEntity) has a schema override in its configuration,
+     * this creates a route-specific schema variant that will be used instead of
+     * the kind-level schema for that specific operation.</p>
+     * 
+     * <p>Schema naming convention: {SchemaName}{RouteId}
+     * Examples: NewBookCreateEntity, PatchBookUpdateEntityById</p>
+     * 
+     * @param schemas The schemas map to add to
+     * @param aliasConfig The alias configuration with optional route overrides
+     * @param schemaName The base schema name (e.g., "Book")
+     * @param effectivePostBase Base POST schema from backend
+     * @param effectivePatchBase Base PATCH schema from backend
+     * @param effectiveResourceBase Base GET/Resource schema from backend
+     * @param controllerName The controller name for x-record-type
+     */
+    @SuppressWarnings("rawtypes")
+    private void addRouteSpecificSchemas(Map<String, Schema> schemas, 
+            AliasConfig aliasConfig, 
+            String schemaName,
+            JsonNode effectivePostBase,
+            JsonNode effectivePatchBase,
+            JsonNode effectiveResourceBase,
+            String controllerName) {
+        
+        if (aliasConfig.getRoutes() == null || aliasConfig.getRoutes().isEmpty()) {
+            return;
+        }
+        
+        for (Map.Entry<String, RouteConfig> routeEntry : aliasConfig.getRoutes().entrySet()) {
+            String routeId = routeEntry.getKey();
+            RouteConfig routeConfig = routeEntry.getValue();
+            
+            // Skip routes without custom schemas
+            if (routeConfig.getSchema() == null || routeConfig.getSchema().isBlank()) {
+                continue;
+            }
+            
+            try {
+                // Determine which schema variant to create based on route type
+                // Routes that create use POST base: createEntity, createList, etc.
+                // Routes that update use PATCH base: updateEntityById, updateListById, etc.
+                // Routes that replace use Resource base: replaceEntityById, replaceListById, etc.
+                
+                String routeIdLower = routeId.toLowerCase();
+                String routeSchemaName;
+                Schema routeSchema;
+                
+                if (routeIdLower.contains("create")) {
+                    // POST variant: New{SchemaName}{RouteId}
+                    routeSchemaName = "New" + schemaName + capitalizeFirst(routeId);
+                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePostBase, controllerName);
+                    // Keep required from route schema (unlike kind-level which removes required)
+                    log.debug("Created route-specific POST schema: {} (from route: {})", routeSchemaName, routeId);
+                } else if (routeIdLower.contains("update") || routeIdLower.contains("patch")) {
+                    // PATCH variant: Patch{SchemaName}{RouteId}
+                    routeSchemaName = "Patch" + schemaName + capitalizeFirst(routeId);
+                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePatchBase, controllerName);
+                    routeSchema.setRequired(null); // No required for partial update
+                    log.debug("Created route-specific PATCH schema: {} (from route: {})", routeSchemaName, routeId);
+                } else if (routeIdLower.contains("replace") || routeIdLower.contains("put")) {
+                    // PUT variant: {SchemaName}{RouteId}
+                    routeSchemaName = schemaName + capitalizeFirst(routeId);
+                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    log.debug("Created route-specific PUT schema: {} (from route: {})", routeSchemaName, routeId);
+                } else {
+                    // Default to resource variant
+                    routeSchemaName = schemaName + capitalizeFirst(routeId);
+                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    log.debug("Created route-specific schema: {} (from route: {})", routeSchemaName, routeId);
+                }
+                
+                schemas.put(routeSchemaName, routeSchema);
+                
+            } catch (Exception e) {
+                log.warn("Failed to create route-specific schema for route '{}': {}", routeId, e.getMessage());
+            }
         }
     }
     
@@ -3868,11 +3961,13 @@ public class OasTransformationEngine {
             
             // === BIND REQUEST BODIES ===
             
-            // Bind POST request body → NewXxx schema
+            // Bind POST request body → route-specific schema or fall back to NewXxx schema
             if (pathItem.getPost() != null) {
-                if (bindOperationRequestBody(pathItem.getPost(), "New" + schemaName, openApi)) {
+                String postSchemaName = resolveRequestBodySchemaName(
+                    pathItem.getPost(), schemaName, "New", openApi);
+                if (bindOperationRequestBody(pathItem.getPost(), postSchemaName, openApi)) {
                     requestBindCount++;
-                    log.debug("Bound POST {} requestBody → New{}", path, schemaName);
+                    log.debug("Bound POST {} requestBody → {}", path, postSchemaName);
                 }
                 // Bind POST 200/201 response → Xxx schema (single object)
                 if (bindOperationResponse(pathItem.getPost(), schemaName, openApi, false)) {
@@ -3881,11 +3976,13 @@ public class OasTransformationEngine {
                 }
             }
             
-            // Bind PUT request body → Xxx schema (full replacement)
+            // Bind PUT request body → route-specific schema or fall back to Xxx schema
             if (pathItem.getPut() != null) {
-                if (bindOperationRequestBody(pathItem.getPut(), schemaName, openApi)) {
+                String putSchemaName = resolveRequestBodySchemaName(
+                    pathItem.getPut(), schemaName, "", openApi);
+                if (bindOperationRequestBody(pathItem.getPut(), putSchemaName, openApi)) {
                     requestBindCount++;
-                    log.debug("Bound PUT {} requestBody → {}", path, schemaName);
+                    log.debug("Bound PUT {} requestBody → {}", path, putSchemaName);
                 }
                 // Bind PUT response → Xxx schema
                 if (bindOperationResponse(pathItem.getPut(), schemaName, openApi, false)) {
@@ -3894,11 +3991,13 @@ public class OasTransformationEngine {
                 }
             }
             
-            // Bind PATCH request body → PatchXxx schema (partial update - no required fields)
+            // Bind PATCH request body → route-specific schema or fall back to PatchXxx schema
             if (pathItem.getPatch() != null) {
-                if (bindOperationRequestBody(pathItem.getPatch(), "Patch" + schemaName, openApi)) {
+                String patchSchemaName = resolveRequestBodySchemaName(
+                    pathItem.getPatch(), schemaName, "Patch", openApi);
+                if (bindOperationRequestBody(pathItem.getPatch(), patchSchemaName, openApi)) {
                     requestBindCount++;
-                    log.debug("Bound PATCH {} requestBody → Patch{}", path, schemaName);
+                    log.debug("Bound PATCH {} requestBody → {}", path, patchSchemaName);
                 }
                 // Bind PATCH response → Xxx schema (returns full object)
                 if (bindOperationResponse(pathItem.getPatch(), schemaName, openApi, false)) {
@@ -3931,6 +4030,63 @@ public class OasTransformationEngine {
         
         log.info("Bound {} request bodies and {} responses to domain-specific schemas", 
             requestBindCount, responseBindCount);
+    }
+    
+    /**
+     * Resolves the appropriate request body schema name for an operation.
+     * Checks if a route-specific schema exists (e.g., NewBookCreateEntity) and uses it,
+     * otherwise falls back to the kind-level schema (e.g., NewBook).
+     * 
+     * @param operation The operation to resolve schema for
+     * @param schemaName The base schema name (e.g., "Book")
+     * @param prefix The prefix for the schema (e.g., "New" for POST, "Patch" for PATCH, "" for PUT)
+     * @param openApi The OpenAPI spec to check for schemas
+     * @return The resolved schema name to use
+     */
+    private String resolveRequestBodySchemaName(Operation operation, String schemaName, String prefix, OpenAPI openApi) {
+        String kindLevelSchemaName = prefix + schemaName;
+        
+        if (operation == null) {
+            return kindLevelSchemaName;
+        }
+        
+        // Get original route ID from extension - this maps back to the route config key
+        // e.g., for operation 'createBook', the original route ID is 'createEntity'
+        String routeId = null;
+        if (operation.getExtensions() != null) {
+            Object ext = operation.getExtensions().get("x-original-route-id");
+            if (ext != null) {
+                routeId = ext.toString();
+            }
+        }
+        
+        if (routeId == null || routeId.isEmpty()) {
+            // Fall back to operation ID if no extension
+            routeId = operation.getOperationId();
+        }
+        
+        if (routeId == null || routeId.isEmpty()) {
+            return kindLevelSchemaName;
+        }
+        
+        // Build route-specific schema name: {prefix}{schemaName}{CapitalizedRouteId}
+        // e.g., NewBookCreateEntity, PatchBookUpdateEntityById, BookReplaceEntityById
+        String capitalizedRouteId = Character.toUpperCase(routeId.charAt(0)) + routeId.substring(1);
+        String routeSpecificSchemaName = prefix + schemaName + capitalizedRouteId;
+        
+        // Check if route-specific schema exists
+        if (openApi.getComponents() != null && 
+            openApi.getComponents().getSchemas() != null &&
+            openApi.getComponents().getSchemas().containsKey(routeSpecificSchemaName)) {
+            log.debug("Using route-specific schema '{}' for operation '{}' (routeId: {})", 
+                routeSpecificSchemaName, operation.getOperationId(), routeId);
+            return routeSpecificSchemaName;
+        }
+        
+        // Fall back to kind-level schema
+        log.debug("Route-specific schema '{}' not found, using kind-level schema '{}' for operation '{}' (routeId: {})",
+            routeSpecificSchemaName, kindLevelSchemaName, operation.getOperationId(), routeId);
+        return kindLevelSchemaName;
     }
     
     /**
