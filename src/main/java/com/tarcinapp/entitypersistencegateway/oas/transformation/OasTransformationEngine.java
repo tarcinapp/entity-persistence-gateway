@@ -4011,9 +4011,12 @@ public class OasTransformationEngine {
             if (pathItem.getGet() != null && !isCountPath) {
                 // GET on collection → array of Xxx schema
                 // GET on instance → single Xxx schema
-                if (bindOperationResponse(pathItem.getGet(), schemaName, openApi, isCollectionPath)) {
+                // Check for route-specific response schema (e.g., BookFindEntityById)
+                String getResponseSchemaName = resolveResponseSchemaName(
+                    pathItem.getGet(), schemaName, "", openApi);
+                if (bindOperationResponse(pathItem.getGet(), getResponseSchemaName, openApi, isCollectionPath)) {
                     responseBindCount++;
-                    log.debug("Bound GET {} response → {}{}",  path, isCollectionPath ? "array of " : "", schemaName);
+                    log.debug("Bound GET {} response → {}{}",  path, isCollectionPath ? "array of " : "", getResponseSchemaName);
                 }
             }
             
@@ -4085,6 +4088,67 @@ public class OasTransformationEngine {
         
         // Fall back to kind-level schema
         log.debug("Route-specific schema '{}' not found, using kind-level schema '{}' for operation '{}' (routeId: {})",
+            routeSpecificSchemaName, kindLevelSchemaName, operation.getOperationId(), routeId);
+        return kindLevelSchemaName;
+    }
+    
+    /**
+     * Resolves the appropriate response schema name for an operation.
+     * Checks if a route-specific schema exists (e.g., BookFindEntityById) and uses it,
+     * otherwise falls back to the kind-level schema (e.g., Book).
+     * 
+     * <p>This is similar to resolveRequestBodySchemaName but used for response schemas,
+     * particularly for GET operations where route-level schema overrides should affect
+     * the response body.</p>
+     * 
+     * @param operation The operation to resolve schema for
+     * @param schemaName The base schema name (e.g., "Book")
+     * @param prefix The prefix for the schema (usually "" for responses)
+     * @param openApi The OpenAPI spec to check for schemas
+     * @return The resolved schema name to use
+     */
+    private String resolveResponseSchemaName(Operation operation, String schemaName, String prefix, OpenAPI openApi) {
+        String kindLevelSchemaName = prefix.isEmpty() ? schemaName : prefix + schemaName;
+        
+        if (operation == null) {
+            return kindLevelSchemaName;
+        }
+        
+        // Get original route ID from extension - this maps back to the route config key
+        // e.g., for operation 'getBook', the original route ID is 'findEntityById'
+        String routeId = null;
+        if (operation.getExtensions() != null) {
+            Object ext = operation.getExtensions().get("x-original-route-id");
+            if (ext != null) {
+                routeId = ext.toString();
+            }
+        }
+        
+        if (routeId == null || routeId.isEmpty()) {
+            // Fall back to operation ID if no extension
+            routeId = operation.getOperationId();
+        }
+        
+        if (routeId == null || routeId.isEmpty()) {
+            return kindLevelSchemaName;
+        }
+        
+        // Build route-specific schema name: {prefix}{schemaName}{CapitalizedRouteId}
+        // e.g., BookFindEntityById, BookFindEntities
+        String capitalizedRouteId = Character.toUpperCase(routeId.charAt(0)) + routeId.substring(1);
+        String routeSpecificSchemaName = (prefix.isEmpty() ? "" : prefix) + schemaName + capitalizedRouteId;
+        
+        // Check if route-specific schema exists
+        if (openApi.getComponents() != null && 
+            openApi.getComponents().getSchemas() != null &&
+            openApi.getComponents().getSchemas().containsKey(routeSpecificSchemaName)) {
+            log.debug("Using route-specific response schema '{}' for operation '{}' (routeId: {})", 
+                routeSpecificSchemaName, operation.getOperationId(), routeId);
+            return routeSpecificSchemaName;
+        }
+        
+        // Fall back to kind-level schema
+        log.debug("Route-specific response schema '{}' not found, using kind-level schema '{}' for operation '{}' (routeId: {})",
             routeSpecificSchemaName, kindLevelSchemaName, operation.getOperationId(), routeId);
         return kindLevelSchemaName;
     }
