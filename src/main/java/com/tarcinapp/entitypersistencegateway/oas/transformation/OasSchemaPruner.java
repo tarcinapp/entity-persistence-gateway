@@ -280,6 +280,12 @@ public class OasSchemaPruner {
     /**
      * Analyzes the OpenAPI paths to determine which schemas are used by which operations.
      * 
+     * <p><b>CRITICAL:</b> Response schemas ALWAYS use FIND permissions because responses show
+     * what the user can READ, regardless of whether they came from GET, POST, or PATCH.</p>
+     * 
+     * <p>Request body schemas use their specific operation permissions (CREATE for POST,
+     * UPDATE for PATCH/PUT) because those define what the user can WRITE.</p>
+     * 
      * @param openApi The OpenAPI spec to analyze
      * @return Map of schema name to set of operations that use it
      */
@@ -293,28 +299,33 @@ public class OasSchemaPruner {
         for (Map.Entry<String, PathItem> pathEntry : openApi.getPaths().entrySet()) {
             PathItem pathItem = pathEntry.getValue();
             
-            // GET operations use FIND permissions (response schemas)
+            // GET operations: response schemas use FIND permissions
             if (pathItem.getGet() != null) {
                 collectResponseSchemas(pathItem.getGet().getResponses(), usage, Operation.FIND);
             }
             
-            // POST operations use CREATE permissions (request body schemas)
+            // POST operations: request body uses CREATE, response uses FIND (what user can see)
             if (pathItem.getPost() != null) {
                 collectRequestBodySchemas(pathItem.getPost().getRequestBody(), usage, Operation.CREATE);
-                collectResponseSchemas(pathItem.getPost().getResponses(), usage, Operation.CREATE);
+                // Response schemas ALWAYS use FIND - responses show what user can READ
+                collectResponseSchemas(pathItem.getPost().getResponses(), usage, Operation.FIND);
             }
             
-            // PATCH/PUT operations use UPDATE permissions (request body schemas)
+            // PATCH operations: request body uses UPDATE, response uses FIND (what user can see)
             if (pathItem.getPatch() != null) {
                 collectRequestBodySchemas(pathItem.getPatch().getRequestBody(), usage, Operation.UPDATE);
-                collectResponseSchemas(pathItem.getPatch().getResponses(), usage, Operation.UPDATE);
-            }
-            if (pathItem.getPut() != null) {
-                collectRequestBodySchemas(pathItem.getPut().getRequestBody(), usage, Operation.UPDATE);
-                collectResponseSchemas(pathItem.getPut().getResponses(), usage, Operation.UPDATE);
+                // Response schemas ALWAYS use FIND - responses show what user can READ
+                collectResponseSchemas(pathItem.getPatch().getResponses(), usage, Operation.FIND);
             }
             
-            // DELETE operations - also mark any schemas used
+            // PUT operations: request body uses UPDATE, response uses FIND (what user can see)
+            if (pathItem.getPut() != null) {
+                collectRequestBodySchemas(pathItem.getPut().getRequestBody(), usage, Operation.UPDATE);
+                // Response schemas ALWAYS use FIND - responses show what user can READ
+                collectResponseSchemas(pathItem.getPut().getResponses(), usage, Operation.FIND);
+            }
+            
+            // DELETE operations: any response schemas use FIND
             if (pathItem.getDelete() != null) {
                 collectResponseSchemas(pathItem.getDelete().getResponses(), usage, Operation.FIND);
             }
@@ -399,35 +410,59 @@ public class OasSchemaPruner {
     /**
      * Computes the set of forbidden fields for a schema based on its operation usage.
      * 
-     * <p>If a schema is used by multiple operations, we use the INTERSECTION of allowed fields
-     * (or UNION of forbidden fields) to ensure consistency.</p>
+     * <p><b>CRITICAL CHANGE:</b> Now uses INTERSECTION of forbidden fields (only remove fields
+     * forbidden in ALL operations using this schema), not UNION.</p>
+     * 
+     * <p>This ensures that if a schema like 'Entity' is used by FIND operation (GET response),
+     * we only prune fields forbidden for FIND. If a field is allowed for FIND but forbidden
+     * for CREATE, it should still appear in the Entity response schema.</p>
      */
     private Set<String> computeForbiddenFieldsForSchema(String schemaName, String recordType, 
                                                          Set<Operation> operations, 
                                                          MultiOperationFieldPermissions permissions) {
         if (operations.isEmpty()) {
-            // Schema not directly referenced by any path, use the most restrictive (union all)
-            log.trace("Schema '{}' not directly referenced, using union of all operation forbidden fields", schemaName);
-            Set<String> allForbidden = new HashSet<>();
-            for (Operation op : Operation.values()) {
-                FieldPermissionContext ctx = permissions.getPermissionsForOperation(op);
-                allForbidden.addAll(ctx.getAllForbiddenFields(recordType));
-            }
-            return allForbidden;
+            // Schema not directly referenced by any path - this shouldn't happen normally
+            // Use FIND permissions as default (most common use case for unreferenced schemas)
+            log.debug("Schema '{}' not directly referenced, using FIND operation forbidden fields as default", schemaName);
+            FieldPermissionContext ctx = permissions.getPermissionsForOperation(Operation.FIND);
+            return ctx.getAllForbiddenFields(recordType);
         }
         
-        // Use union of forbidden fields from all operations this schema is used in
-        Set<String> forbidden = new HashSet<>();
+        // If only one operation uses this schema, use that operation's forbidden fields directly
+        if (operations.size() == 1) {
+            Operation op = operations.iterator().next();
+            FieldPermissionContext ctx = permissions.getPermissionsForOperation(op);
+            Set<String> forbidden = ctx.getAllForbiddenFields(recordType);
+            log.debug("Schema '{}' used only by {}: {} forbidden fields", schemaName, op, forbidden.size());
+            return forbidden;
+        }
+        
+        // Multiple operations: use INTERSECTION of forbidden fields
+        // A field is only pruned if it is forbidden in ALL operations using this schema
+        Set<String> intersection = null;
         for (Operation op : operations) {
             FieldPermissionContext ctx = permissions.getPermissionsForOperation(op);
             Set<String> opForbidden = ctx.getAllForbiddenFields(recordType);
-            forbidden.addAll(opForbidden);
             
             log.trace("Schema '{}' used in {}: {} forbidden fields from OPA", 
                 schemaName, op, opForbidden.size());
+            
+            if (intersection == null) {
+                intersection = new HashSet<>(opForbidden);
+            } else {
+                // Keep only fields that are forbidden in BOTH operations
+                intersection.retainAll(opForbidden);
+            }
         }
         
-        return forbidden;
+        if (intersection == null) {
+            intersection = Collections.emptySet();
+        }
+        
+        log.debug("Schema '{}' used by {}: intersection has {} forbidden fields", 
+            schemaName, operations, intersection.size());
+        
+        return intersection;
     }
     
     /**

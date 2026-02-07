@@ -157,8 +157,22 @@ public class BackendSchemaService {
 
     private void processAndCacheSchema(OpenAPI openApi, Schema<?> schema, String controllerName, String method) {
         try {
+            // Log original schema ref
+            log.debug("Processing schema for {}:{} - original $ref: {}", 
+                    controllerName, method, schema.get$ref());
+            
             // Resolve $ref if present to inline the definition
             Schema<?> resolvedSchema = resolveSchema(openApi, schema);
+            
+            // Log resolved schema properties count
+            if (resolvedSchema.getProperties() != null) {
+                log.info("Cached schema for {}:{} with {} properties: {}", 
+                        controllerName, method, 
+                        resolvedSchema.getProperties().size(),
+                        resolvedSchema.getProperties().keySet());
+            } else {
+                log.warn("Cached schema for {}:{} has NULL properties!", controllerName, method);
+            }
 
             // Use a dedicated ObjectMapper that excludes null values to prevent
             // "null found, array expected" errors in the JSON schema validator
@@ -172,24 +186,113 @@ public class BackendSchemaService {
     }
 
     /**
-     * Resolves a schema $ref to its component type definition.
-     * Use simple recursion (depth=1 usually sufficient for Loopback, but we handle
-     * direct chains).
+     * Resolves a schema $ref to its component type definition and recursively 
+     * resolves nested $refs in properties, items, and additionalProperties.
      */
     private Schema<?> resolveSchema(OpenAPI openApi, Schema<?> schema) {
+        return resolveSchemaWithDepth(openApi, schema, new java.util.HashSet<>(), 0);
+    }
+    
+    /**
+     * Internal method to resolve schema with cycle detection and depth limiting.
+     * @param openApi the OpenAPI document
+     * @param schema the schema to resolve
+     * @param visitedRefs set of already visited $ref values to prevent infinite recursion
+     * @param depth current recursion depth
+     */
+    @SuppressWarnings("unchecked")
+    private Schema<?> resolveSchemaWithDepth(OpenAPI openApi, Schema<?> schema, 
+            java.util.Set<String> visitedRefs, int depth) {
+        
+        // Limit depth to prevent stack overflow on deeply nested schemas
+        final int MAX_DEPTH = 10;
+        if (depth > MAX_DEPTH) {
+            log.debug("Max schema resolution depth reached, returning schema as-is");
+            return schema;
+        }
+        
+        // Handle $ref resolution
         if (schema.get$ref() != null) {
             String ref = schema.get$ref();
+            
+            // Cycle detection
+            if (visitedRefs.contains(ref)) {
+                log.debug("Cycle detected in schema $ref: {}, returning unresolved", ref);
+                return schema;
+            }
+            
             if (ref.startsWith("#/components/schemas/")) {
                 String schemaName = ref.substring("#/components/schemas/".length());
                 if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
                     Schema<?> componentSchema = openApi.getComponents().getSchemas().get(schemaName);
                     if (componentSchema != null) {
-                        // Recursively resolve if the component itself is a ref
-                        return resolveSchema(openApi, componentSchema);
+                        visitedRefs.add(ref);
+                        // Recursively resolve the component schema
+                        return resolveSchemaWithDepth(openApi, componentSchema, visitedRefs, depth + 1);
                     }
                 }
             }
+            return schema;
         }
+        
+        // Resolve nested $refs in properties
+        if (schema.getProperties() != null) {
+            Map<String, Schema> resolvedProperties = new java.util.LinkedHashMap<>();
+            for (Map.Entry<String, Schema> entry : ((Map<String, Schema>) schema.getProperties()).entrySet()) {
+                Schema<?> propertySchema = entry.getValue();
+                if (propertySchema != null) {
+                    Schema<?> resolved = resolveSchemaWithDepth(openApi, propertySchema, 
+                            new java.util.HashSet<>(visitedRefs), depth + 1);
+                    resolvedProperties.put(entry.getKey(), resolved);
+                }
+            }
+            schema.setProperties(resolvedProperties);
+        }
+        
+        // Resolve nested $refs in array items
+        if (schema.getItems() != null) {
+            Schema<?> itemsSchema = schema.getItems();
+            Schema<?> resolvedItems = resolveSchemaWithDepth(openApi, itemsSchema, 
+                    new java.util.HashSet<>(visitedRefs), depth + 1);
+            schema.setItems(resolvedItems);
+        }
+        
+        // Resolve nested $refs in additionalProperties (if it's a Schema)
+        if (schema.getAdditionalProperties() instanceof Schema) {
+            Schema<?> additionalPropsSchema = (Schema<?>) schema.getAdditionalProperties();
+            Schema<?> resolvedAdditional = resolveSchemaWithDepth(openApi, additionalPropsSchema, 
+                    new java.util.HashSet<>(visitedRefs), depth + 1);
+            schema.setAdditionalProperties(resolvedAdditional);
+        }
+        
+        // Resolve allOf, anyOf, oneOf schemas
+        if (schema.getAllOf() != null) {
+            java.util.List<Schema> resolvedAllOf = new java.util.ArrayList<>();
+            for (Schema<?> subSchema : schema.getAllOf()) {
+                resolvedAllOf.add(resolveSchemaWithDepth(openApi, subSchema, 
+                        new java.util.HashSet<>(visitedRefs), depth + 1));
+            }
+            schema.setAllOf(resolvedAllOf);
+        }
+        
+        if (schema.getAnyOf() != null) {
+            java.util.List<Schema> resolvedAnyOf = new java.util.ArrayList<>();
+            for (Schema<?> subSchema : schema.getAnyOf()) {
+                resolvedAnyOf.add(resolveSchemaWithDepth(openApi, subSchema, 
+                        new java.util.HashSet<>(visitedRefs), depth + 1));
+            }
+            schema.setAnyOf(resolvedAnyOf);
+        }
+        
+        if (schema.getOneOf() != null) {
+            java.util.List<Schema> resolvedOneOf = new java.util.ArrayList<>();
+            for (Schema<?> subSchema : schema.getOneOf()) {
+                resolvedOneOf.add(resolveSchemaWithDepth(openApi, subSchema, 
+                        new java.util.HashSet<>(visitedRefs), depth + 1));
+            }
+            schema.setOneOf(resolvedOneOf);
+        }
+        
         return schema;
     }
 

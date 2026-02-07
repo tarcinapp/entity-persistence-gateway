@@ -2148,6 +2148,19 @@ public class OasTransformationEngine {
             return name.replaceAll("Excluding__.*?_", "");
         }
         
+        // These represent relations between lists and entities, not lists themselves.
+        if (name.contains("ListToEntityRelation") || name.contains("Relation") && name.startsWith("List")) {
+            // Keep relation schemas separate
+            if (name.contains("Partial")) {
+                return "PartialListEntityRelation";
+            } else if (name.contains("New")) {
+                return "NewListEntityRelation";
+            } else if (name.contains("WithRelations")) {
+                return "ListEntityRelationWithRelations";
+            }
+            return "ListEntityRelation";
+        }
+        
         // Strip noisy count suffixes that leak internal permission fields
         String cleanedName = name.replaceAll("(ownerUsersCount|ownerGroupsCount|viewerUsersCount|viewerGroupsCount|parentsCount|childrenCount)[-_]*", "");
         // If everything got stripped, fall back to original to avoid empty names
@@ -2167,11 +2180,28 @@ public class OasTransformationEngine {
             return "Entity";
         }
         
-        if (cleanedName.startsWith("List") && !cleanedName.equals("List")) {
-            if (cleanedName.contains("Reaction")) {
-                return name.contains("New") ? "NewListReaction" : "ListReaction";
+        // Handle ListReaction schemas BEFORE List schemas to avoid incorrect simplification
+        if (cleanedName.startsWith("ListReaction")) {
+            if (name.contains("WithRelations")) {
+                return "ListReactionWithRelations";
+            } else if (name.contains("Partial")) {
+                return "PartialListReaction";
+            } else if (name.contains("New")) {
+                return "NewListReaction";
             }
-            return name.contains("New") ? "NewList" : "List";
+            return "ListReaction";
+        }
+        
+        // Handle List schemas (excluding ListReaction and ListToEntityRelation handled above)
+        if (cleanedName.startsWith("List") && !cleanedName.equals("List") && !cleanedName.contains("Reaction")) {
+            if (name.contains("WithRelations")) {
+                return "ListWithRelations";
+            } else if (name.contains("Partial")) {
+                return "PartialList";
+            } else if (name.contains("New")) {
+                return "NewList";
+            }
+            return "List";
         }
         
         // Keep other names as-is or apply minimal cleanup
@@ -3402,29 +3432,40 @@ public class OasTransformationEngine {
             String controllerName = (String) config[3];
             
             try {
-                // Add base schema (Resource/GET) if it doesn't exist - includes read-only fields
-                if (!schemas.containsKey(schemaName)) {
-                    Schema schema = createSchemaFromJsonNode(resourceBase, controllerName);
-                    schemas.put(schemaName, schema);
+                // ALWAYS override base schema (Resource/GET) with authoritative schema from BackendSchemaService
+                // This ensures we use the properly resolved schema with all properties including nested refs
+                // The backend OAS may have simplified schemas that were incorrectly named via simplifySchemaName()
+                boolean hadExisting = schemas.containsKey(schemaName);
+                Schema schema = createSchemaFromJsonNode(resourceBase, controllerName);
+                schemas.put(schemaName, schema);
+                if (hadExisting) {
+                    log.debug("Replaced existing schema '{}' with authoritative GET schema (recordType: {})", schemaName, controllerName);
+                } else {
                     log.debug("Added base controller schema: {} from GET (recordType: {})", schemaName, controllerName);
                 }
                 
-                // Add "New" variant for POST operations using POST base schema
+                // ALWAYS override "New" variant for POST operations using POST base schema
                 String newSchemaName = "New" + schemaName;
-                if (!schemas.containsKey(newSchemaName)) {
-                    Schema newSchema = createSchemaFromJsonNode(postBase, controllerName);
-                    newSchema.setRequired(null); // No required for creation (gateway adds defaults)
-                    schemas.put(newSchemaName, newSchema);
+                hadExisting = schemas.containsKey(newSchemaName);
+                Schema newSchema = createSchemaFromJsonNode(postBase, controllerName);
+                newSchema.setRequired(null); // No required for creation (gateway adds defaults)
+                schemas.put(newSchemaName, newSchema);
+                if (hadExisting) {
+                    log.debug("Replaced existing schema '{}' with authoritative POST schema (recordType: {})", newSchemaName, controllerName);
+                } else {
                     log.debug("Added New variant schema: {} from POST (recordType: {})", newSchemaName, controllerName);
                 }
                 
-                // Add "Patch" variant for PATCH operations using PATCH base schema
+                // ALWAYS override "Patch" variant for PATCH operations using PATCH base schema
                 // PATCH allows partial updates, so required fields must be removed
                 String patchSchemaName = "Patch" + schemaName;
-                if (!schemas.containsKey(patchSchemaName)) {
-                    Schema patchSchema = createSchemaFromJsonNode(patchBase, controllerName);
-                    patchSchema.setRequired(null); // No required for partial update
-                    schemas.put(patchSchemaName, patchSchema);
+                hadExisting = schemas.containsKey(patchSchemaName);
+                Schema patchSchema = createSchemaFromJsonNode(patchBase, controllerName);
+                patchSchema.setRequired(null); // No required for partial update
+                schemas.put(patchSchemaName, patchSchema);
+                if (hadExisting) {
+                    log.debug("Replaced existing schema '{}' with authoritative PATCH schema (recordType: {})", patchSchemaName, controllerName);
+                } else {
                     log.debug("Added Patch variant schema: {} from PATCH (recordType: {})", patchSchemaName, controllerName);
                 }
             } catch (Exception e) {
