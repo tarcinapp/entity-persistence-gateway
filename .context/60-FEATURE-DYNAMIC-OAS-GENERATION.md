@@ -337,5 +337,3 @@ The generated specification is **never more permissive** than the runtime system
 ---
 
 **Last Updated:** February 2026  
-**Feature Status:** Production-Ready  
-**Minimum Gateway Version:** 1.0.0
