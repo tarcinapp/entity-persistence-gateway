@@ -903,55 +903,89 @@ public class OasTransformationEngine {
             // Map to KindAlias route: e.g., findEntityChildrenByKindAlias or findEntityParentsByKindAlias
             String backendOpId = original.getGet().getOperationId();
             String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "get");
+            // Determine the base route ID for route-level schema lookup (e.g., findEntityChildren)
+            String baseRouteId = mapHttpMethodToHierarchyRouteId(baseController, relationType, "get");
             
             if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
                 transformed.setGet(transformHierarchyOperation(
-                    original.getGet(), childAlias, parentAlias, parentTagName, "get", relationType
+                    original.getGet(), childAlias, parentAlias, parentTagName, "get", relationType, baseRouteId
                 ));
             }
         }
         if (original.getPost() != null) {
             String backendOpId = original.getPost().getOperationId();
             String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "post");
+            String baseRouteId = mapHttpMethodToHierarchyRouteId(baseController, relationType, "post");
             
             if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
                 transformed.setPost(transformHierarchyOperation(
-                    original.getPost(), childAlias, parentAlias, parentTagName, "post", relationType
+                    original.getPost(), childAlias, parentAlias, parentTagName, "post", relationType, baseRouteId
                 ));
             }
         }
         if (original.getPut() != null) {
             String backendOpId = original.getPut().getOperationId();
             String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "put");
+            String baseRouteId = mapHttpMethodToHierarchyRouteId(baseController, relationType, "put");
             
             if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
                 transformed.setPut(transformHierarchyOperation(
-                    original.getPut(), childAlias, parentAlias, parentTagName, "put", relationType
+                    original.getPut(), childAlias, parentAlias, parentTagName, "put", relationType, baseRouteId
                 ));
             }
         }
         if (original.getPatch() != null) {
             String backendOpId = original.getPatch().getOperationId();
             String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "patch");
+            String baseRouteId = mapHttpMethodToHierarchyRouteId(baseController, relationType, "patch");
             
             if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
                 transformed.setPatch(transformHierarchyOperation(
-                    original.getPatch(), childAlias, parentAlias, parentTagName, "patch", relationType
+                    original.getPatch(), childAlias, parentAlias, parentTagName, "patch", relationType, baseRouteId
                 ));
             }
         }
         if (original.getDelete() != null) {
             String backendOpId = original.getDelete().getOperationId();
             String kindAliasRouteId = mapHierarchyOperationToKindAliasRouteId(backendOpId, baseController, relationType, "delete");
+            String baseRouteId = mapHttpMethodToHierarchyRouteId(baseController, relationType, "delete");
             
             if (!isKindAliasOperationFilteredByTags(kindAliasRouteId, backendOpId)) {
                 transformed.setDelete(transformHierarchyOperation(
-                    original.getDelete(), childAlias, parentAlias, parentTagName, "delete", relationType
+                    original.getDelete(), childAlias, parentAlias, parentTagName, "delete", relationType, baseRouteId
                 ));
             }
         }
         
         return transformed;
+    }
+    
+    /**
+     * Maps HTTP method + controller + relation type to the hierarchy route ID used in configuration.
+     * These route IDs match what's used in children[n].routes.{routeId}.schema
+     * 
+     * @param baseController The base controller name (e.g., "entities", "lists")
+     * @param relationType "children" or "parents"
+     * @param httpMethod The HTTP method (get, post, etc.)
+     * @return The route ID for configuration lookup (e.g., "createEntityChild", "findEntityChildren")
+     */
+    private String mapHttpMethodToHierarchyRouteId(String baseController, String relationType, String httpMethod) {
+        String controllerSingular = capitalizeFirst(singularize(baseController));
+        
+        if ("children".equals(relationType)) {
+            if ("get".equalsIgnoreCase(httpMethod)) {
+                return "find" + controllerSingular + "Children";
+            } else if ("post".equalsIgnoreCase(httpMethod)) {
+                return "create" + controllerSingular + "Child";
+            }
+        } else if ("parents".equals(relationType)) {
+            if ("get".equalsIgnoreCase(httpMethod)) {
+                return "find" + controllerSingular + "Parents";
+            }
+        }
+        
+        // Fallback
+        return httpMethod + controllerSingular + capitalizeFirst(relationType);
     }
     
     /**
@@ -1045,7 +1079,8 @@ public class OasTransformationEngine {
             AliasConfig parentAlias,
             String parentTagName,
             String httpMethod,
-            String relationType) {
+            String relationType,
+            String baseRouteId) {
         
         Operation transformed = new Operation();
         
@@ -1078,6 +1113,17 @@ public class OasTransformationEngine {
         
         transformed.setDeprecated(original.getDeprecated());
         transformed.setSecurity(original.getSecurity());
+        
+        // Set x-original-route-id extension for schema binding lookup
+        // This allows resolveRequestBodySchemaName to find hierarchy-route-specific schemas
+        if (baseRouteId != null) {
+            Map<String, Object> extensions = transformed.getExtensions();
+            if (extensions == null) {
+                extensions = new LinkedHashMap<>();
+                transformed.setExtensions(extensions);
+            }
+            extensions.put("x-original-route-id", baseRouteId);
+        }
         
         String parentSingular = singularize(parentAlias.getAlias());
         String childPlural = childAlias.getAlias();

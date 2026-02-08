@@ -314,6 +314,55 @@ public class ValidateRequestBodyByKindSchema
             return;
         }
 
+        // Register hierarchy-route schemas first (highest priority)
+        // These are defined in children[n].routes.{routeId}.schema
+        if (targetAliasConfig.getRoutes() != null) {
+            for (Map.Entry<String, OpenApiProperties.RouteConfig> routeEntry : targetAliasConfig.getRoutes().entrySet()) {
+                String routeId = routeEntry.getKey();
+                OpenApiProperties.RouteConfig routeConfig = routeEntry.getValue();
+
+                boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
+                        || routeConfig.getValidationEnabled();
+                if (routeValidationEnabled && routeConfig.getSchema() != null && !routeConfig.getSchema().isBlank()) {
+                    String hierarchyRouteSchemaKey = buildHierarchyRouteSchemaKey(controllerName, rootKind, 
+                            targetAliasConfig.getAlias(), routeId);
+
+                    // POST Version
+                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
+                    JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
+                    if (registerToCommon) {
+                        postSchemasCommon.put(hierarchyRouteSchemaKey, postSchema);
+                    } else {
+                        postSchemasRelations.put(hierarchyRouteSchemaKey, postSchema);
+                    }
+
+                    // PUT Version
+                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
+                    JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
+                    if (registerToCommon) {
+                        putSchemasCommon.put(hierarchyRouteSchemaKey, putSchema);
+                    } else {
+                        putSchemasRelations.put(hierarchyRouteSchemaKey, putSchema);
+                    }
+
+                    // PATCH Version
+                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    routePatchNode.remove("required");
+                    JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
+                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
+                    if (registerToCommon) {
+                        patchSchemasCommon.put(hierarchyRouteSchemaKey, patchSchema);
+                    } else {
+                        patchSchemasRelations.put(hierarchyRouteSchemaKey, patchSchema);
+                    }
+
+                    log.debug("Registered hierarchy-route-level schema: {}", hierarchyRouteSchemaKey);
+                }
+            }
+        }
+
         // Only register if hierarchy-level has its own schema defined
         if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
             String hierarchySchemaKey = buildHierarchySchemaKey(controllerName, rootKind, targetAliasConfig.getAlias());
@@ -588,7 +637,10 @@ public class ValidateRequestBodyByKindSchema
 
         // Get lookup parameters from the resolved attributes
         String targetKind = attr.getKindName();
-        String hierarchySchemaKey = attr.getHierarchySchemaKey();
+        // Use hierarchyRouteSchemaKey if available (highest priority), fallback to hierarchySchemaKey
+        String hierarchySchemaKey = attr.getHierarchyRouteSchemaKey() != null 
+                ? attr.getHierarchyRouteSchemaKey() 
+                : attr.getHierarchySchemaKey();
         String controllerName = attr.getBaseControllerName();
         if (controllerName == null || controllerName.isBlank()) {
             controllerName = attr.getControllerName();
@@ -661,14 +713,36 @@ public class ValidateRequestBodyByKindSchema
         // Select appropriate schema maps based on record type and HTTP method
         Map<String, JsonSchema> schemaMap = selectSchemaMap(recordType, isPatch, isPut);
 
-        // PRIORITY 1: Hierarchy-level schema (inline schema from children[]/parents[])
-        if (hierarchySchemaKey != null) {
+        // PRIORITY 0: Hierarchy-route-level schema (children[n].routes.X.schema)
+        // This key is pre-computed by HierarchyKindAliasResolverGatewayFilterFactory
+        // Format: "hierarchy-route:{controller}:{rootKind}:{targetAlias}:{routeId}"
+        if (hierarchySchemaKey != null && hierarchySchemaKey.startsWith("hierarchy-route:")) {
             JsonSchema schema = schemaMap.get(hierarchySchemaKey);
             if (schema != null) {
-                log.debug("Using hierarchy-level schema: {}", hierarchySchemaKey);
+                log.debug("Using hierarchy-route-level schema: {}", hierarchySchemaKey);
                 return schema;
             }
-            log.debug("Hierarchy-level schema not found for key: {}", hierarchySchemaKey);
+            log.debug("Hierarchy-route-level schema not found for key: {}", hierarchySchemaKey);
+            // Fall through to hierarchy-level lookup (strip route suffix)
+        }
+
+        // PRIORITY 1: Hierarchy-level schema (inline schema from children[]/parents[])
+        if (hierarchySchemaKey != null) {
+            // If it was a hierarchy-route key that didn't match, derive hierarchy key
+            String effectiveHierarchyKey = hierarchySchemaKey;
+            if (hierarchySchemaKey.startsWith("hierarchy-route:")) {
+                // Convert "hierarchy-route:ctrl:root:alias:routeId" to "hierarchy:ctrl:root:alias"
+                String[] parts = hierarchySchemaKey.split(":");
+                if (parts.length >= 5) {
+                    effectiveHierarchyKey = "hierarchy:" + parts[1] + ":" + parts[2] + ":" + parts[3];
+                }
+            }
+            JsonSchema schema = schemaMap.get(effectiveHierarchyKey);
+            if (schema != null) {
+                log.debug("Using hierarchy-level schema: {}", effectiveHierarchyKey);
+                return schema;
+            }
+            log.debug("Hierarchy-level schema not found for key: {}", effectiveHierarchyKey);
         }
 
         // PRIORITY 2: Route-level schema for TARGET kind
@@ -786,6 +860,18 @@ public class ValidateRequestBodyByKindSchema
      */
     private static String buildHierarchySchemaKey(String controllerName, String rootKind, String targetAlias) {
         return "hierarchy:" + controllerName + ":" + rootKind + ":" + targetAlias;
+    }
+
+    /**
+     * Builds a hierarchy-route-specific schema key.
+     * Format: "hierarchy-route:{controller}:{rootKind}:{targetAlias}:{routeId}"
+     * 
+     * This is used for route-level schema overrides within hierarchy configurations,
+     * e.g., children[n].routes.createEntityChild.schema
+     */
+    private static String buildHierarchyRouteSchemaKey(String controllerName, String rootKind, 
+            String targetAlias, String routeId) {
+        return "hierarchy-route:" + controllerName + ":" + rootKind + ":" + targetAlias + ":" + routeId;
     }
 
     public static class Config {

@@ -1,0 +1,29 @@
+# Operational Guidelines & Environment Constraints
+
+You must adhere to the following rules and technical constraints throughout this project:
+
+## 1. Execution & Process Management
+- **Dependency Management:** All dependencies are managed via `./dev.sh`. Use `start`, `status`, or `stop` commands. Note that `./dev.sh` does NOT start the gateway. All dependencies are running now. Gateway is not running.  Redis cache is clear. 
+- **Starting the Gateway:** When running the gateway, you MUST use the `dev` profile. Refer to the following VSCode launch configuration logic:
+  - Main Class: com.tarcinapp.entitypersistencegateway.EntityPersistenceGatewayApplication
+  - Project Name: entity-persistence-gateway
+  - Active Profile: --spring.profiles.active=dev
+  - VM Arguments: -Dlog4j2.isThreadContextMapInheritable=true
+  It took about 60 seconds for gateway to start
+- **Safe Termination:** NEVER use `pkill -f "entity-persistence-gateway"`. This command inadvertently kills the `entity-persistence-gateway-policies` dependency. To kill the gateway, target the port specifically:
+  `lsof -t -i:8081 | xargs kill -9 2>/dev/null || echo 'Port 8081 is already free'`
+- **Redis Cache Clearing**: Redis is running in password protected mode. If you want to clear the redis cache, use this command:
+```
+REDIS_PASS=$(grep 'app.outbound.redis.password=' ${workspaceFolder}/src/main/resources/application-dev.properties | cut -d'=' -f2); redis-cli -a $REDIS_PASS FLUSHDB 2>/dev/null && echo 'Redis flushed' || echo 'Redis flush failed'
+```
+
+## 2. Configuration Strategy
+- **Environment Settings:** All test-specific or local configurations must be placed in the `application-dev.properties` file. Since the application runs with the `dev` profile, these settings will be prioritized.
+
+## 3. API Testing & Authentication
+- **Querying OpenAPI Specs:** To fetch the generated OpenAPI specification, use the following endpoint: `http://localhost:8081/openapi.json`.
+- **Strict Authentication Policy:** - Never disable authentication for testing. The schema generation logic requires a token to identify roles.
+  - Use the following CURL command (with the provided Bearer token):
+    `curl --location 'http://localhost:8081/openapi.json' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4NTkzODgxNTYsImlhdCI6MTc1OTM4ODE1NiwianRpIjoiZjhmODExZWQtZmVlYy00NDRkLTlkNTQtMmVhOWQ2ZjIzNGRkIiwiaXNzIjoidGFyY2luYXBwLWlkbSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiJkZWZhdWx0LXVzZXItaWQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwb3N0bWFuIiwic2Vzc2lvbl9zdGF0ZSI6ImE1OGUyNDFiLWE2ZjItNDMzNy1hZGQyLWU3MzlmNzM2ZDU1OCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiLyoiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbInRhcmNpbmFwcC5tZW1iZXIiLCJkZWZhdWx0LXJvbGVzLXRhcmNpbmFwcCIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJncm91cHMiOlsiZGVmYXVsdC11c2VyLWdyb3VwIl0sInNjb3BlIjoib3BlbmlkIGVtYWlsIHByb2ZpbGUiLCJzaWQiOiJhNThlMjQxYi1hNmYyLTQzMzctYWRkMi1lNzM5ZjczNmQ1NTgiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicm9sZXMiOlsidGFyY2luYXBwLm1lbWJlciIsImRlZmF1bHQtcm9sZXMtdGFyY2luYXBwIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyLWJhc2ljLXZlcmlmaWVkLW1lbWJlci0xIiwiZ2l2ZW5fbmFtZSI6IiIsImZhbWlseV9uYW1lIjoiIn0.kC4DAqHeEFIPfi5ap8HWSIwtZWZdh1YzhIk6sw4iBTwtLYm8nG7ypjJD2GeOpc-yctQw-2LTEA7x1EFoxmZYLhC8YEYEKq7weSsnVicoyet77t805sHWFIsroSaqYFeVFTIWUl2OWS0cWUCJeAkpoaKLFA9vu_2QrMMo0w-I-JJSgLWOvCat3HvHuFlNkWb_Zw0cb8SHFmMkodnljVUf_AXdr1wjEOtVDJFDxiVUHZ9GIc-bFvh4O_q0FuoKLhhfgVKi4vEWYBJITHBLIbYQj7bAD_lcSF-bQVFt9pIeUmo7KMJj1NKi5kC1LmkjfU8um4zdF43Bwf60bZfRoi1oXg'`
+- **Error Handling:** If you receive an "Authentication Required" error despite using the token, STOP iterating immediately. Do not attempt to guess or recreate a token. Ask me for a fresh token if the current one appears to be expired or invalid.

@@ -255,6 +255,9 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
         String targetAlias = targetAliasConfig.getAlias();
 
         URI originalUri = exchange.getRequest().getURI();
+        
+        // Get HTTP method for determining route ID
+        org.springframework.http.HttpMethod httpMethod = exchange.getRequest().getMethod();
 
         // 1. Path Rewrite: Build technical outbound path removing kindAlias and inbound base
         //    Pattern: /api/v1/entities/{alias}/{uuid}/{hierarchyAlias} -> /entities/{uuid}/{children|parents}
@@ -319,6 +322,24 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
         }
         updatedAttr.setHierarchySchemaKey(hierarchySchemaKey);
         
+        // Build hierarchy route schema key if target has route-level schema defined
+        // Format: "hierarchy-route:{controller}:{rootKind}:{targetAlias}:{routeId}"
+        String hierarchyRouteSchemaKey = null;
+        String baseRouteId = determineBaseRouteId(httpMethod, technicalAccessorSegment, rootAttr.getRecordType());
+        if (baseRouteId != null && targetAliasConfig.getRoutes() != null) {
+            var routeConfig = targetAliasConfig.getRoutes().get(baseRouteId);
+            if (routeConfig != null && routeConfig.getSchema() != null && !routeConfig.getSchema().isBlank()) {
+                String lookupController = rootAttr.getBaseControllerName();
+                if (lookupController == null || lookupController.isBlank()) {
+                    lookupController = rootAttr.getControllerName();
+                }
+                hierarchyRouteSchemaKey = "hierarchy-route:" + lookupController + ":" 
+                                   + rootAttr.getKindName() + ":" + targetAlias + ":" + baseRouteId;
+                log.debug("HierarchyKindAliasResolver: Built hierarchyRouteSchemaKey='{}'", hierarchyRouteSchemaKey);
+            }
+        }
+        updatedAttr.setHierarchyRouteSchemaKey(hierarchyRouteSchemaKey);
+        
         // Compute effective validation enabled from target alias config
         Boolean effectiveValidationEnabled = targetAliasConfig.getValidationEnabled();
         if (effectiveValidationEnabled == null) {
@@ -377,5 +398,53 @@ public class HierarchyKindAliasResolverGatewayFilterFactory
             default:
                 return recordType;
         }
+    }
+    
+    /**
+     * Determines the base route ID for hierarchy operations based on HTTP method,
+     * accessor type (children/parents), and record type.
+     * 
+     * Route IDs for hierarchy operations:
+     * - POST children → createEntityChild, createListChild, createChildEntityReaction, createChildListReaction
+     * - GET children → findEntityChildren, findListChildren, findChildrenEntityReactionsByReactionId, findChildrenListReactionsByReactionId
+     * - GET parents → findEntityParents, findListParents, findParentsByEntityReactionId, findParentsByListReactionId
+     */
+    private String determineBaseRouteId(org.springframework.http.HttpMethod httpMethod, 
+                                        String technicalAccessorSegment, 
+                                        String recordType) {
+        if (httpMethod == null || technicalAccessorSegment == null || recordType == null) {
+            return null;
+        }
+        
+        boolean isChildren = CHILDREN_LITERAL.equals(technicalAccessorSegment);
+        boolean isParents = PARENTS_LITERAL.equals(technicalAccessorSegment);
+        boolean isPost = org.springframework.http.HttpMethod.POST.equals(httpMethod);
+        boolean isGet = org.springframework.http.HttpMethod.GET.equals(httpMethod);
+        
+        // Determine the base route ID based on record type and operation
+        switch (recordType) {
+            case "entities":
+                if (isPost && isChildren) return "createEntityChild";
+                if (isGet && isChildren) return "findEntityChildren";
+                if (isGet && isParents) return "findEntityParents";
+                break;
+            case "lists":
+                if (isPost && isChildren) return "createListChild";
+                if (isGet && isChildren) return "findListChildren";
+                if (isGet && isParents) return "findListParents";
+                break;
+            case "entityReactions":
+                if (isPost && isChildren) return "createChildEntityReaction";
+                if (isGet && isChildren) return "findChildrenEntityReactionsByReactionId";
+                if (isGet && isParents) return "findParentsByEntityReactionId";
+                break;
+            case "listReactions":
+                if (isPost && isChildren) return "createChildListReaction";
+                if (isGet && isChildren) return "findChildrenListReactionsByReactionId";
+                if (isGet && isParents) return "findParentsByListReactionId";
+                break;
+        }
+        
+        return null;
     }
 }

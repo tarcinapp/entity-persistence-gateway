@@ -15,6 +15,7 @@ import lombok.Data;
  * - effectiveValidationEnabled: Pre-computed validation flag using priority hierarchy
  * - isHierarchyRequest: True if request was resolved via HierarchyKindAliasResolver
  * - hierarchySchemaKey: Schema key for hierarchy-level override (format: "hierarchy:{controller}:{rootKind}:{targetAlias}")
+ * - hierarchyRouteSchemaKey: Schema key for hierarchy route-level override (format: "hierarchy-route:{controller}:{rootKind}:{targetAlias}:{routeId}")
  */
 @Data
 public class KindAliasConfigAttr {
@@ -33,4 +34,5 @@ public class KindAliasConfigAttr {
     Boolean effectiveValidationEnabled;
     boolean isHierarchyRequest;
     String hierarchySchemaKey;
+    String hierarchyRouteSchemaKey;
 }
