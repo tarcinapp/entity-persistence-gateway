@@ -12,6 +12,7 @@ import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -117,6 +118,11 @@ public class OasSchemaPruner {
         }
         
         log.info("Schema pruning complete: {} total fields pruned", totalPruned);
+
+        int removed = pruneUnusedSchemas(pruned);
+        if (removed > 0) {
+            log.info("Removed {} unused schemas from components", removed);
+        }
         
         return pruned;
     }
@@ -226,8 +232,240 @@ public class OasSchemaPruner {
         }
         
         log.info("Multi-operation schema pruning complete: {} total fields pruned", totalPruned);
+
+        int removed = pruneUnusedSchemas(pruned);
+        if (removed > 0) {
+            log.info("Removed {} unused schemas from components", removed);
+        }
         
         return pruned;
+    }
+
+    /**
+     * Removes unused component schemas that are no longer referenced by any paths or components.
+     */
+    private int pruneUnusedSchemas(OpenAPI openApi) {
+        Components components = openApi.getComponents();
+        if (components == null || components.getSchemas() == null || components.getSchemas().isEmpty()) {
+            return 0;
+        }
+
+        Map<String, Schema> schemas = components.getSchemas();
+        Set<String> usedSchemas = collectUsedSchemas(openApi);
+
+        int before = schemas.size();
+        schemas.keySet().removeIf(name -> !usedSchemas.contains(name));
+        return before - schemas.size();
+    }
+
+    private Set<String> collectUsedSchemas(OpenAPI openApi) {
+        Set<String> used = new HashSet<>();
+        Components components = openApi.getComponents();
+
+        // 1) Collect from paths
+        if (openApi.getPaths() != null) {
+            for (PathItem pathItem : openApi.getPaths().values()) {
+                collectFromOperation(pathItem.getGet(), components, used);
+                collectFromOperation(pathItem.getPost(), components, used);
+                collectFromOperation(pathItem.getPut(), components, used);
+                collectFromOperation(pathItem.getPatch(), components, used);
+                collectFromOperation(pathItem.getDelete(), components, used);
+                collectFromOperation(pathItem.getOptions(), components, used);
+                collectFromOperation(pathItem.getHead(), components, used);
+                collectFromOperation(pathItem.getTrace(), components, used);
+            }
+        }
+
+        // 2) Expand referenced schemas transitively (schema graph traversal)
+        expandSchemaGraph(components, used);
+
+        return used;
+    }
+
+    private void collectFromOperation(io.swagger.v3.oas.models.Operation operation,
+                                      Components components,
+                                      Set<String> used) {
+        if (operation == null) {
+            return;
+        }
+
+        // Request body schemas
+        collectFromRequestBody(operation.getRequestBody(), components, used);
+
+        // Response schemas
+        if (operation.getResponses() != null) {
+            for (ApiResponse response : operation.getResponses().values()) {
+                collectFromApiResponse(response, components, used);
+            }
+        }
+
+        // Parameter schemas
+        if (operation.getParameters() != null) {
+            for (Parameter parameter : operation.getParameters()) {
+                collectFromParameter(parameter, components, used);
+            }
+        }
+    }
+
+    private void collectFromRequestBody(RequestBody requestBody,
+                                        Components components,
+                                        Set<String> used) {
+        if (requestBody == null) {
+            return;
+        }
+
+        if (requestBody.get$ref() != null && components != null && components.getRequestBodies() != null) {
+            String refName = extractComponentName(requestBody.get$ref(), "requestBodies");
+            RequestBody resolved = refName == null ? null : components.getRequestBodies().get(refName);
+            collectFromRequestBody(resolved, components, used);
+            return;
+        }
+
+        if (requestBody.getContent() == null) {
+            return;
+        }
+
+        for (MediaType mediaType : requestBody.getContent().values()) {
+            collectSchemaRefsFromSchema(mediaType.getSchema(), used);
+        }
+    }
+
+    private void collectFromApiResponse(ApiResponse response,
+                                        Components components,
+                                        Set<String> used) {
+        if (response == null) {
+            return;
+        }
+
+        if (response.get$ref() != null && components != null && components.getResponses() != null) {
+            String refName = extractComponentName(response.get$ref(), "responses");
+            ApiResponse resolved = refName == null ? null : components.getResponses().get(refName);
+            collectFromApiResponse(resolved, components, used);
+            return;
+        }
+
+        Content content = response.getContent();
+        if (content == null) {
+            return;
+        }
+
+        for (MediaType mediaType : content.values()) {
+            collectSchemaRefsFromSchema(mediaType.getSchema(), used);
+        }
+
+        if (response.getHeaders() != null && components != null && components.getHeaders() != null) {
+            response.getHeaders().forEach((name, header) -> {
+                if (header != null && header.get$ref() != null) {
+                    String refName = extractComponentName(header.get$ref(), "headers");
+                    io.swagger.v3.oas.models.headers.Header resolved = refName == null
+                        ? null
+                        : components.getHeaders().get(refName);
+                    if (resolved != null) {
+                        collectSchemaRefsFromSchema(resolved.getSchema(), used);
+                    }
+                } else if (header != null) {
+                    collectSchemaRefsFromSchema(header.getSchema(), used);
+                }
+            });
+        }
+    }
+
+    private void collectFromParameter(Parameter parameter,
+                                      Components components,
+                                      Set<String> used) {
+        if (parameter == null) {
+            return;
+        }
+
+        if (parameter.get$ref() != null && components != null && components.getParameters() != null) {
+            String refName = extractComponentName(parameter.get$ref(), "parameters");
+            Parameter resolved = refName == null ? null : components.getParameters().get(refName);
+            collectFromParameter(resolved, components, used);
+            return;
+        }
+
+        collectSchemaRefsFromSchema(parameter.getSchema(), used);
+        if (parameter.getContent() != null) {
+            for (MediaType mediaType : parameter.getContent().values()) {
+                collectSchemaRefsFromSchema(mediaType.getSchema(), used);
+            }
+        }
+    }
+
+    private void collectSchemaRefsFromSchema(Schema<?> schema, Set<String> used) {
+        if (schema == null) {
+            return;
+        }
+
+        String ref = schema.get$ref();
+        if (ref != null) {
+            String name = extractComponentName(ref, "schemas");
+            if (name != null) {
+                used.add(name);
+            }
+        }
+
+        if (schema instanceof ComposedSchema composed) {
+            if (composed.getAllOf() != null) {
+                for (Schema<?> s : composed.getAllOf()) collectSchemaRefsFromSchema(s, used);
+            }
+            if (composed.getOneOf() != null) {
+                for (Schema<?> s : composed.getOneOf()) collectSchemaRefsFromSchema(s, used);
+            }
+            if (composed.getAnyOf() != null) {
+                for (Schema<?> s : composed.getAnyOf()) collectSchemaRefsFromSchema(s, used);
+            }
+        }
+
+        if (schema instanceof ArraySchema arraySchema) {
+            collectSchemaRefsFromSchema(arraySchema.getItems(), used);
+        }
+
+        if (schema.getAdditionalProperties() instanceof Schema<?> additionalSchema) {
+            collectSchemaRefsFromSchema(additionalSchema, used);
+        }
+
+        if (schema.getProperties() != null) {
+            for (Schema<?> prop : schema.getProperties().values()) {
+                collectSchemaRefsFromSchema(prop, used);
+            }
+        }
+    }
+
+    private void expandSchemaGraph(Components components, Set<String> used) {
+        if (components == null || components.getSchemas() == null) {
+            return;
+        }
+
+        Map<String, Schema> schemas = components.getSchemas();
+        Deque<String> queue = new ArrayDeque<>(used);
+
+        while (!queue.isEmpty()) {
+            String schemaName = queue.removeFirst();
+            Schema<?> schema = schemas.get(schemaName);
+            if (schema == null) {
+                continue;
+            }
+
+            Set<String> newlyFound = new HashSet<>();
+            collectSchemaRefsFromSchema(schema, newlyFound);
+            for (String name : newlyFound) {
+                if (used.add(name)) {
+                    queue.addLast(name);
+                }
+            }
+        }
+    }
+
+    private String extractComponentName(String ref, String componentType) {
+        if (ref == null) {
+            return null;
+        }
+        String prefix = "#/components/" + componentType + "/";
+        if (ref.startsWith(prefix)) {
+            return ref.substring(prefix.length());
+        }
+        return null;
     }
 
     private int removeRecordTypeDeep(Schema<?> schema, String schemaName) {

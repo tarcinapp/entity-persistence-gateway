@@ -23,6 +23,7 @@ Request `/openapi.json` and receive an OpenAPI specification where:
 - **Schemas match your permissions:** Forbidden fields are removed, not just hidden
 - **Operations match enabled routes:** Disabled routes don't appear
 - **Request bodies use correct schemas:** Priority-based schema resolution applied
+- **Unused schemas are removed:** Components only contain schemas actually referenced
 
 ### Core Principles
 

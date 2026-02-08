@@ -8,7 +8,8 @@ The **Dynamic OAS Orchestrator** is an embedded component within the Entity Pers
 1. **Path Virtualization**: Transform technical backend paths (`/entities?kind=book`) into domain-specific aliases (`/books`)
 2. **Hierarchy Resolution**: Correctly represent nested resource structures (`/books/{id}/chapters`)
 3. **Field-Level Masking**: Prune schema properties based on OPA field permissions
-4. **Role-Based Caching**: Efficient Redis caching with deterministic role-based keys
+4. **Unused Schema Cleanup**: Remove unreferenced component schemas after pruning
+5. **Role-Based Caching**: Efficient Redis caching with deterministic role-based keys
 
 ---
 
@@ -265,6 +266,8 @@ public class OasFieldPermissionService {
 **Package:** `com.tarcinapp.entitypersistencegateway.oas.transformation`
 
 **Responsibility:** Programmatically remove properties from OAS schemas that the user cannot see.
+
+**Final Cleanup:** After field pruning, remove any component schemas that are no longer referenced by any path or component.
 
 **Pruning Algorithm:**
 
