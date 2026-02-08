@@ -592,10 +592,11 @@ This document provides a comprehensive reference for all filters used in the Ent
 **Purpose:** Resolves kind aliases to actual kind names.
 
 **Behavior:**
-- Maps URL kind aliases to database kind names
+- Reads `kindAlias` from route variables and resolves it in OAS config
+- Populates `KindAliasConfigAttr` (kind, alias, controller, recordType, validation flags)
 - Example: `/api/v1/entities/users` → kind: `user`
-- Validates kind existence
-- Returns 404 if kind not found
+- Returns 404 if alias not configured
+- Returns 500 if controller context is missing
 
 **Configuration:** None
 
@@ -617,9 +618,11 @@ This document provides a comprehensive reference for all filters used in the Ent
 **Behavior:**
 - Reads the root kind alias from `KindResolution`
 - Resolves `{hierarchyAlias}` against configured children/parents in `OpenApiProperties`
-- Rewrites the path to technical children/parents accessors
-- Injects `filter[where][_kind]=<targetKind>` for the resolved hierarchy kind
-- Updates kind alias attributes for downstream validation and authorization
+- Rewrites the path to the technical children/parents accessor
+- Injects `filter[where][_kind]=<targetKind>` for resolved aliases
+- Updates `KindAliasConfigAttr` with hierarchy schema keys and validation flags
+- Static fallback: if `{hierarchyAlias}` is literally `children` or `parents`, only path rewrite is applied
+- Returns 404 if hierarchy alias is not configured
 
 **Used in:** Dynamic hierarchy kind-alias routes (domain-driven URLs)
 

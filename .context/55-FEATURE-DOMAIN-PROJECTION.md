@@ -34,11 +34,13 @@ GET  /books/{id}/chapters               # Intuitive hierarchy
 
 1. **Configuration Over Code:** New business domains are exposed entirely through configuration. No Java code, no redeployment of the backend.
 
-2. **Schema Override by Specificity:** General schema definitions can be overridden at more specific levels. Route-level schemas are always the most specific, taking precedence over broader definitions.
+2. **Domain-Specific Validation:** Each kind alias can define its own JSON Schema for request validation. A `products` alias validates differently than an `orders` alias—enforcing domain rules at the gateway layer.
 
-3. **Transparency to Backend:** The backend service remains unaware of domain projection. It receives standard requests with `_kind` filters—the gateway handles all translation.
+3. **Schema Override by Specificity:** When finer control is needed, schemas defined at the kind level can be overridden at more specific levels (per-route, per-hierarchy). The most specific schema always wins.
 
-4. **Composable Configuration:** Route toggles, schemas, timeouts, rate limits, and other behaviors can be configured independently per alias, per route, or per hierarchy level.
+4. **Transparency to Backend:** The backend service remains unaware of domain projection. It receives standard requests with `_kind` filters—the gateway handles all translation.
+
+5. **Composable Configuration:** Route toggles, schemas, timeouts, rate limits, and other behaviors can be configured independently per kind alias, per route, or per hierarchy level.
 
 ---
 
@@ -136,35 +138,59 @@ Routes listed in `off` are disabled; routes listed in `on` are explicitly enable
 
 > **See Also:** [50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md) for detailed toggle configuration and precedence rules.
 
-### 2.5 Schema Override by Specificity
+### 2.5 Request Validation with JSON Schema
 
-Request validation schemas follow a priority system where more specific definitions override general ones.
+Kind aliases can define **JSON Schemas** to validate incoming request bodies. The gateway validates requests before forwarding them to the backend, returning `400 Bad Request` if validation fails.
 
-#### Standard Kind Alias Paths
+**Configuration:**
+```yaml
+aliases:
+  - alias: products
+    kind: product
+    schema: |
+      {
+        "type": "object",
+        "properties": {
+          "_name": {"type": "string", "minLength": 1},
+          "price": {"type": "number", "minimum": 0}
+        },
+        "required": ["_name"]
+      }
+```
 
-For paths like `/products`:
+With this configuration, all write operations (`POST`, `PUT`, `PATCH`) to `/products` are validated against this schema.
 
-| Priority | Level | Configuration Key | When Used |
-|----------|-------|-------------------|-----------|
-| **0 (Most Specific)** | Route | `routes.{routeId}.schema` | Specific operation |
-| **1 (Fallback)** | Kind | `aliases[n].schema` | All operations |
+#### Overriding Schema for Specific Operations
 
-#### Hierarchical Kind Alias Paths
+Sometimes different operations need different validation rules. For example, creating a product may require more fields than updating one. You can override the kind-level schema at the **route level**:
 
-For paths like `/books/{id}/chapters`:
+```yaml
+aliases:
+  - alias: products
+    kind: product
+    schema: |
+      {"type": "object", "properties": {"_name": {"type": "string"}}, "required": ["_name"]}
+    
+    routes:
+      createEntity:
+        schema: |
+          {"type": "object", "properties": {"_name": {"type": "string"}, "sku": {"type": "string"}}, "required": ["_name", "sku"]}
+```
 
-| Priority | Level | Configuration Key | When Used |
-|----------|-------|-------------------|-----------|
-| **0 (Most Specific)** | Hierarchy-Route | `children[n].routes.{routeId}.schema` | Specific hierarchy operation |
-| **1** | Hierarchy | `children[n].schema` | All hierarchy operations |
-| **2** | Route | `routes.{routeId}.schema` | Operation-level for child kind |
-| **3 (Fallback)** | Kind | Child kind's `aliases[n].schema` | General child kind schema |
+- `POST /products` → Validates against route-level schema (requires `_name` AND `sku`)
+- `PATCH /products/{id}` → Validates against kind-level schema (requires `_name` only)
 
-**Example:** `POST /books/{id}/chapters` resolution order:
-1. `children[0].routes.createEntityChild.schema` ✓ (if exists, use this)
-2. `children[0].schema`
-3. Route-level schema for `chapter` kind
-4. Kind-level schema for `chapter`
+The route-level schema always takes precedence when defined.
+
+#### Hierarchical Path Schemas
+
+For hierarchical paths like `/books/{id}/chapters`, schemas can be defined at multiple levels:
+
+1. **Hierarchy-route schema** (most specific) — for a specific operation like `POST /books/{id}/chapters`
+2. **Hierarchy-level schema** — default for all operations on the hierarchy path
+3. **Kind-level schema** — fallback from the child kind's definition
+
+The first schema found in this order is used.
 
 ---
 
@@ -316,77 +342,82 @@ app.oas.controllers.entities.aliases[0].children[0].routes.createEntityChild.sch
 
 **File:** `application-route-toggles.yml`
 
+Route toggles control which routes are accessible. Configuration is organized by scope:
+
 ```yaml
 app:
-  route-toggles:
-    entities:
-      # Disable specific operations for products
-      products:
-        deleteEntityById:
-          enabled: false
-        replaceEntityById:
-          enabled: false
-      
-      # Read-only for reference data
-      countries:
-        createEntity:
-          enabled: false
-        updateEntityById:
-          enabled: false
-        deleteEntityById:
-          enabled: false
-    
-    lists:
-      categories:
-        deleteListById:
-          enabled: false
+  toggles:
+    routes:
+      off:
+        - deleteEntityByIdByKindAlias    # Disable specific route
+        - replaceEntityByIdByKindAlias
+    controllers:
+      off:
+        - relations                       # Disable entire controller
+    tags:
+      off:
+        - destructive                     # Disable by tag
 ```
 
-### 3.4 Controller Base Paths
+> **See Also:** [50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md) for evaluation order, precedence rules, and available toggle values.
 
-**File:** `application-routes.yml`
+### 3.4 Base URI and Controller Base Paths
 
-Controller base paths define where the gateway listens for domain-specific requests:
+**File:** `app-inbound.yml`
+
+Inbound routing is defined by a **base URI** plus per-controller **base paths**:
 
 ```yaml
 app:
   inbound:
-    controllers:
-      entities:
-        base-path: /api/v1/entities
-      lists:
-        base-path: /api/v1/lists
-      relations:
-        base-path: /api/v1/relations
-      entity-reactions:
-        base-path: /api/v1/entity-reactions
-      list-reactions:
-        base-path: /api/v1/list-reactions
+    baseUri: /api/v1/
+    controllerBasePaths:
+      entities: entities
+      lists: lists
+      relations: relations
+      entityReactions: entity-reactions
+      listReactions: list-reactions
 ```
 
-With kind aliases, the gateway additionally listens on:
+This yields the concrete base paths:
+- `/api/v1/entities`
+- `/api/v1/lists`
+- `/api/v1/relations`
+- `/api/v1/entity-reactions`
+- `/api/v1/list-reactions`
+
+If you change a controller base path, all endpoints for that controller move under the new path (including kind aliases and hierarchical routes).
+
+**Examples:**
+- `controllerBasePaths.entities: items` → base path becomes `/api/v1/items`
+  - `/api/v1/items/products` (kind alias)
+  - `/api/v1/items/{id}/children` (hierarchical route)
+- `controllerBasePaths.relations: links` → base path becomes `/api/v1/links`
+  - `/api/v1/links/{id}` (standard relation route)
+
+With kind aliases, the gateway additionally listens on the **current controller base path**, not just the defaults. The alias segment is appended to whatever base path you configure.
+
+**Examples (default paths):**
 - `/api/v1/entities/products` → mapped from `products` alias
 - `/api/v1/entities/books` → mapped from `books` alias
 - `/api/v1/lists/categories` → mapped from `categories` alias
 
-### 3.5 Route ID Reference
+**Examples (custom base paths):**
+- `controllerBasePaths.entities: items` → `/api/v1/items/products`, `/api/v1/items/books`
+- `controllerBasePaths.lists: collections` → `/api/v1/collections/categories`
 
-Available route IDs for `routes.{routeId}` configuration:
+### 3.5 Route ID Naming (Quick Reference)
 
-| Route ID | HTTP Method | Path Pattern | Description |
-|----------|-------------|--------------|-------------|
-| `createEntity` | POST | `/{alias}` | Create record |
-| `findEntities` | GET | `/{alias}` | List records |
-| `countEntities` | GET | `/{alias}/count` | Count records |
-| `findEntityById` | GET | `/{alias}/{id}` | Get single record |
-| `updateEntityById` | PATCH | `/{alias}/{id}` | Partial update |
-| `replaceEntityById` | PUT | `/{alias}/{id}` | Full replace |
-| `deleteEntityById` | DELETE | `/{alias}/{id}` | Delete record |
-| `findEntityChildren` | GET | `/{alias}/{id}/children` | List children |
-| `createEntityChild` | POST | `/{alias}/{id}/children` | Create child |
-| `findEntityParents` | GET | `/{alias}/{id}/parents` | List parents |
+Route IDs follow a consistent naming pattern based on **action + resource + context**:
 
-*Replace `Entity` with appropriate record type for other controllers.*
+- **Standard routes:** `{action}{Resource}` or `{action}{Resource}ById`
+  - Examples: `createEntity`, `findEntities`, `findEntityById`, `deleteEntityById`, `createList`, `findRelations`, `findEntityReactionsById`, `deleteListReactionsById`
+- **Kind alias routes:** `{baseRouteId}ByKindAlias`
+  - Examples: `findEntitiesByKindAlias`, `deleteEntityByIdByKindAlias`, `findListsByKindAlias`, `createRelationByKindAlias`
+- **Hierarchy routes:** `{action}{Resource}Child` / `{action}{Resource}Parents`
+  - Examples: `createEntityChild`, `findEntityChildren`, `findEntityParents`, `findListChildren`
+
+> **Complete Reference:** See [10-ROUTES.md](10-ROUTES.md) for the full route ID inventory and naming conventions.
 
 ---
 
@@ -394,40 +425,35 @@ Available route IDs for `routes.{routeId}` configuration:
 
 ### 4.1 Request Flow
 
-```
-┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐
-│   Client    │───▶│  Kind Resolver  │───▶│  Gateway Filters│───▶│   Backend   │
-│             │    │  Filter         │    │  (Auth, Schema) │    │   Service   │
-└─────────────┘    └─────────────────┘    └─────────────────┘    └─────────────┘
-                          │
-                          ▼
-                   ┌─────────────────┐
-                   │ • Resolve alias │
-                   │ • Inject _kind  │
-                   │ • Rewrite path  │
-                   │ • Set schema key│
-                   └─────────────────┘
+```mermaid
+flowchart LR
+  A[Client] --> B[Kind Resolver Filter]
+  B --> C[Gateway Filters<br/>(Auth, Schema)]
+  C --> D[Backend Service]
+
+  B -.-> E[Resolve alias<br/>Inject _kind<br/>Rewrite path<br/>Set schema key]
 ```
 
 ### 4.2 Kind Resolution Filter
 
 The `KindResolution` filter performs the core translation:
 
-1. **Path Matching:** Identifies if the request path matches a configured alias
-2. **Kind Injection:** Adds `_kind` field to request body (POST/PUT/PATCH)
-3. **Query Rewriting:** Appends `filter[where][_kind]=X` to GET requests
-4. **Schema Key Setting:** Sets the appropriate schema key for validation
-5. **Path Rewriting:** Transforms `/products` to `/entities`
+1. **Path Matching:** Reads `kindAlias` from the route and resolves it against OAS configuration
+2. **Kind Resolution:** Determines the target `kind` and controller context
+3. **Context Setup:** Populates `KindAliasConfigAttr` for downstream filters (kind, alias, controller, recordType)
+4. **Validation Context:** Sets validation flags and defaults used by schema validation
+5. **Error Handling:** Returns 404 when the alias is not configured
 
 ### 4.3 Hierarchy Resolution Filter
 
 The `HierarchyKindAliasResolver` filter handles nested paths:
 
-1. **Parent Resolution:** Validates parent alias (`/books`)
-2. **Child Resolution:** Validates child alias (`chapters`)
-3. **Route Determination:** Maps HTTP method to route ID (`POST` + `children` → `createEntityChild`)
-4. **Schema Key Building:** Constructs hierarchy-specific schema key
-5. **Path Rewriting:** Transforms `/books/{id}/chapters` to `/entities/{id}/children`
+1. **Parent Resolution:** Uses the root alias from `KindResolution` (`/books`)
+2. **Child/Parent Resolution:** Resolves the hierarchy alias (`chapters` or `parents`) from OAS config
+3. **Path Rewriting:** Rewrites to technical children/parents accessor (e.g., `/entities/{id}/children`)
+4. **Query Injection:** Adds `filter[where][_kind]=<targetKind>`
+5. **Context Update:** Updates `KindAliasConfigAttr` with hierarchy schema keys and validation flags
+6. **Error Handling:** Returns 404 when the hierarchy alias is not configured
 
 ### 4.4 Validation Filter
 
