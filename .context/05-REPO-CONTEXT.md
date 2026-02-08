@@ -10,7 +10,7 @@ It sits directly in front of the **Generic Data Contract** that is either implem
 Instead of writing custom backend code for every new SaaS feature, this Gateway configures a "Virtual API" that enforces strict enterprise requirements on raw data flow:
 
 * **Security & Access:** Enforces **Authentication (JWT)** and Fine-Grained **Authorization (OPA)** down to the field level (**Field Masking** & Redaction).
-* **Runtime Domain Projection:** Instantly transforms generic resources (e.g., `/entities`) into domain-specific REST endpoints (e.g., `/products`, `/orders`) via **Kind Path Aliasing**, handling all `_kind` injections and query rewriting transparently.
+* **Domain Projection:** Instantly transforms generic resources (e.g., `/entities`) into domain-specific REST endpoints (e.g., `/products`, `/orders`) via **Kind Path Aliasing**, handling all `_kind` injections and query rewriting transparently.
 * **Data Integrity:** Guarantees atomicity via **Distributed Locking** (Redis based) and enforces strict **JSON Schema Validation** on incoming payloads.
 * **Performance & Stability:** Protects downstream services with **Rate Limiting**, manages **HTTP Caching** headers, and handles **Response Shaping** (Field Sets) to prevent over-fetching.
 * **Observability:** Provides full visibility through **Distributed Tracing** and ensures standard **Audit** attributes (`_lastUpdatedBy`) are injected.
