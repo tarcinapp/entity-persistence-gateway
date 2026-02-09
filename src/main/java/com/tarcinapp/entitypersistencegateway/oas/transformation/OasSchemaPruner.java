@@ -108,7 +108,8 @@ public class OasSchemaPruner {
                 continue;
             }
             
-            int prunedCount = pruneSchemaProperties(schema, forbiddenFields, schemaName);
+            Map<String, Set<String>> embeddedOverrides = buildEmbeddedForbiddenOverrides(recordType, permissions);
+            int prunedCount = pruneSchemaProperties(schema, forbiddenFields, schemaName, embeddedOverrides);
             totalPruned += prunedCount;
             
             if (prunedCount > 0) {
@@ -203,7 +204,8 @@ public class OasSchemaPruner {
             
             log.debug("Schema '{}' will be pruned: {} forbidden fields", schemaName, forbiddenFields.size());
             
-            int prunedCount = pruneSchemaProperties(schema, forbiddenFields, schemaName);
+            Map<String, Set<String>> embeddedOverrides = buildEmbeddedForbiddenOverrides(recordType, permissions);
+            int prunedCount = pruneSchemaProperties(schema, forbiddenFields, schemaName, embeddedOverrides);
 
             // Safety net: if OPA forbids _recordType, ensure it is removed even if missed above
             if (forbiddenFields.contains("_recordType")) {
@@ -739,7 +741,10 @@ public class OasSchemaPruner {
      * @return Number of fields pruned
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private int pruneSchemaProperties(Schema<?> schema, Set<String> forbiddenFields, String schemaName) {
+    private int pruneSchemaProperties(Schema<?> schema,
+                                      Set<String> forbiddenFields,
+                                      String schemaName,
+                                      Map<String, Set<String>> embeddedOverrides) {
         int prunedCount = 0;
         
         // Handle composed schemas (allOf, oneOf, anyOf)
@@ -749,21 +754,21 @@ public class OasSchemaPruner {
             List<Schema> allOf = composed.getAllOf();
             if (allOf != null) {
                 for (Schema subSchema : allOf) {
-                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName);
+                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName, embeddedOverrides);
                 }
             }
             
             List<Schema> oneOf = composed.getOneOf();
             if (oneOf != null) {
                 for (Schema subSchema : oneOf) {
-                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName);
+                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName, embeddedOverrides);
                 }
             }
             
             List<Schema> anyOf = composed.getAnyOf();
             if (anyOf != null) {
                 for (Schema subSchema : anyOf) {
-                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName);
+                    prunedCount += pruneSchemaProperties(subSchema, forbiddenFields, schemaName, embeddedOverrides);
                 }
             }
             
@@ -775,7 +780,7 @@ public class OasSchemaPruner {
             ArraySchema arraySchema = (ArraySchema) schema;
             Schema items = arraySchema.getItems();
             if (items != null) {
-                prunedCount += pruneSchemaProperties(items, forbiddenFields, schemaName);
+                prunedCount += pruneSchemaProperties(items, forbiddenFields, schemaName, embeddedOverrides);
             }
             return prunedCount;
         }
@@ -829,17 +834,31 @@ public class OasSchemaPruner {
             
             Schema nestedSchema = properties.get(parentField);
             if (nestedSchema != null) {
-                prunedCount += pruneSchemaProperties(nestedSchema, childFields, schemaName + "." + parentField);
+                prunedCount += pruneSchemaProperties(nestedSchema, childFields, schemaName + "." + parentField, embeddedOverrides);
             }
         }
         
         // Recursively prune all nested object schemas
         for (Map.Entry<String, Schema> propEntry : new HashMap<>(properties).entrySet()) {
             Schema propSchema = propEntry.getValue();
+            String propName = propEntry.getKey();
+
+            if (embeddedOverrides != null && embeddedOverrides.containsKey(propName)) {
+                Set<String> overrideForbidden = embeddedOverrides.get(propName);
+                if (overrideForbidden != null && !overrideForbidden.isEmpty()) {
+                    Schema<?> targetSchema = propSchema;
+                    if (propSchema instanceof ArraySchema arraySchema && arraySchema.getItems() != null) {
+                        targetSchema = arraySchema.getItems();
+                    }
+                    prunedCount += pruneSchemaProperties(targetSchema, overrideForbidden,
+                        schemaName + "." + propName, embeddedOverrides);
+                    continue;
+                }
+            }
             if (propSchema != null && propSchema.getProperties() != null) {
                 // This nested schema might have its own forbidden fields
-                prunedCount += pruneSchemaProperties(propSchema, forbiddenFields, 
-                    schemaName + "." + propEntry.getKey());
+                prunedCount += pruneSchemaProperties(propSchema, forbiddenFields,
+                    schemaName + "." + propEntry.getKey(), embeddedOverrides);
             }
         }
         
@@ -855,6 +874,47 @@ public class OasSchemaPruner {
         if (required != null) {
             required.remove(field);
         }
+    }
+
+    private Map<String, Set<String>> buildEmbeddedForbiddenOverrides(String recordType,
+                                                                     FieldPermissionContext permissions) {
+        if (permissions == null || recordType == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Set<String>> overrides = new HashMap<>();
+
+        if ("entities".equals(recordType)) {
+            overrides.put("_reactions", permissions.getAllForbiddenFields("entityReactions"));
+        } else if ("lists".equals(recordType)) {
+            overrides.put("_reactions", permissions.getAllForbiddenFields("listReactions"));
+            overrides.put("_entities", permissions.getAllForbiddenFields("entities"));
+        }
+
+        return overrides;
+    }
+
+    private Map<String, Set<String>> buildEmbeddedForbiddenOverrides(String recordType,
+                                                                     MultiOperationFieldPermissions permissions) {
+        if (permissions == null || recordType == null) {
+            return Collections.emptyMap();
+        }
+
+        FieldPermissionContext findPermissions = permissions.getPermissionsForOperation(Operation.FIND);
+        if (findPermissions == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Set<String>> overrides = new HashMap<>();
+
+        if ("entities".equals(recordType)) {
+            overrides.put("_reactions", findPermissions.getAllForbiddenFields("entityReactions"));
+        } else if ("lists".equals(recordType)) {
+            overrides.put("_reactions", findPermissions.getAllForbiddenFields("listReactions"));
+            overrides.put("_entities", findPermissions.getAllForbiddenFields("entities"));
+        }
+
+        return overrides;
     }
     
     /**
