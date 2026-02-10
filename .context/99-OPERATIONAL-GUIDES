@@ -1,3 +1,4 @@
+
 # Operational Guidelines & Environment Constraints
 
 You must adhere to the following rules and technical constraints throughout this project:
@@ -17,7 +18,7 @@ You must adhere to the following rules and technical constraints throughout this
 ## 2. Documentation & State Management
 You are responsible for keeping the project documentation synchronized with code changes:
 - **Filter Changes:** If any logic or behavior of a filter is modified, you MUST update `.context/20-FILTERS.md` to reflect the change.
-- **Domain Projection:** If any changes occur within the Domain Projection feature, you MUST reflect these updates in `.context/55-FEATURE-DOMAIN-PROJECTION.md`.
+- **Domain Projection:** If any changes occur within the Domain Projection feature, you MUST reflect these updates in `.context/55-FEATURE-DOMAIN-PROJECTION.md`. If any changes occur within the generation process within the code, reflect to the `.context/60-FEATURE-DYNAMIC-OAS-GENERATION.md`
 - Always ensure these files are accurate before concluding a task.
 - **Route Changes:** If any modifications are made to `application-routes.yml`, you MUST reflect these changes in `.context/10-ROUTES.md` to keep the routing documentation up to date.
 
