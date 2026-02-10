@@ -604,19 +604,7 @@ Domain projection integrates seamlessly with other gateway features:
 
 ---
 
-## 7. TROUBLESHOOTING
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| 404 on aliased endpoint | Alias not configured or route disabled | Check `app-oas.yml` and route toggles |
-| Wrong schema validation | Schema priority mismatch | Verify schema at correct level (route vs kind) |
-| `_kind` not injected | KindResolution filter not in chain | Check route configuration includes `KindResolution` |
-| Hierarchy path not working | Children not configured | Add `children[]` to parent alias |
-| Validation bypassed | No schema at any priority level | Add schema to alias or route configuration |
-
----
-
-## 8. FURTHER READING
+## 7. FURTHER READING
 
 - **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** — Detailed route toggle configuration and precedence rules
 - **[60-FEATURE-DYNAMIC-OAS-GENERATION.md](60-FEATURE-DYNAMIC-OAS-GENERATION.md)** — How the gateway generates personalized OpenAPI documentation reflecting the projected domain
