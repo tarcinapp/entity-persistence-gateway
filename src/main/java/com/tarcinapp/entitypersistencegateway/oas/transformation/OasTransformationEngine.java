@@ -4015,10 +4015,9 @@ public class OasTransformationEngine {
                     requestBindCount++;
                     log.debug("Bound POST {} requestBody → {}", path, postSchemaName);
                 }
-                // Bind POST 200/201 response → Xxx schema (single object)
-                if (bindOperationResponse(pathItem.getPost(), schemaName, openApi, false)) {
+                if (bindOperationResponseFromBackend(pathItem.getPost(), schemaName, openApi, aliasContext.getControllerName())) {
                     responseBindCount++;
-                    log.debug("Bound POST {} response → {}", path, schemaName);
+                    log.debug("Bound POST {} response → {} (backend-shaped)", path, schemaName);
                 }
             }
             
@@ -4030,10 +4029,9 @@ public class OasTransformationEngine {
                     requestBindCount++;
                     log.debug("Bound PUT {} requestBody → {}", path, putSchemaName);
                 }
-                // Bind PUT response → Xxx schema
-                if (bindOperationResponse(pathItem.getPut(), schemaName, openApi, false)) {
+                if (bindOperationResponseFromBackend(pathItem.getPut(), schemaName, openApi, aliasContext.getControllerName())) {
                     responseBindCount++;
-                    log.debug("Bound PUT {} response → {}", path, schemaName);
+                    log.debug("Bound PUT {} response → {} (backend-shaped)", path, schemaName);
                 }
             }
             
@@ -4045,10 +4043,9 @@ public class OasTransformationEngine {
                     requestBindCount++;
                     log.debug("Bound PATCH {} requestBody → {}", path, patchSchemaName);
                 }
-                // Bind PATCH response → Xxx schema (returns full object)
-                if (bindOperationResponse(pathItem.getPatch(), schemaName, openApi, false)) {
+                if (bindOperationResponseFromBackend(pathItem.getPatch(), schemaName, openApi, aliasContext.getControllerName())) {
                     responseBindCount++;
-                    log.debug("Bound PATCH {} response → {}", path, schemaName);
+                    log.debug("Bound PATCH {} response → {} (backend-shaped)", path, schemaName);
                 }
             }
             
@@ -4069,10 +4066,9 @@ public class OasTransformationEngine {
             // === BIND RESPONSE SCHEMAS FOR DELETE ===
             
             if (pathItem.getDelete() != null) {
-                // DELETE typically returns the deleted object
-                if (bindOperationResponse(pathItem.getDelete(), schemaName, openApi, false)) {
+                if (bindOperationResponseFromBackend(pathItem.getDelete(), schemaName, openApi, aliasContext.getControllerName())) {
                     responseBindCount++;
-                    log.debug("Bound DELETE {} response → {}", path, schemaName);
+                    log.debug("Bound DELETE {} response → {} (backend-shaped)", path, schemaName);
                 }
             }
         }
@@ -4311,6 +4307,133 @@ public class OasTransformationEngine {
         }
         
         return false;
+    }
+
+    /**
+     * Binds an operation response to a backend-shaped schema that is still transformed
+     * (alias-specific name + x-record-type) so pruning can apply.
+     */
+    private boolean bindOperationResponseFromBackend(Operation operation,
+                                                     String schemaName,
+                                                     OpenAPI openApi,
+                                                     String controllerName) {
+        if (operation == null || operation.getResponses() == null || openApi == null) {
+            return false;
+        }
+
+        Schema<?> sourceSchema = extractResponseSchema(operation);
+        if (sourceSchema == null) {
+            return false;
+        }
+
+        String routeId = getOriginalRouteId(operation);
+        if (routeId == null || routeId.isEmpty()) {
+            routeId = operation.getOperationId();
+        }
+
+        if (routeId == null || routeId.isEmpty()) {
+            return false;
+        }
+
+        String capitalizedRouteId = Character.toUpperCase(routeId.charAt(0)) + routeId.substring(1);
+        String responseSchemaName = schemaName + capitalizedRouteId;
+
+        if (openApi.getComponents() == null) {
+            openApi.setComponents(new Components());
+        }
+        if (openApi.getComponents().getSchemas() == null) {
+            openApi.getComponents().setSchemas(new LinkedHashMap<>());
+        }
+
+        if (!openApi.getComponents().getSchemas().containsKey(responseSchemaName)) {
+            Schema<?> resolved = resolveSchemaRef(openApi, sourceSchema);
+            Schema<?> cloned = cloneSchema(resolved != null ? resolved : sourceSchema);
+            ensureRecordTypeExtension(cloned, controllerName);
+            openApi.getComponents().getSchemas().put(responseSchemaName, cloned);
+        }
+
+        ApiResponse response200 = operation.getResponses().get("200");
+        boolean bound = false;
+        if (response200 != null && bindResponseContent(response200, responseSchemaName, false)) {
+            bound = true;
+        }
+
+        ApiResponse response201 = operation.getResponses().get("201");
+        if (response201 != null && bindResponseContent(response201, responseSchemaName, false)) {
+            bound = true;
+        }
+
+        return bound;
+    }
+
+    private Schema<?> extractResponseSchema(Operation operation) {
+        if (operation == null || operation.getResponses() == null) {
+            return null;
+        }
+
+        ApiResponse response = operation.getResponses().get("200");
+        if (response == null) {
+            response = operation.getResponses().get("201");
+        }
+        if (response == null || response.getContent() == null) {
+            return null;
+        }
+
+        io.swagger.v3.oas.models.media.MediaType mediaType = response.getContent().get("application/json");
+        if (mediaType == null) {
+            mediaType = response.getContent().values().stream().findFirst().orElse(null);
+        }
+        return mediaType != null ? mediaType.getSchema() : null;
+    }
+
+    private String getOriginalRouteId(Operation operation) {
+        if (operation == null || operation.getExtensions() == null) {
+            return null;
+        }
+        Object ext = operation.getExtensions().get("x-original-route-id");
+        return ext != null ? ext.toString() : null;
+    }
+
+    private Schema<?> resolveSchemaRef(OpenAPI openApi, Schema<?> schema) {
+        if (schema == null) {
+            return null;
+        }
+        if (schema.get$ref() != null && schema.get$ref().startsWith("#/components/schemas/")) {
+            String name = schema.get$ref().substring("#/components/schemas/".length());
+            if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+                return openApi.getComponents().getSchemas().get(name);
+            }
+        }
+        return schema;
+    }
+
+    private Schema<?> cloneSchema(Schema<?> schema) {
+        if (schema == null) {
+            return null;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper swaggerMapper = io.swagger.v3.core.util.Json.mapper();
+            String json = swaggerMapper.writeValueAsString(schema);
+            return swaggerMapper.readValue(json, Schema.class);
+        } catch (IllegalArgumentException e) {
+            log.debug("Failed to clone schema via ObjectMapper: {}", e.getMessage());
+            return schema;
+        } catch (Exception e) {
+            log.debug("Failed to clone schema via swagger mapper: {}", e.getMessage());
+            return schema;
+        }
+    }
+
+    private void ensureRecordTypeExtension(Schema<?> schema, String controllerName) {
+        if (schema == null) {
+            return;
+        }
+        if (schema.getExtensions() == null) {
+            schema.setExtensions(new LinkedHashMap<>());
+        }
+        if (controllerName != null && !controllerName.isBlank()) {
+            schema.getExtensions().putIfAbsent("x-record-type", controllerName);
+        }
     }
     
     /**

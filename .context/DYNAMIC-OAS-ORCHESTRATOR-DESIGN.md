@@ -149,6 +149,8 @@ public class BackendOasClient {
 
 **Responsibility:** Core transformation logic that virtualizes paths and operations.
 
+**Response Schema Policy:** Backend response schemas are preserved per operation and transformed into alias-specific components (x-record-type injected). POST/PUT/PATCH/DELETE keep their native shapes; only GET responses are rebound to domain response schemas. All responses are still pruned with FIND permissions.
+
 **Transformation Rules:**
 
 | Backend Pattern | Alias Config | Transformed Path |

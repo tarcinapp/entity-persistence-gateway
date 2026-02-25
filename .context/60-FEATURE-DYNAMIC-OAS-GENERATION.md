@@ -24,6 +24,7 @@ Request `/openapi.json` and receive an OpenAPI specification where:
 - **Operations match enabled routes:** Disabled routes don't appear
 - **Request bodies use correct schemas:** Priority-based schema resolution applied
 - **Unused schemas are removed:** Components only contain schemas actually referenced
+- **Response schemas stay operation-accurate:** POST/PUT/PATCH/DELETE responses use backend shapes per operation (transformed + pruned with FIND permissions)
 
 ### Core Principles
 
