@@ -4043,7 +4043,7 @@ public class OasTransformationEngine {
             // Use path-specific schema name (e.g., Author, BooksChildChapter, BooksParentAuthor)
             String schemaName = aliasContext.getSchemaName();
             log.debug("bindRequestBodiesToDomainSchemas: path={} → schemaName={}", path, schemaName);
-            boolean isCollectionPath = !path.contains("{id}") && !path.endsWith("/count");
+            boolean isCollectionPath = !path.endsWith("/{id}") && !path.endsWith("/count");
             boolean isCountPath = path.endsWith("/count");
             
             // === BIND REQUEST BODIES ===
@@ -4101,6 +4101,18 @@ public class OasTransformationEngine {
                 if (bindOperationResponse(pathItem.getGet(), getResponseSchemaName, openApi, isCollectionPath)) {
                     responseBindCount++;
                     log.debug("Bound GET {} response → {}{}",  path, isCollectionPath ? "array of " : "", getResponseSchemaName);
+                } else {
+                    // Fallback: domain schema not found (no 'schema' block configured for alias).
+                    // Create a response schema from the kind-level or base controller schema,
+                    // then bind the GET response to it (with array wrapping for collections).
+                    log.debug("GET {} response schema '{}' not found, trying fallback via backend schema creation", 
+                        path, getResponseSchemaName);
+                    if (createAndBindGetResponseSchema(pathItem.getGet(), schemaName, openApi, 
+                            aliasContext.getControllerName(), isCollectionPath)) {
+                        responseBindCount++;
+                        log.debug("Bound GET {} response → {} (fallback){}", path, schemaName, 
+                            isCollectionPath ? " [array]" : "");
+                    }
                 }
             }
             
@@ -4474,6 +4486,94 @@ public class OasTransformationEngine {
         } catch (Exception e) {
             log.debug("Failed to clone schema via swagger mapper: {}", e.getMessage());
             return schema;
+        }
+    }
+
+    /**
+     * Creates a response schema for GET operations when the domain schema doesn't exist.
+     * Falls back to the kind-level schema (e.g., "Book") or base controller schema (e.g., "Entity").
+     * Supports array wrapping for collection endpoints.
+     *
+     * @param operation      The GET operation
+     * @param schemaName     The target schema name (e.g., "BooksChildChapter" or "Book")
+     * @param openApi        The OpenAPI spec
+     * @param controllerName The controller name for x-record-type
+     * @param isArray        Whether to wrap the response in an array
+     * @return true if a schema was created and bound
+     */
+    @SuppressWarnings({"rawtypes"})
+    private boolean createAndBindGetResponseSchema(Operation operation, String schemaName,
+                                                    OpenAPI openApi, String controllerName,
+                                                    boolean isArray) {
+        if (operation == null || operation.getResponses() == null || openApi == null) {
+            return false;
+        }
+
+        if (openApi.getComponents() == null) {
+            openApi.setComponents(new Components());
+        }
+        if (openApi.getComponents().getSchemas() == null) {
+            openApi.getComponents().setSchemas(new LinkedHashMap<>());
+        }
+
+        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+
+        // If the target schema already exists, just bind it
+        if (schemas.containsKey(schemaName)) {
+            return bindGetResponse(operation, schemaName, isArray);
+        }
+
+        // Try to find a fallback schema:
+        // Kind-level schema or base controller schema (e.g., "Entity" for entities controller)
+        Schema<?> fallbackSchema = null;
+        String fallbackSource = null;
+
+        String baseControllerSchema = getBaseControllerSchemaName(controllerName);
+
+        if (baseControllerSchema != null && schemas.containsKey(baseControllerSchema)) {
+            fallbackSchema = schemas.get(baseControllerSchema);
+            fallbackSource = baseControllerSchema;
+        }
+
+        if (fallbackSchema == null) {
+            log.debug("No fallback schema found for GET response binding of '{}'", schemaName);
+            return false;
+        }
+
+        // Clone the fallback schema with the target name
+        Schema<?> cloned = cloneSchema(fallbackSchema);
+        ensureRecordTypeExtension(cloned, controllerName);
+        schemas.put(schemaName, cloned);
+        log.debug("Created GET response schema '{}' from fallback '{}' for controller '{}'", 
+            schemaName, fallbackSource, controllerName);
+
+        return bindGetResponse(operation, schemaName, isArray);
+    }
+
+    /**
+     * Binds a GET operation's 200 response to a schema, optionally wrapping in an array.
+     */
+    private boolean bindGetResponse(Operation operation, String schemaName, boolean isArray) {
+        ApiResponse response200 = operation.getResponses().get("200");
+        if (response200 != null) {
+            return bindResponseContent(response200, schemaName, isArray);
+        }
+        return false;
+    }
+
+    /**
+     * Returns the base controller schema name for a given controller.
+     * E.g., "entities" → "Entity", "lists" → "List", "entityReactions" → "EntityReaction"
+     */
+    private String getBaseControllerSchemaName(String controllerName) {
+        if (controllerName == null) return null;
+        switch (controllerName) {
+            case "entities": return "Entity";
+            case "lists": return "List";
+            case "relations": return "Relation";
+            case "entityReactions": return "EntityReaction";
+            case "listReactions": return "ListReaction";
+            default: return null;
         }
     }
 
