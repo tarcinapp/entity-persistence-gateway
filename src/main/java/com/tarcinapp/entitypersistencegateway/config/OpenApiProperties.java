@@ -124,6 +124,7 @@ public class OpenApiProperties {
     @Data
     public static class AliasConfig {
         private String alias;
+        private String singular;
         private String kind;
         private String description;
         private String schema;

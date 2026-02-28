@@ -184,6 +184,19 @@ routes:
       - Catalog
 ```
 
+### 3.5 Singularization & Explicit Singular Override
+
+The OAS generator automatically singularizes alias names to produce natural operationIds (e.g., `books` → `createBook`). The heuristic handles most English plurals correctly, including `-ies` → `-y`, `-sses`/`-shes`/`-ches`/`-xes` → strip `es`, and general `-s` → strip `s`.
+
+For irregular plurals where the heuristic produces incorrect results (e.g., `heroes` → `heroe`), use the `singular` config property:
+
+```properties
+app.oas.controllers.entities.aliases[0].alias=heroes
+app.oas.controllers.entities.aliases[0].singular=hero
+```
+
+When `singular` is set, it takes precedence over the heuristic for operationId and summary generation.
+
 ---
 
 ## 4. CACHING ARCHITECTURE

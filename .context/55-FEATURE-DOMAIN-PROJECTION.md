@@ -220,6 +220,7 @@ app:
           - alias: products
             kind: product
             description: Product catalog management
+            singular: product          # Optional: explicit singular form for operationId generation
             
             # Kind-level schema (applies to all operations unless overridden)
             schema: |
@@ -321,6 +322,9 @@ For environment-specific configuration (e.g., `application-dev.properties`):
 app.oas.controllers.entities.aliases[0].alias=products
 app.oas.controllers.entities.aliases[0].kind=product
 app.oas.controllers.entities.aliases[0].description=Product catalog
+
+# Optional explicit singular (for irregular plurals the heuristic can't handle, e.g. heroes→hero)
+# app.oas.controllers.entities.aliases[0].singular=product
 
 # Schema (inline JSON)
 app.oas.controllers.entities.aliases[0].schema={"type":"object","properties":{"_name":{"type":"string"}},"required":["_name"]}

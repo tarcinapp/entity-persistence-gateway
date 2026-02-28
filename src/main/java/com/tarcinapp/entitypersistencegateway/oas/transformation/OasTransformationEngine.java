@@ -887,7 +887,7 @@ public class OasTransformationEngine {
         
         PathItem transformed = new PathItem();
         
-        String parentResourceName = capitalizeFirst(singularize(parentAlias.getAlias()));
+        String parentResourceName = capitalizeFirst(getSingular(parentAlias));
         String childResourceName = capitalizeFirst(childAlias.getAlias());
         
         transformed.setDescription(String.format(
@@ -1125,9 +1125,9 @@ public class OasTransformationEngine {
             extensions.put("x-original-route-id", baseRouteId);
         }
         
-        String parentSingular = singularize(parentAlias.getAlias());
+        String parentSingular = getSingular(parentAlias);
         String childPlural = childAlias.getAlias();
-        String childSingular = singularize(childAlias.getAlias());
+        String childSingular = getSingular(childAlias);
         
         // Generate operation ID: list{Parent}{Children}, create{Parent}{Child}
         String operationId;
@@ -1515,7 +1515,7 @@ public class OasTransformationEngine {
      * E.g., "findEntities" + alias "books" → "listBooks"
      */
     private String generateOperationId(String originalOpId, AliasConfig aliasConfig) {
-        String singular = singularize(aliasConfig.getAlias());
+        String singular = getSingular(aliasConfig);
         String capitalized = capitalizeFirst(singular);
         
         for (Map.Entry<String, String> entry : OPERATION_TRANSFORMS.entrySet()) {
@@ -1533,7 +1533,7 @@ public class OasTransformationEngine {
      */
     private String generateSummary(String originalOpId, AliasConfig aliasConfig, 
                                    String httpMethod, boolean isInstancePath) {
-        String resourceName = capitalizeFirst(singularize(aliasConfig.getAlias()));
+        String resourceName = capitalizeFirst(getSingular(aliasConfig));
         String pluralName = capitalizeFirst(aliasConfig.getAlias());
         
         if (originalOpId == null) {
@@ -2297,15 +2297,48 @@ public class OasTransformationEngine {
         if (plural == null || plural.isEmpty()) {
             return plural;
         }
-        // Simple singularization rules
+        
+        // Handle hyphenated names: singularize only the last segment
+        if (plural.contains("-")) {
+            int lastHyphen = plural.lastIndexOf('-');
+            String prefix = plural.substring(0, lastHyphen + 1);
+            String lastSegment = plural.substring(lastHyphen + 1);
+            return prefix + singularize(lastSegment);
+        }
+        
+        // -ies → -y (cities → city, factories → factory, categories → category)
         if (plural.endsWith("ies")) {
             return plural.substring(0, plural.length() - 3) + "y";
-        } else if (plural.endsWith("es")) {
+        }
+        
+        // Sibilant/consonant-cluster plurals: strip "es"
+        // These are words where the singular ends in a sound that requires "es" for pluralization
+        if (plural.endsWith("sses")    // addresses → address, classes → class
+                || plural.endsWith("shes")  // dishes → dish, crashes → crash
+                || plural.endsWith("ches")  // watches → watch, batches → batch
+                || plural.endsWith("xes"))  // boxes → box, indexes → index
+        {
             return plural.substring(0, plural.length() - 2);
-        } else if (plural.endsWith("s") && !plural.endsWith("ss")) {
+        }
+        
+        // All other words ending in "s" (including "es"): strip just "s"
+        // This correctly handles words like garages, vehicles, likes, engines
+        if (plural.endsWith("s") && !plural.endsWith("ss")) {
             return plural.substring(0, plural.length() - 1);
         }
+        
         return plural;
+    }
+    
+    /**
+     * Returns the singular form of an alias, using the explicit singular override
+     * if configured, otherwise falling back to the heuristic singularize() method.
+     */
+    private String getSingular(AliasConfig aliasConfig) {
+        if (aliasConfig.getSingular() != null && !aliasConfig.getSingular().isBlank()) {
+            return aliasConfig.getSingular();
+        }
+        return singularize(aliasConfig.getAlias());
     }
     
     /**
