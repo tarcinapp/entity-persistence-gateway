@@ -11,9 +11,10 @@
 
 ## Executive Summary
 
-Tested the dynamically generated OpenAPI Specification across 9 test phases (Phase 0, 1a–1e, 2, 3, 4). All 5 controller types were tested in isolation and combined. **14 bugs** were found, ranging from critical (non-functional route toggles) to informational (empty tag descriptions).
+Tested the dynamically generated OpenAPI Specification across 9 test phases (Phase 0, 1a–1e, 2, 3, 4). All 5 controller types were tested in isolation and combined. **7 open bugs** remain out of 16 originally reported.
 
-> **Fixed**: BUG-001 (Singularization Truncation) and BUG-002 (Summary Truncation) — resolved by improving the `singularize()` heuristic and adding optional `singular` config override.
+> **Fixed**: BUG-001, BUG-002 (Singularization/Summary Truncation), BUG-003 (Create Response Schemas), BUG-005 (Children GET Response Type)  
+> **Not a bug**: BUG-004 (x-record-type), BUG-006 (204 No Content), BUG-008 (empty tag descriptions), BUG-011 (hyphenated keys), BUG-012 (empty PatchRelation)
 
 ### Metrics by Phase
 
@@ -33,42 +34,15 @@ Tested the dynamically generated OpenAPI Specification across 9 test phases (Pha
 
 ## Bug Catalog
 
-### BUG-003: Create Response Schemas Missing Domain Fields (HIGH)
+### BUG-003: Create Response Schemas Missing Domain Fields (HIGH) — ✅ SOLVED
 
-Every `*Create*` response schema (across all controllers) has ONLY base fields (12–17 depending on controller) and ZERO domain-specific fields.
-
-| Schema | Fields | Domain Fields |
-|--------|--------|---------------|
-| VehicleCreateEntity | 16 | 0 (expected: myVehiclePlateNumber, myVehicleColor, myVehicleYear) |
-| GarageCreateEntity | 16 | 0 |
-| PlaylistCreateList | 17 | 0 |
-| AlbumCreateList | 17 | 0 |
-| MembershipCreateRelation | 12 | 0 |
-| PartnershipCreateRelation | 12 | 0 |
-| VehicleLikeCreateEntityReaction | 15 | 0 |
-| PlaylistLikeCreateListReaction | 15 | 0 |
-| VehiclesChildEngineCreateEntityChild | 16 | 0 |
-| PlaylistsChildTrackCreateListChild | 17 | 0 |
-
-**Impact**: API clients cannot know what fields are returned after a successful POST create.
-
----
-
-### BUG-004: x-record-type Not Set on Any Schema (MEDIUM)
-
-All schemas across all phases have `x-record-type = NOT SET`. This vendor extension is used by `OasSchemaPruner` for OPA-based field pruning. Without it, field-level access control may not function correctly.
+Fixed in branch `fix/mutation-response-schemas-missing-domain-fields`. POST response schemas now include domain-specific fields.
 
 ---
 
 ### BUG-005: Children/Parents GET Returns Object Instead of Array (MEDIUM) — ✅ SOLVED
 
 Fixed in branch `fix/BUG-005-children-get-response-missing-properties`. All children/parents GET endpoints now correctly return `type: array`.
-
----
-
-### BUG-006: PATCH/PUT by ID Returns 204 No Content (LOW)
-
-PATCH and PUT operations for all controllers return `204 No Content` with no response body. While valid HTTP, many APIs return the updated resource. The OAS has no `200` response schema for these operations.
 
 ---
 
@@ -85,19 +59,6 @@ All `New*` request schemas have `required: []` even when the config explicitly s
 | NewPlaylistLike | ["myReactionEmoji"] | [] |
 
 The `required` constraints from config DO appear on GET response schemas (e.g., `Vehicle.required = ['_name', 'myVehiclePlateNumber']`) but NOT on create request schemas.
-
----
-
-### BUG-008: Auto-Generated Tag Descriptions Empty (LOW)
-
-Tags auto-generated for aliases without explicit tag definitions have empty descriptions:
-- `Albums: desc=""`
-- `Garages: desc=""`  
-- `Partnerships: desc=""`
-- `Entities: desc=""`
-- `Entity reactions: desc=""`
-
-Custom config tags correctly have descriptions: `Vehicles: desc="Vehicle management operations"`.
 
 ---
 
@@ -130,20 +91,6 @@ Different controller types use different auto-generated operationId prefixes, wh
 | relations | `findRelationsAlias` | `findRelationByIdAlias` | `createAlias` |
 | entityReactions | `findEntityReactionsAlias` | `findEntityReactionByIdAlias` | `createAlias` |
 | listReactions | `findListReactionsAlias` | `findListReactionByIdAlias` | `createAlias` |
-
----
-
-### BUG-011: Hyphenated Controller Keys Don't Work in Properties (MEDIUM)
-
-Using `app.oas.controllers.entity-reactions.aliases[...]` or bracket notation `app.oas.controllers[entity-reactions].aliases[...]` in properties files produces NO aliases. Must use camelCase key `app.oas.controllers.entityReactions.aliases[...]` matching the key in `app-inbound.yml`.
-
-This is undocumented. The URL path uses hyphens (`/entity-reactions/`) but the config key must use camelCase (`entityReactions`).
-
----
-
-### BUG-012: PatchRelation Generic Schema Has 0 Fields (LOW)
-
-The generic `PatchRelation` schema has zero properties, making it an empty object. Alias-specific patch schemas (`PatchMembership`, `PatchPartnership`) correctly have their domain fields.
 
 ---
 
@@ -237,6 +184,6 @@ Additionally, `autoGenerateOperationIds=false` does NOT prevent auto-generation 
 | Priority | Bugs | Impact |
 |----------|------|--------|
 | **CRITICAL** | BUG-015 | Route toggles non-functional |
-| **HIGH** | BUG-003, BUG-007, BUG-009, BUG-016 | Missing response fields; missing validation; children overrides ignored; mass duplicates |
-| **MEDIUM** | BUG-004, BUG-005, BUG-011, BUG-013, BUG-014 | OPA pruning issues; wrong response types; config UX; naming inconsistencies |
-| **LOW** | BUG-006, BUG-008, BUG-010, BUG-012 | HTTP convention choices; cosmetic issues |
+| **HIGH** | BUG-007, BUG-009, BUG-016 | Missing validation; children overrides ignored; mass duplicates |
+| **MEDIUM** | BUG-013, BUG-014 | Naming inconsistencies; duplicate tags |
+| **LOW** | BUG-010 | Cosmetic inconsistency |
