@@ -3856,11 +3856,19 @@ public class OasTransformationEngine {
                 Schema routeSchema;
                 
                 if (routeIdLower.contains("create")) {
-                    // POST variant: New{SchemaName}{RouteId}
+                    // POST REQUEST variant: New{SchemaName}{RouteId}
                     routeSchemaName = "New" + schemaName + capitalizeFirst(routeId);
                     routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePostBase, controllerName);
                     // Keep required from route schema (unlike kind-level which removes required)
-                    log.debug("Created route-specific POST schema: {} (from route: {})", routeSchemaName, routeId);
+                    log.debug("Created route-specific POST request schema: {} (from route: {})", routeSchemaName, routeId);
+                    
+                    // POST RESPONSE variant: {SchemaName}{RouteId} — merged with Resource base
+                    // The backend returns all fields (including read-only like _id, timestamps)
+                    // so the response schema should use the resource base, not the POST base.
+                    String responseSchemaName = schemaName + capitalizeFirst(routeId);
+                    Schema responseSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    schemas.put(responseSchemaName, responseSchema);
+                    log.debug("Created route-specific POST response schema: {} (from route: {})", responseSchemaName, routeId);
                 } else if (routeIdLower.contains("update") || routeIdLower.contains("patch")) {
                     // PATCH variant: Patch{SchemaName}{RouteId}
                     routeSchemaName = "Patch" + schemaName + capitalizeFirst(routeId);
@@ -4346,10 +4354,22 @@ public class OasTransformationEngine {
         }
 
         if (!openApi.getComponents().getSchemas().containsKey(responseSchemaName)) {
-            Schema<?> resolved = resolveSchemaRef(openApi, sourceSchema);
-            Schema<?> cloned = cloneSchema(resolved != null ? resolved : sourceSchema);
-            ensureRecordTypeExtension(cloned, controllerName);
-            openApi.getComponents().getSchemas().put(responseSchemaName, cloned);
+            // Check if a kind-level merged schema exists (e.g., "Book") — use it instead
+            // of cloning the raw backend schema, so domain fields are included in responses.
+            Schema<?> kindLevelSchema = openApi.getComponents().getSchemas().get(schemaName);
+            if (kindLevelSchema != null) {
+                Schema<?> cloned = cloneSchema(kindLevelSchema);
+                ensureRecordTypeExtension(cloned, controllerName);
+                openApi.getComponents().getSchemas().put(responseSchemaName, cloned);
+                log.debug("Created response schema '{}' from kind-level schema '{}'", responseSchemaName, schemaName);
+            } else {
+                // Fallback: no merged domain schema available, clone raw backend response
+                Schema<?> resolved = resolveSchemaRef(openApi, sourceSchema);
+                Schema<?> cloned = cloneSchema(resolved != null ? resolved : sourceSchema);
+                ensureRecordTypeExtension(cloned, controllerName);
+                openApi.getComponents().getSchemas().put(responseSchemaName, cloned);
+                log.debug("Created response schema '{}' from raw backend (no domain schema available)", responseSchemaName);
+            }
         }
 
         ApiResponse response200 = operation.getResponses().get("200");
