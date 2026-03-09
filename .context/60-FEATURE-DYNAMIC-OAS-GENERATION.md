@@ -56,6 +56,16 @@ For a `book` entity with fields: `title`, `author`, `isbn`, `internalNotes`, `co
 
 **Operation-Specific Permissions:** The generator produces different schemas for GET, POST, and PATCH operations. A user might READ `costPrice` but not WRITE it—their GET response schema includes the field, but POST/PATCH request schemas do not.
 
+**Required Field Handling by Schema Variant:**
+
+| Schema Variant | Required Fields Behavior |
+|---|---|
+| `{Kind}` (GET/PUT) | Merges base + user-config required fields — keeps all |
+| `New{Kind}` (POST) | Drops base-schema required fields (gateway provides defaults), keeps user-config required fields (e.g., `isbn`) |
+| `Patch{Kind}` (PATCH) | All required fields removed — partial updates make every field optional |
+
+User-config required fields are extracted from the alias/route schema JSON using `extractUserRequiredFields()`. This ensures that domain-specific constraints (like requiring `isbn` on book creation) are preserved in the generated OAS, while infrastructure fields managed by the gateway remain optional.
+
 ### 2.2 Route Toggle Integration
 
 When routes are disabled via `application-route-toggles.yml`, they disappear from the generated OAS entirely. The documentation always reflects what's actually accessible.

@@ -3816,7 +3816,9 @@ public class OasTransformationEngine {
             // 2. New Variant (POST) - use POST Base (excludes ID, uses create constraints)
             // Also add "New" variant without required base fields for POST
             Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePostBase, controllerName);
-            newSchema.setRequired(null); // No required for creation (gateway adds defaults)
+            // Remove base-schema required fields (gateway provides defaults for those)
+            // but keep user-config required fields (those ARE required from the client)
+            newSchema.setRequired(extractUserRequiredFields(aliasConfig.getSchema()));
             schemas.put("New" + schemaName, newSchema);
             
             // 3. Patch Variant (PATCH) - use PATCH Base (partial update)
@@ -3892,7 +3894,9 @@ public class OasTransformationEngine {
                     // POST REQUEST variant: New{SchemaName}{RouteId}
                     routeSchemaName = "New" + schemaName + capitalizeFirst(routeId);
                     routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePostBase, controllerName);
-                    // Keep required from route schema (unlike kind-level which removes required)
+                    // Remove base-schema required fields (gateway provides defaults for those)
+                    // but keep user-config required fields (those ARE required from the client)
+                    routeSchema.setRequired(extractUserRequiredFields(routeConfig.getSchema()));
                     log.debug("Created route-specific POST request schema: {} (from route: {})", routeSchemaName, routeId);
                     
                     // POST RESPONSE variant: {SchemaName}{RouteId} — merged with Resource base
@@ -3928,6 +3932,29 @@ public class OasTransformationEngine {
         }
     }
     
+    /**
+     * Extracts required fields from user config schema JSON only (not base schema).
+     * Returns null if no required fields are specified in the user config.
+     * 
+     * @param schemaJson The user config schema JSON string
+     * @return List of required field names from user config, or null if none specified
+     */
+    private List<String> extractUserRequiredFields(String schemaJson) {
+        try {
+            JsonNode node = objectMapper.readTree(schemaJson);
+            if (node.has("required") && node.get("required").isArray()) {
+                List<String> required = new ArrayList<>();
+                for (JsonNode req : node.get("required")) {
+                    required.add(req.asText());
+                }
+                return required.isEmpty() ? null : required;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse required fields from config schema: {}", e.getMessage());
+        }
+        return null;
+    }
+
     /**
      * Merges an alias-specific schema with the base schema.
      * Properties from alias override base; required arrays are merged.
