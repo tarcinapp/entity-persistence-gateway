@@ -1153,11 +1153,33 @@ public class OasTransformationEngine {
                     capitalizeFirst(httpMethod), childSingular.toLowerCase(), parentSingular.toLowerCase());
         }
         
+        // Apply route-level overrides from childAlias config (operationId, tags, summary, description)
+        RouteConfig routeConfig = (childAlias.getRoutes() != null && baseRouteId != null)
+            ? childAlias.getRoutes().get(baseRouteId)
+            : null;
+        
+        if (routeConfig != null) {
+            if (routeConfig.getOperationId() != null) {
+                operationId = routeConfig.getOperationId();
+            }
+            if (routeConfig.getSummary() != null) {
+                summary = routeConfig.getSummary();
+            }
+            if (routeConfig.getDescription() != null) {
+                transformed.setDescription(routeConfig.getDescription());
+            }
+        }
+        
         transformed.setOperationId(operationId);
         transformed.setSummary(summary);
         
         // CRITICAL: Tag under PARENT, not child - maintains proper grouping
-        transformed.setTags(Collections.singletonList(parentTagName));
+        // Apply tags override from childAlias route config if present
+        if (routeConfig != null && routeConfig.getTags() != null && !routeConfig.getTags().isEmpty()) {
+            transformed.setTags(routeConfig.getTags());
+        } else {
+            transformed.setTags(Collections.singletonList(parentTagName));
+        }
         
         return transformed;
     }
