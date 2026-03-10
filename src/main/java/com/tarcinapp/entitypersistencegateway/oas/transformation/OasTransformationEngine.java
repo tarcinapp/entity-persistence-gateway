@@ -167,23 +167,61 @@ public class OasTransformationEngine {
     
     // Maps backend operation prefixes to transformation patterns
     private static final Map<String, String> OPERATION_TRANSFORMS = Map.ofEntries(
-        Map.entry("findEntities", "list%s"),
-        Map.entry("findEntityById", "get%sById"),
+        // Entities
+        Map.entry("findEntities", "find%s"),
+        Map.entry("findEntityById", "find%sById"),
         Map.entry("createEntity", "create%s"),
         Map.entry("updateEntityById", "update%s"),
         Map.entry("replaceEntityById", "replace%s"),
         Map.entry("deleteEntityById", "delete%s"),
         Map.entry("countEntities", "count%s"),
-        Map.entry("findEntityChildren", "list%sChildren"),
+        Map.entry("findEntityChildren", "find%sChildren"),
         Map.entry("createEntityChild", "create%sChild"),
-        Map.entry("findEntityParents", "list%sParents"),
-        Map.entry("findLists", "list%s"),
-        Map.entry("findListById", "get%sById"),
+        Map.entry("findEntityParents", "find%sParents"),
+        Map.entry("findChildrenByEntityId", "find%sChildren"),
+        Map.entry("createChildEntity", "create%sChild"),
+        Map.entry("findParentsByEntityId", "find%sParents"),
+        // Lists
+        Map.entry("findLists", "find%s"),
+        Map.entry("findListById", "find%sById"),
         Map.entry("createList", "create%s"),
         Map.entry("updateListById", "update%s"),
         Map.entry("replaceListById", "replace%s"),
         Map.entry("deleteListById", "delete%s"),
-        Map.entry("countLists", "count%s")
+        Map.entry("countLists", "count%s"),
+        Map.entry("findChildrenByListId", "find%sChildren"),
+        Map.entry("createChildList", "create%sChild"),
+        Map.entry("findParentsByListId", "find%sParents"),
+        // Relations
+        Map.entry("findRelations", "find%s"),
+        Map.entry("findRelationById", "find%sById"),
+        Map.entry("createRelation", "create%s"),
+        Map.entry("updateRelationById", "update%s"),
+        Map.entry("replaceRelationById", "replace%s"),
+        Map.entry("deleteRelationById", "delete%s"),
+        Map.entry("countRelations", "count%s"),
+        // Entity Reactions
+        Map.entry("findEntityReactions", "find%s"),
+        Map.entry("findEntityReactionById", "find%sById"),
+        Map.entry("createEntityReaction", "create%s"),
+        Map.entry("updateEntityReactionById", "update%s"),
+        Map.entry("replaceEntityReactionById", "replace%s"),
+        Map.entry("deleteEntityReactionById", "delete%s"),
+        Map.entry("countEntityReactions", "count%s"),
+        Map.entry("findChildrenByEntityReactionId", "find%sChildren"),
+        Map.entry("createEntityReactionChild", "create%sChild"),
+        Map.entry("findParentsByEntityReactionId", "find%sParents"),
+        // List Reactions
+        Map.entry("findListReactions", "find%s"),
+        Map.entry("findListReactionById", "find%sById"),
+        Map.entry("createListReaction", "create%s"),
+        Map.entry("updateListReactionById", "update%s"),
+        Map.entry("replaceListReactionById", "replace%s"),
+        Map.entry("deleteListReactionById", "delete%s"),
+        Map.entry("countListReactions", "count%s"),
+        Map.entry("findChildrenByListReactionId", "find%sChildren"),
+        Map.entry("createListReactionChild", "create%sChild"),
+        Map.entry("findParentsByListReactionId", "find%sParents")
     );
     
     public OasTransformationEngine(
@@ -1135,9 +1173,9 @@ public class OasTransformationEngine {
         
         switch (httpMethod.toLowerCase()) {
             case "get":
-                operationId = String.format("list%s%s", 
+                operationId = String.format("find%s%s", 
                     capitalizeFirst(parentSingular), capitalizeFirst(childPlural));
-                summary = String.format("List %s belonging to a %s", 
+                summary = String.format("Find %s belonging to a %s", 
                     childPlural.toLowerCase(), parentSingular.toLowerCase());
                 break;
             case "post":
@@ -1534,7 +1572,7 @@ public class OasTransformationEngine {
     
     /**
      * Generates an operation ID based on the alias.
-     * E.g., "findEntities" + alias "books" → "listBooks"
+     * E.g., "findEntities" + alias "books" → "findBooks"
      */
     private String generateOperationId(String originalOpId, AliasConfig aliasConfig) {
         String singular = getSingular(aliasConfig);
