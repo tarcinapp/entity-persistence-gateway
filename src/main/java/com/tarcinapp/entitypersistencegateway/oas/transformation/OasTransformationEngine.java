@@ -860,7 +860,7 @@ public class OasTransformationEngine {
         String parentTagName = capitalizeFirst(rootParentAlias.getAlias());
         
         // Children paths: /entities/{id}/children → /books/{id}/chapters
-        if (aliasConfig.getChildren() != null) {
+        if (aliasConfig.getChildren() != null && !aliasConfig.getChildren().isEmpty()) {
             PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
             
             for (AliasConfig childAlias : aliasConfig.getChildren()) {
@@ -885,10 +885,24 @@ public class OasTransformationEngine {
                     rootParentAlias  // Keep root parent for tag consistency
                 ));
             }
+        } else {
+            // Default children path when no explicit children are configured
+            // The route works at runtime, so the OAS should document it
+            PathItem childrenPathItem = rawPaths.get(backendPrefix + "/{id}/children");
+            if (childrenPathItem != null) {
+                AliasConfig syntheticChildAlias = new AliasConfig();
+                syntheticChildAlias.setAlias("children");
+                PathItem transformed = transformPathItemForHierarchy(
+                    childrenPathItem, syntheticChildAlias, controllerName,
+                    parentTagName, aliasConfig, "children"
+                );
+                String virtualPath = virtualPrefix + "/{id}/children";
+                result.add(new TransformedPath(virtualPath, transformed));
+            }
         }
         
         // Parents paths: /entities/{id}/parents → /books/{id}/authors
-        if (aliasConfig.getParents() != null) {
+        if (aliasConfig.getParents() != null && !aliasConfig.getParents().isEmpty()) {
             PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
             
             for (AliasConfig parentAlias : aliasConfig.getParents()) {
@@ -902,6 +916,20 @@ public class OasTransformationEngine {
                     String virtualPath = virtualPrefix + "/{id}/" + parentAlias.getAlias();
                     result.add(new TransformedPath(virtualPath, transformed));
                 }
+            }
+        } else {
+            // Default parents path when no explicit parents are configured
+            // The route works at runtime, so the OAS should document it
+            PathItem parentsPathItem = rawPaths.get(backendPrefix + "/{id}/parents");
+            if (parentsPathItem != null) {
+                AliasConfig syntheticParentAlias = new AliasConfig();
+                syntheticParentAlias.setAlias("parents");
+                PathItem transformed = transformPathItemForHierarchy(
+                    parentsPathItem, syntheticParentAlias, controllerName,
+                    parentTagName, aliasConfig, "parents"
+                );
+                String virtualPath = virtualPrefix + "/{id}/parents";
+                result.add(new TransformedPath(virtualPath, transformed));
             }
         }
         
