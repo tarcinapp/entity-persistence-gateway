@@ -1584,16 +1584,11 @@ public class OasTransformationEngine {
             transformed.setTags(routeConfig.getTags() != null && !routeConfig.getTags().isEmpty()
                 ? routeConfig.getTags()
                 : Collections.singletonList(tagName));
-        } else if (orchestratorProperties.getTransformation().isAutoGenerateOperationIds()) {
+        } else {
             // Auto-generate operation metadata
             transformed.setOperationId(generateOperationId(originalOpId, aliasConfig));
             transformed.setSummary(generateSummary(originalOpId, aliasConfig, httpMethod, isInstancePath));
             transformed.setTags(Collections.singletonList(tagName));
-        } else {
-            // Fall back to original
-            transformed.setOperationId(originalOpId);
-            transformed.setSummary(original.getSummary());
-            transformed.setTags(original.getTags() != null ? original.getTags() : Collections.singletonList(tagName));
         }
         
         return transformed;

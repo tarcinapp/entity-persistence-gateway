@@ -248,11 +248,5 @@ public class OasOrchestratorProperties {
          * List of internal field prefixes to consider for exclusion.
          */
         private String internalFieldPrefix = "_";
-        
-        /**
-         * Whether to generate operation IDs automatically from alias names.
-         * E.g., findEntities with alias "books" → listBooks
-         */
-        private boolean autoGenerateOperationIds = true;
     }
 }
