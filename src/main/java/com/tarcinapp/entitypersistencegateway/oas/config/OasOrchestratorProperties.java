@@ -237,16 +237,5 @@ public class OasOrchestratorProperties {
          * E.g., "GenericEntityExcluding__idempotencyKey..." → "Book"
          */
         private boolean simplifySchemaNames = true;
-        
-        /**
-         * Whether to include internal fields (prefixed with _) in schemas.
-         * These are typically system-managed fields like _id, _kind, _version.
-         */
-        private boolean includeInternalFields = true;
-        
-        /**
-         * List of internal field prefixes to consider for exclusion.
-         */
-        private String internalFieldPrefix = "_";
     }
 }
