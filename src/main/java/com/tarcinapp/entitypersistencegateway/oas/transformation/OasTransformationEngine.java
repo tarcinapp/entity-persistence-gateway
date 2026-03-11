@@ -501,9 +501,10 @@ public class OasTransformationEngine {
                 );
                 
                 aliasPaths.forEach(tp -> {
-                    // Check if specific route is disabled
-                    if (isRouteDisabled(tp.getRouteId())) {
-                        log.debug("Skipping route '{}' - disabled by toggles", tp.getRouteId());
+                    // Filter individual operations by route toggles (using operationId)
+                    PathItem filtered = filterDisabledOperations(tp.getPathItem());
+                    if (filtered == null) {
+                        log.debug("Skipping path '{}' - all operations disabled by route toggles", tp.getVirtualPath());
                         return;
                     }
                     
@@ -513,7 +514,7 @@ public class OasTransformationEngine {
                     if (virtualizedPaths.containsKey(fullPath)) {
                         log.warn("Duplicate virtualized path: {}", fullPath);
                     } else {
-                        virtualizedPaths.addPathItem(fullPath, tp.getPathItem());
+                        virtualizedPaths.addPathItem(fullPath, filtered);
                     }
                 });
             });
@@ -3292,6 +3293,50 @@ public class OasTransformationEngine {
         }
         
         return false;
+    }
+    
+    /**
+     * Filters out disabled operations from a PathItem based on route toggles.
+     * Each operation is checked individually using its operationId.
+     * Returns null if all operations are disabled (path should be skipped entirely).
+     */
+    private PathItem filterDisabledOperations(PathItem pathItem) {
+        List<String> routesOn = normalizeList(togglesProperties.getRoutes().getOn());
+        List<String> routesOff = normalizeList(togglesProperties.getRoutes().getOff());
+        
+        // No route filtering configured — return as-is
+        if (routesOn.isEmpty() && routesOff.isEmpty()) {
+            return pathItem;
+        }
+        
+        if (pathItem.getGet() != null && isRouteDisabled(pathItem.getGet().getOperationId())) {
+            log.debug("Disabling GET operation '{}' by route toggle", pathItem.getGet().getOperationId());
+            pathItem.setGet(null);
+        }
+        if (pathItem.getPost() != null && isRouteDisabled(pathItem.getPost().getOperationId())) {
+            log.debug("Disabling POST operation '{}' by route toggle", pathItem.getPost().getOperationId());
+            pathItem.setPost(null);
+        }
+        if (pathItem.getPut() != null && isRouteDisabled(pathItem.getPut().getOperationId())) {
+            log.debug("Disabling PUT operation '{}' by route toggle", pathItem.getPut().getOperationId());
+            pathItem.setPut(null);
+        }
+        if (pathItem.getPatch() != null && isRouteDisabled(pathItem.getPatch().getOperationId())) {
+            log.debug("Disabling PATCH operation '{}' by route toggle", pathItem.getPatch().getOperationId());
+            pathItem.setPatch(null);
+        }
+        if (pathItem.getDelete() != null && isRouteDisabled(pathItem.getDelete().getOperationId())) {
+            log.debug("Disabling DELETE operation '{}' by route toggle", pathItem.getDelete().getOperationId());
+            pathItem.setDelete(null);
+        }
+        
+        // If all operations are removed, skip the entire path
+        if (pathItem.getGet() == null && pathItem.getPost() == null && pathItem.getPut() == null
+                && pathItem.getPatch() == null && pathItem.getDelete() == null) {
+            return null;
+        }
+        
+        return pathItem;
     }
     
     /**
