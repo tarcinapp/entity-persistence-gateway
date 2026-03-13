@@ -54,6 +54,10 @@ public class PolicyDataBuilderRegistry {
     @Qualifier("policyDataBuilderForThroughReactionCreation")
     private PolicyDataBuilder builderForThroughReactionCreation;
 
+    @Autowired
+    @Qualifier("policyDataBuilderForThroughWithoutPayload")
+    private PolicyDataBuilder builderForThroughWithoutPayload;
+
     private final Map<String, PolicyDataBuilder> routeBuilderMap = new HashMap<>();
 
     /**
@@ -185,13 +189,13 @@ public class PolicyDataBuilderRegistry {
         // GET /lists/{id}/parents
         routeBuilderMap.put("findListParents", builderWithoutPayload);
         // GET /lists/{listId}/entities
-        routeBuilderMap.put("findEntitiesByListId", builderWithoutPayload);
+        routeBuilderMap.put("findEntitiesByListId", builderForThroughWithoutPayload);
         // GET /lists/{kindAlias}/{listId}/entities/{throughAlias} (through kind alias)
-        routeBuilderMap.put("findEntitiesByListIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("findEntitiesByListIdByKindAlias", builderForThroughWithoutPayload);
         // GET /entities/{entityId}/lists
-        routeBuilderMap.put("findListsByEntityId", builderWithoutPayload);
+        routeBuilderMap.put("findListsByEntityId", builderForThroughWithoutPayload);
         // GET /entities/{kindAlias}/{entityId}/lists/{throughAlias} (through kind alias)
-        routeBuilderMap.put("findListsByEntityIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("findListsByEntityIdByKindAlias", builderForThroughWithoutPayload);
         // GET /lists/{kindAlias}
         routeBuilderMap.put("findAllListsByKindAlias", builderWithoutPayloadNoOriginal);
         // GET /lists/{kindAlias}/count
@@ -209,9 +213,9 @@ public class PolicyDataBuilderRegistry {
         // DELETE /lists/{id}
         routeBuilderMap.put("deleteListById", builderWithoutPayload);
         // DELETE /lists/{listId}/entities
-        routeBuilderMap.put("deleteEntitiesByListId", builderWithoutPayload);
+        routeBuilderMap.put("deleteEntitiesByListId", builderForThroughWithoutPayload);
         // DELETE /lists/{kindAlias}/{listId}/entities/{throughAlias} (through kind alias)
-        routeBuilderMap.put("deleteEntitiesByListIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("deleteEntitiesByListIdByKindAlias", builderForThroughWithoutPayload);
         // DELETE /lists/{kindAlias}/{id}
         routeBuilderMap.put("deleteListByIdByKindAlias", builderWithoutPayload);
 
@@ -318,9 +322,9 @@ public class PolicyDataBuilderRegistry {
         // GET /entity-reactions/{id}/parents
         routeBuilderMap.put("findParentsByEntityReactionId", builderWithoutPayload);
         // GET /entities/{entityId}/reactions
-        routeBuilderMap.put("findReactionsByEntityId", builderWithoutPayload);
+        routeBuilderMap.put("findReactionsByEntityId", builderForThroughWithoutPayload);
         // GET /entities/{kindAlias}/{entityId}/reactions/{throughAlias} (through kind alias)
-        routeBuilderMap.put("findReactionsByEntityIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("findReactionsByEntityIdByKindAlias", builderForThroughWithoutPayload);
         // GET /entity-reactions/{kindAlias}
         routeBuilderMap.put("findAllEntityReactionsByKindAlias", builderWithoutPayloadNoOriginal);
         // GET /entity-reactions/{kindAlias}/count
@@ -336,9 +340,9 @@ public class PolicyDataBuilderRegistry {
         // DELETE /entity-reactions/{id}
         routeBuilderMap.put("deleteEntityReactionById", builderWithoutPayload);
         // DELETE /entities/{entityId}/reactions
-        routeBuilderMap.put("deleteReactionsByEntityId", builderWithoutPayload);
+        routeBuilderMap.put("deleteReactionsByEntityId", builderForThroughWithoutPayload);
         // DELETE /entities/{kindAlias}/{entityId}/reactions/{throughAlias} (through kind alias)
-        routeBuilderMap.put("deleteReactionsByEntityIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("deleteReactionsByEntityIdByKindAlias", builderForThroughWithoutPayload);
         // DELETE /entity-reactions/{kindAlias}/{id}
         routeBuilderMap.put("deleteEntityReactionByIdByKindAlias", builderWithoutPayload);
     }
@@ -392,9 +396,9 @@ public class PolicyDataBuilderRegistry {
         // GET /list-reactions/{id}/parents
         routeBuilderMap.put("findParentsByListReactionId", builderWithoutPayload);
         // GET /lists/{listId}/reactions
-        routeBuilderMap.put("findReactionsByListId", builderWithoutPayload);
+        routeBuilderMap.put("findReactionsByListId", builderForThroughWithoutPayload);
         // GET /lists/{kindAlias}/{listId}/reactions/{throughAlias} (through kind alias)
-        routeBuilderMap.put("findReactionsByListIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("findReactionsByListIdByKindAlias", builderForThroughWithoutPayload);
         // GET /list-reactions/{kindAlias}
         routeBuilderMap.put("findAllListReactionsByKindAlias", builderWithoutPayloadNoOriginal);
         // GET /list-reactions/{kindAlias}/count
@@ -412,9 +416,9 @@ public class PolicyDataBuilderRegistry {
         // DELETE /list-reactions/{id}
         routeBuilderMap.put("deleteListReactionById", builderWithoutPayload);
         // DELETE /lists/{listId}/reactions
-        routeBuilderMap.put("deleteReactionsByListId", builderWithoutPayload);
+        routeBuilderMap.put("deleteReactionsByListId", builderForThroughWithoutPayload);
         // DELETE /lists/{kindAlias}/{listId}/reactions/{throughAlias} (through kind alias)
-        routeBuilderMap.put("deleteReactionsByListIdByKindAlias", builderWithoutPayload);
+        routeBuilderMap.put("deleteReactionsByListIdByKindAlias", builderForThroughWithoutPayload);
         // DELETE /list-reactions/{kindAlias}/{id}
         routeBuilderMap.put("deleteListReactionByIdByKindAlias", builderWithoutPayload);
     }
