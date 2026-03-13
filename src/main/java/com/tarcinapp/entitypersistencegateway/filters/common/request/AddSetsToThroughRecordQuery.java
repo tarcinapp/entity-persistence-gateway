@@ -21,30 +21,27 @@ import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This filter restricts the returned entities or lists based on user permissions.
- *  * IMPORTANT: This filter is specifically designed for ENTITIES and LISTS accessed through other records.
- * For direct entity/list access, use AddSetsToEntityListOrReactionViaRecordQuery filter instead.
- * For relations, use AddSetsToRelationQuery filter instead.
- *  * Entities/Lists Through Other Records Security Model:
- * When accessing entities through lists or lists through entities, this filter applies
- * dual visibility checks using both set and setThrough mechanisms.
- *  * How this filter works:
- * This filter applies two types of audience-based restrictions:
- *  * 1. Record visibility via set[audience]:
- *    - Checks if user can see the record itself based on ownership/viewership
- *    - User's custom set[...] queries are preserved and combined with audience check
- *  * 2. Through-record visibility via setThrough[audience]:
- *    - Checks if user can see the intermediary relation record being accessed through
- *    - User's custom setThrough[...] queries are preserved and combined with audience check
- *  * The filter constructs (when user has existing queries):
- * set[and][0][audience][userIds/groupIds] - Enforced: Record visibility check
- * set[and][1][...] - User's custom set queries (if any)
- * setThrough[and][0][audience][userIds/groupIds] - Enforced: Through-record visibility check
- * setThrough[and][1][...] - User's custom setThrough queries (if any)
- *  * When user has no existing queries:
- * set[audience][userIds/groupIds] - Direct record visibility check
- * setThrough[audience][userIds/groupIds] - Direct through-record visibility check
- *  */
+ * This filter restricts the returned entities or lists based on user permissions and intermediary record status.
+ * * IMPORTANT: This filter is specifically designed for ENTITIES and LISTS accessed through other records.
+ * For direct entity/list access, use AddSetsToEntityListOrReactionViaRecordQuery filter instead.
+ * For relations, use AddSetsToRelationQuery filter instead.
+ * * How this filter works:
+ * This filter applies two distinct types of restrictions:
+ * * 1. Record Visibility via set[audience]:
+ * - Restricts the final records based on the user's ownership or viewership (userId and group memberships).
+ * - User's custom set[...] queries are preserved and combined with this audience check using an [and] logic.
+ * * 2. Intermediary Record Status via setThrough[actives]:
+ * - Restricts the query to only include items where the intermediary record (the one being accessed through) is active.
+ * - User's custom setThrough[...] queries are preserved and combined with this status check using an [and] logic.
+ * * The filter constructs (when user has existing queries):
+ * set[and][0][audience][userIds/groupIds] - Enforced: Final record visibility check
+ * set[and][1][...] - User's custom set queries (if any)
+ * * setThrough[and][0][actives]=true - Enforced: Intermediary record status check
+ * setThrough[and][1][...] - User's custom setThrough queries (if any)
+ * * When user has no existing queries:
+ * set[audience][userIds/groupIds] - Direct record visibility check
+ * setThrough[actives]=true - Direct intermediary status check
+ */
 @Component
 @Slf4j
 public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<AddSetsToThroughRecordQuery.Config> {
@@ -164,20 +161,18 @@ public class AddSetsToThroughRecordQuery extends AbstractGatewayFilterFactory<Ad
             log.debug("Added set audience - userIds: {}, groupIds: {}", userId, groupsStr);
 
             /**
-             * Add setThrough audience to check visibility of the intermediary record (list or entity).
-             * If user has existing setThrough, audience check goes at [and][0]
+             * Add setThrough actives to restrict to active intermediary records (list or entity).
+             * If user has existing setThrough, actives check goes at [and][0]
              */
             if (callerHasSetThrough) {
-                // User has setThrough - add our audience check at [and][0]
-                newQueryParams.add("setThrough[and][0][audience][userIds]", userId);
-                newQueryParams.add("setThrough[and][0][audience][groupIds]", groupsStr);
+                // User has setThrough - add our actives check at [and][0]
+                newQueryParams.add("setThrough[and][0][actives]", "true");
             } else {
-                // No user setThrough - add audience check directly
-                newQueryParams.add("setThrough[audience][userIds]", userId);
-                newQueryParams.add("setThrough[audience][groupIds]", groupsStr);
+                // No user setThrough - add actives check directly
+                newQueryParams.add("setThrough[actives]", "true");
             }
 
-            log.debug("Added setThrough audience - userIds: {}, groupIds: {}", userId, groupsStr);
+            log.debug("Added setThrough actives");
 
             // Build new URI
             URI newUri = UriComponentsBuilder.fromUri(uri)
