@@ -5849,3 +5849,666 @@ spring:
           - kind-alias
           - hierarchical
           - domain-driven
+
+      # THROUGH KIND ALIAS ROUTES
+      # Domain-projected through routes with dual kind alias resolution
+      # Path: {controller}/{kindAlias}/{recordId}/{throughSegment}/{throughAlias}
+      # reactions through entity kind alias routes
+      - id: createReactionByEntityIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+        - Method=POST
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.reactions.create}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughEntityKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
+        - FieldFilter
+        metadata:
+          recordType: entityReactions
+          controllerName: reactionKindAliasThroughEntityKindAlias
+          baseControllerName: entities
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entityReactions
+          - reactionKindAliasThroughEntityKindAlias
+          - kind-alias
+          - through
+          - reaction
+      - id: updateReactionsByEntityIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+        - Method=PATCH
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.updateReactionsByEntityId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.updateReactionsByEntityId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.reactions.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughEntityKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.updateAllEntityReactions.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
+        - PreventStringifiedJsonFilter
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entityReactions
+          controllerName: reactionKindAliasThroughEntityKindAlias
+          baseControllerName: entities
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entityReactions
+          - reactionKindAliasThroughEntityKindAlias
+          - kind-alias
+          - through
+          - reaction
+      - id: findReactionsByEntityIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.findReactionsByEntityId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.findReactionsByEntityId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughEntityKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.findEntityReactions.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/findReactionsByEntityId/policy
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
+            size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - FieldFilter
+        metadata:
+          recordType: entityReactions
+          controllerName: reactionKindAliasThroughEntityKindAlias
+          baseControllerName: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - entityReactions
+          - reactionKindAliasThroughEntityKindAlias
+          - kind-alias
+          - through
+          - collection
+          - reaction
+      - id: deleteReactionsByEntityIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+        - Method=DELETE
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.deleteReactionsByEntityId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.deleteReactionsByEntityId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughEntityKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.deleteEntityReactionById.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entityReactions
+          controllerName: reactionKindAliasThroughEntityKindAlias
+          baseControllerName: entities
+          tags:
+          - delete
+          - destructive
+          - entityReactions
+          - reactionKindAliasThroughEntityKindAlias
+          - kind-alias
+          - through
+          - reaction
+
+      # reactions through list kind alias routes
+      - id: createReactionByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughList}/{throughAlias}
+        - Method=POST
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughList.createReactionByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughList.createReactionByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.reactions.create}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.createListReaction.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/createReactionByListId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.reactions.create.waitTime}
+            leaseTime: ${app.locks.reactions.create.leaseTime}
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
+        - FieldFilter
+        metadata:
+          recordType: listReactions
+          controllerName: reactionKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - listReactions
+          - reactionKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+          - reaction
+      - id: updateReactionsByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughList}/{throughAlias}
+        - Method=PATCH
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughList.updateReactionsByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughList.updateReactionsByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.reactions.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.updateAllListReactions.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
+        - PreventStringifiedJsonFilter
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: listReactions
+          controllerName: reactionKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - listReactions
+          - reactionKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+          - reaction
+      - id: findReactionsByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughList}/{throughAlias}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughList.findReactionsByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughList.findReactionsByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.findListReactions.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/findReactionsByListId/policy
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
+            size: ${app.local-cache.listReactions.findListReactions.size}
+        - FieldFilter
+        metadata:
+          recordType: listReactions
+          controllerName: reactionKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - listReactions
+          - reactionKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+          - collection
+          - reaction
+      - id: deleteReactionsByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughList}/{throughAlias}
+        - Method=DELETE
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.reactionsThroughList.deleteReactionsByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.reactionsThroughList.deleteReactionsByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: reactions
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: reactionKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
+            burstCapacity: ${app.rate-limits.reactions.deleteListReactionById.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
+        - AddSetsToEntityListOrReactionViaRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: listReactions
+          controllerName: reactionKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - delete
+          - destructive
+          - listReactions
+          - reactionKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+          - reaction
+
+      # entities through list kind alias routes
+      - id: createEntityByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesThroughList}/{throughAlias}
+        - Method=POST
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.entitiesThroughList.createEntityByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entitiesThroughList.createEntityByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: entities
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.entities.create}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
+        - PlaceKindNameIntoPayload
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.createEntity.burstCapacity}
+        - FetchForbiddenFields
+        - ValidateRequestBodyByKindSchema
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/createEntityByListId/policy
+        - name: AcquireLockForCreation
+          args:
+            waitTime: ${app.locks.entities.create.waitTime}
+            leaseTime: ${app.locks.entities.create.leaseTime}
+        - AddManagedFieldsInCreation
+        - ApplyFieldsetConfig
+        - RemoveRequestHeader=Authorization
+        - FieldFilter
+        metadata:
+          recordType: entities
+          controllerName: entityKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - post
+          - create
+          - write
+          - manage
+          - entities
+          - entityKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+      - id: updateEntitiesByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesThroughList}/{throughAlias}
+        - Method=PATCH
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.entitiesThroughList.updateEntitiesByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entitiesThroughList.updateEntitiesByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: entities
+        - name: DynamicRequestSizeFilter
+          args:
+            maxSize: ${app.request-sizes.entities.update}
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.updateAllEntities.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
+        - PreventStringifiedJsonFilter
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
+          controllerName: entityKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - patch
+          - update
+          - write
+          - manage
+          - entities
+          - entityKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+      - id: findEntitiesByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesThroughList}/{throughAlias}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.entitiesThroughList.findEntitiesByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entitiesThroughList.findEntitiesByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: entities
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.findEntities.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/findEntitiesByListId/policy
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
+            size: ${app.local-cache.entities.findEntities.size}
+        - FieldFilter
+        metadata:
+          recordType: entities
+          controllerName: entityKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - get
+          - find
+          - read-only
+          - entities
+          - entityKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+          - collection
+      - id: deleteEntitiesByListIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entitiesThroughList}/{throughAlias}
+        - Method=DELETE
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.entitiesThroughList.deleteEntitiesByListId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.entitiesThroughList.deleteEntitiesByListId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: entities
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: entityKindAliasThroughListKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
+            burstCapacity: ${app.rate-limits.entities.deleteEntityById.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        metadata:
+          recordType: entities
+          controllerName: entityKindAliasThroughListKindAlias
+          baseControllerName: lists
+          tags:
+          - delete
+          - destructive
+          - entities
+          - entityKindAliasThroughListKindAlias
+          - kind-alias
+          - through
+
+      # lists through entity kind alias routes
+      - id: findListsByEntityIdByKindAlias
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        predicates:
+        - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listsThroughEntity}/{throughAlias}
+        - Method=GET
+        filters:
+        - name: DynamicTimeout
+          args:
+            connectTimeoutMs: ${app.timeouts.listsThroughEntity.findListsByEntityId.connectTimeoutMs}
+            responseTimeoutMs: ${app.timeouts.listsThroughEntity.findListsByEntityId.responseTimeoutMs}
+        - KindResolution
+        - name: ThroughKindAliasResolver
+          args:
+            throughSegment: lists
+        - name: CheckIfRouteEnabled
+          args:
+            controllerName: listKindAliasThroughEntityKindAlias
+        - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.listsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
+        - AuthenticateRequest
+        - GenerateRequestId
+        - name: DynamicRateLimiter
+          args:
+            replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
+            burstCapacity: ${app.rate-limits.lists.findLists.burstCapacity}
+        - FetchForbiddenFields
+        - name: AuthorizeRequest
+          args:
+            policyName: /policies/auth/routes/listsThroughEntity/findListsByEntityId/policy
+        - PreventStringifiedJsonFilter
+        - ApplyFieldsetConfig
+        - ConvertSimplerQueriesToBackendFormat
+        - AddSetsToThroughRecordQuery
+        - PreventQueryByForbiddenFields
+        - RemoveRequestHeader=Authorization
+        - name: DynamicLocalCache
+          args:
+            timeToLive: ${app.local-cache.lists.findLists.timeToLive}
+            size: ${app.local-cache.lists.findLists.size}
+        - FieldFilter
+        metadata:
+          recordType: lists
+          controllerName: listKindAliasThroughEntityKindAlias
+          baseControllerName: entities
+          tags:
+          - get
+          - find
+          - read-only
+          - lists
+          - listKindAliasThroughEntityKindAlias
+          - kind-alias
+          - through
+          - collection

@@ -131,7 +131,15 @@ public class OpenApiProperties {
         private Boolean validationEnabled;
         private List<AliasConfig> children = new ArrayList<>();
         private List<AliasConfig> parents = new ArrayList<>();
+        private ThroughConfig through;
         private Map<String, RouteConfig> routes = new HashMap<>();
+    }
+
+    @Data
+    public static class ThroughConfig {
+        private List<AliasConfig> reactions = new ArrayList<>();
+        private List<AliasConfig> entities = new ArrayList<>();
+        private List<AliasConfig> lists = new ArrayList<>();
     }
 
     @Data

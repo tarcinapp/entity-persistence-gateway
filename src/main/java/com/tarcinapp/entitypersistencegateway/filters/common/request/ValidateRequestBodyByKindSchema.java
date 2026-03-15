@@ -251,16 +251,156 @@ public class ValidateRequestBodyByKindSchema
         // Register hierarchy-level schemas
         registerHierarchySchemas(controllerName, aliasConfig,
                 basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
+
+        // Register through-level schemas (second pass with registerToCommon toggled)
+        registerThroughSchemas(controllerName, aliasConfig,
+                basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
     }
 
     /**
-     * Registers hierarchy-level schemas from children[] and parents[]
-     * configurations.
-     * These schemas have the highest priority when resolving validation for
-     * hierarchical requests.
+     * Registers through-level schemas from through.reactions[], through.entities[],
+     * and through.lists[] configurations.
      * 
-     * Key format: "hierarchy:{controller}:{rootKind}:{targetAlias}"
+     * Key format: "through:{controller}:{rootKind}:{targetAlias}"
      */
+    private void registerThroughSchemas(String controllerName, AliasConfig parentAliasConfig,
+            JsonNode basePostSchemaNode,
+            JsonNode basePatchSchemaNode,
+            JsonNode baseResourceSchemaNode,
+            boolean registerToCommon)
+            throws JsonProcessingException {
+
+        String rootKind = parentAliasConfig.getKind();
+        if (rootKind == null) {
+            return;
+        }
+
+        OpenApiProperties.ThroughConfig throughConfig = parentAliasConfig.getThrough();
+        if (throughConfig == null) {
+            return;
+        }
+
+        // Process through.reactions
+        if (throughConfig.getReactions() != null) {
+            for (AliasConfig throughAlias : throughConfig.getReactions()) {
+                registerSingleThroughSchema(controllerName, rootKind, throughAlias,
+                        basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
+            }
+        }
+
+        // Process through.entities
+        if (throughConfig.getEntities() != null) {
+            for (AliasConfig throughAlias : throughConfig.getEntities()) {
+                registerSingleThroughSchema(controllerName, rootKind, throughAlias,
+                        basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
+            }
+        }
+
+        // Process through.lists
+        if (throughConfig.getLists() != null) {
+            for (AliasConfig throughAlias : throughConfig.getLists()) {
+                registerSingleThroughSchema(controllerName, rootKind, throughAlias,
+                        basePostSchemaNode, basePatchSchemaNode, baseResourceSchemaNode, registerToCommon);
+            }
+        }
+    }
+
+    /**
+     * Registers a single through-level schema for a through alias configuration.
+     */
+    private void registerSingleThroughSchema(String controllerName, String rootKind,
+            AliasConfig targetAliasConfig,
+            JsonNode basePostSchemaNode,
+            JsonNode basePatchSchemaNode,
+            JsonNode baseResourceSchemaNode,
+            boolean registerToCommon)
+            throws JsonProcessingException {
+
+        if (targetAliasConfig == null || targetAliasConfig.getAlias() == null) {
+            return;
+        }
+
+        // Register through-route schemas (highest through priority)
+        if (targetAliasConfig.getRoutes() != null) {
+            for (Map.Entry<String, OpenApiProperties.RouteConfig> routeEntry : targetAliasConfig.getRoutes().entrySet()) {
+                String routeId = routeEntry.getKey();
+                OpenApiProperties.RouteConfig routeConfig = routeEntry.getValue();
+
+                boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
+                        || routeConfig.getValidationEnabled();
+                if (routeValidationEnabled && routeConfig.getSchema() != null && !routeConfig.getSchema().isBlank()) {
+                    String throughRouteSchemaKey = buildThroughRouteSchemaKey(controllerName, rootKind,
+                            targetAliasConfig.getAlias(), routeId);
+
+                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
+                    JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
+                    if (registerToCommon) {
+                        postSchemasCommon.put(throughRouteSchemaKey, postSchema);
+                    } else {
+                        postSchemasRelations.put(throughRouteSchemaKey, postSchema);
+                    }
+
+                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
+                    JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
+                    if (registerToCommon) {
+                        putSchemasCommon.put(throughRouteSchemaKey, putSchema);
+                    } else {
+                        putSchemasRelations.put(throughRouteSchemaKey, putSchema);
+                    }
+
+                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    routePatchNode.remove("required");
+                    JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
+                    JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
+                    if (registerToCommon) {
+                        patchSchemasCommon.put(throughRouteSchemaKey, patchSchema);
+                    } else {
+                        patchSchemasRelations.put(throughRouteSchemaKey, patchSchema);
+                    }
+
+                    log.debug("Registered through-route-level schema: {}", throughRouteSchemaKey);
+                }
+            }
+        }
+
+        // Register through-level schema
+        if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
+            String throughSchemaKey = buildThroughSchemaKey(controllerName, rootKind, targetAliasConfig.getAlias());
+
+            ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+            JsonNode sanitizedPost = sanitizeSchema(schemaNode);
+            JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedPost);
+            if (registerToCommon) {
+                postSchemasCommon.put(throughSchemaKey, postSchema);
+            } else {
+                postSchemasRelations.put(throughSchemaKey, postSchema);
+            }
+
+            ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+            JsonNode sanitizedPut = sanitizeSchema(putSchemaNode);
+            JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedPut);
+            if (registerToCommon) {
+                putSchemasCommon.put(throughSchemaKey, putSchema);
+            } else {
+                putSchemasRelations.put(throughSchemaKey, putSchema);
+            }
+
+            ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
+            patchSchemaNode.remove("required");
+            JsonNode sanitizedPatch = sanitizeSchema(patchSchemaNode);
+            JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedPatch);
+            if (registerToCommon) {
+                patchSchemasCommon.put(throughSchemaKey, patchSchema);
+            } else {
+                patchSchemasRelations.put(throughSchemaKey, patchSchema);
+            }
+
+            log.debug("Registered through-level schema: {}", throughSchemaKey);
+        }
+    }
+
     /**
      * Registers hierarchy-level schemas from children[] and parents[]
      * configurations.
@@ -641,6 +781,10 @@ public class ValidateRequestBodyByKindSchema
         String hierarchySchemaKey = attr.getHierarchyRouteSchemaKey() != null 
                 ? attr.getHierarchyRouteSchemaKey() 
                 : attr.getHierarchySchemaKey();
+        // Through schema keys (set by ThroughKindAliasResolverGatewayFilterFactory)
+        String throughSchemaKey = attr.getThroughRouteSchemaKey() != null
+                ? attr.getThroughRouteSchemaKey()
+                : attr.getThroughSchemaKey();
         String controllerName = attr.getBaseControllerName();
         if (controllerName == null || controllerName.isBlank()) {
             controllerName = attr.getControllerName();
@@ -665,7 +809,7 @@ public class ValidateRequestBodyByKindSchema
 
             // Perform priority-based schema lookup
             JsonSchema schema = lookupSchema(controllerName, targetKind, hierarchySchemaKey,
-                    routeId, recordType, isPatch, isPut);
+                    throughSchemaKey, routeId, recordType, isPatch, isPut);
 
             // If no schema found, skip validation with warning
             if (schema == null) {
@@ -708,7 +852,7 @@ public class ValidateRequestBodyByKindSchema
     }
 
     private JsonSchema lookupSchema(String controllerName, String targetKind, String hierarchySchemaKey,
-            String routeId, String recordType, boolean isPatch, boolean isPut) {
+            String throughSchemaKey, String routeId, String recordType, boolean isPatch, boolean isPut) {
 
         // Select appropriate schema maps based on record type and HTTP method
         Map<String, JsonSchema> schemaMap = selectSchemaMap(recordType, isPatch, isPut);
@@ -745,7 +889,36 @@ public class ValidateRequestBodyByKindSchema
             log.debug("Hierarchy-level schema not found for key: {}", effectiveHierarchyKey);
         }
 
-        // PRIORITY 2: Route-level schema for TARGET kind
+        // PRIORITY 2: Through-route-level schema (through.reactions[n].routes.X.schema)
+        // Format: "through-route:{controller}:{rootKind}:{targetAlias}:{routeId}"
+        if (throughSchemaKey != null && throughSchemaKey.startsWith("through-route:")) {
+            JsonSchema schema = schemaMap.get(throughSchemaKey);
+            if (schema != null) {
+                log.debug("Using through-route-level schema: {}", throughSchemaKey);
+                return schema;
+            }
+            log.debug("Through-route-level schema not found for key: {}", throughSchemaKey);
+        }
+
+        // PRIORITY 3: Through-level schema (inline schema from through.reactions[]/entities[]/lists[])
+        if (throughSchemaKey != null) {
+            String effectiveThroughKey = throughSchemaKey;
+            if (throughSchemaKey.startsWith("through-route:")) {
+                // Convert "through-route:ctrl:root:alias:routeId" to "through:ctrl:root:alias"
+                String[] parts = throughSchemaKey.split(":");
+                if (parts.length >= 5) {
+                    effectiveThroughKey = "through:" + parts[1] + ":" + parts[2] + ":" + parts[3];
+                }
+            }
+            JsonSchema schema = schemaMap.get(effectiveThroughKey);
+            if (schema != null) {
+                log.debug("Using through-level schema: {}", effectiveThroughKey);
+                return schema;
+            }
+            log.debug("Through-level schema not found for key: {}", effectiveThroughKey);
+        }
+
+        // PRIORITY 4: Route-level schema for TARGET kind
         if (routeId != null && targetKind != null) {
             String routeSchemaKey = buildSchemaKey(controllerName, targetKind, routeId);
             JsonSchema schema = schemaMap.get(routeSchemaKey);
@@ -756,7 +929,7 @@ public class ValidateRequestBodyByKindSchema
             log.debug("Route-level schema not found for key: {}", routeSchemaKey);
         }
 
-        // PRIORITY 3: Alias-level schema for TARGET kind
+        // PRIORITY 5: Alias-level schema for TARGET kind
         if (targetKind != null) {
             String aliasSchemaKey = buildSchemaKey(controllerName, targetKind);
             JsonSchema schema = schemaMap.get(aliasSchemaKey);
@@ -872,6 +1045,23 @@ public class ValidateRequestBodyByKindSchema
     private static String buildHierarchyRouteSchemaKey(String controllerName, String rootKind, 
             String targetAlias, String routeId) {
         return "hierarchy-route:" + controllerName + ":" + rootKind + ":" + targetAlias + ":" + routeId;
+    }
+
+    /**
+     * Builds a through-specific schema key.
+     * Format: "through:{controller}:{rootKind}:{targetAlias}"
+     */
+    private static String buildThroughSchemaKey(String controllerName, String rootKind, String targetAlias) {
+        return "through:" + controllerName + ":" + rootKind + ":" + targetAlias;
+    }
+
+    /**
+     * Builds a through-route-specific schema key.
+     * Format: "through-route:{controller}:{rootKind}:{targetAlias}:{routeId}"
+     */
+    private static String buildThroughRouteSchemaKey(String controllerName, String rootKind,
+            String targetAlias, String routeId) {
+        return "through-route:" + controllerName + ":" + rootKind + ":" + targetAlias + ":" + routeId;
     }
 
     public static class Config {

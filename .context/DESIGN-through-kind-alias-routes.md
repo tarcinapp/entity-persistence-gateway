@@ -35,27 +35,63 @@ These already exist for base controller operations:
 
 **No domain-projected through routes exist.** There are no kind alias versions of through routes in `application-routes.yml`.
 
-For example, if you have entity alias `books` and entity-reaction alias `likes`:
-- `GET /entities/books` works (kind alias entity) ✅
-- `GET /entities/{id}/reactions` works (generic through) ✅
-- `GET /entities/books/{id}/likes` does NOT exist ❌
-
 ---
 
-## New Route Blocks Needed
+## Path Structure
 
-### New sections to add to `application-routes.yml`:
+### 5-Segment Path Pattern
 
 ```
-# (existing) entity reactions kind alias - dynamic hierarchy routes
-# (existing) list reactions kind alias from root mapping
+{baseUri}{controller}/{kindAlias}/{recordId}/{throughSegment}/{throughAlias}
+```
+
+Where:
+- `{controller}` = base controller path (e.g., `entities`, `lists`)
+- `{kindAlias}` = parent record's kind alias (e.g., `books`)
+- `{recordId}` = parent record UUID
+- `{throughSegment}` = fixed through controller base path from config (e.g., `reactions`, `entities`, `lists`)
+- `{throughAlias}` = through record's kind alias (e.g., `likes`, `songs`)
+
+**No collision with hierarchy routes** — hierarchy paths are 4 segments (`entities/{kindAlias}/{recordId}/{hierarchyAlias}`), through-kind-alias paths are 5 segments. Spring Cloud Gateway matches by segment count first.
+
+### Concrete URL Examples
+
+| Through Type | URL | Explanation |
+|---|---|---|
+| reactions through entity | `entities/books/{id}/reactions/likes` | Likes (reaction) for a book (entity) |
+| reactions through entity | `entities/vehicles/{id}/reactions/ratings` | Ratings for a vehicle |
+| reactions through list | `lists/playlists/{id}/reactions/favorites` | Favorites for a playlist |
+| entities through list | `lists/playlists/{id}/entities/songs` | Songs (entities) in a playlist |
+| lists through entity | `entities/books/{id}/lists/reading-lists` | Reading lists containing a book |
+
+### Predicate Pattern
+
+```yaml
+predicates:
+- Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+- Method=GET
+```
+
+The `{throughSegment}` resolves from `app.inbound.controllerBasePaths.*` at config-load time (not a path variable). The `{throughAlias}` is a dynamic path variable captured at runtime.
+
+### Route Placement
+
+These routes should be placed **after** hierarchy routes. No ordering conflict exists since the segment count (5) is different from hierarchy (4).
+
+Suggested placement — at the end of `application-routes.yml`, after all existing kind alias blocks:
+
+```
 # (existing) list reactions kind alias - dynamic hierarchy routes
 
 # NEW: reactions through entity kind alias routes
-# NEW: reactions through list kind alias routes  
+# NEW: reactions through list kind alias routes
 # NEW: entities through list kind alias routes
 # NEW: lists through entity kind alias routes
 ```
+
+---
+
+## New Route Blocks
 
 ### Route Inventory
 
@@ -63,208 +99,181 @@ For example, if you have entity alias `books` and entity-reaction alias `likes`:
 
 | Route ID | Method | URL Pattern |
 |---|---|---|
-| `createReactionByEntityIdByKindAlias` | POST | `entities/{kindAlias}/{recordId}/reactions` |
-| `findReactionsByEntityIdByKindAlias` | GET | `entities/{kindAlias}/{recordId}/reactions` |
-| `updateReactionsByEntityIdByKindAlias` | PATCH | `entities/{kindAlias}/{recordId}/reactions` |
-| `deleteReactionsByEntityIdByKindAlias` | DELETE | `entities/{kindAlias}/{recordId}/reactions` |
+| `createReactionByEntityIdByKindAlias` | POST | `entities/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `findReactionsByEntityIdByKindAlias` | GET | `entities/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `updateReactionsByEntityIdByKindAlias` | PATCH | `entities/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `deleteReactionsByEntityIdByKindAlias` | DELETE | `entities/{kindAlias}/{recordId}/reactions/{throughAlias}` |
 
 **Reactions through List Kind Alias** (4 routes):
 
 | Route ID | Method | URL Pattern |
 |---|---|---|
-| `createReactionByListIdByKindAlias` | POST | `lists/{kindAlias}/{recordId}/reactions` |
-| `findReactionsByListIdByKindAlias` | GET | `lists/{kindAlias}/{recordId}/reactions` |
-| `updateReactionsByListIdByKindAlias` | PATCH | `lists/{kindAlias}/{recordId}/reactions` |
-| `deleteReactionsByListIdByKindAlias` | DELETE | `lists/{kindAlias}/{recordId}/reactions` |
+| `createReactionByListIdByKindAlias` | POST | `lists/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `findReactionsByListIdByKindAlias` | GET | `lists/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `updateReactionsByListIdByKindAlias` | PATCH | `lists/{kindAlias}/{recordId}/reactions/{throughAlias}` |
+| `deleteReactionsByListIdByKindAlias` | DELETE | `lists/{kindAlias}/{recordId}/reactions/{throughAlias}` |
 
 **Entities through List Kind Alias** (4 routes):
 
 | Route ID | Method | URL Pattern |
 |---|---|---|
-| `createEntityByListIdByKindAlias` | POST | `lists/{kindAlias}/{recordId}/entities` |
-| `findEntitiesByListIdByKindAlias` | GET | `lists/{kindAlias}/{recordId}/entities` |
-| `updateEntitiesByListIdByKindAlias` | PATCH | `lists/{kindAlias}/{recordId}/entities` |
-| `deleteEntitiesByListIdByKindAlias` | DELETE | `lists/{kindAlias}/{recordId}/entities` |
+| `createEntityByListIdByKindAlias` | POST | `lists/{kindAlias}/{recordId}/entities/{throughAlias}` |
+| `findEntitiesByListIdByKindAlias` | GET | `lists/{kindAlias}/{recordId}/entities/{throughAlias}` |
+| `updateEntitiesByListIdByKindAlias` | PATCH | `lists/{kindAlias}/{recordId}/entities/{throughAlias}` |
+| `deleteEntitiesByListIdByKindAlias` | DELETE | `lists/{kindAlias}/{recordId}/entities/{throughAlias}` |
 
 **Lists through Entity Kind Alias** (1 route):
 
 | Route ID | Method | URL Pattern |
 |---|---|---|
-| `findListsByEntityIdByKindAlias` | GET | `entities/{kindAlias}/{recordId}/lists` |
+| `findListsByEntityIdByKindAlias` | GET | `entities/{kindAlias}/{recordId}/lists/{throughAlias}` |
 
 **Total: 13 new routes**
 
 ---
 
-## Design Decisions Required
+## Cross-Controller Alias Config
 
-### DECISION 1: Path Structure — Static `reactions` segment or dynamic through alias?
+Each entity/list alias declares which through-aliases it has:
 
-**Option A — Static through segment** (recommended for Phase 1):
-```
-entities/{kindAlias}/{recordId}/reactions     ← "reactions" is fixed
-lists/{kindAlias}/{recordId}/entities         ← "entities" is fixed
-entities/{kindAlias}/{recordId}/lists          ← "lists" is fixed
-```
-The through segment uses the configured controller base path (`reactionsThroughEntity`, `entitiesThroughList`, `listsThroughEntity`).
-
-**Option B — Dynamic through alias segment** (future):
-```
-entities/books/{recordId}/likes               ← "likes" is a reaction alias
-lists/playlists/{recordId}/songs              ← "songs" is an entity alias
-entities/books/{recordId}/reading-lists       ← "reading-lists" is a list alias
-```
-This requires cross-controller alias linking (see Decision 2).
-
-**Question for you:** Should Phase 1 use static through segments (e.g., `books/{id}/reactions`), or do you want to jump straight to dynamic through aliases (e.g., `books/{id}/likes`)?
-
----
-
-### DECISION 2: Cross-Controller Alias Config (only needed for Option B above)
-
-If we go with dynamic through aliases, we need a way to link entity aliases to reaction/list aliases. Current `AliasConfig` has `children`/`parents` (same-controller hierarchy) but no cross-controller linking.
-
-**Proposed config extension:**
 ```properties
-# Entity alias "books" has reaction through alias "likes"
+# Entity alias "books" has reaction aliases "likes" and "ratings"
 app.oas.controllers.entities.aliases[0].alias=books
 app.oas.controllers.entities.aliases[0].through.reactions[0].alias=likes
 app.oas.controllers.entities.aliases[0].through.reactions[0].kind=like
 
-# Entity alias "books" can be accessed through list alias "reading-lists"  
-app.oas.controllers.lists.aliases[0].alias=reading-lists
-app.oas.controllers.lists.aliases[0].through.entities[0].alias=books
-app.oas.controllers.lists.aliases[0].through.entities[0].kind=book
+# List alias "playlists" has entity alias "songs" and reaction alias "favorites"
+app.oas.controllers.lists.aliases[0].alias=playlists
+app.oas.controllers.lists.aliases[0].through.entities[0].alias=songs
+app.oas.controllers.lists.aliases[0].through.entities[0].kind=song
+app.oas.controllers.lists.aliases[0].through.reactions[0].alias=favorites
+app.oas.controllers.lists.aliases[0].through.reactions[0].kind=favorite
 ```
 
-**Question for you:** Is this config shape acceptable? Or do you prefer a different approach?
+### Config Model Change (OpenApiProperties.java)
 
----
+`AliasConfig` needs a new `through` field:
 
-### DECISION 3: Predicate Design
-
-The predicates need to capture `kindAlias` and `recordId`:
-
-```yaml
-predicates:
-- Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F-]{36}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}
-- Method=POST
-```
-
-**Key concern: Path collision with hierarchy routes.**
-
-The hierarchy route uses:
-```
-entities/{kindAlias}/{recordId:[UUID]}/{hierarchyAlias}
-```
-
-The through-kind-alias route would use:
-```
-entities/{kindAlias}/{recordId:[UUID]}/reactions
-```
-
-Since `reactions` is a fixed string and `hierarchyAlias` is dynamic, Spring Cloud Gateway will match the route with the **most specific predicate first**. The through route with a literal `reactions` segment is more specific than the hierarchy route with a wildcard `{hierarchyAlias}`.
-
-**Critical: Route ordering matters.** Through-kind-alias routes must be placed **before** hierarchy routes in `application-routes.yml` to ensure correct matching. If hierarchy routes come first, a request to `books/{id}/reactions` could incorrectly match `findEntityHierarchyByKindAlias` with `hierarchyAlias=reactions`.
-
-**UPDATE: Actually, both use path variable syntax.** The through route uses `${app.inbound.controllerBasePaths.reactionsThroughEntity}` which resolves to `reactions` — a literal string in the path pattern. The hierarchy route uses `{hierarchyAlias}` which is a path variable. Spring Cloud Gateway's `PathRoutePredicateFactory` sorts by specificity, so the literal `reactions` would match first. However, since the through path resolves from a variable at config time, this should work correctly as long as the through routes are defined before hierarchy routes.
-
-**Question for you:** Should through-kind-alias route blocks be placed immediately after the base kind alias routes and before hierarchy routes? Or at the very end of the file (after all existing kind alias sections)?
-
----
-
-### DECISION 4: KindResolution Filter — Can it work as-is?
-
-**Current behavior:** `KindResolutionGatewayFilterFactory` extracts `{kindAlias}` from URL, looks up `openApiProperties.getAliasContext(controllerName, kindAlias)`, and populates `KindAliasConfigAttr` with `kindName`, `controllerName`, `recordType`, etc.
-
-**For through-kind-alias routes:**
-- Route: `entities/{kindAlias}/{recordId}/reactions`
-- `{kindAlias}` = `books` (the entity alias, not the reaction alias)
-- `controllerName` in metadata = something like `reactionsThroughEntityKindAlias`
-- `baseControllerName` in metadata = `entities` (the controller that the kindAlias belongs to)
-
-**The filter looks up aliases using `baseControllerName`:**
 ```java
-String lookupControllerName = (baseControllerName == null || baseControllerName.isBlank())
-    ? controllerName
-    : baseControllerName;
-OpenApiProperties.AliasContext aliasContext = openApiProperties.getAliasContext(lookupControllerName, kindAlias);
+@Data
+public static class AliasConfig {
+    private String alias;
+    private String singular;
+    private String kind;
+    // ... existing fields ...
+    private List<AliasConfig> children = new ArrayList<>();
+    private List<AliasConfig> parents = new ArrayList<>();
+    private ThroughConfig through;              // ← NEW
+}
+
+@Data
+public static class ThroughConfig {
+    private List<AliasConfig> reactions = new ArrayList<>();
+    private List<AliasConfig> entities = new ArrayList<>();
+    private List<AliasConfig> lists = new ArrayList<>();
+}
 ```
-
-This means: if `baseControllerName=entities`, it resolves `kindAlias=books` against the `entities` controller aliases → finds kind `book` ✅
-
-**But what about the "through" record type?** The through routes create reactions/entities, not the parent entity type. The `recordType` in metadata should be `entityReactions` (for reactions through entity), not `entities`. This is critical for:
-- `ConvertKindAliasToKindQuery` — adds `filter[where][_kind]=book` to query. But for a through route, the _kind filter should apply to the **parent entity**, not the reaction record itself. Actually, reactions inherit the parent's _kind context via the backend's through relation mechanism.
-
-**No changes needed to KindResolution filter.** It correctly resolves the parent entity's kind alias. The `recordType` from metadata will correctly indicate the through record type (`entityReactions`).
-
-**One thing to verify:** Does the `ConvertKindAliasToKindQuery` filter make sense for through routes? In generic through routes, there's no `_kind` query. The backend filters reactions/entities by the parent record's ID relationship, not by `_kind`. However, if the user accesses `entities/books/{id}/reactions`, we may want to ensure the parent entity is of kind `book` — but that's handled by the backend's through mechanism already. 
-
-**Question for you:** Should through-kind-alias routes use `ConvertKindAliasToKindQuery`? This would add `filter[where][_kind]=book` to the query — but these routes query reactions/entities *through* a parent record, not the parent record itself. The `_kind` filter might not apply to the through records. What is the desired behavior?
 
 ---
 
-### DECISION 5: Authorization Policy Names
+## Design Decisions
 
-**Generic through routes use their own policies:**
-```
-/policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
+### DECISION 1: Path Structure ✅ DECIDED
+
+**5-segment path**: `{controller}/{kindAlias}/{recordId}/{throughSegment}/{throughAlias}`
+
+- `{throughSegment}` = literal from `app.inbound.controllerBasePaths.*` (e.g., `reactions`)
+- `{throughAlias}` = dynamic path variable (e.g., `likes`)
+- No collision with 4-segment hierarchy routes
+
+---
+
+### DECISION 2: Cross-Controller Config ✅ DECIDED
+
+Accepted config shape with `through.reactions[]`, `through.entities[]`, `through.lists[]` on `AliasConfig`. See section above.
+
+---
+
+### DECISION 3: Route Ordering ✅ RESOLVED
+
+No conflict — 5 segments vs 4 segments. Routes placed at end of file after all existing kind alias blocks.
+
+---
+
+### DECISION 4: KindResolution — Dual Alias Resolution ✅ CONFIRMED
+
+**Reference:** See [REFERENCE-hierarchy-dual-alias-resolution.md](REFERENCE-hierarchy-dual-alias-resolution.md) for how the existing hierarchy routes solve the same two-alias-in-one-URL problem.
+
+With the new path structure, there are **two aliases** in the URL:
+1. `{kindAlias}` — parent record's alias (e.g., `books` → kind `book`)
+2. `{throughAlias}` — through record's alias (e.g., `likes` → kind `like`)
+
+This is structurally identical to hierarchy routes (`{kindAlias}` + `{hierarchyAlias}`), with one key difference: hierarchy aliases belong to the **same controller** as the parent, while through aliases cross into a **different controller's domain**.
+
+**Hierarchy approach recap:**
+1. `KindResolution` resolves `{kindAlias}` → populates `KindAliasConfigAttr` with root kind
+2. `HierarchyKindAliasResolver` resolves `{hierarchyAlias}` → **overwrites** `KindAliasConfigAttr.kindName` with the hierarchy kind
+3. After both filters run, `kindName` = hierarchy kind (e.g., `chapter`), not root kind (`book`)
+4. All downstream filters (`PlaceKindNameIntoPayload`, `ConvertKindAliasToKindQuery`, `ValidateRequestBodyByKindSchema`, `DynamicTimeout`) automatically use the hierarchy kind
+5. Alias lookup: walks `rootAliasConfig.getChildren()`/`.getParents()` — NOT a global registry lookup
+
+**Proposed approach for through routes (following the hierarchy pattern):**
+
+1. `KindResolution` resolves `{kindAlias}` → populates `KindAliasConfigAttr` with parent kind (unchanged)
+2. New `ThroughKindAliasResolver` filter resolves `{throughAlias}` → **overwrites** `KindAliasConfigAttr.kindName` with through kind
+3. After both filters run, `kindName` = through kind (e.g., `like`)
+4. Downstream filters automatically use the through kind
+5. Alias lookup: walks `rootAliasConfig.getThrough().getReactions()`/`.getEntities()`/`.getLists()`
+
+**The `ThroughKindAliasResolver` would:**
+1. Read `KindAliasConfigAttr` from exchange (set by `KindResolution`)
+2. Extract `throughAlias` from URI template variables
+3. Get root alias config from `openApiProperties`
+4. Determine which through type by checking route metadata — the `recordType` tells us: `entityReactions` → search `through.reactions`, `entities` → search `through.entities`, `lists` → search `through.lists`
+5. Search the matching through list for the alias
+6. If not found → return 404
+7. On match, overwrite `KindAliasConfigAttr`:
+   - `kindAlias` → through alias (e.g., `likes`)
+   - `kindName` → through kind (e.g., `like`)
+   - Mark as through request (new fields)
+   - Inject `filter[where][_kind]=like` into query (for GET routes)
+
+**Path rewrite stays at route level** — unlike `HierarchyKindAliasResolver` which must rewrite internally (because the backend segment depends on whether the alias is a child or parent), through routes have a static rewrite target. A route-level `RewritePath` filter handles it.
+
+**New fields on `KindAliasConfigAttr`:**
+
+```java
+// Through alias resolution (NEW — mirrors isHierarchyRequest pattern)
+boolean isThroughRequest;           // true if resolved via ThroughKindAliasResolver
+String throughSchemaKey;            // "through:entities:book:likes"
+String throughRouteSchemaKey;       // "through-route:entities:book:likes:findReactionsByEntityId"
 ```
 
-**Kind alias routes reuse base controller policies:**
-```
-/policies/auth/routes/entities/createEntity/policy
-```
+**Question for you:** Confirm this approach? It follows the hierarchy pattern:
+- Two-filter pipeline (KindResolution → ThroughKindAliasResolver)
+- Overwrite `kindName` with the "deeper" kind
+- Walk parent's config lists (not global registry)
+- Kind query injection by the resolver filter, path rewrite by route-level `RewritePath`
 
-**For through-kind-alias routes, which pattern?**
+**Difference from hierarchy:** `HierarchyKindAliasResolver` handles path rewrite internally because the backend segment is dynamic (`children` vs `parents` — depends on resolution). `ThroughKindAliasResolver` does NOT need to rewrite — the backend path is static and handled by route-level `RewritePath`.
 
-**Option A:** Reuse existing through policies (consistent with how kind alias routes reuse base policies):
+---
+
+### DECISION 5: Authorization Policy Names ✅ CONFIRMED
+
+Reuse existing through policies:
+
 ```yaml
 policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
 ```
 
-**Option B:** New through-kind-alias-specific policies:
-```yaml
-policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityIdByKindAlias/policy
-```
-
-**Recommendation:** Option A — reuse existing through policies. This is consistent with how entity kind alias routes reuse `entities/createEntity/policy`.
-
-**Question for you:** Should through-kind-alias routes reuse the generic through route authorization policies?
+Consistent with how kind alias routes reuse base controller policies.
 
 ---
 
-### DECISION 6: Timeout Configuration
+### DECISION 6: Timeout Configuration ✅ CONFIRMED
 
-**Generic through routes use static metadata timeouts:**
-```yaml
-metadata:
-  connect-timeout: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.connectTimeoutMs}
-  response-timeout: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.responseTimeoutMs}
-```
-
-**Kind alias routes use `DynamicTimeout` filter:**
-```yaml
-filters:
-- name: DynamicTimeout
-  args:
-    connectTimeoutMs: ${app.timeouts.entities.createEntity.connectTimeoutMs}
-    responseTimeoutMs: ${app.timeouts.entities.createEntity.responseTimeoutMs}
-```
-
-The `DynamicTimeout` filter allows per-kind override via:
-```
-app.timeouts.<recordType>.kinds.<kindName>.<operation>.connectTimeoutMs
-```
-
-**For through-kind-alias routes:**
-
-The `DynamicTimeout` filter needs:
-- A `recordType` to build the config key
-- A `kindName` from `KindAliasConfigAttr` (which KindResolution sets)
-- An `operation` from the route ID
-
-**Default timeout should fall back to the generic through timeout:**
+**Default timeout falls back to generic through timeout:**
 ```yaml
 - name: DynamicTimeout
   args:
@@ -272,125 +281,125 @@ The `DynamicTimeout` filter needs:
     responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.responseTimeoutMs}
 ```
 
-**Kind-specific override would look like:**
-```properties
-app.timeouts.entityReactions.kinds.like.createReactionByEntityIdByKindAlias.connectTimeoutMs=5000
+**Per-kind override key pattern:** `app.timeouts.<recordType>.kinds.<throughKind>.<routeId>`
+
+Example:
+```
+app.timeouts.entityReactions.kinds.like.createReactionByEntityIdByKindAlias.connectTimeoutMs
 ```
 
-**Or should it fallback through the parent entity's kind name?**
-```properties
-app.timeouts.reactionsThroughEntity.kinds.book.createReactionByEntityIdByKindAlias.connectTimeoutMs=5000
-```
-
-**Question for you:** For DynamicTimeout on through-kind-alias routes, what should the config key structure be? The `recordType` in route metadata will be something like `entityReactions` — but the kind resolved by KindResolution is the *parent's* kind (`book`), not a reaction kind. So the timeout key would be `app.timeouts.entityReactions.kinds.book.createReactionByEntityIdByKindAlias.connectTimeoutMs`. Is this the intended behavior?
+Reads naturally: "timeout for creating a `like` reaction through an entity kind alias route."
 
 ---
 
-### DECISION 7: Validation (`ValidateRequestBodyByKindSchema`)
+### DECISION 7: Validation (`ValidateRequestBodyByKindSchema`) ✅ CONFIRMED
 
-**Generic through routes do NOT use `ValidateRequestBodyByKindSchema`.** They have no kind resolution.
+INCLUDE `ValidateRequestBodyByKindSchema` in through-kind-alias POST routes.
 
-**Kind alias create routes DO use it:**
-```yaml
-- ValidateRequestBodyByKindSchema
-```
-
-**For through-kind-alias create routes (POST):**
-The kind resolved is the *parent's* kind (e.g., `book`), but the request body being posted is a *reaction* or *entity*. The validation schema should be for the reaction/entity type, not the parent entity type.
-
-**This means `ValidateRequestBodyByKindSchema` would NOT apply** for through-kind-alias routes, because:
-1. The resolved kind is the parent's kind, not the created record's kind
-2. The schema for the created record (reaction/entity) depends on the through record type, not the parent alias
-
-**Recommendation:** Do NOT include `ValidateRequestBodyByKindSchema` in through-kind-alias routes (same as generic through routes).
-
-**Question for you:** Confirm that request body validation is not needed for through-kind-alias routes?
+With `kindName` overwritten to the through kind (`like`), the filter validates the request body against the `like` schema. This is correct — the POST body is a reaction of kind `like`.
 
 ---
 
-### DECISION 8: `PlaceKindNameIntoPayload`
+### DECISION 8: `PlaceKindNameIntoPayload` ✅ CONFIRMED
 
-**Generic through POST routes do NOT use `PlaceKindNameIntoPayload`.** The created record (reaction/entity) gets its kind through the backend's through mechanism, not from the URL.
+INCLUDE `PlaceKindNameIntoPayload` in through-kind-alias POST/PUT routes.
 
-**Kind alias POST routes DO use it:**
-```yaml
-- PlaceKindNameIntoPayload
-```
-
-**For through-kind-alias POST routes:**
-The resolved kind is the *parent's* kind (e.g., `book`). But the record being created is a reaction, not an entity. Placing `_kind=book` into a reaction payload would be incorrect.
-
-**Recommendation:** Do NOT include `PlaceKindNameIntoPayload` in through-kind-alias routes.
-
-**Question for you:** Confirm?
+With `kindName` overwritten to the through kind (`like`), the filter places `_kind=like` into the reaction payload. This is correct — creating a reaction of kind `like`.
 
 ---
 
-### DECISION 9: `AddSetsToThroughRecordQuery` vs `AddSetsToEntityListOrReactionViaRecordQuery`
+### DECISION 9: `ConvertKindAliasToKindQuery` ✅ CONFIRMED
 
-**Generic through routes use `AddSetsToThroughRecordQuery`** — applies dual visibility (set + setThrough).
+INCLUDE `ConvertKindAliasToKindQuery` in through-kind-alias GET routes.
 
-**Kind alias routes use `AddSetsToEntityListOrReactionViaRecordQuery`** — applies single set-based visibility.
+`GET entities/books/{id}/reactions/likes` returns only reactions with `_kind=like`, not all reactions for that entity.
 
-**For through-kind-alias routes:** These are still through routes conceptually. The query goes through a parent-child relation. Dual visibility (set + setThrough) is needed.
-
-**Recommendation:** Use `AddSetsToThroughRecordQuery` (same as generic through routes).
+**Note:** If Decision 4 is confirmed (ThroughKindAliasResolver injects `filter[where][_kind]` directly — like HierarchyKindAliasResolver does), then the explicit `ConvertKindAliasToKindQuery` filter may be redundant. The through resolver would handle both path rewrite and kind query injection. To be decided during implementation.
 
 ---
 
-### DECISION 10: `CheckIfRouteEnabled` Controller Name
+### DECISION 10: `AddSetsTo*` Filter Selection ✅ CONFIRMED
 
-**Generic through routes use:**
-```yaml
-controllerName: reactionsThroughEntity
-```
+There are **4 AddSetsTo* filter variants**. The correct one depends on the through route type.
 
-**Kind alias routes use:**
-```yaml
-controllerName: entitiesKindAlias
-```
+**Actual filter usage in existing generic through routes:**
 
-**For through-kind-alias routes, options:**
-- `reactionsThroughEntityKindAlias` — new controller name
-- `reactionsThroughEntity` — reuse generic
-
-**Recommendation:** Use a new controller name like `reactionsThroughEntityKindAlias` for independent toggle control. This allows disabling domain-projected through routes without disabling generic through routes.
-
-**Question for you:** Should through-kind-alias routes have their own `controllerName` for toggle control?
-
----
-
-### DECISION 11: `RewritePath` Rules
-
-**Generic through route:**
-```yaml
-RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-```
-
-**Kind alias through route needs to strip the kindAlias:**
-```yaml
-RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
-```
-
-The `kindAlias` segment is captured but not used in the rewrite target — it's consumed by `KindResolution` filter.
-
----
-
-## Summary of Questions for You
-
-| # | Question | Recommendation |
+| Through Route | Filter Used | Why |
 |---|---|---|
-| 1 | Static through segments (`books/{id}/reactions`) or dynamic aliases (`books/{id}/likes`)? | Static for Phase 1 |
-| 2 | Cross-controller alias config shape (if dynamic aliases)? | Defer to Phase 2 |
-| 3 | Route placement: before hierarchy routes or at end of file? | After each controller's kind alias section, before hierarchy |
-| 4 | Should through-kind-alias routes use `ConvertKindAliasToKindQuery`? | Probably not — through queries are scoped by parent ID, not _kind |
-| 5 | Reuse generic through auth policies? | Yes |
-| 6 | DynamicTimeout key structure for through-kind-alias? | `app.timeouts.<recordType>.kinds.<parentKind>.<operation>` |
-| 7 | Skip `ValidateRequestBodyByKindSchema` for through-kind-alias? | Yes — resolved kind is parent's, not created record's |
-| 8 | Skip `PlaceKindNameIntoPayload` for through-kind-alias? | Yes — same reason |
-| 9 | Use `AddSetsToThroughRecordQuery`? | Yes — through routes need dual visibility |
-| 10 | New controllerName for toggle control? | Yes — `reactionsThroughEntityKindAlias` etc. |
-| 11 | RewritePath strips kindAlias? | Yes — drop kindAlias, keep recordId |
+| `reactionsThroughEntity` (all 4 ops) | `AddSetsToEntityListOrReactionViaRecordQuery` | Reactions accessed *via* an entity record — single `set[audience]` check |
+| `reactionsThroughList` (all 4 ops) | `AddSetsToEntityListOrReactionViaRecordQuery` | Reactions accessed *via* a list record — single `set[audience]` check |
+| `entitiesThroughList` (all 4 ops) | `AddSetsToThroughRecordQuery` | Entities accessed *through* a list — dual `set` + `setThrough` check |
+| `listsThroughEntity` (GET only) | `AddSetsToThroughRecordQuery` | Lists accessed *through* an entity — dual `set` + `setThrough` check |
+
+**The 4 filters and their purposes:**
+
+| Filter | Adds to query | Used by |
+|---|---|---|
+| `AddSetsToEntityListOrReactionViaRecordQuery` | `set[audience][userIds/groupIds]` | Base entities/lists, reactions through entity/list, hierarchy routes |
+| `AddSetsToThroughRecordQuery` | `set[audience]` + `setThrough[audience]` | Entities through list, lists through entity |
+| `AddSetsToReactionsQuery` | `entitySet[audience]` or `listSet[audience]` + `set[audience]` | Direct entity-reactions, list-reactions (from root, not through) |
+| `AddSetsToRelationQuery` | `set[or][actives/pendings]` + `listSet[audience]` + `entitySet[audience]` | Relations |
+
+**For through-kind-alias routes, use the SAME filter as the generic through route:**
+
+| Through Kind Alias Route | Filter |
+|---|---|
+| reactions through entity kind alias | `AddSetsToEntityListOrReactionViaRecordQuery` |
+| reactions through list kind alias | `AddSetsToEntityListOrReactionViaRecordQuery` |
+| entities through list kind alias | `AddSetsToThroughRecordQuery` |
+| lists through entity kind alias | `AddSetsToThroughRecordQuery` |
+
+---
+
+### DECISION 11: `CheckIfRouteEnabled` Controller Name ✅ CONFIRMED
+
+**Option C — verbose and explicit.** Both aliases are named in the controller name:
+
+| Through Type | Controller Name |
+|---|---|
+| reactions through entity | `reactionKindAliasThroughEntityKindAlias` |
+| reactions through list | `reactionKindAliasThroughListKindAlias` |
+| entities through list | `entityKindAliasThroughListKindAlias` |
+| lists through entity | `listKindAliasThroughEntityKindAlias` |
+
+Verbose but unambiguous — no character savings needed for environment variable config keys.
+
+---
+
+### DECISION 12: `RewritePath` Rules ✅ DECIDED
+
+The inbound URL contains 5 segments. The backend URL has 3 segments. The rewrite strips `{kindAlias}` and `{throughAlias}`:
+
+```
+INBOUND:  /api/v1/entities/books/{recordId}/reactions/likes
+BACKEND:  /entities/{recordId}/reactions
+```
+
+Concretely:
+```yaml
+RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+```
+
+The route-level `RewritePath` is correct here. Unlike `HierarchyKindAliasResolver` (which rewrites internally because the backend segment depends on resolution), through routes have a static backend path — so route-level `RewritePath` works.
+
+---
+
+## Summary of Decisions
+
+| # | Decision | Status | Notes |
+|---|---|---|---|
+| 1 | Path structure: 5-segment with `{throughAlias}` | ✅ Decided | No hierarchy collision |
+| 2 | Config: `through.reactions[]`, `through.entities[]`, `through.lists[]` | ✅ Decided | On `AliasConfig` |
+| 3 | Route placement: end of file | ✅ Resolved | No ordering conflict |
+| 4 | KindResolution: two-filter pipeline (KindResolution → ThroughKindAliasResolver) | ✅ Confirmed | Follows hierarchy pattern, route-level RewritePath |
+| 5 | Auth policies: reuse generic through | ✅ Confirmed | |
+| 6 | Timeout key: `<recordType>.kinds.<throughKind>.<routeId>` | ✅ Confirmed | |
+| 7 | Validation: include for POST | ✅ Confirmed | Through kind used for schema |
+| 8 | PlaceKindNameIntoPayload: include for POST/PUT | ✅ Confirmed | Through kind placed |
+| 9 | ConvertKindAliasToKindQuery: include for GET | ✅ Confirmed | May be handled by resolver filter (like hierarchy) |
+| 10 | AddSetsTo*: match generic through route's filter | ✅ Confirmed | Parent scoping via policies; query scoping matches generic through |
+| 11 | Controller names: naming convention | ✅ Confirmed | Option C: `reactionKindAliasThroughEntityKindAlias` (verbose, explicit) |
+| 12 | RewritePath: strip kindAlias + throughAlias | ✅ Decided | Route-level filter (static target) |
 
 ---
 
@@ -398,20 +407,23 @@ The `kindAlias` segment is captured but not used in the rewrite target — it's 
 
 ```yaml
 - id: findReactionsByEntityIdByKindAlias
-  uri: ${backend}
+  uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
   predicates:
-  - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[UUID]}/${app.inbound.controllerBasePaths.reactionsThroughEntity}
+  - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
   - Method=GET
   filters:
   - name: DynamicTimeout
     args:
       connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.findReactionsByEntityId.connectTimeoutMs}
       responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.findReactionsByEntityId.responseTimeoutMs}
-  - KindResolution
+  - KindResolution                                    # resolves {kindAlias} → parent kind
+  - name: ThroughKindAliasResolver                    # resolves {throughAlias} → through kind, injects _kind query
+    args:
+      throughSegment: reactions
   - name: CheckIfRouteEnabled
     args:
-      controllerName: reactionsThroughEntityKindAlias
-  - RewritePath=...entities/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/reactions, ...entities/${recordId}/reactions
+      controllerName: reactionKindAliasThroughEntityKindAlias
+  - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
   - AuthenticateRequest
   - GenerateRequestId
   - name: DynamicRateLimiter
@@ -425,7 +437,7 @@ The `kindAlias` segment is captured but not used in the rewrite target — it's 
   - PreventStringifiedJsonFilter
   - ApplyFieldsetConfig
   - ConvertSimplerQueriesToBackendFormat
-  - AddSetsToThroughRecordQuery          # ← Through dual visibility
+  - AddSetsToEntityListOrReactionViaRecordQuery       # same as generic reactionsThroughEntity
   - PreventQueryByForbiddenFields
   - RemoveRequestHeader=Authorization
   - name: DynamicLocalCache
@@ -435,32 +447,94 @@ The `kindAlias` segment is captured but not used in the rewrite target — it's 
   - FieldFilter
   metadata:
     recordType: entityReactions
-    controllerName: reactionsThroughEntityKindAlias
+    controllerName: reactionKindAliasThroughEntityKindAlias
     baseControllerName: entities
     tags:
     - get
     - find
     - read-only
     - entityReactions
-    - reactionsThroughEntityKindAlias
+    - reactionKindAliasThroughEntityKindAlias
     - kind-alias
     - through
     - collection
     - reaction
 ```
 
+## Proposed Filter Chain (Example: `createReactionByEntityIdByKindAlias`)
+
+```yaml
+- id: createReactionByEntityIdByKindAlias
+  uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+  predicates:
+  - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.reactionsThroughEntity}/{throughAlias}
+  - Method=POST
+  filters:
+  - name: DynamicTimeout
+    args:
+      connectTimeoutMs: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.connectTimeoutMs}
+      responseTimeoutMs: ${app.timeouts.reactionsThroughEntity.createReactionByEntityId.responseTimeoutMs}
+  - KindResolution
+  - name: ThroughKindAliasResolver
+    args:
+      throughSegment: reactions
+  - name: DynamicRequestSizeFilter
+    args:
+      maxSize: ${app.request-sizes.reactions.create}
+  - name: CheckIfRouteEnabled
+    args:
+      controllerName: reactionKindAliasThroughEntityKindAlias
+  - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
+  - PlaceKindNameIntoPayload                          # places _kind=like into reaction body
+  - AuthenticateRequest
+  - GenerateRequestId
+  - name: DynamicRateLimiter
+    args:
+      replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
+      burstCapacity: ${app.rate-limits.reactions.createEntityReaction.burstCapacity}
+  - FetchForbiddenFields
+  - ValidateRequestBodyByKindSchema                   # validates against 'like' schema
+  - name: AuthorizeRequest
+    args:
+      policyName: /policies/auth/routes/reactionsThroughEntity/createReactionByEntityId/policy
+  - name: AcquireLockForCreation
+    args:
+      waitTime: ${app.locks.reactions.create.waitTime}
+      leaseTime: ${app.locks.reactions.create.leaseTime}
+  - AddManagedFieldsInCreation
+  - ApplyFieldsetConfig
+  - RemoveRequestHeader=Authorization
+  - FieldFilter
+  metadata:
+    recordType: entityReactions
+    controllerName: reactionKindAliasThroughEntityKindAlias
+    baseControllerName: entities
+    tags:
+    - post
+    - create
+    - write
+    - manage
+    - entityReactions
+    - reactionKindAliasThroughEntityKindAlias
+    - kind-alias
+    - through
+    - reaction
+```
+
+---
+
 ### Filter Chain Comparison
 
-| Filter | Generic Through | Kind Alias Base | Through Kind Alias |
-|---|---|---|---|
-| DynamicTimeout | ❌ (metadata) | ✅ | ✅ |
-| KindResolution | ❌ | ✅ | ✅ |
-| CheckIfRouteEnabled | ✅ throughCtrl | ✅ kindAliasCtrl | ✅ throughKindAliasCtrl |
-| DynamicRequestSizeFilter | ❌ (static) | ✅ | ✅ (POST only) |
-| DynamicRateLimiter | ❌ (static) | ✅ | ✅ |
-| PlaceKindNameIntoPayload | ❌ | ✅ (POST) | ❌ |
-| ValidateRequestBodyByKindSchema | ❌ | ✅ (POST) | ❌ |
-| ConvertKindAliasToKindQuery | ❌ | ✅ (GET/count) | ❌ (TBD) |
-| AddSetsTo*Query | ThroughRecord | ViaRecord | ThroughRecord |
-| AuthorizeRequest | through policy | base policy | through policy (reuse) |
-| DynamicLocalCache | ❌ (static) | ✅ | ✅ |
+| Filter | Generic Through (reactions) | Generic Through (entities/lists) | Kind Alias Base | Through Kind Alias |
+|---|---|---|---|---|
+| DynamicTimeout | ❌ (metadata) | ❌ (metadata) | ✅ | ✅ |
+| KindResolution | ❌ | ❌ | ✅ (resolves kind) | ✅ (resolves parent kind) |
+| ThroughKindAliasResolver | ❌ | ❌ | ❌ | ✅ NEW (resolves through kind, injects _kind query) |
+| CheckIfRouteEnabled | ✅ throughCtrl | ✅ throughCtrl | ✅ kindAliasCtrl | ✅ e.g. `reactionKindAliasThroughEntityKindAlias` |
+| DynamicRequestSizeFilter | ❌ (static) | ❌ (static) | ✅ | ✅ (POST only) |
+| DynamicRateLimiter | ❌ (static) | ❌ (static) | ✅ | ✅ |
+| PlaceKindNameIntoPayload | ❌ | ❌ | ✅ (POST) | ✅ (POST, uses through kind) |
+| ValidateRequestBodyByKindSchema | ❌ | ❌ | ✅ (POST) | ✅ (POST, validates through kind schema) |
+| AddSetsTo* | ViaRecord | ThroughRecord | ViaRecord | Same as generic through equivalent |
+| AuthorizeRequest | through policy | through policy | base policy | through policy (reuse) |
+| DynamicLocalCache | ❌ (static) | ❌ (static) | ✅ | ✅ |

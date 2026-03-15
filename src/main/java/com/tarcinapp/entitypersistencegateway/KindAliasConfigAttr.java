@@ -16,6 +16,9 @@ import lombok.Data;
  * - isHierarchyRequest: True if request was resolved via HierarchyKindAliasResolver
  * - hierarchySchemaKey: Schema key for hierarchy-level override (format: "hierarchy:{controller}:{rootKind}:{targetAlias}")
  * - hierarchyRouteSchemaKey: Schema key for hierarchy route-level override (format: "hierarchy-route:{controller}:{rootKind}:{targetAlias}:{routeId}")
+ * - isThroughRequest: True if request was resolved via ThroughKindAliasResolver
+ * - throughSchemaKey: Schema key for through-level override (format: "through:{controller}:{rootKind}:{targetAlias}")
+ * - throughRouteSchemaKey: Schema key for through route-level override (format: "through-route:{controller}:{rootKind}:{targetAlias}:{routeId}")
  */
 @Data
 public class KindAliasConfigAttr {
@@ -35,4 +38,9 @@ public class KindAliasConfigAttr {
     boolean isHierarchyRequest;
     String hierarchySchemaKey;
     String hierarchyRouteSchemaKey;
+    
+    // Through alias resolution (computed by ThroughKindAliasResolver)
+    boolean isThroughRequest;
+    String throughSchemaKey;
+    String throughRouteSchemaKey;
 }
