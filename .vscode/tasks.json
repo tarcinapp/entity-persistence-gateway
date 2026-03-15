@@ -28,7 +28,9 @@
             "label": "Start All Dependencies",
             "type": "shell",
             "command": "${workspaceFolder}/dev.sh",
-            "args": ["start"],
+            "args": [
+                "start"
+            ],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -44,7 +46,9 @@
             "label": "Stop All Dependencies",
             "type": "shell",
             "command": "${workspaceFolder}/dev.sh",
-            "args": ["stop"],
+            "args": [
+                "stop"
+            ],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -60,7 +64,9 @@
             "label": "Check Dependencies Status",
             "type": "shell",
             "command": "${workspaceFolder}/dev.sh",
-            "args": ["status"],
+            "args": [
+                "status"
+            ],
             "group": "test",
             "presentation": {
                 "echo": true,
@@ -76,7 +82,9 @@
             "label": "View Dependencies Logs",
             "type": "shell",
             "command": "${workspaceFolder}/dev.sh",
-            "args": ["logs"],
+            "args": [
+                "logs"
+            ],
             "group": "test",
             "presentation": {
                 "echo": true,
@@ -88,6 +96,21 @@
             },
             "isBackground": true,
             "problemMatcher": []
+        },
+        {
+            "label": "Git: Cleanup Merged Branches",
+            "type": "shell",
+            "command": "git branch --merged | grep -v -E '^\\*|master|dev' | xargs -r -n 1 git branch -d && echo 'Merged branches cleaned.' || echo 'No merged branches found to clean.'",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
         }
     ]
 }
