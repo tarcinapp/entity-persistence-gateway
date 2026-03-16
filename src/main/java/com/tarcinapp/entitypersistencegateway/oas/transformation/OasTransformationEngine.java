@@ -461,6 +461,9 @@ public class OasTransformationEngine {
         // These are the raw controller paths that work with 'kind' parameter
         generateBaseControllerRoutes(rawPaths, virtualizedPaths, baseUri);
         
+        // 1b. Generate generic through routes (/entities/{id}/reactions, /lists/{id}/entities, etc.)
+        generateGenericThroughRoutes(rawPaths, virtualizedPaths, baseUri);
+        
         // 2. THEN: Process each controller's aliases (domain-specific paths)
         openApiProperties.getControllers().forEach((controllerName, controllerConfig) -> {
             // Check if controller is disabled by toggles
@@ -519,16 +522,6 @@ public class OasTransformationEngine {
                 });
             });
         });
-        
-        // Optionally include generic endpoints (also prefixed with base URI)
-        if (orchestratorProperties.getTransformation().isIncludeGenericEndpoints()) {
-            rawPaths.forEach((path, pathItem) -> {
-                String fullPath = baseUri + path;
-                if (!isPathVirtualized(fullPath, virtualizedPaths)) {
-                    virtualizedPaths.addPathItem(fullPath, pathItem);
-                }
-            });
-        }
         
         return virtualizedPaths;
     }
@@ -659,6 +652,54 @@ public class OasTransformationEngine {
     }
     
     /**
+     * Generates generic (non-aliased) through routes.
+     * These are the base cross-controller paths like /entities/{id}/reactions,
+     * /lists/{id}/entities, etc. Without these, such paths only appear when
+     * includeGenericEndpoints is enabled.
+     */
+    private void generateGenericThroughRoutes(Paths rawPaths, Paths virtualizedPaths, String baseUri) {
+        // Check if "generic" tag is disabled
+        if (isTagDisabled("generic")) {
+            log.debug("Skipping generic through routes - 'generic' tag is disabled");
+            return;
+        }
+        
+        // Define through route mappings: backendPath, throughInboundPath, rootInboundPath, controllerName
+        String[][] throughMappings = {
+            {"/entities/{id}/reactions", reactionsThroughEntityBasePath, entitiesBasePath, "reactionsThroughEntity"},
+            {"/entities/{id}/lists",    listsThroughEntityBasePath,     entitiesBasePath, "listsThroughEntity"},
+            {"/lists/{id}/reactions",   reactionsThroughListBasePath,   listsBasePath,    "reactionsThroughList"},
+            {"/lists/{id}/entities",    entitiesThroughListBasePath,    listsBasePath,    "entitiesThroughList"},
+        };
+        
+        for (String[] mapping : throughMappings) {
+            String backendPath = mapping[0];
+            String throughInboundPath = mapping[1];
+            String rootInboundPath = mapping[2];
+            String controllerName = mapping[3];
+            
+            if (isControllerDisabled(controllerName)) {
+                log.debug("Skipping generic through route for '{}' - controller disabled", controllerName);
+                continue;
+            }
+            
+            PathItem pathItem = rawPaths.get(backendPath);
+            if (pathItem == null) continue;
+            
+            String tagName = capitalizeFirst(rootInboundPath);
+            PathItem transformed = transformBaseControllerPathItem(pathItem, controllerName, tagName, true);
+            
+            if (hasAnyOperation(transformed)) {
+                String fullPath = baseUri + "/" + rootInboundPath + "/{id}/" + throughInboundPath;
+                if (!virtualizedPaths.containsKey(fullPath)) {
+                    virtualizedPaths.addPathItem(fullPath, transformed);
+                    log.debug("Added generic through route: {}", fullPath);
+                }
+            }
+        }
+    }
+    
+    /**
      * Transforms a PathItem for base controller routes (non-aliased).
      * These operations are tagged with the controller name (e.g., "Entities").
      * Operations are filtered based on route tag configuration (tagsOn/tagsOff).
@@ -774,6 +815,9 @@ public class OasTransformationEngine {
         // Generate hierarchy paths (children and parents) - pass parent alias for correct tagging
         // Operation-level filtering is handled inside generateHierarchyPaths
         result.addAll(generateHierarchyPaths(pathPrefix, aliasConfig, rawPaths, controllerName, aliasConfig));
+        
+        // Generate through-alias paths (reactions, entities, lists through root alias)
+        result.addAll(generateThroughPaths(controllerName, aliasConfig, rawPaths));
         
         return result;
     }
@@ -1249,6 +1293,382 @@ public class OasTransformationEngine {
         }
         
         return transformed;
+    }
+    
+    // ========================================================================
+    // THROUGH-ALIAS PATH GENERATION
+    // ========================================================================
+    
+    /**
+     * Generates through-alias paths for a root alias.
+     * Through routes project reactions/entities/lists through a root kind alias.
+     *
+     * Path pattern: /{rootControllerBasePath}/{rootAlias}/{id}/{throughBasePath}/{throughAlias}
+     * Example: /entities/books/{id}/reactions/likes
+     *
+     * The record type is determined by the through record, not the root.
+     * Example: /entities/books/{id}/reactions/likes → recordType: entityReactions
+     */
+    private List<TransformedPath> generateThroughPaths(
+            String rootControllerName,
+            AliasConfig rootAlias,
+            Paths rawPaths) {
+        
+        List<TransformedPath> result = new ArrayList<>();
+        
+        ThroughConfig through = rootAlias.getThrough();
+        if (through == null) return result;
+        
+        String rootControllerBasePath = getInboundControllerBasePath(rootControllerName);
+        String rootTag = capitalizeFirst(rootAlias.getAlias());
+        
+        if ("entities".equals(rootControllerName)) {
+            if (through.getReactions() != null && !through.getReactions().isEmpty()) {
+                result.addAll(generateThroughPathsForType(
+                    rootControllerBasePath, rootAlias, through.getReactions(),
+                    "reactionsThroughEntity", reactionsThroughEntityBasePath,
+                    "entityReactions", rootTag, rawPaths));
+            }
+            if (through.getLists() != null && !through.getLists().isEmpty()) {
+                result.addAll(generateThroughPathsForType(
+                    rootControllerBasePath, rootAlias, through.getLists(),
+                    "listsThroughEntity", listsThroughEntityBasePath,
+                    "lists", rootTag, rawPaths));
+            }
+        } else if ("lists".equals(rootControllerName)) {
+            if (through.getReactions() != null && !through.getReactions().isEmpty()) {
+                result.addAll(generateThroughPathsForType(
+                    rootControllerBasePath, rootAlias, through.getReactions(),
+                    "reactionsThroughList", reactionsThroughListBasePath,
+                    "listReactions", rootTag, rawPaths));
+            }
+            if (through.getEntities() != null && !through.getEntities().isEmpty()) {
+                result.addAll(generateThroughPathsForType(
+                    rootControllerBasePath, rootAlias, through.getEntities(),
+                    "entitiesThroughList", entitiesThroughListBasePath,
+                    "entities", rootTag, rawPaths));
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Generates through-alias paths for a specific through type.
+     */
+    private List<TransformedPath> generateThroughPathsForType(
+            String rootControllerBasePath,
+            AliasConfig rootAlias,
+            List<AliasConfig> throughAliases,
+            String throughControllerKey,
+            String throughBasePath,
+            String throughRecordType,
+            String rootTag,
+            Paths rawPaths) {
+        
+        List<TransformedPath> result = new ArrayList<>();
+        
+        String backendPath = CONTROLLER_PATH_PREFIXES.get(throughControllerKey);
+        if (backendPath == null) {
+            log.warn("No backend path found for through controller: {}", throughControllerKey);
+            return result;
+        }
+        
+        PathItem backendPathItem = rawPaths.get(backendPath);
+        if (backendPathItem == null) {
+            log.debug("No backend PathItem for through path: {}", backendPath);
+            return result;
+        }
+        
+        for (AliasConfig throughAlias : throughAliases) {
+            if (throughAlias.getAlias() == null) continue;
+            
+            String throughTag = capitalizeFirst(throughAlias.getAlias());
+            if (isTagDisabled(throughTag)) {
+                log.debug("Skipping through alias '{}' - tag '{}' disabled", throughAlias.getAlias(), throughTag);
+                continue;
+            }
+            
+            String virtualPath = "/" + rootControllerBasePath + "/" + rootAlias.getAlias()
+                + "/{id}/" + throughBasePath + "/" + throughAlias.getAlias();
+            
+            PathItem transformed = transformPathItemForThrough(
+                backendPathItem, throughAlias, rootAlias, throughControllerKey,
+                throughRecordType, rootTag);
+            
+            if (hasAnyOperation(transformed)) {
+                result.add(new TransformedPath(virtualPath, transformed));
+                log.debug("Generated through-alias path: {}", virtualPath);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Transforms a PathItem for through-alias rendering.
+     * Filters operations based on through kind alias route toggles.
+     */
+    private PathItem transformPathItemForThrough(
+            PathItem original,
+            AliasConfig throughAlias,
+            AliasConfig rootAlias,
+            String throughControllerKey,
+            String throughRecordType,
+            String rootTag) {
+        
+        PathItem transformed = new PathItem();
+        
+        if (original.getPost() != null) {
+            String routeId = mapThroughMethodToKindAliasRouteId(throughControllerKey, "post");
+            if (routeId != null && !isKindAliasOperationFilteredByTags(routeId, original.getPost().getOperationId())) {
+                String baseRouteId = mapThroughMethodToBaseRouteId(throughControllerKey, "post");
+                transformed.setPost(transformThroughOperation(
+                    original.getPost(), throughAlias, rootAlias, rootTag, "post", baseRouteId, throughRecordType));
+            }
+        }
+        if (original.getGet() != null) {
+            String routeId = mapThroughMethodToKindAliasRouteId(throughControllerKey, "get");
+            if (routeId != null && !isKindAliasOperationFilteredByTags(routeId, original.getGet().getOperationId())) {
+                String baseRouteId = mapThroughMethodToBaseRouteId(throughControllerKey, "get");
+                transformed.setGet(transformThroughOperation(
+                    original.getGet(), throughAlias, rootAlias, rootTag, "get", baseRouteId, throughRecordType));
+            }
+        }
+        if (original.getPatch() != null) {
+            String routeId = mapThroughMethodToKindAliasRouteId(throughControllerKey, "patch");
+            if (routeId != null && !isKindAliasOperationFilteredByTags(routeId, original.getPatch().getOperationId())) {
+                String baseRouteId = mapThroughMethodToBaseRouteId(throughControllerKey, "patch");
+                transformed.setPatch(transformThroughOperation(
+                    original.getPatch(), throughAlias, rootAlias, rootTag, "patch", baseRouteId, throughRecordType));
+            }
+        }
+        if (original.getDelete() != null) {
+            String routeId = mapThroughMethodToKindAliasRouteId(throughControllerKey, "delete");
+            if (routeId != null && !isKindAliasOperationFilteredByTags(routeId, original.getDelete().getOperationId())) {
+                String baseRouteId = mapThroughMethodToBaseRouteId(throughControllerKey, "delete");
+                transformed.setDelete(transformThroughOperation(
+                    original.getDelete(), throughAlias, rootAlias, rootTag, "delete", baseRouteId, throughRecordType));
+            }
+        }
+        if (original.getPut() != null) {
+            String routeId = mapThroughMethodToKindAliasRouteId(throughControllerKey, "put");
+            if (routeId != null && !isKindAliasOperationFilteredByTags(routeId, original.getPut().getOperationId())) {
+                String baseRouteId = mapThroughMethodToBaseRouteId(throughControllerKey, "put");
+                transformed.setPut(transformThroughOperation(
+                    original.getPut(), throughAlias, rootAlias, rootTag, "put", baseRouteId, throughRecordType));
+            }
+        }
+        
+        return transformed;
+    }
+    
+    /**
+     * Transforms an operation for through-alias endpoints.
+     */
+    private Operation transformThroughOperation(
+            Operation original,
+            AliasConfig throughAlias,
+            AliasConfig rootAlias,
+            String rootTag,
+            String httpMethod,
+            String baseRouteId,
+            String throughRecordType) {
+        
+        Operation transformed = new Operation();
+        
+        transformed.setParameters(cleanParameters(original.getParameters()));
+        
+        if ("get".equalsIgnoreCase(httpMethod)) {
+            addSetParameterIfNeeded(transformed);
+            addSetThroughParameterIfNeeded(transformed);
+        }
+        
+        transformed.setRequestBody(cloneRequestBody(original.getRequestBody()));
+        if (original.getResponses() != null && !original.getResponses().isEmpty()) {
+            transformed.setResponses(cloneResponses(original.getResponses()));
+        } else {
+            ApiResponses defaultResponses = new ApiResponses();
+            ApiResponse defaultResponse = new ApiResponse();
+            defaultResponse.setDescription("Successful operation");
+            defaultResponses.addApiResponse("200", defaultResponse);
+            transformed.setResponses(defaultResponses);
+        }
+        
+        transformed.setDeprecated(original.getDeprecated());
+        transformed.setSecurity(original.getSecurity());
+        
+        if (baseRouteId != null) {
+            Map<String, Object> extensions = transformed.getExtensions();
+            if (extensions == null) {
+                extensions = new LinkedHashMap<>();
+                transformed.setExtensions(extensions);
+            }
+            extensions.put("x-original-route-id", baseRouteId);
+        }
+        
+        String rootSingular = getSingular(rootAlias);
+        String throughPlural = throughAlias.getAlias();
+        String throughSingular = getSingular(throughAlias);
+        
+        String operationId;
+        String summary;
+        
+        switch (httpMethod.toLowerCase()) {
+            case "get":
+                operationId = String.format("find%s%s",
+                    capitalizeFirst(rootSingular), capitalizeFirst(throughPlural));
+                summary = String.format("Find %s for a %s",
+                    throughPlural.toLowerCase(), rootSingular.toLowerCase());
+                break;
+            case "post":
+                operationId = String.format("create%s%s",
+                    capitalizeFirst(rootSingular), capitalizeFirst(throughSingular));
+                summary = String.format("Create a %s for a %s",
+                    throughSingular.toLowerCase(), rootSingular.toLowerCase());
+                break;
+            case "patch":
+                operationId = String.format("update%s%s",
+                    capitalizeFirst(rootSingular), capitalizeFirst(throughPlural));
+                summary = String.format("Update %s of a %s",
+                    throughPlural.toLowerCase(), rootSingular.toLowerCase());
+                break;
+            case "delete":
+                operationId = String.format("delete%s%s",
+                    capitalizeFirst(rootSingular), capitalizeFirst(throughPlural));
+                summary = String.format("Delete %s of a %s",
+                    throughPlural.toLowerCase(), rootSingular.toLowerCase());
+                break;
+            default:
+                operationId = String.format("%s%s%s", httpMethod,
+                    capitalizeFirst(rootSingular), capitalizeFirst(throughSingular));
+                summary = String.format("%s %s of a %s",
+                    capitalizeFirst(httpMethod), throughSingular.toLowerCase(), rootSingular.toLowerCase());
+        }
+        
+        RouteConfig routeConfig = (throughAlias.getRoutes() != null && baseRouteId != null)
+            ? throughAlias.getRoutes().get(baseRouteId)
+            : null;
+        
+        if (routeConfig != null) {
+            if (routeConfig.getOperationId() != null) {
+                operationId = routeConfig.getOperationId();
+            }
+            if (routeConfig.getSummary() != null) {
+                summary = routeConfig.getSummary();
+            }
+            if (routeConfig.getDescription() != null) {
+                transformed.setDescription(routeConfig.getDescription());
+            }
+        }
+        
+        transformed.setOperationId(operationId);
+        transformed.setSummary(summary);
+        
+        if (routeConfig != null && routeConfig.getTags() != null && !routeConfig.getTags().isEmpty()) {
+            transformed.setTags(routeConfig.getTags());
+        } else {
+            transformed.setTags(Collections.singletonList(rootTag));
+        }
+        
+        return transformed;
+    }
+    
+    /**
+     * Maps an HTTP method + through controller key to the corresponding through kind alias route ID.
+     */
+    private String mapThroughMethodToKindAliasRouteId(String throughControllerKey, String httpMethod) {
+        return switch (throughControllerKey) {
+            case "reactionsThroughEntity" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createReactionByEntityIdByKindAlias";
+                case "get" -> "findReactionsByEntityIdByKindAlias";
+                case "patch" -> "updateReactionsByEntityIdByKindAlias";
+                case "delete" -> "deleteReactionsByEntityIdByKindAlias";
+                default -> null;
+            };
+            case "reactionsThroughList" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createReactionByListIdByKindAlias";
+                case "get" -> "findReactionsByListIdByKindAlias";
+                case "patch" -> "updateReactionsByListIdByKindAlias";
+                case "delete" -> "deleteReactionsByListIdByKindAlias";
+                default -> null;
+            };
+            case "entitiesThroughList" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createEntityByListIdByKindAlias";
+                case "get" -> "findEntitiesByListIdByKindAlias";
+                case "patch" -> "updateEntitiesByListIdByKindAlias";
+                case "delete" -> "deleteEntitiesByListIdByKindAlias";
+                default -> null;
+            };
+            case "listsThroughEntity" -> switch (httpMethod.toLowerCase()) {
+                case "get" -> "findListsByEntityIdByKindAlias";
+                default -> null;
+            };
+            default -> null;
+        };
+    }
+    
+    /**
+     * Maps an HTTP method + through controller key to the base through route ID.
+     * Used for x-original-route-id extension and route-level schema lookup.
+     */
+    private String mapThroughMethodToBaseRouteId(String throughControllerKey, String httpMethod) {
+        return switch (throughControllerKey) {
+            case "reactionsThroughEntity" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createReactionByEntityId";
+                case "get" -> "findReactionsByEntityId";
+                case "patch" -> "updateReactionsByEntityId";
+                case "delete" -> "deleteReactionsByEntityId";
+                default -> null;
+            };
+            case "reactionsThroughList" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createReactionByListId";
+                case "get" -> "findReactionsByListId";
+                case "patch" -> "updateReactionsByListId";
+                case "delete" -> "deleteReactionsByListId";
+                default -> null;
+            };
+            case "entitiesThroughList" -> switch (httpMethod.toLowerCase()) {
+                case "post" -> "createEntityByListId";
+                case "get" -> "findEntitiesByListId";
+                case "patch" -> "updateEntitiesByListId";
+                case "delete" -> "deleteEntitiesByListId";
+                default -> null;
+            };
+            case "listsThroughEntity" -> switch (httpMethod.toLowerCase()) {
+                case "get" -> "findListsByEntityId";
+                default -> null;
+            };
+            default -> null;
+        };
+    }
+    
+    /**
+     * Adds the setThrough parameter to a through-alias GET operation.
+     */
+    private void addSetThroughParameterIfNeeded(Operation operation) {
+        if (operation == null) return;
+        if (operation.getParameters() == null) {
+            operation.setParameters(new ArrayList<>());
+        }
+        boolean hasParam = operation.getParameters().stream()
+            .anyMatch(p -> "setThrough".equals(p.getName()));
+        if (!hasParam) {
+            Parameter setThroughParam = new Parameter();
+            setThroughParam.setName("setThrough");
+            setThroughParam.setIn("query");
+            setThroughParam.setDescription("Advanced filtering on the through record with boolean flags and time-bounded sets");
+            setThroughParam.setStyle(Parameter.StyleEnum.DEEPOBJECT);
+            setThroughParam.setExplode(true);
+            setThroughParam.setRequired(false);
+            
+            Schema<Object> schema = new Schema<>();
+            schema.setType("object");
+            schema.setAdditionalProperties(true);
+            setThroughParam.setSchema(schema);
+            
+            operation.getParameters().add(setThroughParam);
+        }
     }
     
     /**
@@ -2030,7 +2450,8 @@ public class OasTransformationEngine {
     private static final Set<String> DEEP_OBJECT_PARAMS = Set.of(
         "filter", "set", "where",
         "listFilter", "listSet", "listWhere",
-        "entityFilter", "entitySet", "entityWhere"
+        "entityFilter", "entitySet", "entityWhere",
+        "filterThrough", "setThrough", "whereThrough"
     );
     
     /**
@@ -3614,6 +4035,9 @@ public class OasTransformationEngine {
                     
                     // Process parents hierarchy: /books/{id}/authors → BookParentAuthor
                     processHierarchySchemas(schemas, aliasConfig.getParents(), effectivePostBase, effectivePatchBase, effectiveResourceBase, parentAlias, "Parent", controllerName);
+                    
+                    // Process through aliases: /books/{id}/reactions/likes → BooksThroughLike
+                    processThroughSchemas(schemas, controllerName, aliasConfig);
                 });
             });
             
@@ -3899,6 +4323,58 @@ public class OasTransformationEngine {
             String newParent = parentAlias + hierarchyType + capitalizeFirst(nestedConfig.getKind());
             processHierarchySchemas(schemas, nestedConfig.getChildren(), effectivePostBase, effectivePatchBase, effectiveResourceBase, newParent, "Child", controllerName);
             processHierarchySchemas(schemas, nestedConfig.getParents(), effectivePostBase, effectivePatchBase, effectiveResourceBase, newParent, "Parent", controllerName);
+        }
+    }
+    
+    /**
+     * Processes through-alias schemas for a given root alias.
+     * Through schemas document the through record type, not the root.
+     * Uses the through record's controller bases for proper schema structure.
+     *
+     * Schema naming: {RootAlias}Through{ThroughKind}
+     * x-record-type: the through record's controller (e.g., entityReactions, lists)
+     */
+    private void processThroughSchemas(Map<String, Schema> schemas, String rootControllerName, AliasConfig rootAlias) {
+        ThroughConfig through = rootAlias.getThrough();
+        if (through == null) return;
+        
+        String parentAlias = rootAlias.getAlias();
+        
+        if ("entities".equals(rootControllerName)) {
+            if (through.getReactions() != null && !through.getReactions().isEmpty()) {
+                addThroughSchemasForType(schemas, through.getReactions(), parentAlias, "entityReactions");
+            }
+            if (through.getLists() != null && !through.getLists().isEmpty()) {
+                addThroughSchemasForType(schemas, through.getLists(), parentAlias, "lists");
+            }
+        } else if ("lists".equals(rootControllerName)) {
+            if (through.getReactions() != null && !through.getReactions().isEmpty()) {
+                addThroughSchemasForType(schemas, through.getReactions(), parentAlias, "listReactions");
+            }
+            if (through.getEntities() != null && !through.getEntities().isEmpty()) {
+                addThroughSchemasForType(schemas, through.getEntities(), parentAlias, "entities");
+            }
+        }
+    }
+    
+    /**
+     * Adds through-alias schemas for a specific through type.
+     * Fetches base schemas from the through record type controller.
+     */
+    private void addThroughSchemasForType(Map<String, Schema> schemas, List<AliasConfig> throughAliases,
+            String parentAlias, String throughRecordType) {
+        
+        JsonNode postBase = backendSchemaService.getBackendSchemaForController(throughRecordType, "POST");
+        JsonNode patchBase = backendSchemaService.getBackendSchemaForController(throughRecordType, "PATCH");
+        JsonNode resourceBase = backendSchemaService.getBackendSchemaForController(throughRecordType, "GET");
+        
+        if (postBase == null) postBase = objectMapper.createObjectNode();
+        if (patchBase == null) patchBase = objectMapper.createObjectNode();
+        if (resourceBase == null) resourceBase = objectMapper.createObjectNode();
+        
+        for (AliasConfig throughAlias : throughAliases) {
+            addSchemaForAlias(schemas, throughAlias, postBase, patchBase, resourceBase,
+                parentAlias, "Through", throughRecordType);
         }
     }
     
@@ -4871,6 +5347,44 @@ public class OasTransformationEngine {
                         map.put(parentPath, new AliasContext(parentAlias, parentKind, controllerName, true, alias, "Parent"));
                     }
                 }
+                
+                // Add paths for through aliases - these project through records under the root alias
+                // Path pattern: /{baseUri}/{controllerBasePath}/{thisAlias}/{id}/{throughBasePath}/{throughAlias}
+                if (aliasConfig.getThrough() != null) {
+                    ThroughConfig through = aliasConfig.getThrough();
+                    
+                    if ("entities".equals(controllerName)) {
+                        if (through.getReactions() != null) {
+                            for (AliasConfig throughConfig : through.getReactions()) {
+                                if (throughConfig.getAlias() == null || throughConfig.getKind() == null) continue;
+                                String throughPath = aliasBasePath + "/{id}/" + reactionsThroughEntityBasePath + "/" + throughConfig.getAlias();
+                                map.put(throughPath, new AliasContext(throughConfig.getAlias(), throughConfig.getKind(), "entityReactions", true, alias, "Through"));
+                            }
+                        }
+                        if (through.getLists() != null) {
+                            for (AliasConfig throughConfig : through.getLists()) {
+                                if (throughConfig.getAlias() == null || throughConfig.getKind() == null) continue;
+                                String throughPath = aliasBasePath + "/{id}/" + listsThroughEntityBasePath + "/" + throughConfig.getAlias();
+                                map.put(throughPath, new AliasContext(throughConfig.getAlias(), throughConfig.getKind(), "lists", true, alias, "Through"));
+                            }
+                        }
+                    } else if ("lists".equals(controllerName)) {
+                        if (through.getReactions() != null) {
+                            for (AliasConfig throughConfig : through.getReactions()) {
+                                if (throughConfig.getAlias() == null || throughConfig.getKind() == null) continue;
+                                String throughPath = aliasBasePath + "/{id}/" + reactionsThroughListBasePath + "/" + throughConfig.getAlias();
+                                map.put(throughPath, new AliasContext(throughConfig.getAlias(), throughConfig.getKind(), "listReactions", true, alias, "Through"));
+                            }
+                        }
+                        if (through.getEntities() != null) {
+                            for (AliasConfig throughConfig : through.getEntities()) {
+                                if (throughConfig.getAlias() == null || throughConfig.getKind() == null) continue;
+                                String throughPath = aliasBasePath + "/{id}/" + entitiesThroughListBasePath + "/" + throughConfig.getAlias();
+                                map.put(throughPath, new AliasContext(throughConfig.getAlias(), throughConfig.getKind(), "entities", true, alias, "Through"));
+                            }
+                        }
+                    }
+                }
             }
         });
         
@@ -4923,6 +5437,20 @@ public class OasTransformationEngine {
         // Add children/parents paths for list-reactions
         map.put(baseUri + "/" + listReactionsBasePath + "/{id}/children", new AliasContext("children", "ListReaction", "listReactions", true, listReactionsBasePath, "Child"));
         map.put(baseUri + "/" + listReactionsBasePath + "/{id}/parents", new AliasContext("parents", "ListReaction", "listReactions", true, listReactionsBasePath, "Parent"));
+        
+        // Generic through paths: cross-controller routes for through records
+        // Reactions through entity: /entities/{id}/reactions
+        map.put(baseUri + "/" + entitiesBasePath + "/{id}/" + reactionsThroughEntityBasePath,
+            new AliasContext(reactionsThroughEntityBasePath, "EntityReaction", "entityReactions", true, entitiesBasePath, null));
+        // Lists through entity: /entities/{id}/lists
+        map.put(baseUri + "/" + entitiesBasePath + "/{id}/" + listsThroughEntityBasePath,
+            new AliasContext(listsThroughEntityBasePath, "List", "lists", true, entitiesBasePath, null));
+        // Reactions through list: /lists/{id}/reactions
+        map.put(baseUri + "/" + listsBasePath + "/{id}/" + reactionsThroughListBasePath,
+            new AliasContext(reactionsThroughListBasePath, "ListReaction", "listReactions", true, listsBasePath, null));
+        // Entities through list: /lists/{id}/entities
+        map.put(baseUri + "/" + listsBasePath + "/{id}/" + entitiesThroughListBasePath,
+            new AliasContext(entitiesThroughListBasePath, "Entity", "entities", true, listsBasePath, null));
         
         log.debug("Added base controller paths: {}, {}, {}, {}, {}", 
             entitiesBasePath, listsBasePath, relationsBasePath, entityReactionsBasePath, listReactionsBasePath);

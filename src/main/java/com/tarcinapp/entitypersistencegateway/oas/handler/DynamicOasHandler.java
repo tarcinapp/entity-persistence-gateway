@@ -399,6 +399,21 @@ public class DynamicOasHandler {
                            .replace("style: \"SPACEDELIMITED\"", "style: \"spaceDelimited\"")
                            .replace("style: \"PIPEDELIMITED\"", "style: \"pipeDelimited\"")
                            .replace("style: \"DEEPOBJECT\"", "style: \"deepObject\"");
+            // JSON format: "style": "DEEPOBJECT" or "style" : "DEEPOBJECT" (pretty-printed)
+            output = output.replace("\"style\": \"SIMPLE\"", "\"style\": \"simple\"")
+                           .replace("\"style\": \"FORM\"", "\"style\": \"form\"")
+                           .replace("\"style\": \"MATRIX\"", "\"style\": \"matrix\"")
+                           .replace("\"style\": \"LABEL\"", "\"style\": \"label\"")
+                           .replace("\"style\": \"SPACEDELIMITED\"", "\"style\": \"spaceDelimited\"")
+                           .replace("\"style\": \"PIPEDELIMITED\"", "\"style\": \"pipeDelimited\"")
+                           .replace("\"style\": \"DEEPOBJECT\"", "\"style\": \"deepObject\"")
+                           .replace("\"style\" : \"SIMPLE\"", "\"style\" : \"simple\"")
+                           .replace("\"style\" : \"FORM\"", "\"style\" : \"form\"")
+                           .replace("\"style\" : \"MATRIX\"", "\"style\" : \"matrix\"")
+                           .replace("\"style\" : \"LABEL\"", "\"style\" : \"label\"")
+                           .replace("\"style\" : \"SPACEDELIMITED\"", "\"style\" : \"spaceDelimited\"")
+                           .replace("\"style\" : \"PIPEDELIMITED\"", "\"style\" : \"pipeDelimited\"")
+                           .replace("\"style\" : \"DEEPOBJECT\"", "\"style\" : \"deepObject\"");
             
             // FIX: Security scheme type must be lowercase per OpenAPI 3.0 spec
             output = output.replace("type: \"HTTP\"", "type: \"http\"")
