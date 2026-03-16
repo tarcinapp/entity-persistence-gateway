@@ -2492,6 +2492,7 @@ spring:
           - reactionsThroughList
           - through
           - reaction
+          - generic
       - id: updateReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2535,6 +2536,7 @@ spring:
           - reactionsThroughList
           - through
           - reaction
+          - generic
       - id: findReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2581,6 +2583,7 @@ spring:
           - through
           - collection
           - reaction
+          - generic
       - id: deleteReactionsByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2618,7 +2621,7 @@ spring:
           - reactionsThroughList
           - through
           - reaction
-      
+          - generic
       # entities through list controller
       - id: createEntityByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2707,6 +2710,7 @@ spring:
           - entities
           - entitiesThroughList
           - through
+          - generic
       - id: findEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2752,6 +2756,7 @@ spring:
           - entitiesThroughList
           - through
           - collection
+          - generic
       - id: deleteEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2788,6 +2793,8 @@ spring:
           - entities
           - entitiesThroughList
           - through
+          - generic
+      # lists through entity controller
       - id: findListsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2833,7 +2840,7 @@ spring:
           - listsThroughEntity
           - through
           - collection
-      
+          - generic
       # ping controller
       - id: ping
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
