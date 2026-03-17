@@ -182,6 +182,25 @@ aliases:
 
 The route-level schema always takes precedence when defined.
 
+### 2.6 Domain-Specific Include Projection
+
+Domain projection also supports domain language for backend include relations.
+
+**Request-side projection:**
+- Caller can use domain alias in include relation, for example:
+  `GET /bookshelves?filter[include][0][relation]=books`
+- Gateway rewrites include relation to backend generic relation and injects include-level `_kind` scope:
+  `filter[include][0][relation]=_entities&filter[include][0][scope][where][_kind]=book`
+- If include scope already has `where`, gateway merges safely using `and` to avoid overriding caller constraints.
+
+**Response-side projection:**
+- If include alias mapping was applied on request, gateway remaps response include field names back to the requested domain alias.
+- Example: backend returns `_entities`; caller receives `books`.
+
+**Filter chain intent:**
+- Request normalization runs before query scoping (`AddSetsTo*`) so downstream filters operate on normalized generic query format.
+- Response projection runs in response modifier stage before final field filtering output.
+
 #### Hierarchical Path Schemas
 
 For hierarchical paths like `/books/{id}/chapters`, schemas can be defined at multiple levels:

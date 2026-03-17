@@ -40,6 +40,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `FieldFilter` | Transformation | Filters response fields |
 | `PreventStringifiedJsonFilter` | Validation | Prevents stringified JSON queries |
 | `ConvertSimplerQueriesToBackendFormat` | Transformation | Converts query syntax |
+| `ConvertDomainIncludeAliasToGenericRelation` | Transformation | Rewrites include relation aliases to generic relations and injects include scope `_kind` |
 | `AddSetsToEntityListOrReactionViaRecordQuery` | Transformation | Adds set filters for entities/lists |
 | `AddSetsToRelationQuery` | Transformation | Adds set filters for relations |
 | `AddSetsToReactionsQuery` | Transformation | Adds set filters for reactions |
@@ -51,6 +52,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `KindResolution` | Transformation | Resolves kind aliases to names |
 | `HierarchyKindAliasResolver` | Routing | Resolves hierarchical kind aliases to technical paths |
 | `ConvertKindAliasToKindQuery` | Transformation | Converts kind alias in queries |
+| `ProjectDomainIncludeAliasInResponse` | Transformation | Projects generic include fields (e.g. `_entities`) back to requested domain aliases (e.g. `books`) |
 | `DynamicTimeout` | Configuration | Sets request timeouts dynamically |
 | `DynamicRequestSizeFilter` | Validation | Dynamic request size limits |
 | `DynamicRateLimiter` | Protection | Dynamic rate limiting |
@@ -639,6 +641,38 @@ This document provides a comprehensive reference for all filters used in the Ent
 **Configuration:** None
 
 **Used in:** Kind alias GET operations
+
+---
+
+#### `ConvertDomainIncludeAliasToGenericRelation`
+**Purpose:** Normalizes domain alias values used in `filter[include][...][relation]` into backend generic include relations and injects include-level `_kind` constraints.
+
+**Behavior:**
+- Scans top-level and nested include relation keys in query string
+- Leaves generic relations (`_entities`, `_reactions`) unchanged
+- Resolves configured top-level aliases from domain projection configuration
+- Rewrites relation to generic relation bucket and injects `scope[where][_kind]=<kind>`
+- If include scope `where` already exists, safely merges using `and` wrapping
+- Stores alias projection context in exchange attributes for response-phase remapping
+
+**Configuration:** None
+
+**Used in:** Query routes that support include/lookup filtering, including kind-alias and hierarchy-kind-alias read routes
+
+---
+
+#### `ProjectDomainIncludeAliasInResponse`
+**Purpose:** Reprojects generic include field names in backend payloads to the caller-requested domain alias names.
+
+**Behavior:**
+- Implemented using `AbstractResponsePayloadModifierFilterFactory`
+- Reads include alias projection context prepared during request phase
+- Renames matching include relation keys in JSON payload (for example `_entities` -> `books`)
+- Preserves payload shape and skips transformation when no projection context exists
+
+**Configuration:** None
+
+**Used in:** Response chains for routes where include alias normalization is enabled
 
 ---
 

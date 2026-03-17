@@ -418,6 +418,13 @@ All routes that accept a `{recordId}` parameter expect a UUID in the format:
   - `app.inbound.controllerBasePaths.lists` (default: `lists`)
   - `app.inbound.controllerBasePaths.relations` (default: `relations`)
   - `app.inbound.controllerBasePaths.entityReactions` (default: `entity-reactions`)
+
+### Include Alias Projection
+
+- Query routes using include filters now support domain aliases in `filter[include][...][relation]`.
+- Request-side normalization is handled by `ConvertDomainIncludeAliasToGenericRelation` before `AddSetsTo*` scoping filters.
+- Response-side projection is handled by `ProjectDomainIncludeAliasInResponse` before final `FieldFilter` output filtering.
+- Example behavior: caller sends `filter[include][0][relation]=books`, backend receives generic relation (`_entities`) plus include `_kind` scope, caller receives response with `books` field instead of `_entities`.
   - `app.inbound.controllerBasePaths.listReactions` (default: `list-reactions`)
   - `app.inbound.controllerBasePaths.reactionsThroughEntity` (default: `reactions`)
   - `app.inbound.controllerBasePaths.reactionsThroughList` (default: `reactions`)

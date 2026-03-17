@@ -34,6 +34,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -73,6 +74,7 @@ spring:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -114,6 +116,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -121,6 +124,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -201,6 +205,7 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -356,6 +361,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -363,6 +369,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityChildren.timeToLive}
             size: ${app.local-cache.entities.findEntityChildren.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -409,6 +416,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -446,6 +454,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -453,6 +462,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -501,6 +511,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -540,6 +551,7 @@ spring:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -581,6 +593,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -588,6 +601,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -668,6 +682,7 @@ spring:
             timeToLive: ${app.local-cache.lists.findListById.timeToLive}
             size: ${app.local-cache.lists.findListById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -830,6 +845,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -837,6 +853,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListChildren.timeToLive}
             size: ${app.local-cache.lists.findListChildren.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -883,6 +900,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -920,6 +938,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -927,6 +946,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
             size: ${app.local-cache.lists.findListParents.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -978,6 +998,7 @@ spring:
             - OWNER_USERS
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -1017,6 +1038,7 @@ spring:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1058,6 +1080,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1065,6 +1088,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
             size: ${app.local-cache.relations.findRelations.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -1149,6 +1173,7 @@ spring:
             timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
             size: ${app.local-cache.relations.findRelationById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -1333,6 +1358,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1373,6 +1399,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1415,6 +1442,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1422,6 +1450,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1505,6 +1534,7 @@ spring:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1671,6 +1701,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1678,6 +1709,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1725,6 +1757,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1763,6 +1796,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1770,6 +1804,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1819,6 +1854,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1860,6 +1896,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1901,6 +1938,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -1908,6 +1946,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -1992,6 +2031,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2032,6 +2072,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2074,6 +2115,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2081,6 +2123,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2164,6 +2207,7 @@ spring:
             timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
             size: ${app.local-cache.listReactions.findListReactionById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2329,6 +2373,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2336,6 +2381,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2383,6 +2429,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2421,6 +2468,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2428,6 +2476,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2477,6 +2526,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2519,6 +2569,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2561,6 +2612,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2568,6 +2620,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -2654,6 +2707,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -2694,6 +2748,7 @@ spring:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2735,6 +2790,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2742,6 +2798,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -2779,6 +2836,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2819,6 +2877,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -2826,6 +2885,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -2924,6 +2984,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -2965,6 +3026,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - ApplyFieldsetConfig
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
@@ -2973,6 +3035,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3025,6 +3088,7 @@ spring:
             policyName: /policies/fields/entities/policy
         - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3056,6 +3120,7 @@ spring:
             controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities/count
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -3117,6 +3182,7 @@ spring:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -3166,6 +3232,7 @@ spring:
             timeToLive: ${app.local-cache.entities.findEntityById.timeToLive}
             size: ${app.local-cache.entities.findEntityById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3295,9 +3362,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -3355,6 +3424,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3398,6 +3468,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -3405,6 +3476,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntityParents.timeToLive}
             size: ${app.local-cache.entities.findEntityParents.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3454,9 +3526,11 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -3517,6 +3591,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -3571,6 +3646,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -3612,6 +3688,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - ApplyFieldsetConfig
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
@@ -3620,6 +3697,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -3672,6 +3750,7 @@ spring:
             policyName: /policies/fields/lists/policy
         - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -3703,6 +3782,7 @@ spring:
             controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists/count
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -3764,6 +3844,7 @@ spring:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -3813,6 +3894,7 @@ spring:
             timeToLive: ${app.local-cache.lists.findListById.timeToLive}
             size: ${app.local-cache.lists.findListById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -3942,9 +4024,11 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -4002,6 +4086,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -4045,6 +4130,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -4052,6 +4138,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findListParents.timeToLive}
             size: ${app.local-cache.lists.findListParents.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -4100,9 +4187,11 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -4163,6 +4252,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
@@ -4220,6 +4310,7 @@ spring:
             - OWNER_USERS
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -4261,6 +4352,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - ApplyFieldsetConfig
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
@@ -4269,6 +4361,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.relations.findRelations.timeToLive}
             size: ${app.local-cache.relations.findRelations.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -4298,6 +4391,7 @@ spring:
             controllerName: relationsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations/count
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -4359,6 +4453,7 @@ spring:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - name: AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -4408,6 +4503,7 @@ spring:
             timeToLive: ${app.local-cache.relations.findRelationById.timeToLive}
             size: ${app.local-cache.relations.findRelationById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -4512,6 +4608,7 @@ spring:
             excludeFields:
             - OWNER_USERS
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: relations
@@ -4603,6 +4700,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -4644,6 +4742,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - ApplyFieldsetConfig
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
@@ -4652,6 +4751,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -4681,6 +4781,7 @@ spring:
             controllerName: entityReactionsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entity-reactions/count
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -4742,6 +4843,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -4791,6 +4893,7 @@ spring:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactionById.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactionById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -4892,6 +4995,7 @@ spring:
             policyName: /policies/fields/entityReactions/policy
         - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -4974,6 +5078,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -4981,6 +5086,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findChildrenEntityReactionsByReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -5034,6 +5140,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -5077,6 +5184,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -5084,6 +5192,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findParentsByEntityReactionId.timeToLive}
             size: ${app.local-cache.entityReactions.findParentsByEntityReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -5134,9 +5243,11 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -5196,6 +5307,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -5250,6 +5362,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5291,6 +5404,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - ApplyFieldsetConfig
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
@@ -5299,6 +5413,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5328,6 +5443,7 @@ spring:
             controllerName: listReactionsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}list-reactions/count
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -5389,6 +5505,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
         - name: ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -5438,6 +5555,7 @@ spring:
             timeToLive: ${app.local-cache.listReactions.findListReactionById.timeToLive}
             size: ${app.local-cache.listReactions.findListReactionById.size}
         - ApplyFieldsetConfig
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5539,6 +5657,7 @@ spring:
             policyName: /policies/fields/listReactions/policy
         - AddManagedFieldsFromOriginalToPayloadInReplace
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5621,6 +5740,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -5628,6 +5748,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findChildrenListReactionsByReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5681,6 +5802,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5724,6 +5846,7 @@ spring:
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
         - ConvertKindAliasToKindQuery
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -5731,6 +5854,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findParentsByListReactionId.timeToLive}
             size: ${app.local-cache.listReactions.findParentsByListReactionId.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5779,9 +5903,11 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         - name: DynamicLocalCache
           args:
@@ -5841,6 +5967,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -5901,6 +6028,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -5949,6 +6077,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughEntity/updateReactionsByEntityId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -5997,6 +6126,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6004,6 +6134,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entityReactions.findEntityReactions.timeToLive}
             size: ${app.local-cache.entityReactions.findEntityReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entityReactions
@@ -6104,6 +6235,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -6152,6 +6284,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughList/updateReactionsByListId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6200,6 +6333,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6207,6 +6341,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.listReactions.findListReactions.timeToLive}
             size: ${app.local-cache.listReactions.findListReactions.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: listReactions
@@ -6307,6 +6442,7 @@ spring:
         - AddManagedFieldsInCreation
         - ApplyFieldsetConfig
         - RemoveRequestHeader=Authorization
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -6354,6 +6490,7 @@ spring:
             policyName: /policies/auth/routes/entitiesThroughList/updateEntitiesByListId/policy
         - PreventStringifiedJsonFilter
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6401,6 +6538,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6408,6 +6546,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.entities.findEntities.timeToLive}
             size: ${app.local-cache.entities.findEntities.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: entities
@@ -6451,6 +6590,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entitiesThroughList/deleteEntitiesByListId/policy
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6498,6 +6638,7 @@ spring:
         - PreventStringifiedJsonFilter
         - ApplyFieldsetConfig
         - ConvertSimplerQueriesToBackendFormat
+        - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
         - RemoveRequestHeader=Authorization
@@ -6505,6 +6646,7 @@ spring:
           args:
             timeToLive: ${app.local-cache.lists.findLists.timeToLive}
             size: ${app.local-cache.lists.findLists.size}
+        - ProjectDomainIncludeAliasInResponse
         - FieldFilter
         metadata:
           recordType: lists
