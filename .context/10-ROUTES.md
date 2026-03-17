@@ -421,14 +421,16 @@ All routes that accept a `{recordId}` parameter expect a UUID in the format:
 
 ### Include Alias Projection
 
-- Query routes using include filters now support domain aliases in `filter[include][...][relation]`.
-- Request-side normalization is handled by `ConvertDomainIncludeAliasToGenericRelation` before `AddSetsTo*` scoping filters.
+- Only entity and list `findAll*` and `find*ById*` routes support domain aliases in `filter[include][...][relation]`.
+- Relation routes, reaction routes, hierarchy routes, count routes, create routes, update-all routes, and through routes do not use include alias projection.
+- Request-side normalization is handled by `ConvertDomainIncludeAliasToGenericRelation` before entity/list query scoping or validation filters.
 - Response-side projection is handled by `ProjectDomainIncludeAliasInResponse` before final `FieldFilter` output filtering.
 - Example behavior: caller sends `filter[include][0][relation]=books`, backend receives generic relation (`_entities`) plus include `_kind` scope, caller receives response with `books` field instead of `_entities`.
-  - `app.inbound.controllerBasePaths.listReactions` (default: `list-reactions`)
-  - `app.inbound.controllerBasePaths.reactionsThroughEntity` (default: `reactions`)
-  - `app.inbound.controllerBasePaths.reactionsThroughList` (default: `reactions`)
-  - `app.inbound.controllerBasePaths.explorer` (default: `explorer`)
+
+- `app.inbound.controllerBasePaths.listReactions` (default: `list-reactions`)
+- `app.inbound.controllerBasePaths.reactionsThroughEntity` (default: `reactions`)
+- `app.inbound.controllerBasePaths.reactionsThroughList` (default: `reactions`)
+- `app.inbound.controllerBasePaths.explorer` (default: `explorer`)
 - **Hierarchy accessor segments** are configurable via:
   - `app.inbound.controllerBasePaths.defaultChildrenAccessor` (default: `children`)
   - `app.inbound.controllerBasePaths.defaultParentsAccessor` (default: `parents`)

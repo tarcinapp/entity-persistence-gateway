@@ -1,6 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.filters.common.response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tarcinapp.entitypersistencegateway.IncludeAliasProjectionAttr;
 import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory;
@@ -12,9 +13,11 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayList;
 
 /**
  * The Final Assembly:
@@ -59,7 +62,7 @@ public class FieldFilterGatewayFilterFactory
 
         // 3. Identify Targets: Analyze Query String for Includes & Lookups
         // This tells the service exactly where to look for relational data to avoid full scan.
-        List<String> targetPaths = queryStringTargetAnalyzer.resolveTargetFields(exchange.getRequest().getQueryParams());
+        List<String> targetPaths = resolveEffectiveTargetPaths(exchange);
         
         // 3.1 Identify Lookup Constraints: For Polymorphic Lookup Audit
         // This map tells us which lookup properties were filtered by which fields.
@@ -86,5 +89,26 @@ public class FieldFilterGatewayFilterFactory
 
     public static class Config {
         // No specific configuration needed as we rely on context attributes
+    }
+
+    private List<String> resolveEffectiveTargetPaths(ServerWebExchange exchange) {
+        List<String> targetPaths = queryStringTargetAnalyzer.resolveTargetFields(exchange.getRequest().getQueryParams());
+        IncludeAliasProjectionAttr projectionAttr = exchange.getAttribute(IncludeAliasProjectionAttr.INCLUDE_ALIAS_PROJECTION_ATTR);
+
+        if (projectionAttr == null || projectionAttr.getRules() == null || projectionAttr.getRules().isEmpty()) {
+            return targetPaths;
+        }
+
+        Set<String> expandedTargets = new LinkedHashSet<>(targetPaths);
+        for (IncludeAliasProjectionAttr.Rule rule : projectionAttr.getRules()) {
+            if (rule.getAlias() != null && !rule.getAlias().isBlank()) {
+                expandedTargets.add(rule.getAlias());
+            }
+            if (rule.getGenericRelation() != null && !rule.getGenericRelation().isBlank()) {
+                expandedTargets.add(rule.getGenericRelation());
+            }
+        }
+
+        return new ArrayList<>(expandedTargets);
     }
 }

@@ -657,7 +657,31 @@ This document provides a comprehensive reference for all filters used in the Ent
 
 **Configuration:** None
 
-**Used in:** Query routes that support include/lookup filtering, including kind-alias and hierarchy-kind-alias read routes
+**Used in:** Entity and list read routes (`findAll*`, `find*ById*`, through `find*By*Id`, and hierarchy `find*Children*`/`find*Parents*`), including kind-alias variants where enabled. Not used in relation routes, reaction routes, count routes, create routes, or update-all routes.
+
+**Exact route IDs (cross-validated against `application-routes.yml`):**
+- `findEntities`
+- `findEntityById`
+- `findEntityChildren`
+- `findEntityParents`
+- `findLists`
+- `findListById`
+- `findListChildren`
+- `findListParents`
+- `findEntitiesByListId`
+- `findListsByEntityId`
+- `findAllEntitiesByKindAlias`
+- `findEntityByIdByKindAlias`
+- `findEntityChildrenByKindAlias`
+- `findEntityParentsByKindAlias`
+- `findEntityHierarchyByKindAlias`
+- `findAllListsByKindAlias`
+- `findListByIdByKindAlias`
+- `findListChildrenByKindAlias`
+- `findListParentsByKindAlias`
+- `findListHierarchyByKindAlias`
+- `findEntitiesByListIdByKindAlias`
+- `findListsByEntityIdByKindAlias`
 
 ---
 
@@ -672,7 +696,31 @@ This document provides a comprehensive reference for all filters used in the Ent
 
 **Configuration:** None
 
-**Used in:** Response chains for routes where include alias normalization is enabled
+**Used in:** Response chains for entity and list read routes where include alias normalization is enabled (`findAll*`, `find*ById*`, through `find*By*Id`, and hierarchy `find*Children*`/`find*Parents*`, including supported kind-alias variants). Not used in relation routes, reaction routes, count routes, create routes, or update-all routes.
+
+**Exact route IDs (cross-validated against `application-routes.yml`):**
+- `findEntities`
+- `findEntityById`
+- `findEntityChildren`
+- `findEntityParents`
+- `findLists`
+- `findListById`
+- `findListChildren`
+- `findListParents`
+- `findEntitiesByListId`
+- `findListsByEntityId`
+- `findAllEntitiesByKindAlias`
+- `findEntityByIdByKindAlias`
+- `findEntityChildrenByKindAlias`
+- `findEntityParentsByKindAlias`
+- `findEntityHierarchyByKindAlias`
+- `findAllListsByKindAlias`
+- `findListByIdByKindAlias`
+- `findListChildrenByKindAlias`
+- `findListParentsByKindAlias`
+- `findListHierarchyByKindAlias`
+- `findEntitiesByListIdByKindAlias`
+- `findListsByEntityIdByKindAlias`
 
 ---
 
@@ -721,8 +769,9 @@ RemoveRequestHeader
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `countEntities`
@@ -737,8 +786,9 @@ RemoveRequestHeader → DynamicLocalCache
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ApplyFieldsetConfig → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → PreventQueryByForbiddenFields → 
+RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `updateEntityById`
@@ -767,8 +817,9 @@ RequestRateLimiter → AuthorizeRequest → RemoveRequestHeader
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `createEntityChild`
@@ -784,8 +835,9 @@ RemoveRequestHeader → FieldFilter
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -814,8 +866,9 @@ RemoveRequestHeader
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `countLists`
@@ -830,8 +883,9 @@ RemoveRequestHeader → DynamicLocalCache
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ApplyFieldsetConfig → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → PreventQueryByForbiddenFields → 
+RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `updateListById`
@@ -860,8 +914,9 @@ RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → RemoveReque
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `createListChild`
@@ -877,8 +932,9 @@ RemoveRequestHeader → FieldFilter
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -1232,8 +1288,9 @@ AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → RemoveRequestH
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `deleteEntitiesByListId`
@@ -1253,8 +1310,9 @@ PreventQueryByForbiddenFields → RemoveRequestHeader
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
+PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -1289,8 +1347,9 @@ ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
 DynamicTimeout → KindResolution → CheckIfRouteEnabled → AuthenticateRequest → 
 GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePath → 
 AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
-ConvertKindAliasToKindQuery → ApplyFieldsetConfig → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → FieldFilter
+ConvertKindAliasToKindQuery → ConvertDomainIncludeAliasToGenericRelation → ApplyFieldsetConfig → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+RemoveRequestHeader → DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `replaceEntityByIdByKindAlias`
@@ -1307,8 +1366,9 @@ AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader
 DynamicTimeout → KindResolution → HierarchyKindAliasResolver → CheckIfRouteEnabled → 
 AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
 AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
-ConvertSimplerQueriesToBackendFormat → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → FieldFilter → DynamicLocalCache
+ConvertSimplerQueriesToBackendFormat → ConvertDomainIncludeAliasToGenericRelation → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+RemoveRequestHeader → FieldFilter → DynamicLocalCache → ProjectDomainIncludeAliasInResponse
 ```
 
 #### `createEntityHierarchyByKindAlias`
@@ -1320,7 +1380,7 @@ AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation →
 ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
 ```
 
-**Note:** Kind alias routes follow similar patterns for other operations (count, update, find by ID, delete, children, parents, etc.)
+**Note:** Include alias projection is enabled on entity/list kind-alias read routes, including `findAll*`, `find*ById*`, through, and hierarchy reads. It is not enabled on count, update, delete, relation, or reaction routes.
 
 ---
 
