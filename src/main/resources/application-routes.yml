@@ -75,6 +75,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -117,6 +118,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -158,6 +160,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/countEntities/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -198,6 +201,7 @@ spring:
             policyName: /policies/auth/routes/entities/findEntityById/policy
         - ConvertDomainIncludeAliasToGenericRelation
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -363,6 +367,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -455,6 +460,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -550,6 +556,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -592,6 +599,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -633,6 +641,7 @@ spring:
             policyName: /policies/auth/routes/lists/countLists/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -673,6 +682,7 @@ spring:
             policyName: /policies/auth/routes/lists/findListById/policy
         - ConvertDomainIncludeAliasToGenericRelation
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -845,6 +855,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -937,6 +948,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1035,6 +1047,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -1076,6 +1089,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1117,6 +1131,7 @@ spring:
             policyName: /policies/auth/routes/relations/countRelations/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -1159,6 +1174,7 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/findRelationById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1391,6 +1407,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -1433,6 +1450,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1475,6 +1493,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -1515,6 +1534,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactionById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1689,6 +1709,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1781,6 +1802,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1878,6 +1900,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -1919,6 +1942,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -1962,6 +1986,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -2050,6 +2075,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -2092,6 +2118,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2134,6 +2161,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -2174,6 +2202,7 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/findListReactionById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2347,6 +2376,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2439,6 +2469,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2537,6 +2568,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -2579,6 +2611,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2624,6 +2657,7 @@ spring:
         - PreventStringifiedJsonFilter
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -2712,6 +2746,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -2754,6 +2789,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2799,6 +2835,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -2840,6 +2877,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -2989,6 +3027,7 @@ spring:
         - ApplyFieldsetConfig
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -3090,6 +3129,7 @@ spring:
             policyName: /policies/auth/routes/entities/countEntities/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -3141,6 +3181,7 @@ spring:
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -3183,6 +3224,7 @@ spring:
             policyName: /policies/auth/routes/entities/findEntityById/policy
         - ConvertDomainIncludeAliasToGenericRelation
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -3322,6 +3364,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -3427,6 +3470,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -3485,6 +3529,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -3646,6 +3691,7 @@ spring:
         - ApplyFieldsetConfig
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -3747,6 +3793,7 @@ spring:
             policyName: /policies/auth/routes/lists/countLists/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToEntityListOrReactionViaRecordQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -3798,6 +3845,7 @@ spring:
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -3840,6 +3888,7 @@ spring:
             policyName: /policies/auth/routes/lists/findListById/policy
         - ConvertDomainIncludeAliasToGenericRelation
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -3979,6 +4028,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -4084,6 +4134,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -4141,6 +4192,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -4304,6 +4356,7 @@ spring:
         - ApplyFieldsetConfig
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -4350,6 +4403,7 @@ spring:
             policyName: /policies/auth/routes/relations/countRelations/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToRelationQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -4401,6 +4455,7 @@ spring:
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -4442,6 +4497,7 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/findRelationById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -4687,6 +4743,7 @@ spring:
         - ApplyFieldsetConfig
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -4733,6 +4790,7 @@ spring:
             policyName: /policies/auth/routes/entityReactions/countEntityReactions/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -4784,6 +4842,7 @@ spring:
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -4825,6 +4884,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/findEntityReactionById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5016,6 +5076,7 @@ spring:
         - ConvertKindAliasToKindQuery
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5119,6 +5180,7 @@ spring:
         - ConvertKindAliasToKindQuery
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5176,6 +5238,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -5334,6 +5397,7 @@ spring:
         - ApplyFieldsetConfig
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5380,6 +5444,7 @@ spring:
             policyName: /policies/auth/routes/listReactions/countListReactions/policy
         - PreventStringifiedJsonFilter
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - AddSetsToReactionsQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
@@ -5431,6 +5496,7 @@ spring:
         - name: ConvertKindAliasToKindQuery
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -5472,6 +5538,7 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/findListReactionById/policy
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5663,6 +5730,7 @@ spring:
         - ConvertKindAliasToKindQuery
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5766,6 +5834,7 @@ spring:
         - ConvertKindAliasToKindQuery
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -5821,6 +5890,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - FieldFilter
         - name: DynamicLocalCache
@@ -5991,6 +6061,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -6039,6 +6110,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -6089,6 +6161,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughEntity/deleteReactionsByEntityId/policy
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -6194,6 +6267,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -6242,6 +6316,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -6292,6 +6367,7 @@ spring:
             policyName: /policies/auth/routes/reactionsThroughList/deleteReactionsByListId/policy
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -6396,6 +6472,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -6444,6 +6521,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:
@@ -6495,6 +6573,7 @@ spring:
         - ConvertSimplerQueriesToBackendFormat
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -6543,6 +6622,7 @@ spring:
         - ConvertDomainIncludeAliasToGenericRelation
         - AddSetsToThroughRecordQuery
         - PreventQueryByForbiddenFields
+        - InjectTypeHintsToQuery
         - RemoveRequestHeader=Authorization
         - name: DynamicLocalCache
           args:

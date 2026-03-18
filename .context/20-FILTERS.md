@@ -46,6 +46,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `AddSetsToReactionsQuery` | Transformation | Adds set filters for reactions |
 | `AddSetsToThroughRecordQuery` | Transformation | Adds set filters for through records |
 | `PreventQueryByForbiddenFields` | Validation | Blocks queries on forbidden fields |
+| `InjectTypeHintsToQuery` | Transformation | Injects LoopBack 4 type hints (`number`/`boolean`) into where-clause query params and converts implicit exact-match keys to explicit `[eq]` form |
 | `DynamicLocalCache` | Performance | Local caching with TTL |
 | `PlaceKindNameIntoPayload` | Transformation | Injects kind into request body |
 | `ValidateRequestBodyByKindSchema` | Validation | Schema validation by kind |
@@ -156,6 +157,126 @@ This document provides a comprehensive reference for all filters used in the Ent
 **Configuration:** None
 
 **Used in:** All query/find operations
+
+---
+
+#### `InjectTypeHintsToQuery`
+**Purpose:** Automatically injects backend compatible type hints into where-clause query parameters so that clients do not need to include them manually.
+
+**Behavior:**
+- Runs after `PreventQueryByForbiddenFields`, before `RemoveRequestHeader=Authorization`
+- Skips when no `KindAliasConfigAttr` is present (generic non-alias routes)
+- Consults `TypeHintSchemaRegistry` (pre-built at startup from OpenAPI alias schemas) using the same 6-priority key hierarchy as `ValidateRequestBodyByKindSchema`
+- Processes all seven where-clause families:
+  - `filter[where][…]`, `entityFilter[where][…]`, `listFilter[where][…]`, `filterThrough[where][…]` (filter families)
+  - `where[…]`, `entityWhere[…]`, `listWhere[…]` (bulk updateAll / deleteAll / count families)
+- For each matched where-clause key whose field resolves to a `number` or `boolean` hint:
+  1. **Implicit exact-match** (`filter[where][price]`): renames the key to the explicit `[eq]` form (`filter[where][price][eq]`) and adds the `[type]` sibling at the field level (`filter[where][price][type]=number`)
+  2. **Explicit operator** (`filter[where][price][gt]`): keeps the original key unchanged and adds a `[type]` sibling at the field level (`filter[where][price][gt]=200` + `filter[where][price][type]=number`)
+  3. **Array-value operators** (`filter[where][price][inq][0]`): keeps all original keys unchanged and adds a `[type]` sibling at the field level (`filter[where][price][type]=number`)
+- Supports dot-notation field paths (e.g. `filter[where][info.pageCount]` → registry key `info.pageCount`)
+- Skips gateway-managed fields (fields starting with `_`)
+- Skips keys containing `[lookup]` — see **Lookup scope limitation** below
+- Rebuilds the URI only when at least one hint was injected
+- Type hints supported: `number` (maps from JSON Schema `number`, `integer`, `float`, `double`) and `boolean`
+- Nullable / union types (`"type": ["number", "null"]`) are handled — first mappable element wins
+- Array fields: if the field type is `array`, the hint is derived from `items.type` (e.g. `array` of `integer` → `number`), enabling correct type coercion for `[inq]` queries
+
+**Lookup scope limitation**
+
+Keys of the form `filter[lookup][N][scope][where][field]` are skipped. The filter consults the registry using the *current route's* kind schema. Inside a lookup scope, queries target referenced documents of a potentially different kind whose schema is unknown at request time — the backend resolves the target kind at query execution, not at the gateway level. Applying the parent schema to a lookup scope would produce incorrect type hints.
+
+Clients that need type coercion inside a lookup scope must include the `[type]` hint manually:
+```
+filter[lookup][0][scope][where][pageCount][lte]=300
+&filter[lookup][0][scope][where][pageCount][type]=number
+```
+
+**Configuration:** None
+
+**Used in:** All routes that carry where-clause query parameters (find, count, updateAll, deleteAll — generic and all kind-alias, hierarchy, and through variants). Wired into 80 route definitions immediately after `PreventQueryByForbiddenFields`.
+
+**Exact route IDs (cross-validated against `application-routes.yml`):**
+- `countEntities`
+- `countEntitiesByKindAlias`
+- `countEntityReactions`
+- `countEntityReactionsByKindAlias`
+- `countListReactions`
+- `countListReactionsByKindAlias`
+- `countLists`
+- `countListsByKindAlias`
+- `countRelations`
+- `countRelationsByKindAlias`
+- `deleteEntitiesByListId`
+- `deleteEntitiesByListIdByKindAlias`
+- `deleteReactionsByEntityId`
+- `deleteReactionsByEntityIdByKindAlias`
+- `deleteReactionsByListId`
+- `deleteReactionsByListIdByKindAlias`
+- `findAllEntitiesByKindAlias`
+- `findAllEntityReactionsByKindAlias`
+- `findAllListReactionsByKindAlias`
+- `findAllListsByKindAlias`
+- `findAllRelationsByKindAlias`
+- `findChildrenEntityReactionsByReactionId`
+- `findChildrenEntityReactionsByReactionIdByKindAlias`
+- `findChildrenListReactionsByReactionId`
+- `findChildrenListReactionsByReactionIdByKindAlias`
+- `findEntities`
+- `findEntitiesByListId`
+- `findEntitiesByListIdByKindAlias`
+- `findEntityById`
+- `findEntityByIdByKindAlias`
+- `findEntityChildren`
+- `findEntityChildrenByKindAlias`
+- `findEntityHierarchyByKindAlias`
+- `findEntityParents`
+- `findEntityParentsByKindAlias`
+- `findEntityReactionById`
+- `findEntityReactionByIdByKindAlias`
+- `findEntityReactionHierarchyByKindAlias`
+- `findEntityReactions`
+- `findListById`
+- `findListByIdByKindAlias`
+- `findListChildren`
+- `findListChildrenByKindAlias`
+- `findListHierarchyByKindAlias`
+- `findListParents`
+- `findListParentsByKindAlias`
+- `findListReactionById`
+- `findListReactionByIdByKindAlias`
+- `findListReactionHierarchyByKindAlias`
+- `findListReactions`
+- `findLists`
+- `findListsByEntityId`
+- `findListsByEntityIdByKindAlias`
+- `findParentsByEntityReactionId`
+- `findParentsByEntityReactionIdByKindAlias`
+- `findParentsByListReactionId`
+- `findParentsByListReactionIdByKindAlias`
+- `findReactionsByEntityId`
+- `findReactionsByEntityIdByKindAlias`
+- `findReactionsByListId`
+- `findReactionsByListIdByKindAlias`
+- `findRelationById`
+- `findRelationByIdByKindAlias`
+- `findRelations`
+- `updateAllEntities`
+- `updateAllEntitiesByKindAlias`
+- `updateAllEntityReactions`
+- `updateAllEntityReactionsByKindAlias`
+- `updateAllListReactions`
+- `updateAllListReactionsByKindAlias`
+- `updateAllLists`
+- `updateAllListsByKindAlias`
+- `updateAllRelations`
+- `updateAllRelationsByKindAlias`
+- `updateEntitiesByListId`
+- `updateEntitiesByListIdByKindAlias`
+- `updateReactionsByEntityId`
+- `updateReactionsByEntityIdByKindAlias`
+- `updateReactionsByListId`
+- `updateReactionsByListIdByKindAlias`
 
 ---
 
