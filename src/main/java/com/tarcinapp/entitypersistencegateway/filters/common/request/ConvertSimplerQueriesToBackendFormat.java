@@ -54,7 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterFactory<ConvertSimplerQueriesToBackendFormat.Config> {
     // backend query parameters — filter[*] family (find routes) and where[*] family (updateAll/count/deleteAll routes)
     private static final List<String> filterPrefixes = Arrays.asList("filter[where]", "filter[fields]",
-            "filter[include]", "filter[limit]", "filter[order]", "filter[skip]",
+            "filter[include]", "filter[lookup]", "filter[limit]", "filter[order]", "filter[skip]",
             "where[", "entityWhere[", "listWhere[");
 
     @Value("${app.allowBackendQueryNotation:true}")
@@ -191,6 +191,22 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                             return this.createFieldsQuery(value);
                         }
 
+                        if ("include".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("include param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
+                            return this.createIncludeQuery(value);
+                        }
+
+                        if ("lookup".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("lookup param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
+                            return this.createLookupQuery(value);
+                        }
+
                         if ("limit".equals(name)) {
                             if (config.isUseWhereNotation()) {
                                 log.debug("limit param has no equivalent in where[*] notation, dropping.");
@@ -252,12 +268,27 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
     
     
     private Stream<QueryParam> createFieldsQuery(String value) {
-        
         return Arrays.stream(value.split(","))
                 .map(fieldName -> {
                     String newKey = "filter[fields][" + fieldName.trim() + "]";
                     return new QueryParam(newKey, "true");
                 });
+    }
+
+    private Stream<QueryParam> createIncludeQuery(String value) {
+        String[] relations = value.split(",");
+        return java.util.stream.IntStream.range(0, relations.length)
+                .mapToObj(i -> new QueryParam(
+                        "filter[include][" + i + "][relation]",
+                        relations[i].trim()));
+    }
+
+    private Stream<QueryParam> createLookupQuery(String value) {
+        String[] props = value.split(",");
+        return java.util.stream.IntStream.range(0, props.length)
+                .mapToObj(i -> new QueryParam(
+                        "filter[lookup][" + i + "][prop]",
+                        props[i].trim()));
     }
 
     private Stream<QueryParam> createSearchQuery(String value, boolean useWhereNotation) {

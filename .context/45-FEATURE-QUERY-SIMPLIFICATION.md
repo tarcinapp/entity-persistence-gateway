@@ -48,6 +48,8 @@ The filter adapts its output to the backend query family required by each route.
 | `?skip=N` | `filter[skip]=N` | *(dropped — no equivalent in `where[*]`)* |
 | `?order=fieldName` | `filter[order]=fieldName` | *(dropped — no equivalent in `where[*]`)* |
 | `?fields=f1,f2` | `filter[fields][f1]=true&filter[fields][f2]=true` | *(dropped — no equivalent in `where[*]`)* |
+| `?include=r1,r2` | `filter[include][0][relation]=r1&filter[include][1][relation]=r2` | *(dropped — no equivalent in `where[*]`)* |
+| `?lookup=p1,p2` | `filter[lookup][0][prop]=p1&filter[lookup][1][prop]=p2` | *(dropped — no equivalent in `where[*]`)* |
 | `?q=queryName` or `?query=queryName` | *(resolved from config)* | *(resolved from config)* |
 
 ### 2.2 Backend Notation Passthrough
@@ -251,6 +253,30 @@ GET /products?filter[where][price][lt]=100&filter[order]=price
 ```
 When `app.allowBackendQueryNotation=true`, passed through unchanged.  
 When `app.allowBackendQueryNotation=false`, both parameters are dropped.
+
+---
+
+### 5.7 Include Relations
+
+```
+GET /products?include=category,tags
+```
+Becomes:
+```
+GET /entities?filter[include][0][relation]=category&filter[include][1][relation]=tags&filter[where][_kind]=product
+```
+
+---
+
+### 5.8 Lookup Props
+
+```
+GET /products?lookup=authorId,publisherId
+```
+Becomes:
+```
+GET /entities?filter[lookup][0][prop]=authorId&filter[lookup][1][prop]=publisherId&filter[where][_kind]=product
+```
 
 ---
 
