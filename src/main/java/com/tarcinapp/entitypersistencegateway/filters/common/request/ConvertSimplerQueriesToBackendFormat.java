@@ -52,9 +52,10 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterFactory<ConvertSimplerQueriesToBackendFormat.Config> {
-    // backend query parameters
+    // backend query parameters — filter[*] family (find routes) and where[*] family (updateAll/count/deleteAll routes)
     private static final List<String> filterPrefixes = Arrays.asList("filter[where]", "filter[fields]",
-            "filter[include]", "filter[limit]", "filter[order]", "filter[skip]");
+            "filter[include]", "filter[limit]", "filter[order]", "filter[skip]",
+            "where[", "entityWhere[", "listWhere[");
 
     @Value("${app.allowBackendQueryNotation:true}")
     private boolean allowBackendQueryNotation;
@@ -142,7 +143,7 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
 
                         // if client asked for a search operation
                         if ("s".equals(name) || "search".equals(name)) {
-                            return this.createSearchQuery(name, value);
+                            return this.createSearchQuery(value, config.isUseWhereNotation());
                         }
 
                         // if client is asked for a saved query
@@ -183,20 +184,36 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
                         }
 
                         if ("fields".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("fields param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
                             return this.createFieldsQuery(value);
                         }
 
                         if ("limit".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("limit param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
                             QueryParam newQp = new QueryParam("filter[limit]", value);
                             return Stream.of(newQp);
                         }
 
                         if ("skip".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("skip param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
                             QueryParam newQp = new QueryParam("filter[skip]", value);
                             return Stream.of(newQp);
                         }
 
                         if ("order".equals(name)) {
+                            if (config.isUseWhereNotation()) {
+                                log.debug("order param has no equivalent in where[*] notation, dropping.");
+                                return Stream.empty();
+                            }
                             QueryParam newQp = new QueryParam("filter[order]", value);
                             return Stream.of(newQp);
                         }
@@ -238,19 +255,26 @@ public class ConvertSimplerQueriesToBackendFormat extends AbstractGatewayFilterF
         
         return Arrays.stream(value.split(","))
                 .map(fieldName -> {
-                    String newKey = "filter[fields]";
-                    return new QueryParam(newKey, fieldName);
+                    String newKey = "filter[fields][" + fieldName.trim() + "]";
+                    return new QueryParam(newKey, "true");
                 });
     }
 
-    private Stream<QueryParam> createSearchQuery(String name, String value) {
-        
-        QueryParam newQp = new QueryParam("filter[where][name][regexp]", ".*" + value + ".*");
-
+    private Stream<QueryParam> createSearchQuery(String value, boolean useWhereNotation) {
+        String key = useWhereNotation ? "where[_name][regexp]" : "filter[where][_name][regexp]";
+        QueryParam newQp = new QueryParam(key, ".*" + value + ".*");
         return Stream.of(newQp);
     }
 
+    @Data
     public static class Config {
-
+        /**
+         * When true, simplified params are translated to the where[*] query family
+         * instead of filter[where][*]. Use this for updateAll, count, and deleteAll
+         * routes which only accept where[*] notation from the backend.
+         * params that have no equivalent in where[*] notation (limit, skip, order,
+         * fields) are silently dropped.
+         */
+        private boolean useWhereNotation = false;
     }
 }
