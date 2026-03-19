@@ -319,6 +319,7 @@ app:
 
 ## Saved Field Sets
 Field sets can be defined in configuration file to make querying a complex list of fields easier. Instead of naming every field in the query parameter clients can give the name of the field set.  
+For detailed behavior, configuration precedence, disable toggle, and troubleshooting, see [Fieldsets documentation](.context/80-FEATURE-FIELDSETS.md).
 These are the preconfigured field sets:  
 ```yaml
 app: 
