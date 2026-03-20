@@ -266,8 +266,8 @@ Because keys include user identity (or IP fallback), abuse by one principal does
 
 ## 11. FURTHER READING
 
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** - alias resolution, hierarchy behavior, and projected route semantics
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** - alias resolution, hierarchy behavior, and projected route semantics
 - **[40-FEATURE-AUTHENTICATION.md](40-FEATURE-AUTHENTICATION.md)** - identity extraction used in limiter key generation
-- **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** - route enablement/disablement interactions
+- **[75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md)** - route enablement/disablement interactions
 - **[20-FILTERS.md](20-FILTERS.md)** - filter reference, including `RequestRateLimiter` and `DynamicRateLimiter`
 - **[10-ROUTES.md](10-ROUTES.md)** - route IDs used as operation names in dynamic rate-limit lookup

@@ -268,9 +268,9 @@ This prevents accidental data exposure when the policy system is unavailable.
 ## 7. FURTHER READING
 
 - **[20-FILTERS.md](20-FILTERS.md)** - Detailed filter-level reference (`AuthenticateRequest`, `AuthorizeRequest`, forbidden-fields filters)
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** - Domain aliasing and hierarchy behavior that influence policy context
-- **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** - Route availability controls and evaluation order
-- **[60-FEATURE-DYNAMIC-OAS-GENERATION.md](60-FEATURE-DYNAMIC-OAS-GENERATION.md)** - Permission-aware OpenAPI generation using forbidden-fields policy
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** - Domain aliasing and hierarchy behavior that influence policy context
+- **[75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md)** - Route availability controls and evaluation order
+- **[90-FEATURE-DYNAMIC-OAS-GENERATION.md](90-FEATURE-DYNAMIC-OAS-GENERATION.md)** - Permission-aware OpenAPI generation using forbidden-fields policy
 - **[05-REPO-CONTEXT.md](05-REPO-CONTEXT.md)** - High-level architecture and feature map
 
 ---

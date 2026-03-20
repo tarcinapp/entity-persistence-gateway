@@ -242,11 +242,11 @@ Net effect: field masking remains enforced even when clients submit aggressive o
 
 ## 10. FURTHER READING
 
-- **[65-FEATURE-AUTHORIZATION.md](65-FEATURE-AUTHORIZATION.md)** - route-level authorization and policy-data model
-- **[45-FEATURE-QUERY-SIMPLIFICATION.md](45-FEATURE-QUERY-SIMPLIFICATION.md)** - normalization of simpler query syntax
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** - include alias projection and hierarchy context
+- **[45-FEATURE-AUTHORIZATION.md](45-FEATURE-AUTHORIZATION.md)** - route-level authorization and policy-data model
+- **[80-FEATURE-QUERY-SIMPLIFICATION.md](80-FEATURE-QUERY-SIMPLIFICATION.md)** - normalization of simpler query syntax
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** - include alias projection and hierarchy context
 - **[20-FILTERS.md](20-FILTERS.md)** - low-level filter behavior and route filter ordering
-- **[60-FEATURE-DYNAMIC-OAS-GENERATION.md](60-FEATURE-DYNAMIC-OAS-GENERATION.md)** - permission-aware OpenAPI pruning
+- **[90-FEATURE-DYNAMIC-OAS-GENERATION.md](90-FEATURE-DYNAMIC-OAS-GENERATION.md)** - permission-aware OpenAPI pruning
 
 ---
 

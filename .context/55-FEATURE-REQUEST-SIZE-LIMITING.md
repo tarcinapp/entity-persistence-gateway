@@ -233,9 +233,9 @@ Use a layered approach:
 ## 11. FURTHER READING
 
 - **[20-FILTERS.md](20-FILTERS.md)** - filter catalog, ordering, and behavior details
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** - kind alias resolution and route projection
-- **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** - route enable/disable semantics
-- **[75-FEATURE-RATE-LIMITING.md](75-FEATURE-RATE-LIMITING.md)** - request-rate protection patterns
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** - kind alias resolution and route projection
+- **[75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md)** - route enable/disable semantics
+- **[50-FEATURE-RATE-LIMITING.md](50-FEATURE-RATE-LIMITING.md)** - request-rate protection patterns
 
 ---
 

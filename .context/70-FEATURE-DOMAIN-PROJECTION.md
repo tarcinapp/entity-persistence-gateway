@@ -136,7 +136,7 @@ app:
 
 Routes listed in `off` are disabled; routes listed in `on` are explicitly enabled. This allows feature flagging, security hardening, and domain scoping.
 
-> **See Also:** [50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md) for detailed toggle configuration and precedence rules.
+> **See Also:** [75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md) for detailed toggle configuration and precedence rules.
 
 ### 2.5 Request Validation with JSON Schema
 
@@ -382,7 +382,7 @@ app:
         - destructive                     # Disable by tag
 ```
 
-> **See Also:** [50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md) for evaluation order, precedence rules, and available toggle values.
+> **See Also:** [75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md) for evaluation order, precedence rules, and available toggle values.
 
 ### 3.4 Base URI and Controller Base Paths
 
@@ -629,8 +629,8 @@ Domain projection integrates seamlessly with other gateway features:
 
 ## 7. FURTHER READING
 
-- **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** — Detailed route toggle configuration and precedence rules
-- **[60-FEATURE-DYNAMIC-OAS-GENERATION.md](60-FEATURE-DYNAMIC-OAS-GENERATION.md)** — How the gateway generates personalized OpenAPI documentation reflecting the projected domain
+- **[75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md)** — Detailed route toggle configuration and precedence rules
+- **[90-FEATURE-DYNAMIC-OAS-GENERATION.md](90-FEATURE-DYNAMIC-OAS-GENERATION.md)** — How the gateway generates personalized OpenAPI documentation reflecting the projected domain
 - **[20-FILTERS.md](20-FILTERS.md)** — Complete filter documentation including KindResolution and HierarchyKindAliasResolver
 - **[10-ROUTES.md](10-ROUTES.md)** — Route inventory and naming conventions
 - **[05-REPO-CONTEXT.md](05-REPO-CONTEXT.md)** — Overall gateway architecture

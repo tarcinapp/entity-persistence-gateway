@@ -1,6 +1,6 @@
 # Dynamic OpenAPI Specification Generation
 
-> **Prerequisite Reading:** This document assumes familiarity with **Domain Projection**—the gateway's core capability for transforming generic endpoints into business-specific APIs. See [55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md) for foundational concepts including kind aliases, hierarchical relationships, route toggles, and schema configuration.
+> **Prerequisite Reading:** This document assumes familiarity with **Domain Projection**—the gateway's core capability for transforming generic endpoints into business-specific APIs. See [70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md) for foundational concepts including kind aliases, hierarchical relationships, route toggles, and schema configuration.
 
 ## 1. FEATURE IDENTITY & PURPOSE
 
@@ -38,7 +38,7 @@ Request `/openapi.json` and receive an OpenAPI specification where:
 
 ## 2. OAS-SPECIFIC CONCEPTS
 
-> **Note:** For foundational concepts like path virtualization, schema override by specificity, and hierarchical relationships, see [55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md).
+> **Note:** For foundational concepts like path virtualization, schema override by specificity, and hierarchical relationships, see [70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md).
 
 ### 2.1 Field-Level Permission Enforcement
 
@@ -353,8 +353,8 @@ The generated specification is **never more permissive** than the runtime system
 
 ## 10. RELATED DOCUMENTATION
 
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** — **Start here.** Core concepts for transforming generic APIs into domain-specific endpoints
-- **[50-FEATURE-ROUTE-TOGGLES.md](50-FEATURE-ROUTE-TOGGLES.md)** — Route toggle configuration and how it affects OAS generation
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** — **Start here.** Core concepts for transforming generic APIs into domain-specific endpoints
+- **[75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md)** — Route toggle configuration and how it affects OAS generation
 - **[20-FILTERS.md](20-FILTERS.md)** — Gateway filter documentation including validation filters
 - **[10-ROUTES.md](10-ROUTES.md)** — Route inventory and naming conventions
 - **[05-REPO-CONTEXT.md](05-REPO-CONTEXT.md)** — Gateway architecture overview

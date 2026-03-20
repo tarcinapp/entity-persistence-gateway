@@ -244,11 +244,11 @@ Disabled routes are automatically excluded from the generated OpenAPI specificat
 
 ## 7. RELATED DOCUMENTATION
 
-- **[55-FEATURE-DOMAIN-PROJECTION.md](55-FEATURE-DOMAIN-PROJECTION.md)** — Kind aliases and domain-specific API configuration
+- **[70-FEATURE-DOMAIN-PROJECTION.md](70-FEATURE-DOMAIN-PROJECTION.md)** — Kind aliases and domain-specific API configuration
 - **[10-ROUTES.md](10-ROUTES.md)** — Complete route inventory and naming conventions
 - **[11-ROUTE-TAGS.md](11-ROUTE-TAGS.md)** — Route tag definitions and usage
 - **[ROUTE-TAGS-REPORT.md](ROUTE-TAGS-REPORT.md)** — Complete tag distribution and statistics
-- **[60-FEATURE-DYNAMIC-OAS-GENERATION.md](60-FEATURE-DYNAMIC-OAS-GENERATION.md)** — How toggles affect generated documentation
+- **[90-FEATURE-DYNAMIC-OAS-GENERATION.md](90-FEATURE-DYNAMIC-OAS-GENERATION.md)** — How toggles affect generated documentation
 
 ---
 

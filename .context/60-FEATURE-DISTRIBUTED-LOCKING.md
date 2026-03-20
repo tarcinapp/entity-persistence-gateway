@@ -215,9 +215,9 @@ Distributed locking depends on Redis availability and latency. Since lock state 
 
 ## 10. FURTHER READING
 
-- **[65-FEATURE-AUTHORIZATION.md](65-FEATURE-AUTHORIZATION.md)** - policy enforcement and route protection sequence
-- **[70-FEATURE-FIELD-MASKING.md](70-FEATURE-FIELD-MASKING.md)** - replace-flow payload protection model
-- **[75-FEATURE-RATE-LIMITING.md](75-FEATURE-RATE-LIMITING.md)** - traffic shaping and Redis-backed throttling
+- **[45-FEATURE-AUTHORIZATION.md](45-FEATURE-AUTHORIZATION.md)** - policy enforcement and route protection sequence
+- **[65-FEATURE-FIELD-MASKING.md](65-FEATURE-FIELD-MASKING.md)** - replace-flow payload protection model
+- **[50-FEATURE-RATE-LIMITING.md](50-FEATURE-RATE-LIMITING.md)** - traffic shaping and Redis-backed throttling
 - **[20-FILTERS.md](20-FILTERS.md)** - low-level filter responsibilities and ordering
 
 ---
