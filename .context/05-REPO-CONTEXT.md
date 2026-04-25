@@ -43,12 +43,89 @@ All routes are defined in `application-routes.yaml`. The routing topology is hig
 
 For a comprehensive inventory of all available routes, including specific ID patterns and HTTP methods, refer to the [ROUTES.md](ROUTES.md) file.
 
-We categorize routes based on **Context** (Core vs. Domain) and **Topology** (Root vs. Traversal).
+We categorize routes along two independent dimensions: **Context** (Base Generic vs. Kind Alias) and **Topology** (Root vs. Traversal).
 
-1.  **Generic Core Routes (The Base 67):**
-    Direct mappings to the backend's REST interface. Used for raw data access.
-2.  **Kind Alias Routes:**
-    Domain-specific wrappers (e.g., `/books` -> `/entities`). They mirror the Generic structure but act on a specific `_kind`.
+**By Context** — whether a route operates on a generic backend path or a domain-specific kind-aliased path:
+
+1. **Base Generic Routes** — Direct mappings to the backend's REST interface. Routes are identified by generic resource names (e.g., `/api/v1/entities`). Used for raw data access. Number of routes are exactly same with the backend's routes count, but every exposed route is subjected to the gateway filters like authorization, authentication, field-masking, etc..
+2. **Kind Alias Routes** — Domain-specific wrappers (e.g., `/books` → `/entities`) that mirror the Base Generic structure but scope all operations to a specific `_kind`. Route IDs carry a `ByKindAlias` suffix. Domain object's schema is used for routes under this category. 
+
+**By Topology** — whether a route addresses a resource directly or navigates a relationship edge to reach it:
+
+1. **Root Controllers** — Manage a resource type directly on its canonical path. They support Collection, Single Item, and (where applicable) Hierarchy operations.
+2. **Traversal ("Through") Controllers** — Navigate a Many-to-Many relationship between two resource types. The URL embeds both a source record ID and a target resource type (e.g., `/entities/{id}/reactions`). They expose only Collection-type operations — there is no single-record addressing or hierarchy traversal at the relationship edge level.
+
+Both dimensions are orthogonal: every Kind Alias controller is the domain-projected mirror of a Base Generic counterpart, and both groups contain the same split of Root and Traversal controllers.
+
+---
+
+### Controller Groups & Route Taxonomy
+
+All routes belong to one of three groups:
+
+| Group | Description |
+|---|---|
+| **Base Generic Controllers** | Direct mappings to the backend contract. 9 controllers, 65 routes total. |
+| **Kind Alias Controllers** | Domain-projected wrappers with `ByKindAlias` suffix. 9 controllers, 73 routes total. |
+| **Utility Controllers** | Infrastructure endpoints (Ping, Explorer). 2 routes total. |
+
+The Kind Alias group has 8 more routes than the Base Generic group despite covering the same 9 controllers. The difference comes entirely from **Dynamic Hierarchy Routes** (`findEntityHierarchyByKindAlias`, `createEntityHierarchyByKindAlias`, and their List, Entity Reaction, and List Reaction equivalents — 2 routes × 4 controllers = 8). These routes use a `/{hierarchyAlias}` path segment instead of the fixed `/children` or `/parents` segments, allowing callers to use domain-friendly hierarchy names (e.g., `/books/{id}/chapters` instead of `/books/{id}/children`). Because this domain-driven aliasing is only meaningful in the context of a named kind, these routes have no equivalent in the Base Generic controllers.
+
+#### Context: Base Generic Controllers
+
+Contain the 9 controllers that map directly to the backend's REST interface:
+
+- **Entity Controller** _(11 routes)_ — manages entities
+- **List Controller** _(11 routes)_ — manages lists
+- **Relation Controller** _(8 routes)_ — manages relations between entities and lists
+- **Entity Reactions Controller** _(11 routes)_ — manages entity reactions directly
+- **List Reactions Controller** _(11 routes)_ — manages list reactions directly
+- **Reactions Through Entity Controller** _(4 routes)_ — manages reactions accessed via an entity context
+- **Reactions Through List Controller** _(4 routes)_ — manages reactions accessed via a list context
+- **Entities Through List Controller** _(4 routes)_ — manages entities accessed via a list context
+- **Lists Through Entity Controller** _(1 route)_ — manages lists accessed via an entity context
+
+#### Context: Kind Alias Controllers
+
+Mirror the Base Generic controllers, adding `ByKindAlias` to all route IDs. Routes resolve a `{kindAlias}` path segment to a concrete `_kind` value at runtime, transforming generic base paths into domain-specific ones (e.g., `/api/v1/entities` becomes `/api/v1/books`).  
+Kind alias routes also take the domain object's JSON schema into account — incoming payloads are validated against the schema registered for that kind, so each aliased endpoint enforces its own domain contract rather than the generic backend's open schema. Each kind alias controller corresponds to its base generic counterpart:
+
+- **Entity Kind Alias Routes** _(13 routes)_ — domain-scoped entity CRUD and hierarchy (e.g., `GET /api/v1/books`, `GET /api/v1/books/{id}/children`)
+- **List Kind Alias Routes** _(13 routes)_ — domain-scoped list CRUD and hierarchy (e.g., `GET /api/v1/playlists`, `POST /api/v1/playlists/{id}/children`)
+- **Relation Kind Alias Routes** _(8 routes)_ — domain-scoped relation CRUD (e.g., `POST /api/v1/book-playlists`, `DELETE /api/v1/book-playlists/{id}`)
+- **Entity Reaction Kind Alias Routes** _(13 routes)_ — domain-scoped entity reaction CRUD and hierarchy (e.g., `GET /api/v1/book-reviews`, `GET /api/v1/book-reviews/{id}`)
+- **List Reaction Kind Alias Routes** _(13 routes)_ — domain-scoped list reaction CRUD and hierarchy (e.g., `GET /api/v1/playlist-reviews`, `PATCH /api/v1/playlist-reviews/{id}`)
+- **Reactions Through Entity Kind Alias** _(4 routes)_ — reactions reached via a kind-aliased entity (e.g., `GET /api/v1/books/{id}/book-reviews`)
+- **Reactions Through List Kind Alias** _(4 routes)_ — reactions reached via a kind-aliased list (e.g., `GET /api/v1/playlists/{id}/playlist-reviews`)
+- **Entities Through List Kind Alias** _(4 routes)_ — entities reached via a kind-aliased list (e.g., `GET /api/v1/playlists/{id}/books`)
+- **Lists Through Entity Kind Alias** _(1 route)_ — lists reached via a kind-aliased entity (e.g., `GET /api/v1/books/{id}/playlists`)
+
+#### Topology: Root vs. Traversal Controllers
+
+Independent of Context, each controller belongs to one of two topology types:
+
+| Topology | Controllers | Path pattern |
+|---|---|---|
+| **Root** | Entity, List, Relation, Entity Reactions, List Reactions | `/api/v1/{resource}` |
+| **Traversal** | Reactions Through Entity, Reactions Through List, Entities Through List, Lists Through Entity | `/api/v1/{source}/{id}/{target}` |
+
+**Root Controllers** manage a resource type on its own canonical path. They are the primary controllers for CRUD and hierarchy operations and can expose all three route type categories: Collection, Single Item, and Hierarchy.
+
+**Traversal ("Through") Controllers** navigate a pre-existing relationship edge to reach a related resource. They receive both a source record ID (to scope the relationship) and a target resource segment (to identify the related type), forming a compound path. Because they address a set of related records rather than a named individual, they only expose Collection-type operations — there is no single-record addressing (`{recordId}`) or hierarchy traversal at the relationship edge level. The `Relation Controller` is technically a root controller that stores the edge metadata itself; the Through controllers are what traverse those edges.
+
+#### Route Type Categories
+
+Within each controller, routes are classified into three types:
+
+| Type | Description | Example operations |
+|---|---|---|
+| **Collection** | Operate on the full resource set. No `{recordId}` in path. | `find*`, `create*`, `count*`, `updateAll*` |
+| **Single Item** | Operate on one record identified by `{recordId}`. | `find*ById`, `update*ById`, `replace*ById`, `delete*ById` |
+| **Hierarchy** | Traverse parent/child relationships of a record. Includes both static (`/children`, `/parents`) and dynamic (`/{hierarchyAlias}`) variants. | `find*Children`, `create*Child`, `find*Parents`, `find*HierarchyByKindAlias` |
+
+> **Through controllers** (e.g., `Reactions Through Entity`) only expose Collection-type routes, as they operate on the relationship between two records rather than a single addressable resource.
+
+> **Relation Controller** has no Hierarchy routes — relations are flat by design.
 
 ---
 

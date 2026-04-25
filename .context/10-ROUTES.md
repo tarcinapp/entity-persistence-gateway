@@ -1,16 +1,54 @@
 # Entity Persistence Gateway - Available Routes
 
-This document lists all available routes in the Entity Persistence Gateway, organized by their respective controllers.
+This document lists all available routes in the Entity Persistence Gateway, organized by their respective controllers. There are **140 routes** in total.
 
 > **Base URI**: `/api/v1/` (configurable via `app.inbound.baseUri`)
 
 ---
 
-## Entity Controller
+## Contents
+
+**Base Generic Controllers — Root** _(53 routes)_
+- [Entity Controller](#entity-controller-11-routes) _(11 routes)_
+- [List Controller](#list-controller-11-routes) _(11 routes)_
+- [Relation Controller](#relation-controller-8-routes) _(8 routes)_
+- [Entity Reactions Controller](#entity-reactions-controller-11-routes) _(11 routes)_
+- [List Reactions Controller](#list-reactions-controller-11-routes) _(11 routes)_
+
+**Base Generic Controllers — Traversal** _(12 routes)_
+- [Reactions Through Entity Controller](#reactions-through-entity-controller-4-routes) _(4 routes)_
+- [Reactions Through List Controller](#reactions-through-list-controller-4-routes) _(4 routes)_
+- [Entities Through List Controller](#entities-through-list-controller-4-routes) _(4 routes)_
+- [Lists Through Entity Controller](#lists-through-entity-controller-1-route) _(1 route)_
+
+**Kind Alias Controllers — Root** _(60 routes)_
+- [Entity Kind Alias Routes](#entity-kind-alias-routes-13-routes) _(13 routes)_
+- [List Kind Alias Routes](#list-kind-alias-routes-13-routes) _(13 routes)_
+- [Relation Kind Alias Routes](#relation-kind-alias-routes-8-routes) _(8 routes)_
+- [Entity Reaction Kind Alias Routes](#entity-reaction-kind-alias-routes-13-routes) _(13 routes)_
+- [List Reaction Kind Alias Routes](#list-reaction-kind-alias-routes-13-routes) _(13 routes)_
+
+**Kind Alias Controllers — Traversal** _(13 routes)_
+- [Reactions Through Entity Kind Alias](#reactions-through-entity-kind-alias-4-routes) _(4 routes)_
+- [Reactions Through List Kind Alias](#reactions-through-list-kind-alias-4-routes) _(4 routes)_
+- [Entities Through List Kind Alias](#entities-through-list-kind-alias-4-routes) _(4 routes)_
+- [Lists Through Entity Kind Alias](#lists-through-entity-kind-alias-1-route) _(1 route)_
+
+**Utility Controllers** _(2 routes)_
+- [Ping Controller](#ping-controller-1-route) _(1 route)_
+- [Explorer Controller](#explorer-controller-1-route) _(1 route)_
+
+**Reference**
+- [Route Count Summary](#route-count-summary)
+- [Notes](#notes)
+
+---
+
+## Entity Controller _(11 routes)_
 
 Routes for managing generic entities.
 
-### Collection Operations
+### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -19,7 +57,7 @@ Routes for managing generic entities.
 | `countEntities` | GET | `/api/v1/entities/count` | Count entities matching criteria |
 | `updateAllEntities` | PATCH | `/api/v1/entities` | Update multiple entities (disabled by default) |
 
-### Single Entity Operations
+### Single Entity Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -28,7 +66,7 @@ Routes for managing generic entities.
 | `replaceEntityById` | PUT | `/api/v1/entities/{recordId}` | Replace a specific entity by ID |
 | `deleteEntityById` | DELETE | `/api/v1/entities/{recordId}` | Delete a specific entity by ID |
 
-### Hierarchical Operations
+### Hierarchical Operations _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -38,11 +76,11 @@ Routes for managing generic entities.
 
 ---
 
-## List Controller
+## List Controller _(11 routes)_
 
 Routes for managing lists.
 
-### Collection Operations
+### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -51,7 +89,7 @@ Routes for managing lists.
 | `countLists` | GET | `/api/v1/lists/count` | Count lists matching criteria |
 | `updateAllLists` | PATCH | `/api/v1/lists` | Update multiple lists (disabled by default) |
 
-### Single List Operations
+### Single List Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -60,7 +98,7 @@ Routes for managing lists.
 | `replaceListById` | PUT | `/api/v1/lists/{recordId}` | Replace a specific list by ID |
 | `deleteListById` | DELETE | `/api/v1/lists/{recordId}` | Delete a specific list by ID |
 
-### Hierarchical Operations
+### Hierarchical Operations _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -70,11 +108,11 @@ Routes for managing lists.
 
 ---
 
-## Relation Controller
+## Relation Controller _(8 routes)_
 
 Routes for managing relations between entities.
 
-### Collection Operations
+### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -83,7 +121,7 @@ Routes for managing relations between entities.
 | `countRelations` | GET | `/api/v1/relations/count` | Count relations matching criteria |
 | `updateAllRelations` | PATCH | `/api/v1/relations` | Update multiple relations |
 
-### Single Relation Operations
+### Single Relation Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -94,11 +132,11 @@ Routes for managing relations between entities.
 
 ---
 
-## Entity Reactions Controller
+## Entity Reactions Controller _(11 routes)_
 
 Routes for managing reactions to entities.
 
-### Collection Operations
+### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -107,7 +145,7 @@ Routes for managing reactions to entities.
 | `countEntityReactions` | GET | `/api/v1/entity-reactions/count` | Count entity reactions matching criteria |
 | `updateAllEntityReactions` | PATCH | `/api/v1/entity-reactions` | Update multiple entity reactions |
 
-### Single Entity Reaction Operations
+### Single Entity Reaction Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -116,7 +154,7 @@ Routes for managing reactions to entities.
 | `replaceEntityReactionById` | PUT | `/api/v1/entity-reactions/{recordId}` | Replace a specific entity reaction by ID |
 | `deleteEntityReactionById` | DELETE | `/api/v1/entity-reactions/{recordId}` | Delete a specific entity reaction by ID |
 
-### Hierarchical Operations
+### Hierarchical Operations _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -126,7 +164,7 @@ Routes for managing reactions to entities.
 
 ---
 
-## Reactions Through Entity Controller
+## Reactions Through Entity Controller _(4 routes)_
 
 Routes for managing reactions through entity context.
 
@@ -137,21 +175,13 @@ Routes for managing reactions through entity context.
 | `updateReactionsByEntityId` | PATCH | `/api/v1/entities/{recordId}/reactions` | Update reactions for a specific entity |
 | `deleteReactionsByEntityId` | DELETE | `/api/v1/entities/{recordId}/reactions` | Delete reactions for a specific entity |
 
-### Hierarchical Operations
-
-| Route ID | Method | Path | Description |
-|----------|--------|------|-------------|
-| `findChildrenEntityReactionsByReactionId` | GET | `/api/v1/entity-reactions/{recordId}/children` | Find child reactions of a specific entity reaction |
-| `createChildEntityReaction` | POST | `/api/v1/entity-reactions/{recordId}/children` | Create a child reaction under a specific entity reaction |
-| `findParentsByEntityReactionId` | GET | `/api/v1/entity-reactions/{recordId}/parents` | Find parent reactions of a specific entity reaction |
-
 ---
 
-## List Reactions Controller
+## List Reactions Controller _(11 routes)_
 
 Routes for managing reactions to lists.
 
-### Collection Operations
+### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -160,7 +190,7 @@ Routes for managing reactions to lists.
 | `countListReactions` | GET | `/api/v1/list-reactions/count` | Count list reactions matching criteria |
 | `updateAllListReactions` | PATCH | `/api/v1/list-reactions` | Update multiple list reactions |
 
-### Single List Reaction Operations
+### Single List Reaction Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -169,7 +199,7 @@ Routes for managing reactions to lists.
 | `replaceListReactionById` | PUT | `/api/v1/list-reactions/{recordId}` | Replace a specific list reaction by ID |
 | `deleteListReactionById` | DELETE | `/api/v1/list-reactions/{recordId}` | Delete a specific list reaction by ID |
 
-### Hierarchical Operations
+### Hierarchical Operations _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -179,7 +209,7 @@ Routes for managing reactions to lists.
 
 ---
 
-## Reactions Through List Controller
+## Reactions Through List Controller _(4 routes)_
 
 Routes for managing reactions through list context.
 
@@ -192,7 +222,7 @@ Routes for managing reactions through list context.
 
 ---
 
-## Entities Through List Controller
+## Entities Through List Controller _(4 routes)_
 
 Routes for managing entities through list context.
 
@@ -205,7 +235,7 @@ Routes for managing entities through list context.
 
 ---
 
-## Lists Through Entity Controller
+## Lists Through Entity Controller _(1 route)_
 
 Routes for managing lists through entity context.
 
@@ -215,13 +245,13 @@ Routes for managing lists through entity context.
 
 ---
 
-## Kind Alias Mapping Controller
+## Kind Alias Controllers — Root _(60 routes)_
 
-Routes for entity management using kind-based paths (configurable via `app.kindAliasPaths`).
+Domain-projected wrappers for the five Root controllers. Each route resolves a `{kindAlias}` path segment to a concrete `_kind` value at runtime, transforming generic base paths into kind-aliased paths (e.g., `/api/v1/entities/{kindAlias}` → `/api/v1/books`). Payloads are validated against the domain object's JSON schema registered for that kind.
 
-### Entity Kind Alias Routes
+### Entity Kind Alias Routes _(13 routes)_
 
-#### Collection Operations
+#### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -230,7 +260,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `countEntitiesByKindAlias` | GET | `/api/v1/entities/{kindAlias}/count` | Count entities of a specific kind |
 | `updateAllEntitiesByKindAlias` | PATCH | `/api/v1/entities/{kindAlias}` | Update multiple entities of a specific kind (disabled by default) |
 
-#### Single Entity Operations by Kind Alias
+#### Single Entity Operations by Kind Alias _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -239,7 +269,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `replaceEntityByIdByKindAlias` | PUT | `/api/v1/entities/{kindAlias}/{recordId}` | Replace a specific entity by ID within a kind alias |
 | `deleteEntityByIdByKindAlias` | DELETE | `/api/v1/entities/{kindAlias}/{recordId}` | Delete a specific entity by ID within a kind alias |
 
-#### Hierarchical Operations by Kind Alias
+#### Hierarchical Operations by Kind Alias _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -247,16 +277,16 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `createEntityChildByKindAlias` | POST | `/api/v1/entities/{kindAlias}/{recordId}/children` | Create a child entity under a specific entity within a kind alias |
 | `findEntityParentsByKindAlias` | GET | `/api/v1/entities/{kindAlias}/{recordId}/parents` | Find parent entities of a specific entity within a kind alias |
 
-#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs)
+#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
 | `findEntityHierarchyByKindAlias` | GET | `/api/v1/entities/{kindAlias}/{recordId}/{hierarchyAlias}` | Find child or parent entities using domain-driven hierarchy alias |
 | `createEntityHierarchyByKindAlias` | POST | `/api/v1/entities/{kindAlias}/{recordId}/{hierarchyAlias}` | Create child entity using domain-driven hierarchy alias |
 
-### List Kind Alias Routes
+### List Kind Alias Routes _(13 routes)_
 
-#### Collection Operations
+#### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -265,7 +295,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `countListsByKindAlias` | GET | `/api/v1/lists/{kindAlias}/count` | Count lists of a specific kind |
 | `updateAllListsByKindAlias` | PATCH | `/api/v1/lists/{kindAlias}` | Update multiple lists of a specific kind (disabled by default) |
 
-#### Single List Operations by Kind Alias
+#### Single List Operations by Kind Alias _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -274,7 +304,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `replaceListByIdByKindAlias` | PUT | `/api/v1/lists/{kindAlias}/{recordId}` | Replace a specific list by ID within a kind alias |
 | `deleteListByIdByKindAlias` | DELETE | `/api/v1/lists/{kindAlias}/{recordId}` | Delete a specific list by ID within a kind alias |
 
-#### Hierarchical Operations by Kind Alias
+#### Hierarchical Operations by Kind Alias _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -282,16 +312,16 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `createListChildByKindAlias` | POST | `/api/v1/lists/{kindAlias}/{recordId}/children` | Create a child list under a specific list within a kind alias |
 | `findListParentsByKindAlias` | GET | `/api/v1/lists/{kindAlias}/{recordId}/parents` | Find parent lists of a specific list within a kind alias |
 
-#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs)
+#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
 | `findListHierarchyByKindAlias` | GET | `/api/v1/lists/{kindAlias}/{recordId}/{hierarchyAlias}` | Find child or parent lists using domain-driven hierarchy alias |
 | `createListHierarchyByKindAlias` | POST | `/api/v1/lists/{kindAlias}/{recordId}/{hierarchyAlias}` | Create child list using domain-driven hierarchy alias |
 
-### Relation Kind Alias Routes
+### Relation Kind Alias Routes _(8 routes)_
 
-#### Collection Operations
+#### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -300,7 +330,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `countRelationsByKindAlias` | GET | `/api/v1/relations/{kindAlias}/count` | Count relations of a specific kind |
 | `updateAllRelationsByKindAlias` | PATCH | `/api/v1/relations/{kindAlias}` | Update multiple relations of a specific kind |
 
-#### Single Relation Operations by Kind Alias
+#### Single Relation Operations by Kind Alias _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -309,9 +339,9 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `replaceRelationByIdByKindAlias` | PUT | `/api/v1/relations/{kindAlias}/{recordId}` | Replace a specific relation by ID within a kind alias |
 | `deleteRelationByIdByKindAlias` | DELETE | `/api/v1/relations/{kindAlias}/{recordId}` | Delete a specific relation by ID within a kind alias |
 
-### Entity Reaction Kind Alias Routes
+### Entity Reaction Kind Alias Routes _(13 routes)_
 
-#### Collection Operations
+#### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -320,7 +350,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `countEntityReactionsByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/count` | Count entity reactions of a specific kind |
 | `updateAllEntityReactionsByKindAlias` | PATCH | `/api/v1/entity-reactions/{kindAlias}` | Update multiple entity reactions of a specific kind |
 
-#### Single Entity Reaction Operations by Kind Alias
+#### Single Entity Reaction Operations by Kind Alias _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -329,7 +359,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `replaceEntityReactionByIdByKindAlias` | PUT | `/api/v1/entity-reactions/{kindAlias}/{recordId}` | Replace a specific entity reaction by ID within a kind alias |
 | `deleteEntityReactionByIdByKindAlias` | DELETE | `/api/v1/entity-reactions/{kindAlias}/{recordId}` | Delete a specific entity reaction by ID within a kind alias |
 
-#### Hierarchical Operations by Kind Alias
+#### Hierarchical Operations by Kind Alias _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -337,16 +367,16 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `createChildEntityReactionByKindAlias` | POST | `/api/v1/entity-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific entity reaction within a kind alias |
 | `findParentsByEntityReactionIdByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific entity reaction within a kind alias |
 
-#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs)
+#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
 | `findEntityReactionHierarchyByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/{hierarchyAlias}` | Find child or parent entity reactions using domain-driven hierarchy alias |
 | `createEntityReactionHierarchyByKindAlias` | POST | `/api/v1/entity-reactions/{kindAlias}/{recordId}/{hierarchyAlias}` | Create child entity reaction using domain-driven hierarchy alias |
 
-### List Reaction Kind Alias Routes
+### List Reaction Kind Alias Routes _(13 routes)_
 
-#### Collection Operations
+#### Collection Operations _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -355,7 +385,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `countListReactionsByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/count` | Count list reactions of a specific kind |
 | `updateAllListReactionsByKindAlias` | PATCH | `/api/v1/list-reactions/{kindAlias}` | Update multiple list reactions of a specific kind |
 
-#### Single List Reaction Operations by Kind Alias
+#### Single List Reaction Operations by Kind Alias _(4 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -364,7 +394,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `replaceListReactionByIdByKindAlias` | PUT | `/api/v1/list-reactions/{kindAlias}/{recordId}` | Replace a specific list reaction by ID within a kind alias |
 | `deleteListReactionByIdByKindAlias` | DELETE | `/api/v1/list-reactions/{kindAlias}/{recordId}` | Delete a specific list reaction by ID within a kind alias |
 
-#### Hierarchical Operations by Kind Alias
+#### Hierarchical Operations by Kind Alias _(3 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -372,7 +402,7 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 | `createChildListReactionByKindAlias` | POST | `/api/v1/list-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific list reaction within a kind alias |
 | `findParentsByListReactionIdByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific list reaction within a kind alias |
 
-#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs)
+#### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
@@ -381,7 +411,46 @@ Routes for entity management using kind-based paths (configurable via `app.kindA
 
 ---
 
-## Ping Controller
+## Kind Alias Controllers — Traversal _(13 routes)_
+
+Domain-projected wrappers for the four Traversal ("Through") controllers. Each route navigates a kind-aliased relationship edge, resolving both `{kindAlias}` (source resource kind) and `{throughAlias}` (target resource kind) at runtime. Path pattern: `{controller}/{kindAlias}/{recordId}/{throughSegment}/{throughAlias}`.
+
+### Reactions Through Entity Kind Alias _(4 routes)_
+
+| Route ID | Method | Path | Description |
+|----------|--------|------|-------------|
+| `createReactionByEntityIdByKindAlias` | POST | `/api/v1/entities/{kindAlias}/{recordId}/reactions/{throughAlias}` | Create a reaction for a specific entity using kind alias |
+| `findReactionsByEntityIdByKindAlias` | GET | `/api/v1/entities/{kindAlias}/{recordId}/reactions/{throughAlias}` | Find all reactions for a specific entity using kind alias |
+| `updateReactionsByEntityIdByKindAlias` | PATCH | `/api/v1/entities/{kindAlias}/{recordId}/reactions/{throughAlias}` | Update reactions for a specific entity using kind alias |
+| `deleteReactionsByEntityIdByKindAlias` | DELETE | `/api/v1/entities/{kindAlias}/{recordId}/reactions/{throughAlias}` | Delete reactions for a specific entity using kind alias |
+
+### Reactions Through List Kind Alias _(4 routes)_
+
+| Route ID | Method | Path | Description |
+|----------|--------|------|-------------|
+| `createReactionByListIdByKindAlias` | POST | `/api/v1/lists/{kindAlias}/{recordId}/reactions/{throughAlias}` | Create a reaction for a specific list using kind alias |
+| `findReactionsByListIdByKindAlias` | GET | `/api/v1/lists/{kindAlias}/{recordId}/reactions/{throughAlias}` | Find all reactions for a specific list using kind alias |
+| `updateReactionsByListIdByKindAlias` | PATCH | `/api/v1/lists/{kindAlias}/{recordId}/reactions/{throughAlias}` | Update reactions for a specific list using kind alias |
+| `deleteReactionsByListIdByKindAlias` | DELETE | `/api/v1/lists/{kindAlias}/{recordId}/reactions/{throughAlias}` | Delete reactions for a specific list using kind alias |
+
+### Entities Through List Kind Alias _(4 routes)_
+
+| Route ID | Method | Path | Description |
+|----------|--------|------|-------------|
+| `createEntityByListIdByKindAlias` | POST | `/api/v1/lists/{kindAlias}/{recordId}/entities/{throughAlias}` | Create an entity associated with a specific list using kind alias |
+| `findEntitiesByListIdByKindAlias` | GET | `/api/v1/lists/{kindAlias}/{recordId}/entities/{throughAlias}` | Find all entities associated with a specific list using kind alias |
+| `updateEntitiesByListIdByKindAlias` | PATCH | `/api/v1/lists/{kindAlias}/{recordId}/entities/{throughAlias}` | Update entities associated with a specific list using kind alias |
+| `deleteEntitiesByListIdByKindAlias` | DELETE | `/api/v1/lists/{kindAlias}/{recordId}/entities/{throughAlias}` | Delete entities associated with a specific list using kind alias |
+
+### Lists Through Entity Kind Alias _(1 route)_
+
+| Route ID | Method | Path | Description |
+|----------|--------|------|-------------|
+| `findListsByEntityIdByKindAlias` | GET | `/api/v1/entities/{kindAlias}/{recordId}/lists/{throughAlias}` | Find all lists associated with a specific entity using kind alias |
+
+---
+
+## Ping Controller _(1 route)_
 
 Health check and connectivity testing.
 
@@ -391,13 +460,63 @@ Health check and connectivity testing.
 
 ---
 
-## Explorer Controller
+## Explorer Controller _(1 route)_
 
 API exploration endpoint (currently disabled).
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
 | `explorer` | * | `/api/v1/explorer` | API explorer endpoint (returns 404) |
+
+---
+
+## Route Count Summary
+
+Routes are organized into two main controller groups plus a utility group. For terminology details see the [Controller Groups & Route Taxonomy](05-REPO-CONTEXT.md) section in the repository context document.
+
+### Base Generic Controllers — 65 routes
+
+| Controller | Collection | Single Item | Hierarchy | Total |
+|---|:---:|:---:|:---:|---:|
+| Entity Controller | 4 | 4 | 3 | **11** |
+| List Controller | 4 | 4 | 3 | **11** |
+| Relation Controller | 4 | 4 | — | **8** |
+| Entity Reactions Controller | 4 | 4 | 3 | **11** |
+| Reactions Through Entity Controller | 4 | — | — | **4** |
+| List Reactions Controller | 4 | 4 | 3 | **11** |
+| Reactions Through List Controller | 4 | — | — | **4** |
+| Entities Through List Controller | 4 | — | — | **4** |
+| Lists Through Entity Controller | 1 | — | — | **1** |
+| **Total** | | | | **65** |
+
+### Kind Alias Controllers — 73 routes
+
+| Controller | Collection | Single Item | Hierarchy | Total |
+|---|:---:|:---:|:---:|---:|
+| Entity Kind Alias Routes | 4 | 4 | 5 | **13** |
+| List Kind Alias Routes | 4 | 4 | 5 | **13** |
+| Relation Kind Alias Routes | 4 | 4 | — | **8** |
+| Entity Reaction Kind Alias Routes | 4 | 4 | 5 | **13** |
+| List Reaction Kind Alias Routes | 4 | 4 | 5 | **13** |
+| Reactions Through Entity Kind Alias | 4 | — | — | **4** |
+| Reactions Through List Kind Alias | 4 | — | — | **4** |
+| Entities Through List Kind Alias | 4 | — | — | **4** |
+| Lists Through Entity Kind Alias | 1 | — | — | **1** |
+| **Total** | | | | **73** |
+
+> **Note:** The Hierarchy column for entity, list, entity reaction, and list reaction kind alias controllers includes both Hierarchical Operations (3) and Dynamic Hierarchy routes (2).
+
+### Utility Controllers — 2 routes
+
+| Controller | Route | Total |
+|---|---|:---:|
+| Ping Controller | `ping` | **1** |
+| Explorer Controller | `explorer` | **1** |
+| **Total** | | **2** |
+
+---
+
+**Grand Total: 140 routes** (65 Base Generic + 73 Kind Alias + 2 Utility)
 
 ---
 
