@@ -52,6 +52,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `ValidateRequestBodyByKindSchema` | Validation | Schema validation by kind |
 | `KindResolution` | Transformation | Resolves kind aliases to names |
 | `HierarchyKindAliasResolver` | Routing | Resolves hierarchical kind aliases to technical paths |
+| `ThroughKindAliasResolver` | Routing | Resolves through-record kind alias routes to technical paths |
 | `ConvertKindAliasToKindQuery` | Transformation | Converts kind alias in queries |
 | `ProjectDomainIncludeAliasInResponse` | Transformation | Projects generic include fields (e.g. `_entities`) back to requested domain aliases (e.g. `books`) |
 | `DynamicTimeout` | Configuration | Sets request timeouts dynamically |
@@ -755,6 +756,22 @@ filter[lookup][0][scope][where][pageCount][lte]=300
 
 ---
 
+#### `ThroughKindAliasResolver`
+**Purpose:** Resolves through-record kind alias routes to technical paths for reactions-through-entity, reactions-through-list, entities-through-list, and lists-through-entity kind alias variants.
+
+**Behavior:**
+- Reads the root kind alias from `KindResolution`
+- Resolves the through-record target kind from alias configuration
+- Rewrites the path to the technical through-record accessor
+- Updates `KindAliasConfigAttr` with the resolved kind and validation flags
+- Returns 404 if through-record alias is not configured
+
+**Configuration:** None
+
+**Used in:** Through-record kind-alias routes (`createReactionByEntityIdByKindAlias`, `findReactionsByEntityIdByKindAlias`, `updateReactionsByEntityIdByKindAlias`, `deleteReactionsByEntityIdByKindAlias`, `createReactionByListIdByKindAlias`, `findReactionsByListIdByKindAlias`, `updateReactionsByListIdByKindAlias`, `deleteReactionsByListIdByKindAlias`, `createEntityByListIdByKindAlias`, `findEntitiesByListIdByKindAlias`, `updateEntitiesByListIdByKindAlias`, `deleteEntitiesByListIdByKindAlias`, `findListsByEntityIdByKindAlias`)
+
+---
+
 #### `ConvertKindAliasToKindQuery`
 **Purpose:** Converts kind alias in query parameters to kind filter.
 
@@ -886,7 +903,7 @@ RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest →
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 #### `findEntities`
@@ -895,16 +912,17 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `countEntities`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → AddSetsToEntityListOrReactionViaRecordQuery → 
-RemoveRequestHeader → DynamicLocalCache
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+AddSetsToEntityListOrReactionViaRecordQuery → RemoveRequestHeader → DynamicLocalCache
 ```
 
 #### `findEntityById`
@@ -912,7 +930,7 @@ RemoveRequestHeader → DynamicLocalCache
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 ConvertDomainIncludeAliasToGenericRelation → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
 ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
@@ -943,8 +961,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `createEntityChild`
@@ -961,8 +979,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -983,7 +1001,7 @@ RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest →
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 #### `findLists`
@@ -992,15 +1010,16 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `countLists`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → AuthorizeRequest → PreventStringifiedJsonFilter → 
-PreventQueryByForbiddenFields → AddSetsToEntityListOrReactionViaRecordQuery → 
+ConvertSimplerQueriesToBackendFormat → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → AddSetsToEntityListOrReactionViaRecordQuery → 
 RemoveRequestHeader → DynamicLocalCache
 ```
 
@@ -1009,7 +1028,7 @@ RemoveRequestHeader → DynamicLocalCache
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 ConvertDomainIncludeAliasToGenericRelation → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → 
 ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
@@ -1040,8 +1059,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `createListChild`
@@ -1058,8 +1077,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -1079,7 +1098,8 @@ RemoveRequestHeader → FieldFilter
 RewritePath → RequestSize → CheckIfRouteEnabled → AuthenticateRequest → 
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToRelationQuery → PreventQueryByForbiddenFields → RemoveRequestHeader
+AddSetsToRelationQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
 ```
 
 #### `findRelations`
@@ -1087,15 +1107,16 @@ AddSetsToRelationQuery → PreventQueryByForbiddenFields → RemoveRequestHeader
 RewritePath → CheckIfRouteEnabled → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToRelationQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToRelationQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `countRelations`
 ```
 RewritePath → CheckIfRouteEnabled → AuthenticateRequest → GenerateRequestId → 
 FetchForbiddenFields → RequestRateLimiter → AuthorizeRequest → 
-PreventStringifiedJsonFilter → PreventQueryByForbiddenFields → AddSetsToRelationQuery → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToRelationQuery → 
 RemoveRequestHeader → DynamicLocalCache
 ```
 
@@ -1103,8 +1124,8 @@ RemoveRequestHeader → DynamicLocalCache
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ApplyFieldsetConfig → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
 ```
 
 #### `updateRelationById`
@@ -1145,7 +1166,8 @@ RemoveRequestHeader → FieldFilter
 RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest → 
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
 ```
 
 #### `findEntityReactions`
@@ -1153,15 +1175,16 @@ AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeade
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `countEntityReactions`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventStringifiedJsonFilter → PreventQueryByForbiddenFields → AddSetsToReactionsQuery → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToReactionsQuery → 
 RemoveRequestHeader → DynamicLocalCache
 ```
 
@@ -1169,8 +1192,8 @@ RemoveRequestHeader → DynamicLocalCache
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ApplyFieldsetConfig → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
 ```
 
 #### `updateEntityReactionById`
@@ -1199,8 +1222,8 @@ RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → RemoveReque
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `createChildEntityReaction`
@@ -1216,8 +1239,8 @@ RemoveRequestHeader → FieldFilter
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 ---
@@ -1238,7 +1261,7 @@ RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest →
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 #### `findReactionsByEntityId`
@@ -1247,15 +1270,16 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `deleteReactionsByEntityId`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 ---
@@ -1275,7 +1299,8 @@ RemoveRequestHeader → FieldFilter
 RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest → 
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
 ```
 
 #### `findListReactions`
@@ -1283,15 +1308,16 @@ AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeade
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `countListReactions`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventStringifiedJsonFilter → PreventQueryByForbiddenFields → AddSetsToReactionsQuery → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToReactionsQuery → 
 RemoveRequestHeader → DynamicLocalCache
 ```
 
@@ -1299,8 +1325,8 @@ RemoveRequestHeader → DynamicLocalCache
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ApplyFieldsetConfig → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
 ```
 
 #### `updateListReactionById`
@@ -1329,8 +1355,8 @@ RequestRateLimiter → AuthorizeRequest → RemoveRequestHeader
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `createChildListReaction`
@@ -1346,8 +1372,8 @@ RemoveRequestHeader → FieldFilter
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToReactionsQuery → PreventQueryByForbiddenFields → RemoveRequestHeader → 
-DynamicLocalCache → FieldFilter
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 ---
@@ -1368,7 +1394,7 @@ RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest →
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 #### `findReactionsByListId`
@@ -1377,15 +1403,16 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → FieldFilter
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → FieldFilter
 ```
 
 #### `deleteReactionsByListId`
 ```
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
-PreventStringifiedJsonFilter → AddSetsToEntityListOrReactionViaRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 ---
@@ -1405,7 +1432,8 @@ RemoveRequestHeader → FieldFilter
 RequestSize → CheckIfRouteEnabled → RewritePath → AuthenticateRequest → 
 GenerateRequestId → RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
-AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → RemoveRequestHeader
+AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
 ```
 
 #### `findEntitiesByListId`
@@ -1414,8 +1442,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `deleteEntitiesByListId`
@@ -1423,7 +1451,7 @@ ProjectDomainIncludeAliasInResponse → FieldFilter
 CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 ConvertSimplerQueriesToBackendFormat → AddSetsToThroughRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader
 ```
 
 ---
@@ -1436,8 +1464,8 @@ CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestI
 RequestRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
 PreventStringifiedJsonFilter → ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
 ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
-PreventQueryByForbiddenFields → RemoveRequestHeader → DynamicLocalCache → 
-ProjectDomainIncludeAliasInResponse → FieldFilter
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 ---
@@ -1474,16 +1502,83 @@ GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePat
 AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
 ConvertKindAliasToKindQuery → ConvertDomainIncludeAliasToGenericRelation → ApplyFieldsetConfig → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
-#### `replaceEntityByIdByKindAlias`
+#### `countEntitiesByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+ConvertKindAliasToKindQuery → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+AddSetsToEntityListOrReactionViaRecordQuery → RemoveRequestHeader → DynamicLocalCache
+```
+
+#### `updateAllEntitiesByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → PreventStringifiedJsonFilter → 
+AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `findEntityByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → ConvertDomainIncludeAliasToGenericRelation → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ApplyFieldsetConfig → ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+#### `updateEntityByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → AuthorizeRequest → 
+AcquireLockForUpdate → RemoveRequestHeader
+```
+
+#### `deleteEntityByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → AuthorizeRequest → 
+RemoveRequestHeader
+```
+
+#### `findEntityChildrenByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+FieldFilter → DynamicLocalCache → ProjectDomainIncludeAliasInResponse
+```
+
+#### `createEntityChildByKindAlias`
 ```
 DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
 RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
 DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
-AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
-AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findEntityParentsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
 ```
 
 #### `findEntityHierarchyByKindAlias`
@@ -1493,7 +1588,8 @@ AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbid
 AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
 ConvertSimplerQueriesToBackendFormat → ConvertDomainIncludeAliasToGenericRelation → 
 AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
-RemoveRequestHeader → FieldFilter → DynamicLocalCache → ProjectDomainIncludeAliasInResponse
+InjectTypeHintsToQuery → RemoveRequestHeader → FieldFilter → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse
 ```
 
 #### `createEntityHierarchyByKindAlias`
@@ -1505,7 +1601,595 @@ AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation →
 ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
 ```
 
-**Note:** Include alias projection is enabled on entity/list kind-alias read routes, including `findAll*`, `find*ById*`, through, and hierarchy reads. It is not enabled on count, update, delete, relation, or reaction routes.
+#### `replaceEntityByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
+AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader → FieldFilter
+```
+
+---
+
+### List Kind Alias Routes
+
+#### `createListByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findAllListsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePath → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+ConvertKindAliasToKindQuery → ConvertDomainIncludeAliasToGenericRelation → ApplyFieldsetConfig → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+#### `countListsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+ConvertKindAliasToKindQuery → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+AddSetsToEntityListOrReactionViaRecordQuery → RemoveRequestHeader → DynamicLocalCache
+```
+
+#### `updateAllListsByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → PreventStringifiedJsonFilter → 
+AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `findListByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → ConvertDomainIncludeAliasToGenericRelation → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ApplyFieldsetConfig → ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+#### `updateListByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → AuthorizeRequest → 
+AcquireLockForUpdate → RemoveRequestHeader
+```
+
+#### `deleteListByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → AuthorizeRequest → 
+RemoveRequestHeader
+```
+
+#### `findListChildrenByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+FieldFilter → DynamicLocalCache → ProjectDomainIncludeAliasInResponse
+```
+
+#### `createListChildByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findListParentsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+#### `findListHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → CheckIfRouteEnabled → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertDomainIncludeAliasToGenericRelation → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader → FieldFilter → DynamicLocalCache → 
+ProjectDomainIncludeAliasInResponse
+```
+
+#### `createListHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `replaceListByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
+AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader → FieldFilter
+```
+
+---
+
+### Relation Kind Alias Routes
+
+#### `createRelationByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findAllRelationsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePath → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+ConvertKindAliasToKindQuery → ApplyFieldsetConfig → AddSetsToRelationQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → FieldFilter
+```
+
+#### `countRelationsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+ConvertKindAliasToKindQuery → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToRelationQuery → 
+RemoveRequestHeader → DynamicLocalCache
+```
+
+#### `updateAllRelationsByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → PreventStringifiedJsonFilter → 
+AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToRelationQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
+```
+
+#### `findRelationByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
+```
+
+#### `updateRelationByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → AuthorizeRequest → 
+AcquireLockForUpdate → RemoveRequestHeader
+```
+
+#### `replaceRelationByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
+AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader → FieldFilter
+```
+
+#### `deleteRelationByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → AuthorizeRequest → 
+RemoveRequestHeader
+```
+
+---
+
+### Entity Reaction Kind Alias Routes
+
+#### `createEntityReactionByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findAllEntityReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePath → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+ConvertKindAliasToKindQuery → ApplyFieldsetConfig → AddSetsToReactionsQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → FieldFilter
+```
+
+#### `countEntityReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+ConvertKindAliasToKindQuery → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToReactionsQuery → 
+RemoveRequestHeader → DynamicLocalCache
+```
+
+#### `updateAllEntityReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → PreventStringifiedJsonFilter → 
+AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
+```
+
+#### `findEntityReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
+```
+
+#### `updateEntityReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → AuthorizeRequest → 
+AcquireLockForUpdate → RemoveRequestHeader
+```
+
+#### `replaceEntityReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
+AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader → FieldFilter
+```
+
+#### `deleteEntityReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → AuthorizeRequest → 
+RemoveRequestHeader
+```
+
+#### `findChildrenEntityReactionsByReactionIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `createChildEntityReactionByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findParentsByEntityReactionIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `findEntityReactionHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → CheckIfRouteEnabled → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → AddSetsToReactionsQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+FieldFilter → DynamicLocalCache
+```
+
+#### `createEntityReactionHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+---
+
+### List Reaction Kind Alias Routes
+
+#### `createListReactionByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findAllListReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → RewritePath → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+ConvertKindAliasToKindQuery → ApplyFieldsetConfig → AddSetsToReactionsQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → FieldFilter
+```
+
+#### `countListReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+ConvertKindAliasToKindQuery → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → AddSetsToReactionsQuery → 
+RemoveRequestHeader → DynamicLocalCache
+```
+
+#### `updateAllListReactionsByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → PreventStringifiedJsonFilter → 
+AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
+```
+
+#### `findListReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → ApplyFieldsetConfig → FieldFilter
+```
+
+#### `updateListReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → ValidateRequestBodyByKindSchema → AuthorizeRequest → 
+AcquireLockForUpdate → RemoveRequestHeader
+```
+
+#### `replaceListReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForUpdate → AddForbiddenFieldsFromOriginalToPayloadInReplace → 
+AddManagedFieldsFromOriginalToPayloadInReplace → RemoveRequestHeader → FieldFilter
+```
+
+#### `deleteListReactionByIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → AuthorizeRequest → 
+RemoveRequestHeader
+```
+
+#### `findChildrenListReactionsByReactionIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `createChildListReactionByKindAlias`
+```
+DynamicTimeout → KindResolution → DynamicRequestSizeFilter → CheckIfRouteEnabled → 
+RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `findParentsByListReactionIdByKindAlias`
+```
+DynamicTimeout → KindResolution → CheckIfRouteEnabled → RewritePath → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → ConvertKindAliasToKindQuery → 
+AddSetsToReactionsQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `findListReactionHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → CheckIfRouteEnabled → 
+AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+AuthorizeRequest → PreventStringifiedJsonFilter → ApplyFieldsetConfig → 
+ConvertSimplerQueriesToBackendFormat → AddSetsToReactionsQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+FieldFilter → DynamicLocalCache
+```
+
+#### `createListReactionHierarchyByKindAlias`
+```
+DynamicTimeout → KindResolution → HierarchyKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → PlaceKindNameIntoPayload → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → ValidateRequestBodyByKindSchema → 
+AuthorizeRequest → AcquireLockForCreation → AddManagedFieldsInCreation → 
+ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+---
+
+### Through-Record Kind Alias Routes
+
+#### `createReactionByEntityIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+ValidateRequestBodyByKindSchema → AuthorizeRequest → AcquireLockForCreation → 
+AddManagedFieldsInCreation → ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `updateReactionsByEntityIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `findReactionsByEntityIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `deleteReactionsByEntityIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ConvertSimplerQueriesToBackendFormat → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `createReactionByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+ValidateRequestBodyByKindSchema → AuthorizeRequest → AcquireLockForCreation → 
+AddManagedFieldsInCreation → ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `updateReactionsByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `findReactionsByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToEntityListOrReactionViaRecordQuery → PreventQueryByForbiddenFields → 
+InjectTypeHintsToQuery → RemoveRequestHeader → DynamicLocalCache → FieldFilter
+```
+
+#### `deleteReactionsByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ConvertSimplerQueriesToBackendFormat → AddSetsToEntityListOrReactionViaRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader
+```
+
+#### `createEntityByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → PlaceKindNameIntoPayload → AuthenticateRequest → 
+GenerateRequestId → DynamicRateLimiter → FetchForbiddenFields → 
+ValidateRequestBodyByKindSchema → AuthorizeRequest → AcquireLockForCreation → 
+AddManagedFieldsInCreation → ApplyFieldsetConfig → RemoveRequestHeader → FieldFilter
+```
+
+#### `updateEntitiesByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → DynamicRequestSizeFilter → 
+CheckIfRouteEnabled → RewritePath → AuthenticateRequest → GenerateRequestId → 
+DynamicRateLimiter → FetchForbiddenFields → AuthorizeRequest → 
+PreventStringifiedJsonFilter → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
+```
+
+#### `findEntitiesByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+#### `deleteEntitiesByListIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → ConvertSimplerQueriesToBackendFormat → 
+AddSetsToThroughRecordQuery → PreventQueryByForbiddenFields → InjectTypeHintsToQuery → 
+RemoveRequestHeader
+```
+
+#### `findListsByEntityIdByKindAlias`
+```
+DynamicTimeout → KindResolution → ThroughKindAliasResolver → CheckIfRouteEnabled → 
+RewritePath → AuthenticateRequest → GenerateRequestId → DynamicRateLimiter → 
+FetchForbiddenFields → AuthorizeRequest → PreventStringifiedJsonFilter → 
+ApplyFieldsetConfig → ConvertSimplerQueriesToBackendFormat → 
+ConvertDomainIncludeAliasToGenericRelation → AddSetsToThroughRecordQuery → 
+PreventQueryByForbiddenFields → InjectTypeHintsToQuery → RemoveRequestHeader → 
+DynamicLocalCache → ProjectDomainIncludeAliasInResponse → FieldFilter
+```
+
+**Note:** Include alias projection is enabled on entity/list kind-alias read routes, including `findAll*`, `find*ById*`, through, and hierarchy reads. It is not enabled on count, update, delete, relation kind-alias, or reaction kind-alias routes.
 
 ---
 
@@ -1644,6 +2328,7 @@ Some filters depend on data set by previous filters in the chain:
 - `FieldFilter` requires `FetchForbiddenFields` (for permission-based filtering)
 - `AddForbiddenFieldsFromOriginalToPayloadInReplace` requires `FetchForbiddenFields`
 - `HierarchyKindAliasResolver` requires `KindResolution` (root alias context)
+- `ThroughKindAliasResolver` requires `KindResolution` (root alias context)
 - All `AddSets...` filters require `AuthenticateRequest` for user context
 
 ---
