@@ -583,10 +583,14 @@ filter[lookup][0][scope][where][pageCount][lte]=300
 
 **Behavior:**
 - Caches GET responses in local memory
-- Cache key based on URL and query parameters
-- Configurable TTL per route
+- Cache key based on URL, sorted query parameters, and authenticated user ID
+- Configurable TTL per route (with optional per-kind overrides)
 - LRU eviction when size limit reached
-- Cache invalidation on writes
+- **No active cache invalidation on writes** — entries expire via TTL only
+- Sets `Cache-Control`, `ETag`, and `Last-Modified` response headers
+- Handles conditional requests (`If-None-Match`, `If-Modified-Since`) returning `304 Not Modified`
+- Respects `Cache-Control: no-cache` (forces backend fetch, skips cache read) and `no-store` (bypasses cache entirely) request headers
+- Skips caching if backend responds with `Cache-Control: private` or `no-store`
 
 **Used in:** GET operations (reads)
 
@@ -1650,7 +1654,7 @@ Some filters depend on data set by previous filters in the chain:
 
 2. **Performance:** Place cheap filters (like `CheckIfRouteEnabled`) before expensive ones (like `AuthenticateRequest`).
 
-3. **Caching:** Only use `DynamicLocalCache` on read operations. Cache invalidation happens automatically on writes.
+3. **Caching:** Only use `DynamicLocalCache` on read operations. The filter skips non-GET requests entirely — there is **no active cache invalidation on writes**. Cached entries expire solely via TTL. The filter also sets `Cache-Control`, `ETag`, and `Last-Modified` response headers, and handles conditional requests (`If-None-Match`, `If-Modified-Since`) returning `304 Not Modified` when appropriate. Keep TTLs short enough to tolerate stale reads after writes.
 
 4. **Locking:** Use locking filters only when necessary. They add latency but prevent data consistency issues.
 
