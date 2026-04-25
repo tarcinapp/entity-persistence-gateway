@@ -439,6 +439,8 @@ spring:
           - manage
           - entities
           - generic
+          - hierarchical
+          - children
       - id: findEntityParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -932,6 +934,8 @@ spring:
           - manage
           - lists
           - generic
+          - hierarchical
+          - children
       - id: findListParents
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1796,6 +1800,8 @@ spring:
           - manage
           - entityReactions
           - generic
+          - hierarchical
+          - children
           - reaction
       - id: findParentsByEntityReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -1893,6 +1899,7 @@ spring:
           - reactionsThroughEntity
           - through
           - reaction
+          - generic
       - id: updateReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1939,6 +1946,7 @@ spring:
           - reactionsThroughEntity
           - through
           - reaction
+          - generic
       - id: findReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -1986,6 +1994,7 @@ spring:
           - through
           - collection
           - reaction
+          - generic
       - id: deleteReactionsByEntityId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2027,6 +2036,7 @@ spring:
           - reactionsThroughEntity
           - through
           - reaction
+          - generic
       
       # list reactions routes
       - id: createListReaction
@@ -2474,6 +2484,8 @@ spring:
           - manage
           - listReactions
           - generic
+          - hierarchical
+          - children
           - reaction
       - id: findParentsByListReactionId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
@@ -2755,6 +2767,7 @@ spring:
           - entities
           - entitiesThroughList
           - through
+          - generic
       - id: updateEntitiesByListId
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -2964,7 +2977,6 @@ spring:
           - get
           - read-only
           - ping
-          - collection
           - utility
           - health-check
       # explorer controller
@@ -3481,6 +3493,8 @@ spring:
           - entities
           - entitiesKindAlias
           - kind-alias
+          - hierarchical
+          - children
       - id: findEntityParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -4148,6 +4162,8 @@ spring:
           - lists
           - listKindAlias
           - kind-alias
+          - hierarchical
+          - children
       - id: findListParentsByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -5201,6 +5217,8 @@ spring:
           - entityReactions
           - entityReactionsKindAlias
           - kind-alias
+          - hierarchical
+          - children
       - id: findParentsByEntityReactionIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
@@ -5858,6 +5876,8 @@ spring:
           - listReactions
           - listReactionsKindAlias
           - kind-alias
+          - hierarchical
+          - children
       - id: findParentsByListReactionIdByKindAlias
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
         predicates:
