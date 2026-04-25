@@ -65,7 +65,7 @@ This document provides a comprehensive reference for all filters used in the Ent
 ### Security & Authentication Filters
 
 #### `AuthenticateRequest`
-**Purpose:** Validates the authentication token in the request and extracts user identity.
+**Purpose:** Validates the JWT authentication token in the request and extracts user identity.
 
 **Behavior:**
 - Validates JWT tokens from the Authorization header
