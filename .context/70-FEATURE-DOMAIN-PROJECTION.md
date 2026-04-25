@@ -114,7 +114,148 @@ GET /books/abc/chapters              →  GET /entities/abc/children
                                            ?filter[where][_kind]=chapter
 ```
 
-### 2.4 Route Toggles
+### 2.4 Through Kind Aliases
+
+**Through Kind Aliases** expose cross-controller access patterns as part of domain-specific paths. They let clients access associated records of a *different record type* through an existing domain record, without knowing the generic backend structure.
+
+This is distinct from **Hierarchical Kind Aliases** (§2.3):
+- **Hierarchy (`children`/`parents`):** Same controller type, parent-child tree within the same record space (e.g. entities → child entities of a different kind)
+- **Through:** Cross-controller traversal to a fundamentally different record type (entities → reactions, lists → entities, etc.)
+
+#### Supported Through Relationships
+
+The `through` key can contain up to three sub-lists depending on the parent controller:
+
+| Parent Controller | `through` sub-key | URL segment (see `app-inbound.yml`) | Target record type |
+|------------------|-------------------|-------------------------------------|--------------------|
+| `entities` | `reactions` | `reactionsThroughEntity` (default: `reactions`) | Entity reactions |
+| `entities` | `lists` | `listsThroughEntity` (default: same as `lists` base) | Lists containing this entity |
+| `lists` | `reactions` | `reactionsThroughList` (default: `reactions`) | List reactions |
+| `lists` | `entities` | `entitiesThroughList` (default: same as `entities` base) | Entities within this list |
+
+#### Configuration Example
+
+```yaml
+app:
+  oas:
+    controllers:
+      entities:
+        aliases:
+          - alias: books
+            kind: book
+            through:
+              reactions:
+                - alias: reviews
+                  kind: review
+                  description: Reader reviews for a book
+                  schema: |
+                    {
+                      "type": "object",
+                      "properties": {
+                        "rating": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "comment": {"type": "string"}
+                      },
+                      "required": ["rating"]
+                    }
+                  routes:
+                    createReactionByEntityId:
+                      # Through-route schema overrides through-level schema for POST
+                      schema: |
+                        {
+                          "type": "object",
+                          "properties": {
+                            "rating": {"type": "integer", "minimum": 1, "maximum": 5},
+                            "comment": {"type": "string"}
+                          },
+                          "required": ["rating", "comment"]
+                        }
+              lists:
+                - alias: shelves
+                  kind: bookshelf
+                  description: Bookshelves that contain this book (GET only)
+      lists:
+        aliases:
+          - alias: bookshelves
+            kind: bookshelf
+            through:
+              entities:
+                - alias: books
+                  kind: book
+              reactions:
+                - alias: comments
+                  kind: comment
+```
+
+**Generated Paths (entities controller, `books` alias):**
+```
+POST   /api/v1/entities/books/{id}/reactions/reviews    # Create a review for a book
+GET    /api/v1/entities/books/{id}/reactions/reviews    # List reviews for a book
+PATCH  /api/v1/entities/books/{id}/reactions/reviews    # Bulk-update reviews
+DELETE /api/v1/entities/books/{id}/reactions/reviews    # Bulk-delete reviews
+GET    /api/v1/entities/books/{id}/lists/shelves        # List bookshelves containing this book
+```
+
+**What Happens at Runtime:**
+```
+Client Request:                                     Gateway Transforms To:
+──────────────────────────────────────────          ─────────────────────────────────────────────
+POST /books/abc/reactions/reviews               →   POST /entities/abc/reactions
+     {"rating": 5, "comment": "Great!"}                 {"_kind": "review", "rating": 5, "comment": "Great!"}
+
+GET  /books/abc/reactions/reviews               →   GET  /entities/abc/reactions
+                                                         ?filter[where][_kind]=review
+
+GET  /books/abc/lists/shelves                   →   GET  /entities/abc/lists
+                                                         ?filter[where][_kind]=bookshelf
+```
+
+#### Through Schema Priority
+
+Schemas for through requests are resolved in this order (highest to lowest):
+
+1. **Through-route schema** (most specific) — defined in `through.<type>[].routes.<routeId>.schema`
+2. **Through-level schema** — defined in `through.<type>[].schema`
+3. **Kind-level schema** — fallback from the through alias kind's own schema definition
+
+#### Available Through Route IDs
+
+Use these route IDs (without the `ByKindAlias` suffix) in `through.<type>[].routes.<routeId>`:
+
+| through type on `entities` | Available route IDs |
+|---------------------------|---------------------|
+| `reactions` | `createReactionByEntityId`, `updateReactionsByEntityId`, `findReactionsByEntityId`, `deleteReactionsByEntityId` |
+| `lists` | `findListsByEntityId` (GET only — no write routes) |
+
+| through type on `lists` | Available route IDs |
+|------------------------|---------------------|
+| `reactions` | `createReactionByListId`, `updateReactionsByListId`, `findReactionsByListId`, `deleteReactionsByListId` |
+| `entities` | `createEntityByListId`, `updateEntitiesByListId`, `findEntitiesByListId`, `deleteEntitiesByListId` |
+
+#### Properties Format
+
+```properties
+# entities alias with through.reactions
+app.oas.controllers.entities.aliases[0].through.reactions[0].alias=reviews
+app.oas.controllers.entities.aliases[0].through.reactions[0].kind=review
+app.oas.controllers.entities.aliases[0].through.reactions[0].schema={"type":"object",...}
+app.oas.controllers.entities.aliases[0].through.reactions[0].routes.createReactionByEntityId.schema={"type":"object",...}
+
+# entities alias with through.lists (GET only)
+app.oas.controllers.entities.aliases[0].through.lists[0].alias=shelves
+app.oas.controllers.entities.aliases[0].through.lists[0].kind=bookshelf
+
+# lists alias with through.entities
+app.oas.controllers.lists.aliases[0].through.entities[0].alias=books
+app.oas.controllers.lists.aliases[0].through.entities[0].kind=book
+
+# lists alias with through.reactions
+app.oas.controllers.lists.aliases[0].through.reactions[0].alias=comments
+app.oas.controllers.lists.aliases[0].through.reactions[0].kind=comment
+```
+
+---
+
+### 2.5 Route Toggles
 
 Routes can be enabled or disabled dynamically without affecting the backend.
 
@@ -138,7 +279,7 @@ Routes listed in `off` are disabled; routes listed in `on` are explicitly enable
 
 > **See Also:** [75-FEATURE-ROUTE-TOGGLES.md](75-FEATURE-ROUTE-TOGGLES.md) for detailed toggle configuration and precedence rules.
 
-### 2.5 Request Validation with JSON Schema
+### 2.6 Request Validation with JSON Schema
 
 Kind aliases can define **JSON Schemas** to validate incoming request bodies. The gateway validates requests before forwarding them to the backend, returning `400 Bad Request` if validation fails.
 
@@ -182,7 +323,7 @@ aliases:
 
 The route-level schema always takes precedence when defined.
 
-### 2.6 Domain-Specific Include Projection
+### 2.7 Domain-Specific Include Projection
 
 Domain projection also supports domain language for backend include relations.
 
@@ -318,12 +459,58 @@ app:
                         },
                         "required": ["_name", "chapterNumber"]
                       }
+            
+            # Through: cross-controller access to associated records
+            through:
+              reactions:
+                - alias: reviews
+                  kind: review
+                  description: Reader reviews for a book
+                  # Through-level schema (fallback for all through operations)
+                  schema: |
+                    {
+                      "type": "object",
+                      "properties": {
+                        "rating": {"type": "integer", "minimum": 1, "maximum": 5}
+                      },
+                      "required": ["rating"]
+                    }
+                  routes:
+                    createReactionByEntityId:
+                      # Through-route schema (specific to POST — highest priority)
+                      schema: |
+                        {
+                          "type": "object",
+                          "properties": {
+                            "rating": {"type": "integer", "minimum": 1, "maximum": 5},
+                            "comment": {"type": "string"}
+                          },
+                          "required": ["rating", "comment"]
+                        }
+              lists:
+                - alias: shelves
+                  kind: bookshelf
+                  description: Bookshelves containing this book (GET only)
       
       lists:
         aliases:
           - alias: categories
             kind: category
             description: Product categories
+          
+          - alias: bookshelves
+            kind: bookshelf
+            description: Bookshelf collections
+            # Through: cross-controller access
+            through:
+              entities:
+                - alias: books
+                  kind: book
+                  description: Books within this bookshelf
+              reactions:
+                - alias: comments
+                  kind: comment
+                  description: Comments on this bookshelf
       
       relations:
         aliases:
@@ -359,6 +546,24 @@ app.oas.controllers.entities.aliases[0].children[0].schema={"type":"object","pro
 
 # Hierarchy-route schema
 app.oas.controllers.entities.aliases[0].children[0].routes.createEntityChild.schema={"type":"object","properties":{"_name":{"type":"string"},"chapterNumber":{"type":"integer"}},"required":["_name","chapterNumber"]}
+
+# Through config — entities alias with through.reactions
+app.oas.controllers.entities.aliases[0].through.reactions[0].alias=reviews
+app.oas.controllers.entities.aliases[0].through.reactions[0].kind=review
+app.oas.controllers.entities.aliases[0].through.reactions[0].schema={"type":"object","properties":{"rating":{"type":"integer"}},"required":["rating"]}
+app.oas.controllers.entities.aliases[0].through.reactions[0].routes.createReactionByEntityId.schema={"type":"object","properties":{"rating":{"type":"integer"},"comment":{"type":"string"}},"required":["rating","comment"]}
+
+# Through config — entities alias with through.lists (GET only)
+app.oas.controllers.entities.aliases[0].through.lists[0].alias=shelves
+app.oas.controllers.entities.aliases[0].through.lists[0].kind=bookshelf
+
+# Through config — lists alias with through.entities
+app.oas.controllers.lists.aliases[0].through.entities[0].alias=books
+app.oas.controllers.lists.aliases[0].through.entities[0].kind=book
+
+# Through config — lists alias with through.reactions
+app.oas.controllers.lists.aliases[0].through.reactions[0].alias=comments
+app.oas.controllers.lists.aliases[0].through.reactions[0].kind=comment
 ```
 
 ### 3.3 Route Toggle Configuration
@@ -400,6 +605,14 @@ app:
       relations: relations
       entityReactions: entity-reactions
       listReactions: list-reactions
+      # Through-route URL segments (change to rename the through path segment)
+      reactionsThroughEntity: reactions          # /entities/{alias}/{id}/reactions/{throughAlias}
+      reactionsThroughList: reactions             # /lists/{alias}/{id}/reactions/{throughAlias}
+      listsThroughEntity: lists                   # /entities/{alias}/{id}/lists/{throughAlias}
+      entitiesThroughList: entities               # /lists/{alias}/{id}/entities/{throughAlias}
+      # Hierarchy accessor segments
+      defaultChildrenAccessor: children
+      defaultParentsAccessor: parents
 ```
 
 This yields the concrete base paths:
@@ -439,6 +652,12 @@ Route IDs follow a consistent naming pattern based on **action + resource + cont
   - Examples: `findEntitiesByKindAlias`, `deleteEntityByIdByKindAlias`, `findListsByKindAlias`, `createRelationByKindAlias`
 - **Hierarchy routes:** `{action}{Resource}Child` / `{action}{Resource}Parents`
   - Examples: `createEntityChild`, `findEntityChildren`, `findEntityParents`, `findListChildren`
+- **Through routes:** `{action}{TargetResource}By{ParentResource}Id` (kind-alias form adds `ByKindAlias`)
+  - Used in `through.<type>[].routes.<routeId>` **without** the `ByKindAlias` suffix
+  - `entities` + `through.reactions`: `createReactionByEntityId`, `updateReactionsByEntityId`, `findReactionsByEntityId`, `deleteReactionsByEntityId`
+  - `entities` + `through.lists`: `findListsByEntityId` (GET only)
+  - `lists` + `through.reactions`: `createReactionByListId`, `updateReactionsByListId`, `findReactionsByListId`, `deleteReactionsByListId`
+  - `lists` + `through.entities`: `createEntityByListId`, `updateEntitiesByListId`, `findEntitiesByListId`, `deleteEntitiesByListId`
 
 > **Complete Reference:** See [10-ROUTES.md](10-ROUTES.md) for the full route ID inventory and naming conventions.
 
@@ -478,7 +697,21 @@ The `HierarchyKindAliasResolver` filter handles nested paths:
 5. **Context Update:** Updates `KindAliasConfigAttr` with hierarchy schema keys and validation flags
 6. **Error Handling:** Returns 404 when the hierarchy alias is not configured
 
-### 4.4 Validation Filter
+### 4.4 Through Resolution Filter
+
+The `ThroughKindAliasResolver` filter handles cross-controller through paths. It runs after `KindResolution` and overwrites `KindAliasConfigAttr` with the target through kind's metadata:
+
+1. **Root Resolution:** Retrieves `KindAliasConfigAttr` set by `KindResolution` (the parent alias, e.g. `books`)
+2. **Through Alias Extraction:** Reads `{throughAlias}` from URI template variables
+3. **Through List Lookup:** Based on the route's `throughSegment` arg (`reactions`, `entities`, or `lists`), selects the correct sub-list from the parent alias's `through` config
+4. **Alias Matching:** Searches the selected list for the `{throughAlias}` value
+5. **Context Update:** Overwrites `KindAliasConfigAttr` with through kind, through schema keys (`throughSchemaKey`, `throughRouteSchemaKey`), and marks request as `throughRequest: true`
+6. **Query Injection (GET):** Adds `filter[where][_kind]=<targetKind>` for GET requests
+7. **Error Handling:** Returns 404 when the through alias is not configured or the through sub-list is empty
+
+> **Note:** Path rewriting for through routes is handled statically by `RewritePath` at the route level—not by this filter. The filter only resolves alias metadata.
+
+### 4.5 Validation Filter
 
 The `ValidateRequestBodyByKindSchema` filter:
 
