@@ -14,11 +14,11 @@ import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;
 import com.tarcinapp.entitypersistencegateway.config.AuthConfig;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SigningKeyResolverAdapter;
+import io.jsonwebtoken.Locator;
+import io.jsonwebtoken.ProtectedHeader;
+import io.jsonwebtoken.Header;
 import jakarta.annotation.PostConstruct;
 
 @Component
@@ -67,21 +67,19 @@ public class TokenParserRegistry {
                     .rateLimited(10, 1, TimeUnit.MINUTES) // Rate limit protection
                     .build();
 
-            return Jwts.parserBuilder()
-                    .setSigningKeyResolver(new SigningKeyResolverAdapter() {
-                        @Override
-                        @SuppressWarnings("rawtypes")
-                        public Key resolveSigningKey(JwsHeader header, Claims claims) {
-                            try {
-                                String kid = header.getKeyId();
-                                return jwkProvider.get(kid).getPublicKey();
-                            } catch (Exception e) {
-                                throw new RuntimeException("Key could not be found via JWKS", e);
-                            }
-                        }
-                    })
+            Locator<Key> keyLocator = header -> {
+                try {
+                    String kid = ((ProtectedHeader) header).getKeyId();
+                    return jwkProvider.get(kid).getPublicKey();
+                } catch (Exception e) {
+                    throw new RuntimeException("Key could not be found via JWKS", e);
+                }
+            };
+
+            return Jwts.parser()
+                    .keyLocator(keyLocator)
                     .requireIssuer(provider.getIssuer()) // Issuer check
-                    .setAllowedClockSkewSeconds(provider.getClockSkewSeconds()) // Clock skew
+                    .clockSkewSeconds(provider.getClockSkewSeconds()) // Clock skew
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create JWKS parser", e);
@@ -95,10 +93,11 @@ public class TokenParserRegistry {
         
         try {
             Key key = parsePublicKey(provider.getPublicKey());
-            return Jwts.parserBuilder()
-                    .setSigningKey(key)
+            Locator<Key> keyLocator = header -> key;
+            return Jwts.parser()
+                    .keyLocator(keyLocator)
                     .requireIssuer(provider.getIssuer())
-                    .setAllowedClockSkewSeconds(provider.getClockSkewSeconds())
+                    .clockSkewSeconds(provider.getClockSkewSeconds())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create static key parser", e);

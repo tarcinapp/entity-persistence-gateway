@@ -1,7 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.util;
 
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -67,18 +67,14 @@ public class TestJwtGenerator {
      * Generate a token with custom expiration.
      */
     public static String generateToken(String subject, List<String> roles, Date expiration) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
-        claims.put("email_verified", true);
-        claims.put("sub", subject);
-
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuer(DEFAULT_ISSUER)
-                .setIssuedAt(new Date())
-                .setExpiration(expiration)
-                .signWith(KEY_PAIR.getPrivate(), SignatureAlgorithm.RS256)
+                .claim("roles", roles)
+                .claim("email_verified", true)
+                .subject(subject)
+                .issuer(DEFAULT_ISSUER)
+                .issuedAt(new Date())
+                .expiration(expiration)
+                .signWith(KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
                 .compact();
     }
 
@@ -87,14 +83,14 @@ public class TestJwtGenerator {
      */
     public static String generateTokenWithClaims(Map<String, Object> additionalClaims) {
         Map<String, Object> claims = new HashMap<>(additionalClaims);
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject((String) claims.getOrDefault("sub", "test-user"))
-                .setIssuer((String) claims.getOrDefault("iss", DEFAULT_ISSUER))
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
-                .signWith(KEY_PAIR.getPrivate(), SignatureAlgorithm.RS256)
+        JwtBuilder builder = Jwts.builder();
+        claims.forEach((k, v) -> builder.claim(k, v));
+        return builder
+                .subject((String) claims.getOrDefault("sub", "test-user"))
+                .issuer((String) claims.getOrDefault("iss", DEFAULT_ISSUER))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .signWith(KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
                 .compact();
     }
 
@@ -102,18 +98,14 @@ public class TestJwtGenerator {
      * Generate a token with custom issuer.
      */
     public static String generateTokenWithIssuer(String subject, List<String> roles, String issuer) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
-        claims.put("email_verified", true);
-        claims.put("sub", subject);
-
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuer(issuer)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
-                .signWith(KEY_PAIR.getPrivate(), SignatureAlgorithm.RS256)
+                .claim("roles", roles)
+                .claim("email_verified", true)
+                .subject(subject)
+                .issuer(issuer)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .signWith(KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
                 .compact();
     }
 
@@ -128,18 +120,14 @@ public class TestJwtGenerator {
      * Generate a token without email verification.
      */
     public static String generateTokenWithoutEmailVerification(String subject, List<String> roles) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
-        claims.put("email_verified", false);
-        claims.put("sub", subject);
-
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuer(DEFAULT_ISSUER)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
-                .signWith(KEY_PAIR.getPrivate(), SignatureAlgorithm.RS256)
+                .claim("roles", roles)
+                .claim("email_verified", false)
+                .subject(subject)
+                .issuer(DEFAULT_ISSUER)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .signWith(KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
                 .compact();
     }
 

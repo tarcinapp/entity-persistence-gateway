@@ -42,9 +42,7 @@ public class JolokiaAgentConfig {
 
             JolokiaServerConfig serverConfig = new JolokiaServerConfig(config);
             
-            // Use the 2-argument constructor (config, lazy) to ensure compatibility.
-            // 'false' means we don't want lazy initialization; we want it ready immediately.
-            server = new JolokiaServer(serverConfig, false);
+            server = new JolokiaServer(serverConfig);
             server.start();
 
             log.info("Jolokia JMX Agent started on {}:{}", host, port);

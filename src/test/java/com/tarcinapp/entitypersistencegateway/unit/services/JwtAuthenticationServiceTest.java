@@ -6,6 +6,8 @@ import com.tarcinapp.entitypersistencegateway.services.JwtAuthenticationService;
 import com.tarcinapp.entitypersistencegateway.util.MockExchangeBuilder;
 import com.tarcinapp.entitypersistencegateway.util.TestJwtGenerator;
 import com.tarcinapp.entitypersistencegateway.fixtures.JwtFixtures;
+import io.jsonwebtoken.Locator;
+import java.security.Key;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -216,9 +218,10 @@ class JwtAuthenticationServiceTest {
      * Create a test JWT parser using the test key pair.
      */
     private io.jsonwebtoken.JwtParser createTestParser() {
-        return io.jsonwebtoken.Jwts.parserBuilder()
-                .setSigningKey(TestJwtGenerator.getPublicKey())
-                .setAllowedClockSkewSeconds(60)
+        Locator<Key> keyLocator = header -> TestJwtGenerator.getPublicKey();
+        return io.jsonwebtoken.Jwts.parser()
+                .keyLocator(keyLocator)
+                .clockSkewSeconds(60)
                 .build();
     }
 }
