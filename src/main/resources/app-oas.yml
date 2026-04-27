@@ -29,10 +29,18 @@
 # - controllerName:   Matches route metadata controllerName (may differ from recordType)
 # - alias:            User-friendly URL path (e.g., "books" instead of "entities")
 # - kind:             Internal entity type identifier
-# - schema:           JSON Schema for request/response validation
-# - validationEnabled: Toggle validation on/off (alias-level or route-level)
+# - singular:         Optional explicit singular form used for operationId generation.
+#                     Auto-derived by heuristic (strip trailing 's') if omitted.
+#                     Set explicitly for irregular plurals (e.g. "heroes" → singular: "hero").
+# - description:      Human-readable description surfaced in generated OpenAPI docs
+# - schema:           JSON Schema for request/response validation (JSON string)
+# - validationEnabled: Toggle validation on/off (alias-level or route-level).
+#                     Defaults to true when a schema is provided.
 # - routes:           Per-route configuration (must match route IDs in application-routes.yml)
-# - children:         Nested resource configuration for hierarchical data
+# - children:         Nested resource configuration for hierarchical parent→child traversal
+# - parents:          Nested resource configuration for hierarchical child→parent traversal
+# - through:          Cross-controller access patterns. Exposes associated records of a
+#                     different type through the parent alias record. See THROUGH CONFIG below.
 #
 # ROUTE CONFIGURATION:
 # --------------------
@@ -43,9 +51,155 @@
 #
 # VALIDATION & SCHEMA INHERITANCE:
 # ---------------------------------
+# Schema lookup priority (highest to lowest):
+#   For standard kind-alias routes:
+#     1. Route-level schema:     alias.routes.<routeId>.schema
+#     2. Alias-level schema:     alias.schema
+#   For hierarchy routes (children/parents):
+#     1. Hierarchy-route schema: children[].routes.<routeId>.schema
+#     2. Hierarchy-level schema: children[].schema
+#     3. Alias-level schema:     alias.schema (child kind fallback)
+#   For through routes:
+#     1. Through-route schema:   through.<type>[].routes.<routeId>.schema
+#     2. Through-level schema:   through.<type>[].schema
+#     3. Kind-level schema:      through alias kind's own schema
+#
 # - Alias-level schema/validation applies to all routes by default
 # - Route-level schema/validation overrides alias-level settings
+# - validationEnabled: false disables schema validation entirely for that scope
 # - Useful for different validation rules per operation (strict create, lenient update)
+#
+# HIERARCHY CONFIG:
+# -----------------
+# The "children" and "parents" keys under an alias enable hierarchical traversal
+# within the same controller. They expose parent→child or child→parent relationships
+# as nested REST paths.
+#
+# Unlike "through", hierarchy stays within the same controller type (entities→entities,
+# lists→lists, etc.), but the child/parent can be a different kind.
+#
+# Supported hierarchy relationships (nested under the alias):
+#
+#   Parent Controller | key       | URL segment (configurable via app-inbound.yml)
+#   ------------------+-----------+------------------------------------------------
+#   entities          | children  | entitiesChildrenAccessor (default: children)
+#   entities          | parents   | entitiesParentsAccessor  (default: parents)
+#   lists             | children  | listsChildrenAccessor    (default: children)
+#   lists             | parents   | listsParentsAccessor     (default: parents)
+#   entityReactions   | children  | entityReactionsChildrenAccessor (default: children)
+#   entityReactions   | parents   | entityReactionsParentsAccessor  (default: parents)
+#   listReactions     | children  | listReactionsChildrenAccessor   (default: children)
+#   listReactions     | parents   | listReactionsParentsAccessor    (default: parents)
+#
+# Generated URL patterns:
+#   /{entitiesBase}/{kindAlias}/{id}/children/{childAlias}   (children on entities)
+#   /{entitiesBase}/{kindAlias}/{id}/parents/{parentAlias}   (parents on entities)
+#   /{listsBase}/{kindAlias}/{id}/children/{childAlias}      (children on lists)
+#
+# ROUTE ID SELECTION FOR HIERARCHY:
+# ----------------------------------
+# The routeId used as a key in children[].routes or parents[].routes is NOT the same
+# as the standard alias routes (e.g. NOT createEntity). It is determined by the
+# HTTP method and the accessor type (children/parents), fixed per parent controller:
+#
+#   Parent controller | Accessor  | HTTP Method | routeId to use
+#   ------------------+-----------+-------------+--------------------------------------
+#   entities          | children  | POST        | createEntityChild
+#   entities          | children  | GET         | findEntityChildren
+#   entities          | parents   | GET         | findEntityParents
+#   lists             | children  | POST        | createListChild
+#   lists             | children  | GET         | findListChildren
+#   lists             | parents   | GET         | findListParents
+#   entityReactions   | children  | POST        | createChildEntityReaction
+#   entityReactions   | children  | GET         | findChildrenEntityReactionsByReactionId
+#   entityReactions   | parents   | GET         | findParentsByEntityReactionId
+#   listReactions     | children  | POST        | createChildListReaction
+#   listReactions     | children  | GET         | findChildrenListReactionsByReactionId
+#   listReactions     | parents   | GET         | findParentsByListReactionId
+#
+# Example: to enforce a stricter schema only when POSTing a chapter under a book:
+#   children:
+#     - alias: chapters
+#       kind: chapter
+#       schema: { ... }                     # fallback for all hierarchy operations
+#       routes:
+#         createEntityChild:                # POST /books/{id}/chapters
+#           schema: { ... }                 # overrides the fallback for POST only
+#         findEntityChildren:               # GET /books/{id}/chapters
+#           validationEnabled: false        # disable validation for GET (no body anyway)
+#
+# Properties format for hierarchy config:
+#   app.oas.controllers.entities.aliases[0].children[0].alias=chapters
+#   app.oas.controllers.entities.aliases[0].children[0].kind=chapter
+#   app.oas.controllers.entities.aliases[0].children[0].schema={...}
+#   app.oas.controllers.entities.aliases[0].children[0].routes.createEntityChild.schema={...}
+#   app.oas.controllers.entities.aliases[0].parents[0].alias=series
+#   app.oas.controllers.entities.aliases[0].parents[0].kind=series
+#
+# THROUGH CONFIG:
+# ---------------
+# The "through" key under an alias enables cross-controller traversal. It exposes
+# associated records of a different controller type through the parent record's domain path.
+# This is distinct from children/parents which stay within the same controller.
+#
+# Supported through relationships (nested under the alias):
+#
+#   Parent Controller | through key | URL segment (configurable via app-inbound.yml)
+#   ------------------+-------------+------------------------------------------------
+#   entities          | reactions   | reactionsThroughEntity base (default: reactions)
+#   entities          | lists       | listsThroughEntity base    (default: lists base)
+#   lists             | reactions   | reactionsThroughList base  (default: reactions)
+#   lists             | entities    | entitiesThroughList base   (default: entities base)
+#
+# Generated URL patterns:
+#   /{entitiesBase}/{kindAlias}/{id}/reactions/{throughAlias}   (through.reactions on entities)
+#   /{entitiesBase}/{kindAlias}/{id}/lists/{throughAlias}       (through.lists on entities)
+#   /{listsBase}/{kindAlias}/{id}/reactions/{throughAlias}      (through.reactions on lists)
+#   /{listsBase}/{kindAlias}/{id}/{entitiesBase}/{throughAlias} (through.entities on lists)
+#
+# ROUTE ID SELECTION FOR THROUGH:
+# --------------------------------
+# The routeId used as a key in through.<type>[].routes is derived from the matched
+# gateway route ID by stripping the "ByKindAlias" suffix. Each through relationship
+# has a fixed set of available route IDs:
+#
+#   entities + through.reactions:
+#     createReactionByEntityId   (POST)
+#     updateReactionsByEntityId  (PATCH)
+#     findReactionsByEntityId    (GET)
+#     deleteReactionsByEntityId  (DELETE)
+#   entities + through.lists:
+#     findListsByEntityId        (GET only — no write routes for lists-through-entity)
+#   lists + through.reactions:
+#     createReactionByListId     (POST)
+#     updateReactionsByListId    (PATCH)
+#     findReactionsByListId      (GET)
+#     deleteReactionsByListId    (DELETE)
+#   lists + through.entities:
+#     createEntityByListId       (POST)
+#     updateEntitiesByListId     (PATCH)
+#     findEntitiesByListId       (GET)
+#     deleteEntitiesByListId     (DELETE)
+#
+# Example: stricter schema only when creating a review via through.reactions:
+#   through:
+#     reactions:
+#       - alias: reviews
+#         kind: review
+#         schema: { ... }                    # fallback for all through operations
+#         routes:
+#           createReactionByEntityId:        # POST /books/{id}/reactions/reviews
+#             schema: { ... }               # overrides fallback for POST only
+#
+# Properties format for through config:
+#   app.oas.controllers.entities.aliases[0].through.reactions[0].alias=reviews
+#   app.oas.controllers.entities.aliases[0].through.reactions[0].kind=review
+#   app.oas.controllers.entities.aliases[0].through.reactions[0].schema={...}
+#   app.oas.controllers.entities.aliases[0].through.reactions[0].routes.createReactionByEntityId.schema={...}
+#   app.oas.controllers.entities.aliases[0].through.lists[0].alias=shelves
+#   app.oas.controllers.entities.aliases[0].through.lists[0].kind=bookshelf
+#   app.oas.controllers.lists.aliases[0].through.entities[0].alias=books
+#   app.oas.controllers.lists.aliases[0].through.entities[0].kind=book
 #
 # ====================================================================
 
@@ -106,7 +260,9 @@ app:
     #     aliases:
     #       - alias: books
     #         kind: book
+    #         singular: book             # Optional: explicit singular for operationId generation
     #         description: "Manage book entities"
+    #         validationEnabled: true    # Alias-level toggle (default: true when schema is set)
     #         schema: |
     #           {
     #             "type": "object",
@@ -117,7 +273,6 @@ app:
     #             },
     #             "required": ["title", "author"]
     #           }
-    #         validationEnabled: true
     #         routes:
     #           createEntity:
     #             operationId: createBook
@@ -129,6 +284,16 @@ app:
     #               contentType: application/json
     #             # Route-level validation override (optional)
     #             validationEnabled: true
+    #             # Route-level schema override
+    #             schema: |
+    #               {
+    #                 "type": "object",
+    #                 "properties": {
+    #                   "title": { "type": "string" },
+    #                   "isbn": { "type": "string", "pattern": "^[0-9]{13}$" }
+    #                 },
+    #                 "required": ["title", "isbn"]
+    #               }
     #           findEntities:
     #             operationId: listBooks
     #             summary: "List all books"
@@ -144,7 +309,6 @@ app:
     #             summary: "Update a book by ID"
     #             tags:
     #               - Books
-    #             # Route-level schema override (optional)
     #             schema: |
     #               {
     #                 "type": "object",
@@ -164,8 +328,68 @@ app:
     #             summary: "Delete a book by ID"
     #             tags:
     #               - Books
-    #             # Disable validation for this specific route
-    #             validationEnabled: false
+    #             validationEnabled: false   # Disable validation for delete
+    #         children:
+    #           - alias: chapters
+    #             kind: chapter
+    #             description: "Chapters within a book"
+    #             schema: |
+    #               {
+    #                 "type": "object",
+    #                 "properties": {
+    #                   "_name": { "type": "string" },
+    #                   "pageCount": { "type": "integer" }
+    #                 },
+    #                 "required": ["_name"]
+    #               }
+    #             routes:
+    #               createEntityChild:
+    #                 operationId: createBookChapter
+    #                 summary: "Add a chapter to a book"
+    #                 # Hierarchy-route schema (most specific for this operation)
+    #                 schema: |
+    #                   {
+    #                     "type": "object",
+    #                     "properties": {
+    #                       "_name": { "type": "string" },
+    #                       "chapterNumber": { "type": "integer", "minimum": 1 }
+    #                     },
+    #                     "required": ["_name", "chapterNumber"]
+    #                   }
+    #         parents:
+    #           - alias: series
+    #             kind: series
+    #             description: "Series a book belongs to"
+    #         through:
+    #           reactions:
+    #             - alias: reviews
+    #               kind: review
+    #               description: "Reader reviews for a book"
+    #               schema: |
+    #                 {
+    #                   "type": "object",
+    #                   "properties": {
+    #                     "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+    #                     "comment": { "type": "string" }
+    #                   },
+    #                   "required": ["rating"]
+    #                 }
+    #               routes:
+    #                 createReactionByEntityId:
+    #                   # Through-route schema overrides through-level schema for POST
+    #                   schema: |
+    #                     {
+    #                       "type": "object",
+    #                       "properties": {
+    #                         "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+    #                         "comment": { "type": "string" }
+    #                       },
+    #                       "required": ["rating", "comment"]
+    #                     }
+    #           lists:
+    #             - alias: shelves
+    #               kind: bookshelf
+    #               description: "Bookshelves that contain this book (GET only)"
     #       - alias: authors
     #         kind: author
     #         description: "Manage author entities"
@@ -196,9 +420,18 @@ app:
     #             tags:
     #               - Bookshelves
     #         children:
-    #           - alias: books
-    #             kind: book
-    #             description: "Books within a bookshelf"
+    #           - alias: sections
+    #             kind: section
+    #             description: "Sections within a bookshelf"
+    #         through:
+    #           entities:
+    #             - alias: books
+    #               kind: book
+    #               description: "Books within this bookshelf"
+    #           reactions:
+    #             - alias: comments
+    #               kind: comment
+    #               description: "Comments on this bookshelf"
 
     # ----------------------------------------------------------------
     # 3. GLOBAL TAGS

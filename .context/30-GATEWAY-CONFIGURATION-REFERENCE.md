@@ -24,7 +24,33 @@ The gateway uses a modular configuration architecture:
 2. Tier 2 - Domain Layers: `app-inbound.yml`, `app-outbound.yml`, `application-auth.yml`
 3. Tier 3 - Feature Files: `application-rate-limits.yml`, `application-timeouts.yml`, `application-locks.yml`, `application-fieldsets.yml`, and others
 
-### 2.2 Inheritance & Resolution Strategy
+### 2.2 Configuration Surface Segregation (app. vs spring.)
+
+The gateway follows a deliberate two-surface configuration model:
+
+1. Primary Surface: `app.*`
+2. Runtime Surface: `spring.*` and related framework-native blocks (`server.*`, `management.*`)
+
+Sample:
+
+```yaml
+app:
+  inbound:
+    port: 8081
+spring:
+  cloud:
+    gateway:
+      metrics:
+        enabled: ${app.inbound.metricsEnabled}
+server:
+  port: ${app.inbound.port}
+```
+
+In normal operations, users should configure behavior through `app.*` keys. These keys are domain-oriented, grouped by gateway concerns, and reflected into runtime framework properties through mapping and interpolation.
+
+Direct edits under `spring.*` should be treated as an expert path. If a user knows exactly what they are tuning and understands framework side effects, direct `spring.*` overrides are possible; for most cases, `app.*` is sufficient and preferred.
+
+### 2.3 Inheritance & Resolution Strategy
 
 Most operational features follow hierarchical fallback:
 
@@ -43,7 +69,7 @@ app:
         replenishRate: ${app.rate-limits.default.replenishRate}
 ```
 
-### 2.3 Perspectives Used in This Document
+### 2.4 Perspectives Used in This Document
 
 This reference is intentionally grouped by multiple perspectives:
 
@@ -62,8 +88,16 @@ Source: `application.yml`
 Responsibilities:
 
 1. Defines core app identity (`app.name`, `app.shortcode`, request id header).
+  Sample: `app.name: entity-persistence-gateway`, `app.shortcode: tarcinapp`, `app.requestId: X-Request-Id`
+  This identity block gives the gateway a stable naming surface for logs, metrics, request tracing, and namespace-sensitive runtime concerns.
+
 2. Maps server and gateway runtime to app-level keys.
+  Sample: `server.port: ${app.inbound.port}`, `spring.cloud.gateway.metrics.enabled: ${app.inbound.metricsEnabled}`
+  This mapping keeps operational tuning centralized under `app.*` while still driving Spring-native runtime properties.
+
 3. Imports all modular configuration files via `spring.config.import`.
+  Sample: `- classpath:application-routes.yml`, `- classpath:application-rate-limits.yml`
+  The import chain is the composition mechanism that stitches feature-specific files into one effective runtime configuration.
 
 ### 3.2 Inbound Layer
 
@@ -72,9 +106,20 @@ Source: `app-inbound.yml`
 Responsibilities:
 
 1. Public server bind and base URI.
+  Sample: `address: 0.0.0.0`, `port: 8081`, `baseUri: /api/v1/`
+  These keys define where the gateway listens and what external URI prefix is exposed to client applications.
+
 2. Controller base path grammar for routing topology.
+  Sample: `controllerBasePaths.entities: entities`, `controllerBasePaths.relations: relations`
+  This grammar layer controls canonical URL segments and keeps route definitions predictable across generic and alias endpoints.
+
 3. CORS allowlists and credential behavior.
+  Sample: `allowedOrigins: ["http://localhost:8080"]`, `allowCredentials: true`, `maxAge: 3600`
+  These values define browser trust boundaries for cross-origin clients and directly affect preflight behavior and header visibility.
+
 4. Endpoint exposure control for actuator via shared key.
+  Sample: `exposedEndpoints: "gateway,health,metrics,prometheus,jolokia,env,info"`
+  This shared key is consumed by management configuration to determine which actuator endpoints are visible over HTTP.
 
 ### 3.3 Outbound Layer
 
@@ -83,9 +128,20 @@ Source: `app-outbound.yml`
 Responsibilities:
 
 1. Routing target backend connectivity and pool tuning.
+  Sample: `routing-target.host: entity-persistence-service`, `pool.maxConnections: 500`
+  These settings drive the default business traffic path and determine outbound throughput capacity under load.
+
 2. Policy-source connectivity with fail-fast posture.
+  Sample: `policy-source.connectTimeoutMs: 1000`, `policy-source.responseTimeout: PT1S`
+  The policy data channel is intentionally strict to avoid blocking authorization flow when policy source dependencies are degraded.
+
 3. OPA connectivity parameters.
+  Sample: `opa.host: entity-persistence-gateway-policies`, `opa.port: 443`
+  OPA endpoint parameters define where authorization and field-policy decisions are fetched at runtime.
+
 4. Redis connectivity for shared control planes (rate limiting, locks, cache metadata).
+  Sample: `redis.host: gateway-redis-master`, `redis.database: 0`
+  Redis acts as distributed coordination storage for throttling state, lock state, and shared cache orchestration metadata.
 
 ### 3.4 Security Layer
 
@@ -94,7 +150,12 @@ Sources: `application-auth.yml`, `application-management.yml`
 Responsibilities:
 
 1. JWT provider definitions for multi-issuer token validation.
+  Sample: `providers[*].issuer`, `providers[*].jwk-set-uri`, `providers[*].clockSkewSeconds`
+  This model allows multiple identity providers to coexist and resolves token validation strategy by issuer.
+
 2. Operational endpoint exposure posture (health, gateway, metrics, env).
+  Sample: `management.endpoint.health.probes.enabled: true`, `management.endpoints.web.exposure.include: ${app.inbound.exposedEndpoints}`
+  Operational endpoint settings determine observability depth while balancing security posture in public or internal environments.
 
 ### 3.5 Runtime Protection Layer
 
@@ -103,10 +164,24 @@ Sources: `application-rate-limits.yml`, `application-request-sizes.yml`, `applic
 Responsibilities:
 
 1. Throughput control.
+  Sample: `app.rate-limits.default.replenishRate: 10`, `app.rate-limits.default.burstCapacity: 20`
+  Throughput control protects downstream services and enforces fair usage using token-bucket semantics.
+
 2. Payload size guardrails.
+  Sample: `app.request-sizes.default.create: 2KB`, `app.request-sizes.default.update: 2KB`
+  Request size limits prevent oversized payloads from consuming excessive memory and processing resources.
+
 3. Distributed concurrency control.
+  Sample: `app.locks.default.waitTime: 3s`, `app.locks.default.leaseTime: 30s`
+  Lock settings serialize conflicting operations and reduce race conditions across distributed gateway instances.
+
 4. Latency budget enforcement.
+  Sample: `app.timeouts.default.connectTimeoutMs: 3000`, `app.timeouts.default.responseTimeoutMs: 30000`
+  Timeout budgets constrain slow downstream behavior and keep reactive worker resources from being pinned indefinitely.
+
 5. Dynamic availability control of routes/controllers/tags.
+  Sample: `app.toggles.routes.off`, `app.toggles.controllers.off`, `app.toggles.tags.off`
+  Toggle-based availability lets operators disable problematic endpoints quickly without redeploying the gateway.
 
 ### 3.6 API Projection Layer
 
@@ -115,9 +190,20 @@ Sources: `application-fieldsets.yml`, `application-queries.yml`, `application-ro
 Responsibilities:
 
 1. Field projection defaults and named fieldsets.
+  Sample: `app.fieldsets.global.hide-managed-except-id`, `app.fieldsets.entities.defaultFieldset`
+  Fieldset configuration controls payload shaping so clients can receive policy-aligned and use-case-specific field views.
+
 2. Saved query macro aliases.
+  Sample: `app.queries.my: "'sets[owners][userIds]='+#userId"`
+  Query macros provide short developer-friendly query entry points that expand into backend-compatible filter expressions.
+
 3. Route-level filter chains and metadata.
+  Sample: `application-routes.yml` entries with `filters`, `args`, `metadata.connect-timeout`
+  Route metadata binds abstract configuration families to concrete operation routes in the gateway filter chain.
+
 4. Dynamic OpenAPI orchestration behavior.
+  Sample: `app.oas.orchestrator.enabled: true`, `app.oas.orchestrator.endpoints.json: /openapi.json`
+  OAS orchestration settings control how runtime API documentation is generated, cached, and policy-pruned.
 
 ### 3.7 Observability Layer
 

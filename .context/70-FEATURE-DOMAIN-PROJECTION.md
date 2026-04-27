@@ -650,14 +650,45 @@ Route IDs follow a consistent naming pattern based on **action + resource + cont
   - Examples: `createEntity`, `findEntities`, `findEntityById`, `deleteEntityById`, `createList`, `findRelations`, `findEntityReactionsById`, `deleteListReactionsById`
 - **Kind alias routes:** `{baseRouteId}ByKindAlias`
   - Examples: `findEntitiesByKindAlias`, `deleteEntityByIdByKindAlias`, `findListsByKindAlias`, `createRelationByKindAlias`
-- **Hierarchy routes:** `{action}{Resource}Child` / `{action}{Resource}Parents`
-  - Examples: `createEntityChild`, `findEntityChildren`, `findEntityParents`, `findListChildren`
-- **Through routes:** `{action}{TargetResource}By{ParentResource}Id` (kind-alias form adds `ByKindAlias`)
-  - Used in `through.<type>[].routes.<routeId>` **without** the `ByKindAlias` suffix
-  - `entities` + `through.reactions`: `createReactionByEntityId`, `updateReactionsByEntityId`, `findReactionsByEntityId`, `deleteReactionsByEntityId`
-  - `entities` + `through.lists`: `findListsByEntityId` (GET only)
-  - `lists` + `through.reactions`: `createReactionByListId`, `updateReactionsByListId`, `findReactionsByListId`, `deleteReactionsByListId`
-  - `lists` + `through.entities`: `createEntityByListId`, `updateEntitiesByListId`, `findEntitiesByListId`, `deleteEntitiesByListId`
+
+#### Hierarchy Route IDs
+
+The routeId used in `children[].routes.<routeId>` or `parents[].routes.<routeId>` is **not** the same as the standard alias route IDs (e.g. `createEntity`). It is fixed by three factors: **parent controller + accessor (children/parents) + HTTP method**:
+
+| Parent controller | Accessor | HTTP Method | routeId |
+|------------------|----------|-------------|---------|
+| `entities` | `children` | POST | `createEntityChild` |
+| `entities` | `children` | GET | `findEntityChildren` |
+| `entities` | `parents` | GET | `findEntityParents` |
+| `lists` | `children` | POST | `createListChild` |
+| `lists` | `children` | GET | `findListChildren` |
+| `lists` | `parents` | GET | `findListParents` |
+| `entityReactions` | `children` | POST | `createChildEntityReaction` |
+| `entityReactions` | `children` | GET | `findChildrenEntityReactionsByReactionId` |
+| `entityReactions` | `parents` | GET | `findParentsByEntityReactionId` |
+| `listReactions` | `children` | POST | `createChildListReaction` |
+| `listReactions` | `children` | GET | `findChildrenListReactionsByReactionId` |
+| `listReactions` | `parents` | GET | `findParentsByListReactionId` |
+
+#### Through Route IDs
+
+The routeId used in `through.<type>[].routes.<routeId>` is derived from the matched gateway route ID by stripping the `ByKindAlias` suffix. Each through relationship has a fixed set:
+
+| Parent controller | through key | HTTP Method | routeId |
+|------------------|------------|-------------|---------|
+| `entities` | `reactions` | POST | `createReactionByEntityId` |
+| `entities` | `reactions` | PATCH | `updateReactionsByEntityId` |
+| `entities` | `reactions` | GET | `findReactionsByEntityId` |
+| `entities` | `reactions` | DELETE | `deleteReactionsByEntityId` |
+| `entities` | `lists` | GET | `findListsByEntityId` (GET only) |
+| `lists` | `reactions` | POST | `createReactionByListId` |
+| `lists` | `reactions` | PATCH | `updateReactionsByListId` |
+| `lists` | `reactions` | GET | `findReactionsByListId` |
+| `lists` | `reactions` | DELETE | `deleteReactionsByListId` |
+| `lists` | `entities` | POST | `createEntityByListId` |
+| `lists` | `entities` | PATCH | `updateEntitiesByListId` |
+| `lists` | `entities` | GET | `findEntitiesByListId` |
+| `lists` | `entities` | DELETE | `deleteEntitiesByListId` |
 
 > **Complete Reference:** See [10-ROUTES.md](10-ROUTES.md) for the full route ID inventory and naming conventions.
 
