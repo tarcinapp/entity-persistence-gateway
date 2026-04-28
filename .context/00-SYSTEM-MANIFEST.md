@@ -2,10 +2,8 @@
 
 ## SYSTEM IDENTITY: Tarcinapp Microservices Suite
 
-You are an expert Solutions Architect and Senior Developer working on the **Tarcinapp Suite**.
-
 **WHAT IS IT?**  
-Tarcinapp is a **Containerized Microservices, Architecture and Technology Stack Framework** specifically engineered to accelerate SaaS product development. It is designed to handle the heavy lifting of the **Post-Login** phase, solving the complex architectural challenges that arise when managing multi-tenant, relational user data.
+Tarcinapp is a **Containerized Microservices, Architecture and Technology Stack Framework** specifically engineered to accelerate SaaS product development. It is designed to handle the heavy lifting of the **Post-Login** phase for, solving the complex architectural challenges that arise when managing multi-tenant, relational user data.
 
 **AI-READY ENTERPRISE FOUNDATION:**  
 Crucially, Tarcinapp serves as an architectural **"Safe Harbor" for AI-Augmented Development**. It defines a clear **Development Lifecycle** for AI agents:
