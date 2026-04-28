@@ -34,11 +34,8 @@ The **Dynamic OAS Orchestrator** is an embedded component within the Entity Pers
 │                                ▼                            │                    │
 │                    ┌───────────────────────┐                │                    │
 │                    │ OasTransformationEngine│               │                    │
-│                    │  ┌─────────────────┐  │                │                    │
-│                    │  │ PathVirtualizer │  │                │                    │
-│                    │  │ OperationRewriter│  │                │                    │
-│                    │  │ HierarchyResolver│  │                │                    │
-│                    │  └─────────────────┘  │                │                    │
+│                    │  (Path Virtualization, Operation       │                    │
+│                    │   Rewriting, Hierarchy Resolution)     │                    │
 │                    └───────────┬───────────┘                │                    │
 │                                │                            │                    │
 │                                ▼                            │                    │
@@ -104,7 +101,7 @@ The raw technical OpenAPI spec with:
 ## 4. Component Specifications
 
 ### 4.1 DynamicOasHandler
-**Package:** `com.tarcinapp.entitypersistencegateway.oas`
+**Package:** `com.tarcinapp.entitypersistencegateway.oas.handler`
 
 **Responsibility:** Entry point for OAS requests. Orchestrates the transformation pipeline.
 
@@ -124,7 +121,7 @@ public class DynamicOasHandler {
 **Isolation Guarantee:** Uses dedicated RouterFunction, completely separate from gateway route processing.
 
 ### 4.2 BackendOasClient
-**Package:** `com.tarcinapp.entitypersistencegateway.clients.oas`
+**Package:** `com.tarcinapp.entitypersistencegateway.oas.client`
 
 **Responsibility:** Fetch and parse the backend's raw OAS.
 
@@ -133,11 +130,11 @@ public class DynamicOasHandler {
 public class BackendOasClient {
     
     // Cached raw OAS (TTL: 5 minutes default)
-    private final AtomicReference<Mono<OpenAPI>> cachedRawOas;
+    private final AtomicReference<CachedOas> cachedRawOas = new AtomicReference<>();
     
     public Mono<OpenAPI> fetchRawOas() {
         // Reactive WebClient call to ${app.outbound.routing-target}/openapi.json
-        // Parsed via swagger-parser-v3
+        // Parsed via swagger-parser-v3 (OpenAPIV3Parser)
     }
 }
 ```
@@ -147,7 +144,11 @@ public class BackendOasClient {
 ### 4.3 OasTransformationEngine
 **Package:** `com.tarcinapp.entitypersistencegateway.oas.transformation`
 
-**Responsibility:** Core transformation logic that virtualizes paths and operations.
+**Responsibility:** Core transformation logic that virtualizes paths and operations. All sub-concerns (path virtualization, operation rewriting, hierarchy resolution) are implemented as private methods within this class — there are no separate `PathVirtualizer`, `OperationRewriter`, or `HierarchyResolver` classes.
+
+**Additional Services Used:**
+- `BackendSchemaService`: Pre-fetched backend operation schemas used when building domain-specific request body schemas.
+- `RouteMetadataService`: Extracts route tags and controller metadata from `GatewayProperties` for toggle-based filtering.
 
 **Response Schema Policy:** Backend response schemas are preserved per operation and transformed into alias-specific components (x-record-type injected). POST/PUT/PATCH/DELETE keep their native shapes; only GET responses are rebound to domain response schemas. All responses are still pruned with FIND permissions.
 
@@ -219,157 +220,156 @@ public List<TransformedPath> resolveHierarchies(AliasConfig rootAlias, String co
 
 **Responsibility:** Query OPA for field-level permissions (NOT action-level RBAC).
 
-**OPA Policy Contract:**
+**Multi-Operation Query Strategy:** OPA returns different forbidden fields based on HTTP method and operation type. The service makes **3 parallel OPA queries** — one each for find (GET), create (POST), and update (PATCH) — and combines results into a `MultiOperationFieldPermissions` object. This enables the pruner to apply operation-specific field visibility (e.g., a field visible on GET but forbidden on POST).
 
-```rego
-# Input: JWT claims only (no request payload/params)
-package policies.oas.field_visibility
-
-default visible_fields = {}
-
-visible_fields[recordType] = fields {
-    # Determine visible fields per record type based on user's roles
-    user_roles := input.roles
-    fields := compute_visible_fields(recordType, user_roles)
-}
-
-# Alternative: forbidden_fields approach (align with existing ForbiddenFieldsLibrary)
-forbidden_fields[recordType] = fields {
-    # Return fields the user CANNOT see
-}
+```java
+// Query 1 (find):   { httpMethod: "GET",   requestPath: "/entities", operation: "find" }
+// Query 2 (create): { httpMethod: "POST",  requestPath: "/entities", operation: "create" }
+// Query 3 (update): { httpMethod: "PATCH", requestPath: "/entities", operation: "update" }
 ```
+
+**OPA Policy Used:** The same policy as `FetchForbiddenFieldsGatewayFilterFactory`, reusing the existing `ForbiddenFieldsLibrary` response structure. The policy path is configurable; the default is the gateway's shared forbidden-fields policy.
 
 **Service Implementation:**
 
 ```java
-@Component
+@Service
 public class OasFieldPermissionService {
     
-    private static final String OAS_FIELD_POLICY = "/policies/oas/field_visibility/policy/result";
+    // Default: reuses the gateway's existing forbidden-fields policy
+    // Override via app.oas.orchestrator.opa.field-policy
     
-    public Mono<FieldPermissionContext> fetchFieldPermissions(GatewaySecurityContext securityContext) {
-        PolicyData policyData = new PolicyData();
-        policyData.setPolicyName(OAS_FIELD_POLICY);
-        policyData.setEncodedJwt(securityContext.getEncodedJwt());
-        // Note: NO request payload or query params - just identity context
+    public Mono<MultiOperationFieldPermissions> fetchMultiOperationPermissions(
+            GatewaySecurityContext securityContext, String basePath) {
         
-        return opaClient.executePolicy(policyData, FieldPermissionContext.class)
-            .onErrorResume(e -> {
-                log.warn("OPA field permission query failed, returning full visibility: {}", e.getMessage());
-                return Mono.just(FieldPermissionContext.fullVisibility());
+        // Query OPA in parallel for all 3 operations
+        Mono<FieldPermissionContext> findPerms   = fetchPermissionsForOperation(securityContext, basePath, Operation.FIND);
+        Mono<FieldPermissionContext> createPerms = fetchPermissionsForOperation(securityContext, basePath, Operation.CREATE);
+        Mono<FieldPermissionContext> updatePerms = fetchPermissionsForOperation(securityContext, basePath, Operation.UPDATE);
+        
+        return Mono.zip(findPerms, createPerms, updatePerms)
+            .map(tuple -> {
+                MultiOperationFieldPermissions result = new MultiOperationFieldPermissions();
+                result.setPermissionsForOperation(Operation.FIND,   tuple.getT1());
+                result.setPermissionsForOperation(Operation.CREATE, tuple.getT2());
+                result.setPermissionsForOperation(Operation.UPDATE, tuple.getT3());
+                return result;
             });
     }
 }
 ```
 
-**Constraint Enforcement:** Action-level RBAC is NOT evaluated here because OPA requires runtime request data (payloads, query params) that don't exist during spec generation.
+**Constraint Enforcement:** Action-level RBAC is NOT evaluated here because OPA requires runtime request data (payloads, query params) that don't exist during spec generation. OPA failures fall back to full visibility (fail-open) unless `opa.fail-closed=true`.
 
 ### 4.5 OasSchemaPruner
 **Package:** `com.tarcinapp.entitypersistencegateway.oas.transformation`
 
 **Responsibility:** Programmatically remove properties from OAS schemas that the user cannot see.
 
-**Final Cleanup:** After field pruning, remove any component schemas that are no longer referenced by any path or component.
+**Schema Identification:** Record type is determined by reading the `x-record-type` vendor extension injected by `OasTransformationEngine` during schema generation. If a schema is missing this extension, a CRITICAL error is logged and the schema is skipped (fail-safe). Record type is never inferred from the schema name.
 
-**Pruning Algorithm:**
+**Final Cleanup:** After field pruning, `pruneUnusedSchemas()` removes any component schemas no longer referenced by any path or component.
+
+**Two Pruning Variants:**
 
 ```java
 @Component
 public class OasSchemaPruner {
     
-    public OpenAPI pruneSchemas(OpenAPI openApi, FieldPermissionContext permissions) {
-        if (permissions.isFullVisibility()) {
-            return openApi;
-        }
-        
-        // Deep clone to avoid mutating cached raw OAS
-        OpenAPI pruned = cloneOpenApi(openApi);
-        
-        Components components = pruned.getComponents();
-        if (components != null && components.getSchemas() != null) {
-            components.getSchemas().forEach((schemaName, schema) -> {
-                String recordType = inferRecordType(schemaName);
-                Set<String> forbiddenFields = permissions.getForbiddenFields(recordType);
-                
-                pruneSchemaProperties(schema, forbiddenFields);
-            });
-        }
-        
-        return pruned;
-    }
+    /**
+     * Single-permission variant (legacy / fallback).
+     * Applies the same forbidden field set to all operations.
+     */
+    public OpenAPI prune(OpenAPI openApi, FieldPermissionContext permissions) { ... }
     
-    private void pruneSchemaProperties(Schema<?> schema, Set<String> forbiddenFields) {
-        if (schema.getProperties() == null) return;
-        
-        forbiddenFields.forEach(field -> {
-            // Handle nested paths: "address.zipCode"
-            if (field.contains(".")) {
-                pruneNestedProperty(schema, field);
-            } else {
-                schema.getProperties().remove(field);
-            }
-            
-            // Also remove from 'required' array if present
-            if (schema.getRequired() != null) {
-                schema.getRequired().remove(field);
-            }
-        });
-    }
+    /**
+     * Multi-operation variant (primary path).
+     * Applies per-operation forbidden fields:
+     *   GET response schemas  → FIND permissions
+     *   POST request schemas  → CREATE permissions
+     *   PATCH/PUT schemas     → UPDATE permissions
+     */
+    public OpenAPI pruneWithMultiOperationPermissions(
+            OpenAPI openApi, MultiOperationFieldPermissions permissions) { ... }
 }
 ```
+
+`DynamicOasHandler` calls `pruneWithMultiOperationPermissions()`. Both variants deep-clone the OpenAPI object before modifying it to avoid mutating the cached raw OAS.
 
 ### 4.6 OasCacheService
 **Package:** `com.tarcinapp.entitypersistencegateway.oas.cache`
 
-**Responsibility:** Role-based caching with thundering herd prevention.
+**Responsibility:** Role-based caching with two-level hierarchy and thundering herd prevention.
 
-**Cache Key Strategy:**
-
-```java
-public class OasCacheKeyBuilder {
-    
-    public String buildCacheKey(GatewaySecurityContext context) {
-        // Deterministic hash of permission-affecting attributes
-        List<String> keyComponents = new ArrayList<>();
-        keyComponents.addAll(context.getRoles());
-        keyComponents.addAll(context.getGroups());
-        Collections.sort(keyComponents); // Ensure determinism
-        
-        String roleFingerprint = DigestUtils.sha256Hex(String.join(":", keyComponents));
-        return "oas:v1:" + roleFingerprint;
-    }
-}
-```
-
-**Thundering Herd Prevention:**
+**Cache Key Strategy:** Roles are prefixed with `r:` and groups with `g:`, then all components are sorted for determinism and joined with `|` before hashing:
 
 ```java
 @Component
-public class OasCacheService {
+public class OasCacheKeyBuilder {
     
-    private final ReactiveRedisTemplate<String, String> redisTemplate;
-    private final Map<String, Mono<String>> inflightRequests = new ConcurrentHashMap<>();
+    private static final String KEY_PREFIX = "oas:v1:";
+    private static final String ANONYMOUS_KEY = KEY_PREFIX + "anonymous";
     
-    public Mono<String> getOrCompute(String cacheKey, Mono<String> computeSpec) {
-        return redisTemplate.opsForValue().get(cacheKey)
-            .switchIfEmpty(
-                Mono.defer(() -> {
-                    // Thundering herd: Only one inflight computation per key
-                    return inflightRequests.computeIfAbsent(cacheKey, k ->
-                        computeSpec
-                            .flatMap(spec -> 
-                                redisTemplate.opsForValue()
-                                    .set(cacheKey, spec, Duration.ofMinutes(15))
-                                    .thenReturn(spec)
-                            )
-                            .doFinally(signal -> inflightRequests.remove(cacheKey))
-                            .cache() // Share result with concurrent subscribers
-                    );
-                })
-            );
+    public String buildCacheKey(GatewaySecurityContext context) {
+        if (context == null || context.getEncodedJwt() == null) {
+            return ANONYMOUS_KEY; // "oas:v1:anonymous"
+        }
+        
+        List<String> components = new ArrayList<>();
+        // Roles prefixed r:, groups prefixed g:
+        roles.forEach(r -> components.add("r:" + r));
+        groups.forEach(g -> components.add("g:" + g));
+        Collections.sort(components); // Ensure determinism
+        
+        String fingerprint = sha256Hex(String.join("|", components));
+        return KEY_PREFIX + fingerprint; // "oas:v1:{sha256}"
     }
 }
 ```
+
+**Two-Level Cache + Thundering Herd Prevention:**
+
+```java
+@Service
+public class OasCacheService {
+    
+    private final ReactiveStringRedisTemplate redisTemplate;
+    private final Cache<String, String> localCache; // L1: Caffeine
+    private final ConcurrentHashMap<String, Mono<String>> inflightComputations;
+    
+    public Mono<String> getOrCompute(String cacheKey, Mono<String> computeSpec) {
+        // 1. L1: Check Caffeine (sub-millisecond)
+        String local = localCache.getIfPresent(cacheKey);
+        if (local != null) return Mono.just(local);
+        
+        // 2. L2: Check Redis (cross-instance sharing)
+        return redisTemplate.opsForValue().get(cacheKey)
+            .switchIfEmpty(Mono.defer(() ->
+                // 3. Compute with thundering herd protection
+                inflightComputations.computeIfAbsent(cacheKey, k ->
+                    computeSpec
+                        .flatMap(spec -> redisTemplate.opsForValue()
+                            .set(cacheKey, spec, ttl).thenReturn(spec))
+                        .doFinally(s -> inflightComputations.remove(cacheKey))
+                        .cache() // Share with concurrent subscribers
+                )
+            ))
+            .doOnNext(spec -> localCache.put(cacheKey, spec)); // Populate L1
+    }
+}
+```
+
+### 4.7 BackendSchemaService
+**Package:** `com.tarcinapp.entitypersistencegateway.oas.service`
+
+**Responsibility:** Pre-fetches and indexes the backend's request/response schemas by controller and HTTP method at startup. The `OasTransformationEngine` uses these cached `JsonNode` schemas when constructing domain-specific `New{Alias}` and `Patch{Alias}` schemas without needing to re-fetch the backend OAS on each transformation.
+
+**Key format:** `"{controllerName}:{HTTP_METHOD}"` (e.g., `"entities:POST"`, `"entities:PATCH"`).
+
+### 4.8 RouteMetadataService
+**Package:** `com.tarcinapp.entitypersistencegateway.oas.service`
+
+**Responsibility:** Extracts route metadata (tags, controller name, record type) from Spring Cloud Gateway's `GatewayProperties` at startup. The `OasTransformationEngine` uses this to filter operations based on route toggles without re-reading the YAML configuration.
 
 ---
 
@@ -435,8 +435,11 @@ app:
         connect-timeout: 3000
         read-timeout: 5000
       opa:
-        field-policy: /policies/oas/field_visibility/policy/result
-        timeout: 500ms
+        # Default: reuses the gateway's existing forbidden-fields policy
+        # Override to point to a dedicated OAS field-visibility policy if needed
+        field-policy: /policies/gateway/forbidden_fields/policy/result
+        timeout: PT500MS
+        fail-closed: false  # When false, OPA failure returns full-visibility spec
 ```
 
 ---
@@ -498,13 +501,13 @@ Consumer           DynamicOasHandler    OasCacheService    BackendOasClient    O
     │                     │                       OpenAPI (virtualized)                   │                           │                      │
     │                     │◄──────────────────────────────────────────────────────────────│                           │                      │
     │                     │                   │                   │                       │                           │                      │
-    │                     │                                              fetchFieldPermissions(jwt)                   │                      │
+    │                     │                                              fetchMultiOperationPermissions(jwt, basePath)│                      │
     │                     │─────────────────────────────────────────────────────────────────────────────────────────►│                      │
     │                     │                   │                   │                       │                           │                      │
-    │                     │                                              FieldPermissionContext                       │                      │
+    │                     │                                              MultiOperationFieldPermissions               │                      │
     │                     │◄─────────────────────────────────────────────────────────────────────────────────────────│                      │
     │                     │                   │                   │                       │                           │                      │
-    │                     │                                                              prune(virtualized, permissions)                     │
+    │                     │                                                              pruneWithMultiOperationPermissions(virtualized, permissions)│
     │                     │─────────────────────────────────────────────────────────────────────────────────────────────────────────────────►│
     │                     │                   │                   │                       │                           │                      │
     │                     │                                                              OpenAPI (pruned)                                    │
@@ -550,14 +553,16 @@ src/main/java/com/tarcinapp/entitypersistencegateway/
 │   ├── client/
 │   │   └── BackendOasClient.java
 │   ├── transformation/
-│   │   ├── OasTransformationEngine.java
-│   │   ├── PathVirtualizer.java
-│   │   ├── OperationRewriter.java
-│   │   ├── HierarchyResolver.java
+│   │   ├── OasTransformationEngine.java   ← contains path virtualization, operation
+│   │   │                                    rewriting, and hierarchy resolution logic
 │   │   └── OasSchemaPruner.java
 │   ├── security/
 │   │   ├── OasFieldPermissionService.java
-│   │   └── FieldPermissionContext.java
+│   │   ├── FieldPermissionContext.java
+│   │   └── MultiOperationFieldPermissions.java
+│   ├── service/
+│   │   ├── BackendSchemaService.java
+│   │   └── RouteMetadataService.java
 │   └── cache/
 │       ├── OasCacheService.java
 │       └── OasCacheKeyBuilder.java
@@ -567,11 +572,12 @@ src/main/java/com/tarcinapp/entitypersistencegateway/
 
 ## 11. Implementation Priority
 
-1. **Phase 1:** Core Transformation (PathVirtualizer, OperationRewriter)
+1. **Phase 1:** Core Transformation (path virtualization & operation rewriting in `OasTransformationEngine`)
 2. **Phase 2:** Hierarchy Resolution
-3. **Phase 3:** Field-Level Pruning (OPA Integration)
-4. **Phase 4:** Caching Layer
-5. **Phase 5:** Edge Cases (Relations, Reactions)
+3. **Phase 3:** Backend Schema Indexing (`BackendSchemaService`)
+4. **Phase 4:** Field-Level Pruning (OPA Integration — `OasFieldPermissionService`, multi-operation `OasSchemaPruner`)
+5. **Phase 5:** Caching Layer
+6. **Phase 6:** Edge Cases (Relations, Reactions, Through-Controllers)
 
 ---
 
