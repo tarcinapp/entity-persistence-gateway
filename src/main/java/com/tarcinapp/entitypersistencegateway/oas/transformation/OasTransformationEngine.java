@@ -327,7 +327,10 @@ public class OasTransformationEngine {
 
         // 11. Apply global security requirement (JWT Bearer Auth)
         applyGlobalSecurity(transformed);
-        
+
+        // 12. Prune top-level tags that have no remaining operations (e.g. after tagsOn filtering)
+        pruneUnusedTopLevelTags(transformed);
+
         log.info("OAS transformation complete: {} paths virtualized", 
             virtualizedPaths != null ? virtualizedPaths.size() : 0);
         
@@ -460,7 +463,47 @@ public class OasTransformationEngine {
         
         return tags;
     }
-    
+
+    /**
+     * Removes top-level tags that are no longer referenced by any operation in the final paths.
+     * This is needed because buildTags() runs before path filtering (tagsOn/tagsOff),
+     * so alias-derived tags (e.g. Comments, Books) can survive even when their paths were filtered out.
+     */
+    private void pruneUnusedTopLevelTags(OpenAPI openAPI) {
+        if (openAPI.getTags() == null || openAPI.getTags().isEmpty()) {
+            return;
+        }
+        if (openAPI.getPaths() == null) {
+            openAPI.setTags(null);
+            return;
+        }
+
+        Set<String> usedTags = new HashSet<>();
+        openAPI.getPaths().forEach((path, pathItem) -> {
+            if (pathItem == null) return;
+            pathItem.readOperations().forEach(op -> {
+                if (op.getTags() != null) {
+                    usedTags.addAll(op.getTags());
+                }
+            });
+        });
+
+        List<Tag> pruned = openAPI.getTags().stream()
+            .filter(t -> usedTags.contains(t.getName()))
+            .collect(java.util.stream.Collectors.toList());
+
+        int removed = openAPI.getTags().size() - pruned.size();
+        if (removed > 0) {
+            log.debug("pruneUnusedTopLevelTags: removed {} unused tag(s): {}",
+                removed,
+                openAPI.getTags().stream()
+                    .filter(t -> !usedTags.contains(t.getName()))
+                    .map(Tag::getName)
+                    .collect(java.util.stream.Collectors.joining(", ")));
+        }
+        openAPI.setTags(pruned.isEmpty() ? null : pruned);
+    }
+
     /**
      * Transforms all paths from the backend OAS.
      * Applies route toggle filtering based on TogglesProperties configuration.
@@ -527,6 +570,11 @@ public class OasTransformationEngine {
                     PathItem filtered = filterDisabledOperations(tp.getPathItem());
                     if (filtered == null) {
                         log.debug("Skipping path '{}' - all operations disabled by route toggles", tp.getVirtualPath());
+                        return;
+                    }
+                    // Skip paths where all operations were removed by tag filtering (tagsOn/tagsOff)
+                    if (!hasAnyOperation(filtered)) {
+                        log.debug("Skipping path '{}' - all operations filtered by tag toggles", tp.getVirtualPath());
                         return;
                     }
 
@@ -1182,9 +1230,12 @@ public class OasTransformationEngine {
             effectiveTags = kindAliasMetadata.getTags();
             log.debug("Tag filter for hierarchy route '{}': using tags: {}", kindAliasRouteId, effectiveTags);
         } else {
-            // No metadata found - allow by default
-            log.warn("Tag filter for hierarchy route '{}': no metadata found, allowing by default", kindAliasRouteId);
-            return false;
+            // No metadata found.
+            // In whitelist mode (tagsOn), routes without metadata must be filtered out.
+            // In blacklist mode (tagsOff), routes without metadata are allowed.
+            boolean filtered = !tagsOn.isEmpty();
+            log.warn("Tag filter for hierarchy route '{}': no metadata found, filtered={}", kindAliasRouteId, filtered);
+            return filtered;
         }
         
         // Apply tag filtering logic
@@ -1829,11 +1880,13 @@ public class OasTransformationEngine {
             log.info("Tag filter for aliased route '{}': using KindAlias route '{}' tags: {}", 
                 aliasedOperationId, kindAliasRouteId, effectiveTags);
         } else {
-            // Fallback: no specific KindAlias route metadata found
-            // This shouldn't happen if application-routes.yml is complete
-            log.warn("Tag filter for aliased route '{}': no metadata found for KindAlias route '{}', allowing by default", 
-                aliasedOperationId, kindAliasRouteId);
-            return false;
+            // No metadata found for KindAlias route.
+            // In whitelist mode (tagsOn), routes without metadata must be filtered out.
+            // In blacklist mode (tagsOff), routes without metadata are allowed.
+            boolean filtered = !tagsOn.isEmpty();
+            log.warn("Tag filter for aliased route '{}': no metadata found for KindAlias route '{}', filtered={}", 
+                aliasedOperationId, kindAliasRouteId, filtered);
+            return filtered;
         }
         
         // Apply tag filtering logic

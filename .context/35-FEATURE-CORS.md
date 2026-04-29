@@ -30,6 +30,7 @@ spring:
   cloud:
     gateway:
       globalcors:
+        add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
             allowedOrigins: ${app.inbound.cors.allowedOrigins}
@@ -43,7 +44,8 @@ spring:
 Key behavior:
 1. Policy scope is global (`[/**]`).
 2. Effective values are sourced from `app.inbound.cors.*` properties.
-3. No custom filter is required for baseline CORS enforcement.
+3. `add-to-simple-url-handler-mapping: true` ensures OPTIONS preflight requests are intercepted by the `CorsWebFilter` **before** they reach route filters (`AuthenticateRequest`, `AuthorizeRequest`). Without this, preflights are forwarded to the route filters and rejected with 403 because they carry no `Authorization` header.
+4. No custom filter is required for baseline CORS enforcement.
 
 ### 2.2 Inbound Policy Source
 
