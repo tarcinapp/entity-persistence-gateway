@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
+import com.tarcinapp.entitypersistencegateway.config.FieldSetsConfiguration;
 import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
@@ -157,6 +158,9 @@ public class OasTransformationEngine {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private SavedQueryConfig savedQueryConfig;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FieldSetsConfiguration fieldSetsConfig;
 
     // Thread-local storage for request context during transformation
     private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
@@ -5946,20 +5950,30 @@ public class OasTransformationEngine {
         if (openApi.getPaths() == null) return;
 
         List<String> savedQueryNames = getSavedQueryNames();
+        List<String> fieldsetNames   = getFieldsetNames();
 
         openApi.getPaths().forEach((path, pathItem) -> {
             boolean isInstancePath = path.endsWith("}");
             boolean isCountPath    = path.endsWith("/count");
             boolean isCollection   = !isInstancePath && !isCountPath;
 
-            if (pathItem.getGet() != null && !isInstancePath) {
-                injectSimplifiedQueryParams(pathItem.getGet(), isCollection, savedQueryNames);
+            if (pathItem.getGet() != null) {
+                if (isInstancePath) {
+                    // Single-item GET: inject fieldset params only
+                    injectSimplifiedQueryParams(pathItem.getGet(), false, true, savedQueryNames, fieldsetNames);
+                } else if (isCollection) {
+                    // Collection GET: full simplified params + fieldset
+                    injectSimplifiedQueryParams(pathItem.getGet(), true, false, savedQueryNames, fieldsetNames);
+                } else {
+                    // Count GET: s + q only
+                    injectSimplifiedQueryParams(pathItem.getGet(), false, false, savedQueryNames, fieldsetNames);
+                }
             }
             if (pathItem.getPatch() != null && !isInstancePath) {
-                injectSimplifiedQueryParams(pathItem.getPatch(), false, savedQueryNames);
+                injectSimplifiedQueryParams(pathItem.getPatch(), false, false, savedQueryNames, fieldsetNames);
             }
             if (pathItem.getDelete() != null && !isInstancePath) {
-                injectSimplifiedQueryParams(pathItem.getDelete(), false, savedQueryNames);
+                injectSimplifiedQueryParams(pathItem.getDelete(), false, false, savedQueryNames, fieldsetNames);
             }
         });
     }
@@ -5967,15 +5981,19 @@ public class OasTransformationEngine {
     /**
      * Injects simplified query parameters into an operation.
      *
-     * @param operation      target operation
-     * @param isFindRoute    true for collection GETs (full param set);
-     *                       false for count/updateAll/deleteAll (s + q only)
+     * @param operation       target operation
+     * @param isFindRoute     true for collection GETs (full param set: s, limit, skip, order, fields, include, lookup, q, fieldset);
+     *                        false for count/updateAll/deleteAll (s + q only) or single-item GETs
+     * @param isSingleGet     true for single-item GETs (instance paths); injects fieldset + fieldsets only, no s/q/limit
      * @param savedQueryNames names to expose as enum on the {@code q} param
+     * @param fieldsetNames   names to expose as enum on the {@code fieldset} param
      */
     private void injectSimplifiedQueryParams(
             Operation operation,
             boolean isFindRoute,
-            List<String> savedQueryNames) {
+            boolean isSingleGet,
+            List<String> savedQueryNames,
+            List<String> fieldsetNames) {
 
         if (operation == null) return;
 
@@ -5995,46 +6013,105 @@ public class OasTransformationEngine {
             .map(Parameter::getName)
             .collect(Collectors.toSet());
 
-        // s — search by name (all query routes)
-        if (!existing.contains("s")) {
-            params.add(buildStringQueryParam("s",
-                "Search by name. Translates to a case-insensitive regexp filter on the _name field."));
+        if (!isSingleGet) {
+            // s — search by name (all query routes except single-item GETs)
+            if (!existing.contains("s")) {
+                params.add(buildStringQueryParam("s",
+                    "Search by name. Translates to a case-insensitive regexp filter on the _name field."));
+            }
+
+            if (isFindRoute) {
+                // limit / skip / order / fields / include / lookup — find routes only
+                if (!existing.contains("limit")) {
+                    params.add(buildIntegerQueryParam("limit",
+                        "Maximum number of records to return."));
+                }
+                if (!existing.contains("skip")) {
+                    params.add(buildIntegerQueryParam("skip",
+                        "Number of records to skip (zero-based offset)."));
+                }
+                if (!existing.contains("order")) {
+                    params.add(buildStringQueryParam("order",
+                        "Field name to order results by (e.g. _name, _createdDateTime)."));
+                }
+                if (!existing.contains("fields")) {
+                    params.add(buildStringQueryParam("fields",
+                        "Comma-separated list of fields to include in each record (e.g. _name,id)."));
+                }
+                if (!existing.contains("include")) {
+                    params.add(buildStringQueryParam("include",
+                        "Comma-separated relation names to eagerly include (e.g. category,tags)."));
+                }
+                if (!existing.contains("lookup")) {
+                    params.add(buildStringQueryParam("lookup",
+                        "Comma-separated property names to resolve via lookup (e.g. authorId,publisherId)."));
+                }
+            }
+
+            // q — saved query name (all query routes, only if any saved queries are configured)
+            if (!existing.contains("q") && !savedQueryNames.isEmpty()) {
+                params.add(buildSavedQueryParam(savedQueryNames));
+            }
         }
 
-        if (isFindRoute) {
-            // limit / skip / order / fields / include / lookup — find routes only
-            if (!existing.contains("limit")) {
-                params.add(buildIntegerQueryParam("limit",
-                    "Maximum number of records to return."));
+        // fieldset + fieldsets — GET routes only (collection and single-item, but not count)
+        if (isFindRoute || isSingleGet) {
+            if (!existing.contains("fieldset") && !fieldsetNames.isEmpty()) {
+                params.add(buildFieldsetParam(fieldsetNames));
             }
-            if (!existing.contains("skip")) {
-                params.add(buildIntegerQueryParam("skip",
-                    "Number of records to skip (zero-based offset)."));
+            if (!existing.contains("fieldsets")) {
+                params.add(buildFieldsetsToggleParam());
             }
-            if (!existing.contains("order")) {
-                params.add(buildStringQueryParam("order",
-                    "Field name to order results by (e.g. _name, _createdDateTime)."));
-            }
-            if (!existing.contains("fields")) {
-                params.add(buildStringQueryParam("fields",
-                    "Comma-separated list of fields to include in each record (e.g. _name,id)."));
-            }
-            if (!existing.contains("include")) {
-                params.add(buildStringQueryParam("include",
-                    "Comma-separated relation names to eagerly include (e.g. category,tags)."));
-            }
-            if (!existing.contains("lookup")) {
-                params.add(buildStringQueryParam("lookup",
-                    "Comma-separated property names to resolve via lookup (e.g. authorId,publisherId)."));
-            }
-        }
-
-        // q — saved query name (all query routes, only if any saved queries are configured)
-        if (!existing.contains("q") && !savedQueryNames.isEmpty()) {
-            params.add(buildSavedQueryParam(savedQueryNames));
         }
 
         operation.setParameters(params);
+    }
+
+    private List<String> getFieldsetNames() {
+        if (fieldSetsConfig == null) return Collections.emptyList();
+        TreeSet<String> names = new TreeSet<>();
+        if (fieldSetsConfig.getGlobal() != null) {
+            names.addAll(fieldSetsConfig.getGlobal().keySet());
+        }
+        for (FieldSetsConfiguration.ResourceFieldsets rs : Arrays.asList(
+                fieldSetsConfig.getEntities(),
+                fieldSetsConfig.getLists(),
+                fieldSetsConfig.getRelations(),
+                fieldSetsConfig.getReactions())) {
+            if (rs != null && rs.getFieldsets() != null) {
+                names.addAll(rs.getFieldsets().keySet());
+            }
+        }
+        return new ArrayList<>(names);
+    }
+
+    private Parameter buildFieldsetParam(List<String> fieldsetNames) {
+        Parameter p = new Parameter();
+        p.setName("fieldset");
+        p.setIn("query");
+        p.setDescription("Apply a named field projection to the response. "
+            + "In show mode only the listed fields are returned; in hide mode the listed fields are removed. "
+            + "Use fieldsets=false to bypass all fieldset processing.");
+        p.setRequired(false);
+        Schema<String> schema = new Schema<>();
+        schema.setType("string");
+        schema.setEnum(new ArrayList<>(fieldsetNames));
+        p.setSchema(schema);
+        return p;
+    }
+
+    private Parameter buildFieldsetsToggleParam() {
+        Parameter p = new Parameter();
+        p.setName("fieldsets");
+        p.setIn("query");
+        p.setDescription("Disable all fieldset processing for this request (including any configured default fieldset). "
+            + "Accepted values: false, 0, no, off.");
+        p.setRequired(false);
+        Schema<String> schema = new Schema<>();
+        schema.setType("string");
+        schema.setEnum(Arrays.asList("false", "0", "no", "off"));
+        p.setSchema(schema);
+        return p;
     }
 
     private List<String> getSavedQueryNames() {
