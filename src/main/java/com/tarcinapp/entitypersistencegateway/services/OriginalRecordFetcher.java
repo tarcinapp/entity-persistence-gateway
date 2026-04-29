@@ -1,8 +1,11 @@
 package com.tarcinapp.entitypersistencegateway.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
@@ -54,7 +57,12 @@ public class OriginalRecordFetcher {
 
         log.debug("Fetching original record from: " + originalResourceUrl);
 
-        return backendBaseClient.get(originalResourceUrl, Object.class);
+        final String resolvedUrl = originalResourceUrl;
+        return backendBaseClient.get(resolvedUrl, Object.class)
+            .onErrorMap(
+                WebClientResponseException.NotFound.class,
+                e -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Entity not found: " + resolvedUrl, e));
     }
 
     /**

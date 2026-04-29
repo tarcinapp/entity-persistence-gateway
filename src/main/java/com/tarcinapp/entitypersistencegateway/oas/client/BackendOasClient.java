@@ -1,5 +1,7 @@
 package com.tarcinapp.entitypersistencegateway.oas.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -22,6 +24,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,6 +55,7 @@ public class BackendOasClient {
 
     private final OasOrchestratorProperties properties;
     private final OpenAPIV3Parser openApiParser;
+    private final ObjectMapper objectMapper;
 
     private WebClient webClient;
 
@@ -70,8 +74,9 @@ public class BackendOasClient {
     @Value("${app.outbound.routing-target.baseUri:/}")
     private String backendBaseUri;
 
-    public BackendOasClient(OasOrchestratorProperties properties) {
+    public BackendOasClient(OasOrchestratorProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
+        this.objectMapper = objectMapper;
         this.openApiParser = new OpenAPIV3Parser();
     }
 
@@ -128,10 +133,11 @@ public class BackendOasClient {
                 })
                 .bodyToMono(String.class)
                 .timeout(properties.getBackend().getResponseTimeout())
-                .map(this::parseOasContent)
-                .doOnNext(openApi -> {
+                .map(content -> {
+                    OpenAPI openApi = parseOasContent(content);
                     Duration ttl = properties.getCache().getRawOasTtl();
-                    cachedRawOas.set(new CachedOas(openApi, ttl));
+                    cachedRawOas.set(new CachedOas(openApi, content, ttl));
+                    return openApi;
                 })
                 // DO NOT TOLERATE STALE DATA
                 .doOnError(e -> {
@@ -198,19 +204,42 @@ public class BackendOasClient {
     }
 
     /**
+     * Returns the raw JSON content of the cached backend OAS as a JsonNode,
+     * or empty if nothing is cached yet. Useful for extracting fields that
+     * swagger-parser drops (e.g. schema-level "examples" in OAS 3.0 specs).
+     */
+    public Optional<JsonNode> getCachedRawOasJson() {
+        CachedOas cached = cachedRawOas.get();
+        if (cached == null || cached.isExpired() || cached.getRawContent() == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(objectMapper.readTree(cached.getRawContent()));
+        } catch (Exception e) {
+            log.warn("Failed to parse cached raw OAS content as JSON: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
      * In-memory cache entry for raw OAS with TTL tracking.
      */
     private static class CachedOas {
         private final OpenAPI openApi;
+        private final String rawContent;
         private final long expiresAt;
 
-        CachedOas(OpenAPI openApi, Duration ttl) {
+        CachedOas(OpenAPI openApi, String rawContent, Duration ttl) {
             this.openApi = openApi;
+            this.rawContent = rawContent;
             this.expiresAt = System.currentTimeMillis() + ttl.toMillis();
         }
 
         OpenAPI getOpenApi() {
             return openApi;
+        }
+        String getRawContent() {
+            return rawContent;
         }
         boolean isExpired() {
             return System.currentTimeMillis() > expiresAt;

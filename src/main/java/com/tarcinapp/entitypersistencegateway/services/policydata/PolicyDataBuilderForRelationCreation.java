@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -111,18 +112,16 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
 
         // Fetch both resources in parallel
         Mono<AnyRecordBase> entityMono = backendBaseClient.get(entityPath, AnyRecordBase.class)
-            .onErrorMap(e -> {
-                log.warn("Failed to fetch entity for relation: " + entityId, e);
-                return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Could not fetch entity for relation: " + entityId, e);
-            });
+            .onErrorMap(
+                WebClientResponseException.NotFound.class,
+                e -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Entity not found: " + entityId, e));
 
         Mono<AnyRecordBase> listMono = backendBaseClient.get(listPath, AnyRecordBase.class)
-            .onErrorMap(e -> {
-                log.warn("Failed to fetch list for relation: " + listId, e);
-                return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Could not fetch list for relation: " + listId, e);
-            });
+            .onErrorMap(
+                WebClientResponseException.NotFound.class,
+                e -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "List not found: " + listId, e));
 
         // Wait for both to complete in parallel
         return Mono.zip(entityMono, listMono)

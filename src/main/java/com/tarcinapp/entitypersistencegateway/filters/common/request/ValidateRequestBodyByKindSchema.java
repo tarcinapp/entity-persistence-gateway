@@ -1001,9 +1001,10 @@ public class ValidateRequestBodyByKindSchema
         }
 
         ObjectNode errorNode = objectMapper.createObjectNode();
-        errorNode.put("name", "ValidationError");
-        errorNode.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        errorNode.put("name", "UnprocessableEntityError");
+        errorNode.put("statusCode", HttpStatus.UNPROCESSABLE_ENTITY.value());
         errorNode.put("message", "The request is not valid.");
+        errorNode.put("code", "GATEWAY-UNPROCESSABLE-ENTITY");
         errorNode.set("details", detailsArray);
 
         ObjectNode responseJson = objectMapper.createObjectNode();

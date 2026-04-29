@@ -10,6 +10,7 @@ import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperti
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
@@ -108,6 +109,10 @@ public class OasTransformationEngine {
     
     private final com.tarcinapp.entitypersistencegateway.oas.service.BackendSchemaService backendSchemaService;
     private final com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService routeMetadataService;
+
+    // Optional: used to read the raw backend OAS JSON (bypasses swagger-parser model loss)
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.tarcinapp.entitypersistencegateway.oas.client.BackendOasClient backendOasClient;
     
     // Cache of route metadata for tag-based filtering
     private final Map<String, com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata> routeMetadataCache;
@@ -510,10 +515,13 @@ public class OasTransformationEngine {
                         log.debug("Skipping path '{}' - all operations disabled by route toggles", tp.getVirtualPath());
                         return;
                     }
-                    
+
+                    // Annotate with controller type (controllerName from the outer forEach scope)
+                    filtered.addExtension("x-gateway-controller", controllerName);
+
                     // Prefix the path with base URI (e.g., /books → /api/v1/books)
                     String fullPath = baseUri + tp.getVirtualPath();
-                    
+
                     if (virtualizedPaths.containsKey(fullPath)) {
                         log.warn("Duplicate virtualized path: {}", fullPath);
                     } else {
@@ -752,7 +760,10 @@ public class OasTransformationEngine {
                 transformed.setDelete(transformBaseControllerOperation(original.getDelete(), controllerName, tagName, "delete", isInstancePath));
             }
         }
-        
+
+        // Annotate with controller type so addGatewayErrorResponses can filter codes per-endpoint
+        transformed.addExtension("x-gateway-controller", controllerName);
+
         return transformed;
     }
     
@@ -2159,66 +2170,46 @@ public class OasTransformationEngine {
     
     /**
      * Adds standard error response schemas to components.
-     * Currently adds the 403 Forbidden error schema.
+     * Adds ValidationErrorResponse (422) and ValidationErrorDetail.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void addStandardErrorSchemas(Map<String, Schema> schemas) {
-        // Create 403 Forbidden Error schema
-        Schema<Object> errorDetailsSchema = new Schema<>();
-        errorDetailsSchema.setType("object");
-        errorDetailsSchema.setDescription("Error response details");
-        
-        Map<String, Schema> errorProperties = new LinkedHashMap<>();
-        
-        Schema<Integer> statusCodeSchema = new Schema<>();
-        statusCodeSchema.setType("integer");
-        statusCodeSchema.setDescription("HTTP status code");
-        statusCodeSchema.setExample(403);
-        errorProperties.put("statusCode", statusCodeSchema);
-        
-        Schema<String> nameSchema = new Schema<>();
-        nameSchema.setType("string");
-        nameSchema.setDescription("Error name");
-        nameSchema.setExample("ForbiddenError");
-        errorProperties.put("name", nameSchema);
-        
-        Schema<String> messageSchema = new Schema<>();
-        messageSchema.setType("string");
-        messageSchema.setDescription("Human-readable error message");
-        messageSchema.setExample("Access Denied by Policy");
-        errorProperties.put("message", messageSchema);
-        
-        Schema<String> codeSchema = new Schema<>();
-        codeSchema.setType("string");
-        codeSchema.setDescription("Application error code");
-        codeSchema.setExample("GATEWAY-FORBIDDEN");
-        errorProperties.put("code", codeSchema);
-        
-        Schema<String> requestIdSchema = new Schema<>();
-        requestIdSchema.setType("string");
-        requestIdSchema.setDescription("Unique request identifier for tracking");
-        String requestIdExample = appShortcode.toUpperCase() + "-POSTMAN-20260114173558214-FXBOM";
-        requestIdSchema.setExample(requestIdExample);
-        errorProperties.put("requestId", requestIdSchema);
-        
-        Schema<String> pathSchema = new Schema<>();
-        pathSchema.setType("string");
-        pathSchema.setDescription("Request path that was denied");
-        pathSchema.setExample("/api/v1/entities");
-        errorProperties.put("path", pathSchema);
-        
-        errorDetailsSchema.setProperties(errorProperties);
-        
-        // Create wrapper schema with error property
-        Schema<Object> forbiddenErrorSchema = new Schema<>();
-        forbiddenErrorSchema.setType("object");
-        forbiddenErrorSchema.setDescription("403 Forbidden error response");
-        
-        Map<String, Schema> wrapperProperties = new LinkedHashMap<>();
-        wrapperProperties.put("error", errorDetailsSchema);
-        forbiddenErrorSchema.setProperties(wrapperProperties);
-        
-        schemas.put("ForbiddenErrorResponse", forbiddenErrorSchema);
-        log.debug("Added ForbiddenErrorResponse schema");
+        if (!schemas.containsKey("ValidationErrorDetail")) {
+            Schema detail = new Schema();
+            detail.setType("object");
+            Map<String, Schema> props = new LinkedHashMap<>();
+            props.put("code", new Schema().type("string").example("required"));
+            props.put("field", new Schema().type("string").example("$.name").description("JSON path to the failing field"));
+            props.put("message", new Schema().type("string").example("is required"));
+            detail.setProperties(props);
+            detail.setRequired(Arrays.asList("code", "field", "message"));
+            schemas.put("ValidationErrorDetail", detail);
+        }
+
+        if (!schemas.containsKey("ValidationErrorResponse")) {
+            Schema errorObject = new Schema();
+            errorObject.setType("object");
+            Map<String, Schema> errorProps = new LinkedHashMap<>();
+            errorProps.put("statusCode", new Schema().type("integer").example(422));
+            errorProps.put("name", new Schema().type("string").example("UnprocessableEntityError"));
+            errorProps.put("message", new Schema().type("string").example("The request is not valid."));
+            errorProps.put("code", new Schema().type("string").example("GATEWAY-UNPROCESSABLE-ENTITY"));
+            errorProps.put("requestId", new Schema().type("string"));
+            ArraySchema detailsArray = new ArraySchema();
+            detailsArray.setItems(new Schema().$ref("#/components/schemas/ValidationErrorDetail"));
+            errorProps.put("details", detailsArray);
+            errorObject.setProperties(errorProps);
+            errorObject.setRequired(Arrays.asList("statusCode", "name", "message", "code", "requestId"));
+
+            Schema root = new Schema();
+            root.setType("object");
+            Map<String, Schema> rootProps = new LinkedHashMap<>();
+            rootProps.put("error", errorObject);
+            root.setProperties(rootProps);
+            schemas.put("ValidationErrorResponse", root);
+        }
+
+        log.debug("Added ValidationErrorResponse and ValidationErrorDetail schemas");
     }
     
     /**
@@ -2254,19 +2245,11 @@ public class OasTransformationEngine {
         }
         
         // Add 403 response if not already present
+        // NOTE: addGatewayErrorResponses runs before this method, so 403 is typically already set.
         if (!operation.getResponses().containsKey("403")) {
             ApiResponse forbiddenResponse = new ApiResponse();
             forbiddenResponse.setDescription("Access Denied by Policy - User not authorized to access this resource");
-            
-            // Create content with schema reference
-            Content content = new Content();
-            MediaType mediaType = new MediaType();
-            Schema<Object> schemaRef = new Schema<>();
-            schemaRef.set$ref("#/components/schemas/ForbiddenErrorResponse");
-            mediaType.setSchema(schemaRef);
-            content.addMediaType("application/json", mediaType);
-            forbiddenResponse.setContent(content);
-            
+            forbiddenResponse.setContent(createJsonContentInline(List.of("GATEWAY-FORBIDDEN"), 403));
             operation.getResponses().addApiResponse("403", forbiddenResponse);
         }
     }
@@ -5494,102 +5477,48 @@ public class OasTransformationEngine {
      * Preserves backend error responses (409, 422, 429) and adds gateway errors (400, 500).
      */
     private void addGatewayErrorResponses(OpenAPI transformed, OpenAPI rawOas) {
-        // First, ensure error schemas exist in components
         addErrorSchemas(transformed);
-        
+
         if (transformed.getPaths() == null) return;
-        
-        // Collect backend error responses for reference
+
+        // Extract backend error code examples from HttpErrorResponse.code
+        List<String> backendCodes = extractBackendCodes(rawOas);
+        log.debug("Extracted {} backend error codes from HttpErrorResponse.code.examples", backendCodes.size());
+
+        // Collect which status codes the backend defines (used to gate 409)
         Map<String, Map<String, ApiResponse>> backendErrors = collectBackendErrorResponses(rawOas);
-        
-        // Add error responses to each operation
+
         transformed.getPaths().forEach((path, pathItem) -> {
-            addErrorResponsesToPathItem(pathItem, backendErrors, path);
+            // Read controller type set by transformBaseControllerPathItem / alias loop
+            String controllerName = null;
+            if (pathItem.getExtensions() != null) {
+                Object ext = pathItem.getExtensions().get("x-gateway-controller");
+                if (ext instanceof String) controllerName = (String) ext;
+            }
+            // Build per-endpoint code maps filtered to the relevant controller type
+            Map<String, List<String>> codesByStatus = buildCodesByStatus(backendCodes, controllerName);
+            addErrorResponsesToPathItem(pathItem, backendErrors, codesByStatus, path);
+            // Clean up internal extension so it doesn't appear in OAS output
+            if (pathItem.getExtensions() != null) {
+                pathItem.getExtensions().remove("x-gateway-controller");
+                if (pathItem.getExtensions().isEmpty()) pathItem.setExtensions(null);
+            }
         });
-        
+
         log.debug("Added gateway error responses to all operations");
     }
-    
+
     /**
-     * Adds standard error schemas to components.
+     * Ensures error component schemas exist. ValidationErrorResponse and
+     * ValidationErrorDetail are normally added by addStandardErrorSchemas() during
+     * transformComponents(); this is a safety guard.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void addErrorSchemas(OpenAPI openApi) {
-        if (openApi.getComponents() == null) {
-            openApi.setComponents(new Components());
-        }
+        if (openApi.getComponents() == null) openApi.setComponents(new Components());
         if (openApi.getComponents().getSchemas() == null) {
             openApi.getComponents().setSchemas(new LinkedHashMap<>());
         }
-        
-        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
-        
-        // Gateway Validation Error schema - matches createErrorResponse() in ValidateRequestBodyByKindSchema
-        // Actual structure: { error: { name, status, message, details: [{code, field, message}] } }
-        if (!schemas.containsKey("GatewayValidationError")) {
-            Schema validationError = new Schema();
-            validationError.setType("object");
-            validationError.setDescription("Gateway validation error response");
-            
-            // Build the nested error object structure
-            Schema errorObject = new Schema();
-            errorObject.setType("object");
-            
-            Map<String, Schema> errorProps = new LinkedHashMap<>();
-            errorProps.put("name", new Schema().type("string").example("ValidationError"));
-            errorProps.put("status", new Schema().type("integer").example(422));
-            errorProps.put("message", new Schema().type("string").example("The request is not valid."));
-            
-            // details is an array of ValidationErrorDetail
-            ArraySchema detailsArray = new ArraySchema();
-            detailsArray.setItems(new Schema().$ref("#/components/schemas/ValidationErrorDetail"));
-            errorProps.put("details", detailsArray);
-            
-            errorObject.setProperties(errorProps);
-            errorObject.setRequired(Arrays.asList("name", "status", "message", "details"));
-            
-            // Root object has single "error" property
-            Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("error", errorObject);
-            
-            validationError.setProperties(props);
-            validationError.setRequired(Arrays.asList("error"));
-            schemas.put("GatewayValidationError", validationError);
-        }
-        
-        // Validation Error Detail schema - matches ValidationMessage structure: {code, field, message}
-        if (!schemas.containsKey("ValidationErrorDetail")) {
-            Schema detail = new Schema();
-            detail.setType("object");
-            
-            Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("code", new Schema().type("string").example("required"));
-            props.put("field", new Schema().type("string").example("$.name").description("JSON path to the field"));
-            props.put("message", new Schema().type("string").example("is required"));
-            
-            detail.setProperties(props);
-            detail.setRequired(Arrays.asList("code", "field", "message"));
-            schemas.put("ValidationErrorDetail", detail);
-        }
-        
-        // Gateway Internal Error schema
-        if (!schemas.containsKey("GatewayInternalError")) {
-            Schema internalError = new Schema();
-            internalError.setType("object");
-            internalError.setDescription("Gateway internal server error");
-            
-            Map<String, Schema> props = new LinkedHashMap<>();
-            props.put("statusCode", new Schema().type("integer").example(500));
-            props.put("error", new Schema().type("string").example("Internal Server Error"));
-            props.put("message", new Schema().type("string").example("An unexpected error occurred"));
-            props.put("requestId", new Schema().type("string").description("Unique request identifier for tracing"));
-            
-            internalError.setProperties(props);
-            internalError.setRequired(Arrays.asList("statusCode", "error", "message"));
-            schemas.put("GatewayInternalError", internalError);
-        }
-        
-        // NOTE: RateLimitError schema removed - DynamicRateLimiter returns 429 status with NO body
+        addStandardErrorSchemas(openApi.getComponents().getSchemas());
     }
     
     /**
@@ -5627,98 +5556,92 @@ public class OasTransformationEngine {
     /**
      * Adds error responses to all operations in a PathItem.
      */
-    private void addErrorResponsesToPathItem(PathItem pathItem, 
-            Map<String, Map<String, ApiResponse>> backendErrors, String path) {
-        
-        if (pathItem.getGet() != null) addErrorResponsesToOperation(pathItem.getGet(), backendErrors, "GET");
-        if (pathItem.getPost() != null) addErrorResponsesToOperation(pathItem.getPost(), backendErrors, "POST");
-        if (pathItem.getPut() != null) addErrorResponsesToOperation(pathItem.getPut(), backendErrors, "PUT");
-        if (pathItem.getPatch() != null) addErrorResponsesToOperation(pathItem.getPatch(), backendErrors, "PATCH");
-        if (pathItem.getDelete() != null) addErrorResponsesToOperation(pathItem.getDelete(), backendErrors, "DELETE");
+    private void addErrorResponsesToPathItem(PathItem pathItem,
+            Map<String, Map<String, ApiResponse>> backendErrors,
+            Map<String, List<String>> codesByStatus, String path) {
+
+        if (pathItem.getGet() != null) addErrorResponsesToOperation(pathItem.getGet(), backendErrors, codesByStatus, "GET");
+        if (pathItem.getPost() != null) addErrorResponsesToOperation(pathItem.getPost(), backendErrors, codesByStatus, "POST");
+        if (pathItem.getPut() != null) addErrorResponsesToOperation(pathItem.getPut(), backendErrors, codesByStatus, "PUT");
+        if (pathItem.getPatch() != null) addErrorResponsesToOperation(pathItem.getPatch(), backendErrors, codesByStatus, "PATCH");
+        if (pathItem.getDelete() != null) addErrorResponsesToOperation(pathItem.getDelete(), backendErrors, codesByStatus, "DELETE");
     }
-    
+
     /**
-     * Adds standard error responses to an operation.
-     * 400 validation errors are only added to POST/PUT/PATCH (methods with request bodies).
+     * Adds standard error responses to an operation using inline schemas with per-status
+     * code examples (merged backend codes + gateway-specific codes).
      */
-    private void addErrorResponsesToOperation(Operation operation, 
-            Map<String, Map<String, ApiResponse>> backendErrors, String method) {
-        
+    private void addErrorResponsesToOperation(Operation operation,
+            Map<String, Map<String, ApiResponse>> backendErrors,
+            Map<String, List<String>> codesByStatus, String method) {
+
         if (operation.getResponses() == null) {
             operation.setResponses(new ApiResponses());
         }
-        
+
         ApiResponses responses = operation.getResponses();
-        
-        // Check if this is a method that can have request body validation
         boolean hasRequestBody = "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
-        
-        // Add 400 Bad Request (gateway validation) - ONLY for methods with request bodies
-        if (hasRequestBody && !responses.containsKey("400")) {
-            ApiResponse badRequest = new ApiResponse();
-            badRequest.setDescription("Bad Request - Validation failed");
-            badRequest.setContent(createJsonContent("#/components/schemas/GatewayValidationError"));
-            responses.addApiResponse("400", badRequest);
+
+        // 400 Bad Request — POST/PUT/PATCH only
+        if (hasRequestBody) {
+            ApiResponse r = new ApiResponse().description("Bad Request");
+            r.setContent(createJsonContentInline(codesByStatus.getOrDefault("400", List.of()), 400));
+            responses.addApiResponse("400", r);
         }
-        
-        // Add 401 Unauthorized
-        if (!responses.containsKey("401")) {
-            ApiResponse unauthorized = new ApiResponse();
-            unauthorized.setDescription("Unauthorized - Authentication required");
-            responses.addApiResponse("401", unauthorized);
+
+        // 401 Unauthorized — no body (AuthenticateRequest calls response.setComplete())
+        responses.addApiResponse("401", new ApiResponse().description("Unauthorized - Authentication required"));
+
+        // 403 Forbidden — always overwrite backend schema with gateway standard
+        {
+            ApiResponse r = new ApiResponse().description("Forbidden - Insufficient permissions");
+            r.setContent(createJsonContentInline(codesByStatus.getOrDefault("403", List.of()), 403));
+            responses.addApiResponse("403", r);
         }
-        
-        // Add 403 Forbidden
-        if (!responses.containsKey("403")) {
-            ApiResponse forbidden = new ApiResponse();
-            forbidden.setDescription("Forbidden - Insufficient permissions");
-            responses.addApiResponse("403", forbidden);
+
+        // 404 Not Found — always overwrite backend schema with gateway standard
+        {
+            ApiResponse r = new ApiResponse().description("Not Found - Resource does not exist");
+            r.setContent(createJsonContentInline(codesByStatus.getOrDefault("404", List.of()), 404));
+            responses.addApiResponse("404", r);
         }
-        
-        // Add 404 Not Found
-        if (!responses.containsKey("404")) {
-            ApiResponse notFound = new ApiResponse();
-            notFound.setDescription("Not Found - Resource does not exist");
-            responses.addApiResponse("404", notFound);
-        }
-        
-        // Add 409 Conflict (from backend, typically for POST)
-        if (!responses.containsKey("409") && backendErrors.containsKey("409")) {
+
+        // 409 Conflict — only if backend has 409 defined anywhere, POST/PUT only
+        if (backendErrors.containsKey("409")) {
             if ("POST".equals(method) || "PUT".equals(method)) {
-                ApiResponse conflict = new ApiResponse();
-                conflict.setDescription("Conflict - Resource already exists or state conflict");
-                responses.addApiResponse("409", conflict);
+                List<String> codes = codesByStatus.getOrDefault("409", List.of());
+                if (!codes.isEmpty()) {
+                    ApiResponse r = new ApiResponse().description("Conflict - Resource already exists or uniqueness violation");
+                    r.setContent(createJsonContentInline(codes, 409));
+                    responses.addApiResponse("409", r);
+                }
             }
         }
-        
-        // Add 422 Unprocessable Entity - ONLY for methods with request bodies
-        // Gateway validates all request bodies, so 422 is always possible for POST/PUT/PATCH
-        if (hasRequestBody && !responses.containsKey("422")) {
-            ApiResponse unprocessable = new ApiResponse();
-            unprocessable.setDescription("Unprocessable Entity - Semantic validation failed");
-            unprocessable.setContent(createJsonContent("#/components/schemas/GatewayValidationError"));
-            responses.addApiResponse("422", unprocessable);
+
+        // 422 Unprocessable Entity — POST/PUT/PATCH only, always overwrite with named component schema
+        if (hasRequestBody) {
+            ApiResponse r = new ApiResponse().description("Unprocessable Entity - Semantic validation failed");
+            r.setContent(createJsonContent("#/components/schemas/ValidationErrorResponse"));
+            responses.addApiResponse("422", r);
         }
-        
-        // Add 429 Too Many Requests (rate limiting) - NO body returned by DynamicRateLimiter
-        if (!responses.containsKey("429")) {
-            ApiResponse rateLimit = new ApiResponse();
-            rateLimit.setDescription("Too Many Requests - Rate limit exceeded. No response body is returned.");
-            // No content - DynamicRateLimiter returns only 429 status with no body
-            responses.addApiResponse("429", rateLimit);
+
+        // 429 Too Many Requests — always overwrite backend schema with gateway standard
+        {
+            ApiResponse r = new ApiResponse().description("Too Many Requests - Rate limit exceeded");
+            r.setContent(createJsonContentInline(codesByStatus.getOrDefault("429", List.of()), 429));
+            responses.addApiResponse("429", r);
         }
-        
-        // Add 500 Internal Server Error
-        if (!responses.containsKey("500")) {
-            ApiResponse internalError = new ApiResponse();
-            internalError.setDescription("Internal Server Error");
-            internalError.setContent(createJsonContent("#/components/schemas/GatewayInternalError"));
-            responses.addApiResponse("500", internalError);
+
+        // 500 Internal Server Error — always overwrite backend schema with gateway standard
+        {
+            ApiResponse r = new ApiResponse().description("Internal Server Error");
+            r.setContent(createJsonContentInline(codesByStatus.getOrDefault("500", List.of()), 500));
+            responses.addApiResponse("500", r);
         }
     }
     
     /**
-     * Creates JSON content with a schema reference.
+     * Creates JSON content with a named schema $ref (used for ValidationErrorResponse).
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Content createJsonContent(String schemaRef) {
@@ -5727,5 +5650,264 @@ public class OasTransformationEngine {
         mediaType.setSchema(new Schema().$ref(schemaRef));
         content.addMediaType("application/json", mediaType);
         return content;
+    }
+
+    /**
+     * Creates JSON content using OAS 3.0 Media Type Object examples (renders as dropdown in Swagger UI).
+     * Each code becomes a named example with a representative error response body.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Content createJsonContentInline(List<String> codes, int statusCode) {
+        Content content = new Content();
+        MediaType mediaType = new MediaType();
+        mediaType.setSchema(buildInlineErrorSchema());
+
+        if (!codes.isEmpty()) {
+            Map<String, Example> examples = new LinkedHashMap<>();
+            for (String code : codes) {
+                Example example = new Example();
+                example.setSummary(code);
+                example.setValue(buildErrorExampleValue(statusCode, code));
+                examples.put(code, example);
+            }
+            mediaType.setExamples(examples);
+        }
+
+        content.addMediaType("application/json", mediaType);
+        return content;
+    }
+
+    /**
+     * Builds an inline error response schema with the given code examples on the code field.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Schema buildInlineErrorSchema() {
+        Schema codeSchema = new Schema().type("string");
+
+        Schema errorObject = new Schema();
+        errorObject.setType("object");
+        Map<String, Schema> errorProps = new LinkedHashMap<>();
+        errorProps.put("statusCode", new Schema().type("integer"));
+        errorProps.put("name", new Schema().type("string"));
+        errorProps.put("message", new Schema().type("string"));
+        errorProps.put("code", codeSchema);
+        errorProps.put("requestId", new Schema().type("string"));
+        errorProps.put("path", new Schema().type("string"));
+        errorObject.setProperties(errorProps);
+        errorObject.setRequired(Arrays.asList("statusCode", "name", "message", "code", "requestId"));
+
+        Schema root = new Schema();
+        root.setType("object");
+        Map<String, Schema> rootProps = new LinkedHashMap<>();
+        rootProps.put("error", errorObject);
+        root.setProperties(rootProps);
+        return root;
+    }
+
+    /**
+     * Builds a representative example value for a given HTTP status + error code.
+     * Used to populate OAS 3.0 Media Type Object examples (renders as Swagger UI dropdown).
+     */
+    private Map<String, Object> buildErrorExampleValue(int statusCode, String code) {
+        String name;
+        switch (statusCode) {
+            case 400: name = "BadRequestError"; break;
+            case 403: name = "ForbiddenError"; break;
+            case 404: name = "NotFoundError"; break;
+            case 409: name = "ConflictError"; break;
+            case 429: name = "TooManyRequestsError"; break;
+            case 500: name = "InternalServerError"; break;
+            default:  name = "Error"; break;
+        }
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("statusCode", statusCode);
+        error.put("name", name);
+        error.put("message", code.toLowerCase().replace('-', ' '));
+        error.put("code", code);
+        error.put("requestId", "req_xxxxxxxxxxxxxxxx");
+        error.put("path", "/api/v1/example");
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("error", error);
+        return root;
+    }
+
+    /**
+     * Extracts error code examples from the backend's HttpErrorResponse.code schema.
+     * The backend uses OAS 3.1 schema-level examples (List<Object>).
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private List<String> extractBackendCodes(OpenAPI rawOas) {
+        try {
+            if (rawOas.getComponents() == null || rawOas.getComponents().getSchemas() == null) {
+                return List.of();
+            }
+            Schema httpErrSchema = rawOas.getComponents().getSchemas().get("HttpErrorResponse");
+            if (httpErrSchema == null || httpErrSchema.getProperties() == null) return List.of();
+
+            Schema codeSchema = (Schema) httpErrSchema.getProperties().get("code");
+            if (codeSchema == null) return List.of();
+
+            // Strategy 1: OAS 3.1 native getExamples() (List<Object>)
+            List<?> examples = codeSchema.getExamples();
+
+            // Strategy 2: extension x-examples
+            if ((examples == null || examples.isEmpty()) && codeSchema.getExtensions() != null) {
+                Object ext = codeSchema.getExtensions().get("x-examples");
+                if (ext instanceof List) examples = (List<?>) ext;
+            }
+
+            // Strategy 3: extension key "examples" (some parsers store it here for OAS 3.0)
+            if ((examples == null || examples.isEmpty()) && codeSchema.getExtensions() != null) {
+                Object ext = codeSchema.getExtensions().get("examples");
+                if (ext instanceof List) examples = (List<?>) ext;
+            }
+
+            // Strategy 4: Use the raw JSON cached by BackendOasClient (bypasses swagger-parser
+            // model, which drops schema-level "examples" when parsing OAS 3.0 specs).
+            if (examples == null || examples.isEmpty()) {
+                if (backendOasClient != null) {
+                    try {
+                        backendOasClient.getCachedRawOasJson().ifPresent(root -> {
+                            // Can't assign to 'examples' inside lambda; collect directly and return
+                        });
+                        Optional<JsonNode> rawJson = backendOasClient.getCachedRawOasJson();
+                        if (rawJson.isPresent()) {
+                            JsonNode examplesNode = rawJson.get()
+                                    .path("components").path("schemas")
+                                    .path("HttpErrorResponse").path("properties")
+                                    .path("code").path("examples");
+                            if (examplesNode.isArray()) {
+                                List<String> fromRaw = new ArrayList<>();
+                                examplesNode.forEach(n -> { if (n.isTextual()) fromRaw.add(n.asText()); });
+                                if (!fromRaw.isEmpty()) {
+                                    log.debug("Extracted {} backend codes via raw JSON (BackendOasClient)", fromRaw.size());
+                                    return fromRaw;
+                                }
+                            }
+                        }
+                    } catch (Exception rawEx) {
+                        log.warn("Raw JSON fallback for backend codes failed: {}", rawEx.getMessage());
+                    }
+                } else {
+                    // In tests BackendOasClient is not injected; JSON round-trip via objectMapper
+                    try {
+                        JsonNode root = objectMapper.valueToTree(rawOas);
+                        JsonNode examplesNode = root
+                                .path("components").path("schemas")
+                                .path("HttpErrorResponse").path("properties")
+                                .path("code").path("examples");
+                        if (examplesNode.isArray()) {
+                            List<String> fromJson = new ArrayList<>();
+                            examplesNode.forEach(n -> { if (n.isTextual()) fromJson.add(n.asText()); });
+                            if (!fromJson.isEmpty()) {
+                                log.debug("Extracted {} backend codes via ObjectMapper round-trip", fromJson.size());
+                                return fromJson;
+                            }
+                        }
+                    } catch (Exception jsonEx) {
+                        log.warn("ObjectMapper round-trip for backend codes failed: {}", jsonEx.getMessage());
+                    }
+                }
+            }
+
+            if (examples == null) return List.of();
+
+            return examples.stream()
+                    .filter(o -> o instanceof String)
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Could not extract backend error codes from HttpErrorResponse.code", e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Builds per-status code example lists by filtering backend codes by substring
+     * and appending gateway-specific codes.
+     */
+    private Map<String, List<String>> buildCodesByStatus(List<String> backendCodes, String controllerName) {
+        Map<String, List<String>> map = new LinkedHashMap<>();
+
+        map.put("400", List.of("GATEWAY-BAD-REQUEST"));
+        map.put("403", List.of("GATEWAY-FORBIDDEN"));
+
+        List<String> codes404 = new ArrayList<>(
+                backendCodes.stream()
+                        .filter(c -> c.contains("-NOT-FOUND"))
+                        .filter(c -> isCodeForController(c, controllerName))
+                        .collect(Collectors.toList()));
+        codes404.add("GATEWAY-NOT-FOUND");
+        map.put("404", Collections.unmodifiableList(codes404));
+
+        List<String> codes409 = backendCodes.stream()
+                .filter(c -> c.contains("-UNIQUENESS-VIOLATION"))
+                .filter(c -> isCodeForController(c, controllerName))
+                .collect(Collectors.toList());
+        map.put("409", Collections.unmodifiableList(codes409));
+
+        map.put("422", List.of("GATEWAY-UNPROCESSABLE-ENTITY"));
+
+        List<String> codes429 = new ArrayList<>(
+                backendCodes.stream()
+                        .filter(c -> c.contains("-LIMIT-EXCEEDED"))
+                        .filter(c -> isCodeForController(c, controllerName))
+                        .collect(Collectors.toList()));
+        codes429.add("GATEWAY-TOO-MANY-REQUESTS");
+        map.put("429", Collections.unmodifiableList(codes429));
+
+        map.put("500", List.of("GATEWAY-INTERNAL-SERVER-ERROR"));
+
+        log.debug("Built code maps for controller='{}': 404={} codes, 409={} codes, 429={} codes",
+                controllerName, codes404.size(), codes409.size(), codes429.size());
+        return map;
+    }
+
+    /**
+     * Returns true if the given error code belongs to the specified controller.
+     * Uses exact prefix matching to prevent overlap (e.g., "ENTITY-" should not
+     * match "ENTITY-REACTION-*" codes, which belong to the entityReactions controller).
+     * A null controllerName means "include all" (used for through/mixed routes).
+     */
+    private boolean isCodeForController(String code, String controllerName) {
+        if (controllerName == null) return true;
+        switch (controllerName) {
+            // Base controllers — exact prefix match with sub-prefix exclusion
+            case "entities":        return code.startsWith("ENTITY-") && !code.startsWith("ENTITY-REACTION-");
+            case "lists":           return code.startsWith("LIST-")   && !code.startsWith("LIST-REACTION-");
+            case "relations":       return code.startsWith("RELATION-");
+            case "entityReactions": return code.startsWith("ENTITY-REACTION-");
+            case "listReactions":   return code.startsWith("LIST-REACTION-");
+            // Through routes — include codes for both parent and child controller
+            // /entities/{id}/reactions: entity may not exist OR the reaction may not exist
+            case "reactionsThroughEntity": return code.startsWith("ENTITY-");
+            // /lists/{id}/reactions: list may not exist OR the reaction may not exist
+            case "reactionsThroughList":   return code.startsWith("LIST-");
+            // /entities/{id}/lists: entity may not exist OR the list may not exist (not list-reactions)
+            case "listsThroughEntity":
+                return (code.startsWith("ENTITY-") && !code.startsWith("ENTITY-REACTION-"))
+                    || (code.startsWith("LIST-")   && !code.startsWith("LIST-REACTION-"));
+            // /lists/{id}/entities: list may not exist OR the entity may not exist (not entity-reactions)
+            case "entitiesThroughList":
+                return (code.startsWith("LIST-")   && !code.startsWith("LIST-REACTION-"))
+                    || (code.startsWith("ENTITY-") && !code.startsWith("ENTITY-REACTION-"));
+            default: return true;
+        }
+    }
+
+    /**
+     * Maps a controller name to the error code prefix used by that controller's backend codes.
+     * Returns null for through/mixed controllers, which causes all backend codes to be included.
+     */
+    private String controllerCodePrefix(String controllerName) {
+        if (controllerName == null) return null;
+        switch (controllerName) {
+            case "entities": return "ENTITY";
+            case "lists":    return "LIST";
+            case "relations": return "RELATION";
+            case "entityReactions": return "ENTITY-REACTION";
+            case "listReactions":   return "LIST-REACTION";
+            default: return null; // through routes, alias variants — no prefix filtering
+        }
     }
 }

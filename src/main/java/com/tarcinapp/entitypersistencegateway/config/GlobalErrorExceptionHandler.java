@@ -98,6 +98,7 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
                 Map<String, Object> errorNode = (Map<String, Object>) bodyMap.get("error");
                 
                 errorNode.putIfAbsent("requestId", requestId);
+                errorNode.putIfAbsent("path", exchange.getRequest().getPath().value());
 
                 // Security: Mask message in custom 5xx errors if configured
                 if (status.is5xxServerError() && NEVER.equalsIgnoreCase(includeMessage)) {
@@ -194,7 +195,7 @@ public class GlobalErrorExceptionHandler implements WebExceptionHandler {
     }
 
     private String mapStatusToCode(HttpStatus status) {
-        return "GATEWAY-" + status.name();
+        return "GATEWAY-" + status.name().replace('_', '-');
     }
 
     private HttpStatusCode determineHttpStatus(Throwable error) {

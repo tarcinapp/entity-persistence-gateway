@@ -81,6 +81,137 @@ class OasTransformationEngineTest {
     }
 
     @Nested
+    @DisplayName("Error Schema Tests")
+    class ErrorSchemaTests {
+
+        @Test
+        @DisplayName("Should add ValidationErrorResponse and ValidationErrorDetail to components")
+        void shouldAddStandardErrorSchemas() {
+            configureAlias("entities", "books", "book");
+            OpenAPI transformed = engine.transform(createRawOasWithEntitiesPath());
+
+            Map<String, io.swagger.v3.oas.models.media.Schema> schemas =
+                    transformed.getComponents().getSchemas();
+            assertThat(schemas).containsKey("ValidationErrorResponse");
+            assertThat(schemas).containsKey("ValidationErrorDetail");
+        }
+
+        @Test
+        @DisplayName("Should NOT have old gateway error schemas in components")
+        void shouldNotHaveOldErrorSchemas() {
+            configureAlias("entities", "books", "book");
+            OpenAPI transformed = engine.transform(createRawOasWithEntitiesPath());
+
+            Map<String, io.swagger.v3.oas.models.media.Schema> schemas =
+                    transformed.getComponents().getSchemas();
+            assertThat(schemas).doesNotContainKey("ForbiddenErrorResponse");
+            assertThat(schemas).doesNotContainKey("GatewayInternalError");
+            assertThat(schemas).doesNotContainKey("GatewayValidationError");
+        }
+
+        @Test
+        @DisplayName("Should include GATEWAY-NOT-FOUND in 404 response code examples")
+        void shouldIncludeGatewayNotFoundIn404() {
+            configureAlias("entities", "books", "book");
+            OpenAPI transformed = engine.transform(createRawOasWithEntitiesPath());
+
+            transformed.getPaths().forEach((path, pi) -> {
+                if (pi.getGet() != null) {
+                    io.swagger.v3.oas.models.responses.ApiResponse r404 =
+                            pi.getGet().getResponses().get("404");
+                    if (r404 != null && r404.getContent() != null) {
+                        io.swagger.v3.oas.models.media.MediaType mt =
+                                r404.getContent().get("application/json");
+                        if (mt != null && mt.getExamples() != null) {
+                            assertThat(mt.getExamples()).containsKey("GATEWAY-NOT-FOUND");
+                        }
+                    }
+                }
+            });
+        }
+
+        @Test
+        @DisplayName("Should merge backend NOT-FOUND codes into 404 response examples")
+        void shouldMergeBackendNotFoundCodesInto404() {
+            configureAlias("entities", "books", "book");
+            OpenAPI raw = createRawOasWithBackendErrorCodes(
+                    List.of("ENTITY-NOT-FOUND", "LIST-NOT-FOUND", "ENTITY-UNIQUENESS-VIOLATION"));
+            OpenAPI transformed = engine.transform(raw);
+
+            // For an "entities" alias, per-controller filtering only includes ENTITY-* codes.
+            // GATEWAY-NOT-FOUND is always appended. LIST-NOT-FOUND is correctly excluded.
+            boolean checked = false;
+            for (io.swagger.v3.oas.models.PathItem pi : transformed.getPaths().values()) {
+                if (pi.getGet() == null) continue;
+                io.swagger.v3.oas.models.responses.ApiResponse r404 =
+                        pi.getGet().getResponses().get("404");
+                if (r404 == null || r404.getContent() == null) continue;
+                io.swagger.v3.oas.models.media.MediaType mt =
+                        r404.getContent().get("application/json");
+                if (mt == null || mt.getExamples() == null) continue;
+
+                assertThat(mt.getExamples()).containsKey("ENTITY-NOT-FOUND");
+                assertThat(mt.getExamples()).containsKey("GATEWAY-NOT-FOUND");
+                // Per-controller filtering: entities alias should NOT include LIST-NOT-FOUND
+                assertThat(mt.getExamples()).doesNotContainKey("LIST-NOT-FOUND");
+                // Uniqueness violations are 409, not 404
+                assertThat(mt.getExamples()).doesNotContainKey("ENTITY-UNIQUENESS-VIOLATION");
+                checked = true;
+                break;
+            }
+            assertThat(checked).as("Should have found a 404 response with code examples").isTrue();
+        }
+
+        @Test
+        @DisplayName("Should include GATEWAY-INTERNAL-SERVER-ERROR in 500 response")
+        void shouldIncludeGatewayInternalServerErrorIn500() {
+            configureAlias("entities", "books", "book");
+            OpenAPI transformed = engine.transform(createRawOasWithEntitiesPath());
+
+            boolean checked = false;
+            for (io.swagger.v3.oas.models.PathItem pi : transformed.getPaths().values()) {
+                if (pi.getGet() == null) continue;
+                io.swagger.v3.oas.models.responses.ApiResponse r500 =
+                        pi.getGet().getResponses().get("500");
+                if (r500 == null || r500.getContent() == null) continue;
+                io.swagger.v3.oas.models.media.MediaType mt =
+                        r500.getContent().get("application/json");
+                if (mt == null || mt.getExamples() == null) continue;
+
+                assertThat(mt.getExamples()).containsKey("GATEWAY-INTERNAL-SERVER-ERROR");
+                checked = true;
+                break;
+            }
+            assertThat(checked).as("Should have found a 500 response with code examples").isTrue();
+        }
+
+        @Test
+        @DisplayName("422 response should $ref ValidationErrorResponse schema")
+        void should422ReferenceValidationErrorResponse() {
+            configureAlias("entities", "books", "book");
+            OpenAPI raw = createRawOasWithEntitiesPath();
+            // Add POST path to trigger 422
+            raw.getPaths().addPathItem("/entities", createCollectionPathItem());
+            OpenAPI transformed = engine.transform(raw);
+
+            boolean checked = false;
+            for (io.swagger.v3.oas.models.PathItem pi : transformed.getPaths().values()) {
+                if (pi.getPost() == null) continue;
+                io.swagger.v3.oas.models.responses.ApiResponse r422 =
+                        pi.getPost().getResponses().get("422");
+                if (r422 == null || r422.getContent() == null) continue;
+                io.swagger.v3.oas.models.media.Schema schema =
+                        r422.getContent().get("application/json").getSchema();
+                assertThat(schema.get$ref())
+                        .isEqualTo("#/components/schemas/ValidationErrorResponse");
+                checked = true;
+                break;
+            }
+            assertThat(checked).as("Should have found a POST 422 response").isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("Path Generation Tests")
     class PathGenerationTests {
 
@@ -318,5 +449,25 @@ class OasTransformationEngineTest {
                 "_kind", new StringSchema(),
                 "_name", new StringSchema()));
         return schema;
+    }
+
+    /**
+     * Creates a raw OAS that includes an HttpErrorResponse schema with the given
+     * error code examples in its `code` property (OAS 3.1 style).
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private OpenAPI createRawOasWithBackendErrorCodes(List<String> codes) {
+        OpenAPI openAPI = createRawOasWithEntitiesPath();
+
+        Schema<Object> codeSchema = new Schema<>();
+        codeSchema.setType("string");
+        codeSchema.setExamples(new ArrayList<>(codes));
+
+        Schema<Object> httpErrSchema = new Schema<>();
+        httpErrSchema.setType("object");
+        httpErrSchema.setProperties(Map.of("code", codeSchema));
+
+        openAPI.getComponents().getSchemas().put("HttpErrorResponse", httpErrSchema);
+        return openAPI;
     }
 }

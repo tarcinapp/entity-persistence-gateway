@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -150,6 +151,10 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
                 
                 log.debug("Built policy data with _relationMetadata for reaction");
             })
+            .onErrorMap(
+                WebClientResponseException.NotFound.class,
+                e -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Target resource not found: " + targetResourcePath, e))
             .onErrorMap(e -> {
                 if (e instanceof ResponseStatusException) {
                     return e;
