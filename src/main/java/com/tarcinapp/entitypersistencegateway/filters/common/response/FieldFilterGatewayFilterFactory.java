@@ -2,6 +2,7 @@ package com.tarcinapp.entitypersistencegateway.filters.common.response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.IncludeAliasProjectionAttr;
+import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
 import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractResponsePayloadModifierFilterFactory;
 import com.tarcinapp.entitypersistencegateway.filters.common.request.FetchForbiddenFieldsGatewayFilterFactory;
@@ -49,36 +50,51 @@ public class FieldFilterGatewayFilterFactory
 
     @Override
     public Mono<String> modifyResponsePayload(Config config, ServerWebExchange exchange, String payload) {
-        
+
         // 1. Retrieve the library from Exchange Attributes
         // (Populated by FetchForbiddenFieldsGatewayFilterFactory in the request phase)
         ForbiddenFieldsLibrary library = exchange.getAttribute(FetchForbiddenFieldsGatewayFilterFactory.GATEWAY_CONTEXT_FORBIDDEN_FIELDS);
 
-        // 2. Fail-Fast: If no rules found in context, skip processing.
-        if (library == null || library.getRules() == null || library.getRules().isEmpty()) {
-            log.trace("No forbidden field rules found in context. Skipping filter.");
+        // 2. Check if this is a kind-alias route — _kind must be stripped from the response
+        //    because kind is implied by the URL path segment and is invisible to clients.
+        KindAliasConfigAttr kindAliasAttr = exchange.getAttribute(KindAliasConfigAttr.KIND_ALIAS_CONFIG_ATTR);
+        boolean isKindAlias = kindAliasAttr != null && kindAliasAttr.isKindAliasConfigured();
+
+        boolean hasFieldRules = library != null && library.getRules() != null && !library.getRules().isEmpty();
+
+        // 3. Fail-Fast: nothing to do if neither field-masking nor kind-alias stripping is needed.
+        if (!isKindAlias && !hasFieldRules) {
+            log.trace("No forbidden field rules and not a kind-alias route. Skipping filter.");
             return Mono.just(payload);
         }
 
-        // 3. Identify Targets: Analyze Query String for Includes & Lookups
+        // 4. Identify Targets: Analyze Query String for Includes & Lookups
         // This tells the service exactly where to look for relational data to avoid full scan.
         List<String> targetPaths = resolveEffectiveTargetPaths(exchange);
-        
-        // 3.1 Identify Lookup Constraints: For Polymorphic Lookup Audit
+
+        // 4.1 Identify Lookup Constraints: For Polymorphic Lookup Audit
         // This map tells us which lookup properties were filtered by which fields.
         Map<String, Set<String>> lookupConstraints = queryStringTargetAnalyzer.resolveLookupConstraints(exchange.getRequest().getQueryParams());
-        
+
         try {
-            // 4. Deserialize: Convert JSON String to Java Object (Map or List)
+            // 5. Deserialize: Convert JSON String to Java Object (Map or List)
             // We use Object.class to handle both Single Record (Map) and Collection (List) responses dynamically.
             Object data = objectMapper.readValue(payload, Object.class);
 
-            // 5. Execute: Call the Surgeon to clean the data
-            // Updated to pass lookupConstraints for security audit
-            Object filteredData = fieldFilterService.filterPayload(data, library, targetPaths, lookupConstraints);
+            // 6. Apply OPA-driven field masking (if rules exist)
+            if (hasFieldRules) {
+                fieldFilterService.filterPayload(data, library, targetPaths, lookupConstraints);
+            }
 
-            // 6. Serialize: Convert back to JSON String
-            return Mono.just(objectMapper.writeValueAsString(filteredData));
+            // 7. Strip _kind from all records on kind-alias routes.
+            //    _kind is implied by the URL path — it must not leak into responses seen by clients.
+            //    Applies to root records and every nested include/lookup target.
+            if (isKindAlias) {
+                fieldFilterService.stripKindField(data, targetPaths);
+            }
+
+            // 8. Serialize: Convert back to JSON String
+            return Mono.just(objectMapper.writeValueAsString(data));
 
         } catch (IOException e) {
             log.error("Error processing JSON payload during field filtering: {}", e.getMessage(), e);

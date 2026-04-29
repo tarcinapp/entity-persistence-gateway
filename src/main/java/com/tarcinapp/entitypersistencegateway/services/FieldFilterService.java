@@ -65,6 +65,54 @@ public class FieldFilterService {
         return filterPayload(payload, library, targetPaths, Collections.emptyMap());
     }
 
+    /**
+     * Strips the {@code _kind} field from all records in the payload, including any nested
+     * included or looked-up resources identified by {@code targetPaths}.
+     * <p>Called on kind-alias routes where {@code _kind} is implied by the URL path segment
+     * and must not appear in the response received by the client.</p>
+     *
+     * @param payload     Response body (Map or List)
+     * @param targetPaths Nested relation/lookup target keys to also strip {@code _kind} from
+     */
+    public void stripKindField(Object payload, List<String> targetPaths) {
+        removeKindFromDataStructure(payload);
+        if (targetPaths == null || targetPaths.isEmpty()) return;
+        if (payload instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) payload;
+            for (String target : targetPaths) {
+                if (map.containsKey(target)) {
+                    removeKindFromDataStructure(map.get(target));
+                }
+            }
+        } else if (payload instanceof List) {
+            for (Object item : (List<?>) payload) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> mapItem = (Map<String, Object>) item;
+                    for (String target : targetPaths) {
+                        if (mapItem.containsKey(target)) {
+                            removeKindFromDataStructure(mapItem.get(target));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeKindFromDataStructure(Object data) {
+        if (data instanceof Map) {
+            ((Map<String, Object>) data).remove("_kind");
+        } else if (data instanceof List) {
+            for (Object item : (List<?>) data) {
+                if (item instanceof Map) {
+                    ((Map<String, Object>) item).remove("_kind");
+                }
+            }
+        }
+    }
+
     private void cleanTargetsInMap(Map<String, Object> map, ForbiddenFieldsLibrary library, List<String> targetPaths, Map<String, Set<String>> lookupConstraints) {
         for (String target : targetPaths) {
             if (map.containsKey(target)) {

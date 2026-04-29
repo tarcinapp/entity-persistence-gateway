@@ -4421,6 +4421,7 @@ public class OasTransformationEngine {
             
             // 1. Resource Schema (GET/PUT) - use Resource Base (includes ID, read-only fields)
             Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveResourceBase, controllerName);
+            removeKindFromSchema(mergedSchema);
             schemas.put(schemaName, mergedSchema);
             
             // 2. New Variant (POST) - use POST Base (excludes ID, uses create constraints)
@@ -4429,12 +4430,14 @@ public class OasTransformationEngine {
             // Remove base-schema required fields (gateway provides defaults for those)
             // but keep user-config required fields (those ARE required from the client)
             newSchema.setRequired(extractUserRequiredFields(aliasConfig.getSchema()));
+            removeKindFromSchema(newSchema);
             schemas.put("New" + schemaName, newSchema);
             
             // 3. Patch Variant (PATCH) - use PATCH Base (partial update)
             // Also add "Patch" variant without required fields for PATCH (partial updates)
             Schema patchSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePatchBase, controllerName);
             patchSchema.setRequired(null); // No required for partial update
+            removeKindFromSchema(patchSchema);
             schemas.put("Patch" + schemaName, patchSchema);
             
             log.debug("Added merged domain schemas: {}, New{}, Patch{} (from kind: {})", 
@@ -4507,6 +4510,7 @@ public class OasTransformationEngine {
                     // Remove base-schema required fields (gateway provides defaults for those)
                     // but keep user-config required fields (those ARE required from the client)
                     routeSchema.setRequired(extractUserRequiredFields(routeConfig.getSchema()));
+                    removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific POST request schema: {} (from route: {})", routeSchemaName, routeId);
                     
                     // POST RESPONSE variant: {SchemaName}{RouteId} — merged with Resource base
@@ -4514,6 +4518,7 @@ public class OasTransformationEngine {
                     // so the response schema should use the resource base, not the POST base.
                     String responseSchemaName = schemaName + capitalizeFirst(routeId);
                     Schema responseSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    removeKindFromSchema(responseSchema);
                     schemas.put(responseSchemaName, responseSchema);
                     log.debug("Created route-specific POST response schema: {} (from route: {})", responseSchemaName, routeId);
                 } else if (routeIdLower.contains("update") || routeIdLower.contains("patch")) {
@@ -4521,16 +4526,19 @@ public class OasTransformationEngine {
                     routeSchemaName = "Patch" + schemaName + capitalizeFirst(routeId);
                     routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePatchBase, controllerName);
                     routeSchema.setRequired(null); // No required for partial update
+                    removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific PATCH schema: {} (from route: {})", routeSchemaName, routeId);
                 } else if (routeIdLower.contains("replace") || routeIdLower.contains("put")) {
                     // PUT variant: {SchemaName}{RouteId}
                     routeSchemaName = schemaName + capitalizeFirst(routeId);
                     routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific PUT schema: {} (from route: {})", routeSchemaName, routeId);
                 } else {
                     // Default to resource variant
                     routeSchemaName = schemaName + capitalizeFirst(routeId);
                     routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific schema: {} (from route: {})", routeSchemaName, routeId);
                 }
                 
@@ -4575,6 +4583,25 @@ public class OasTransformationEngine {
      * @param controllerName The record type (entities, lists, relations, entityReactions, listReactions)
      * @return Merged schema with x-record-type extension
      */
+    /**
+     * Removes {@code _kind} from a schema's {@code properties} and {@code required} lists.
+     * <p>Kind-alias route schemas must not expose {@code _kind} because it is implied by the
+     * URL path segment and is neither required from clients nor returned to them.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void removeKindFromSchema(Schema<?> schema) {
+        if (schema == null) return;
+        if (schema.getProperties() != null) {
+            schema.getProperties().remove("_kind");
+        }
+        if (schema.getRequired() != null) {
+            schema.getRequired().remove("_kind");
+            if (schema.getRequired().isEmpty()) {
+                schema.setRequired(null);
+            }
+        }
+    }
+
     @SuppressWarnings({"rawtypes"})
     private Schema<?> mergeSchemaWithBase(String aliasSchemaJson, JsonNode baseSchemaNode, String controllerName) 
             throws JsonProcessingException {

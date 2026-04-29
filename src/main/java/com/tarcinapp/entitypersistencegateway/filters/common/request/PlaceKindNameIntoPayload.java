@@ -54,19 +54,12 @@ public class PlaceKindNameIntoPayload
         }
 
         String kindName = kindAliasConfigAttr.getKindName();
-    
-        /*
-         * For PATCH (update) operations, do not add _kind to the payload.
-         * PATCH is for partial updates and _kind should not be modified.
-         * Only add _kind for POST (create) and PUT (replace) operations.
-         */
-        if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
-            log.debug("PATCH operation detected. Not adding _kind to payload for partial update.");
-            return Mono.just(payload);
-        }
 
         /*
-         * Place kind name to the request payload as _kind: "kindName" for POST and PUT.
+         * Kind alias routes: _kind is derived from the URL path segment, not from the body.
+         * Strip any client-supplied _kind first (incorrect value or not needed).
+         * For POST and PUT: re-inject the correct kind name resolved from the path alias.
+         * For PATCH: strip only — partial updates must not set or change _kind.
          */
         try {
             // Check for empty payload to avoid parsing errors
@@ -74,12 +67,19 @@ public class PlaceKindNameIntoPayload
                 return Mono.just(payload);
             }
 
-            // Use the injected objectMapper instance
             Map<String, Object> payloadMap = objectMapper.readValue(payload, MAP_TYPE_REFERENCE);
 
+            // Remove any _kind the client may have supplied
+            payloadMap.remove("_kind");
+
+            if (exchange.getRequest().getMethod() == HttpMethod.PATCH) {
+                log.debug("PATCH operation: stripped any client-supplied _kind. Not injecting kind name.");
+                return Mono.just(objectMapper.writeValueAsString(payloadMap));
+            }
+
+            // POST / PUT: inject the authoritative kind name resolved from the path alias
             payloadMap.put("_kind", kindName);
-            
-            log.debug("Kind name '{}' is placed to the request payload.", kindName);
+            log.debug("Kind name '{}' injected into request payload.", kindName);
 
             return Mono.just(objectMapper.writeValueAsString(payloadMap));
         } catch (Exception e) {
