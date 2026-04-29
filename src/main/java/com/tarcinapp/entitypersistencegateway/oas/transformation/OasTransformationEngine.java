@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties;
 import com.tarcinapp.entitypersistencegateway.config.OpenApiProperties.*;
+import com.tarcinapp.entitypersistencegateway.config.SavedQueryConfig;
 import com.tarcinapp.entitypersistencegateway.config.TogglesProperties;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
 import io.swagger.v3.oas.models.*;
@@ -150,7 +151,13 @@ public class OasTransformationEngine {
     
     @Value("${app.shortcode:app}")
     private String appShortcode;
-    
+
+    @Value("${app.allowBackendQueryNotation:true}")
+    private boolean allowBackendQueryNotation;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private SavedQueryConfig savedQueryConfig;
+
     // Thread-local storage for request context during transformation
     private final ThreadLocal<RequestContext> currentRequestContext = new ThreadLocal<>();
     
@@ -310,7 +317,10 @@ public class OasTransformationEngine {
         
         // 9. Deduplicate parameters (name+in must be unique per operation)
         deduplicateParameters(transformed);
-        
+
+        // 10. Replace backend filter[*]/where[*] params with simplified equivalents
+        replaceBackendQueryParamsWithSimplified(transformed);
+
         // 11. Apply global security requirement (JWT Bearer Auth)
         applyGlobalSecurity(transformed);
         
@@ -5893,6 +5903,188 @@ public class OasTransformationEngine {
                     || (code.startsWith("ENTITY-") && !code.startsWith("ENTITY-REACTION-"));
             default: return true;
         }
+    }
+
+    // ========================================================================
+    // QUERY SIMPLIFICATION — replaces backend filter[*]/where[*] params
+    // with the gateway's simplified surface (s, limit, skip, order, fields,
+    // include, lookup, q) and exposes saved-query names as an enum.
+    // ========================================================================
+
+    /**
+     * Backend deepObject parameter names that the simplification filter intercepts.
+     * These are removed (when allowBackendQueryNotation=false) and replaced with
+     * the simplified equivalents below.
+     */
+    private static final Set<String> BACKEND_FILTER_PARAMS = Set.of(
+        "filter", "where",
+        "listFilter", "listWhere",
+        "entityFilter", "entityWhere",
+        "filterThrough", "whereThrough"
+    );
+
+    /**
+     * Walks all operations in the transformed OAS and, for every route that
+     * has the {@code ConvertSimplerQueriesToBackendFormat} filter applied:
+     * <ul>
+     *   <li>Removes backend-notation deepObject params when
+     *       {@code app.allowBackendQueryNotation=false}.</li>
+     *   <li>Injects simplified params: {@code s}, {@code limit}, {@code skip},
+     *       {@code order}, {@code fields}, {@code include}, {@code lookup},
+     *       and {@code q} (with an enum of configured saved-query names).</li>
+     * </ul>
+     *
+     * Route categories by path pattern:
+     * <ul>
+     *   <li>Collection GET (path does not end with {@code }}) → full find params</li>
+     *   <li>Count GET (path ends with {@code /count}) → {@code s} + {@code q} only</li>
+     *   <li>Collection PATCH / DELETE → {@code s} + {@code q} only</li>
+     *   <li>Instance paths (end with {@code }}) → no filter params injected</li>
+     * </ul>
+     */
+    private void replaceBackendQueryParamsWithSimplified(OpenAPI openApi) {
+        if (openApi.getPaths() == null) return;
+
+        List<String> savedQueryNames = getSavedQueryNames();
+
+        openApi.getPaths().forEach((path, pathItem) -> {
+            boolean isInstancePath = path.endsWith("}");
+            boolean isCountPath    = path.endsWith("/count");
+            boolean isCollection   = !isInstancePath && !isCountPath;
+
+            if (pathItem.getGet() != null && !isInstancePath) {
+                injectSimplifiedQueryParams(pathItem.getGet(), isCollection, savedQueryNames);
+            }
+            if (pathItem.getPatch() != null && !isInstancePath) {
+                injectSimplifiedQueryParams(pathItem.getPatch(), false, savedQueryNames);
+            }
+            if (pathItem.getDelete() != null && !isInstancePath) {
+                injectSimplifiedQueryParams(pathItem.getDelete(), false, savedQueryNames);
+            }
+        });
+    }
+
+    /**
+     * Injects simplified query parameters into an operation.
+     *
+     * @param operation      target operation
+     * @param isFindRoute    true for collection GETs (full param set);
+     *                       false for count/updateAll/deleteAll (s + q only)
+     * @param savedQueryNames names to expose as enum on the {@code q} param
+     */
+    private void injectSimplifiedQueryParams(
+            Operation operation,
+            boolean isFindRoute,
+            List<String> savedQueryNames) {
+
+        if (operation == null) return;
+
+        List<Parameter> params = operation.getParameters();
+        if (params == null) {
+            params = new ArrayList<>();
+        } else {
+            params = new ArrayList<>(params); // mutable copy
+        }
+
+        // Remove backend-notation params when not allowed
+        if (!allowBackendQueryNotation) {
+            params.removeIf(p -> BACKEND_FILTER_PARAMS.contains(p.getName()));
+        }
+
+        Set<String> existing = params.stream()
+            .map(Parameter::getName)
+            .collect(Collectors.toSet());
+
+        // s — search by name (all query routes)
+        if (!existing.contains("s")) {
+            params.add(buildStringQueryParam("s",
+                "Search by name. Translates to a case-insensitive regexp filter on the _name field."));
+        }
+
+        if (isFindRoute) {
+            // limit / skip / order / fields / include / lookup — find routes only
+            if (!existing.contains("limit")) {
+                params.add(buildIntegerQueryParam("limit",
+                    "Maximum number of records to return."));
+            }
+            if (!existing.contains("skip")) {
+                params.add(buildIntegerQueryParam("skip",
+                    "Number of records to skip (zero-based offset)."));
+            }
+            if (!existing.contains("order")) {
+                params.add(buildStringQueryParam("order",
+                    "Field name to order results by (e.g. _name, _createdDateTime)."));
+            }
+            if (!existing.contains("fields")) {
+                params.add(buildStringQueryParam("fields",
+                    "Comma-separated list of fields to include in each record (e.g. _name,id)."));
+            }
+            if (!existing.contains("include")) {
+                params.add(buildStringQueryParam("include",
+                    "Comma-separated relation names to eagerly include (e.g. category,tags)."));
+            }
+            if (!existing.contains("lookup")) {
+                params.add(buildStringQueryParam("lookup",
+                    "Comma-separated property names to resolve via lookup (e.g. authorId,publisherId)."));
+            }
+        }
+
+        // q — saved query name (all query routes, only if any saved queries are configured)
+        if (!existing.contains("q") && !savedQueryNames.isEmpty()) {
+            params.add(buildSavedQueryParam(savedQueryNames));
+        }
+
+        operation.setParameters(params);
+    }
+
+    private List<String> getSavedQueryNames() {
+        if (savedQueryConfig == null || savedQueryConfig.getQueries() == null
+                || savedQueryConfig.getQueries().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> names = new ArrayList<>(savedQueryConfig.getQueries().keySet());
+        Collections.sort(names);
+        return names;
+    }
+
+    private Parameter buildStringQueryParam(String name, String description) {
+        Parameter p = new Parameter();
+        p.setName(name);
+        p.setIn("query");
+        p.setDescription(description);
+        p.setRequired(false);
+        Schema<String> schema = new Schema<>();
+        schema.setType("string");
+        p.setSchema(schema);
+        return p;
+    }
+
+    private Parameter buildIntegerQueryParam(String name, String description) {
+        Parameter p = new Parameter();
+        p.setName(name);
+        p.setIn("query");
+        p.setDescription(description);
+        p.setRequired(false);
+        Schema<Integer> schema = new Schema<>();
+        schema.setType("integer");
+        schema.setFormat("int32");
+        p.setSchema(schema);
+        return p;
+    }
+
+    private Parameter buildSavedQueryParam(List<String> queryNames) {
+        Parameter p = new Parameter();
+        p.setName("q");
+        p.setIn("query");
+        p.setDescription("Invoke a predefined saved query by name. " +
+            "Available values: " + String.join(", ", queryNames) + ". " +
+            "Some queries accept companion parameters (see configuration).");
+        p.setRequired(false);
+        Schema<String> schema = new Schema<>();
+        schema.setType("string");
+        schema.setEnum(new ArrayList<>(queryNames));
+        p.setSchema(schema);
+        return p;
     }
 
     /**
