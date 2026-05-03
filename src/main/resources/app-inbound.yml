@@ -33,6 +33,11 @@ app:
       listReactionsChildrenAccessor: ${app.inbound.controllerBasePaths.defaultChildrenAccessor}
       listReactionsParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
       
+    # Number of trusted reverse proxies in front of the gateway.
+    # Controls X-Forwarded-For resolution for IP-based rate limiting.
+    # 0 = direct address (no proxy / local dev), 1 = single nginx hop, etc.
+    trustedProxyCount: 0
+
     cors:
       allowedOrigins: "http://localhost:8080"
       allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"

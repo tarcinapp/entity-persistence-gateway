@@ -1,8 +1,12 @@
 package com.tarcinapp.entitypersistencegateway.helpers;
 
+import java.net.InetSocketAddress;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.cloud.gateway.support.ipresolver.XForwardedRemoteAddressResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -12,6 +16,9 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class UserKeyResolver implements KeyResolver {
+
+    @Value("${app.inbound.trustedProxyCount:0}")
+    private int trustedProxyCount;
 
     @Override
     public Mono<String> resolve(ServerWebExchange exchange) {
@@ -34,21 +41,27 @@ public class UserKeyResolver implements KeyResolver {
             key = subject + ":" + op;
         } else {
             // fallback to IP: operation:ip
-            String ip = "unknown";
-
-            if (exchange != null && exchange.getRequest() != null &&
-                exchange.getRequest().getRemoteAddress() != null &&
-                exchange.getRequest().getRemoteAddress().getAddress() != null) {
-                String hostAddr = exchange.getRequest().getRemoteAddress().getAddress().getHostAddress();
-
-                if (hostAddr != null && !hostAddr.isEmpty()) {
-                    ip = hostAddr;
-                }
-            }
-            key = op + ":" + ip;
+            key = op + ":" + resolveClientIp(exchange);
         }
 
         return Mono.just(key);
+    }
+
+    private String resolveClientIp(ServerWebExchange exchange) {
+        try {
+            InetSocketAddress addr;
+            if (trustedProxyCount > 0) {
+                addr = XForwardedRemoteAddressResolver
+                        .maxTrustedIndex(trustedProxyCount)
+                        .resolve(exchange);
+            } else {
+                addr = exchange.getRequest().getRemoteAddress();
+            }
+            if (addr != null && addr.getAddress() != null) {
+                return addr.getAddress().getHostAddress();
+            }
+        } catch (Exception ignored) {}
+        return "unknown";
     }
 
     /**
