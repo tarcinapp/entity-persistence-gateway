@@ -34,48 +34,9 @@ app:
       listReactionsParentsAccessor: ${app.inbound.controllerBasePaths.defaultParentsAccessor}
       
     cors:
-      allowedOrigins:
-        - "http://localhost:8080"
-      allowedMethods:
-        - "GET"
-        - "POST"
-        - "PUT"
-        - "PATCH"
-        - "DELETE"
-        - "OPTIONS"
-        - "HEAD"
-      allowedHeaders:
-        - "Accept"
-        - "Accept-Language"
-        - "Authorization"
-        - "Cache-Control"
-        - "Connection"
-        - "Content-Type"
-        - "Host"
-        - "Origin"
-        - "Pragma"
-        - "Referer"
-        - "User-Agent"
-        - "If-Match"
-        - "If-None-Match"
-        - "If-Modified-Since"
-        - "If-Unmodified-Since"
-        - "X-Requested-With"
-        - "X-XSRF-TOKEN"
-        - "X-Geolocation"
-        - ${app.requestId}
-      exposedHeaders:
-        - "Date"
-        - "Content-Type"
-        - "Content-Length"
-        - "Content-Disposition"
-        - "Location"
-        - "ETag"
-        - "Link"
-        - "X-Total-Count"
-        - "X-Page-Count"
-        - "Retry-After"
-        - "X-Cache-Status"
-        - ${app.requestId}
+      allowedOrigins: "http://localhost:8080"
+      allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+      allowedHeaders: "Accept,Accept-Language,Authorization,Cache-Control,Connection,Content-Type,Host,Origin,Pragma,Referer,User-Agent,If-Match,If-None-Match,If-Modified-Since,If-Unmodified-Since,X-Requested-With,X-XSRF-TOKEN,X-Geolocation,${app.requestId}"
+      exposedHeaders: "Date,Content-Type,Content-Length,Content-Disposition,Location,ETag,Link,X-Total-Count,X-Page-Count,Retry-After,X-Cache-Status,${app.requestId}"
       allowCredentials: true
       maxAge: 3600

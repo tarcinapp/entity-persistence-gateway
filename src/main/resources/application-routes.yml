@@ -2,6 +2,17 @@ spring:
   cloud:
     gateway:
       routes:
+      - id: corsPreflightHandler
+        uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
+        order: -1
+        predicates:
+        - Method=OPTIONS
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: ${app.rate-limits.cors.preflight.replenishRate}
+              burstCapacity: ${app.rate-limits.cors.preflight.burstCapacity}
       # entity controller
       - id: createEntity
         uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}

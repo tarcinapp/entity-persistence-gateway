@@ -111,13 +111,22 @@ spring:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
-            allowedOrigins: ${app.inbound.cors.allowedOrigins}
-            allowedMethods: ${app.inbound.cors.allowedMethods}
-            allowedHeaders: ${app.inbound.cors.allowedHeaders}
-            exposedHeaders: ${app.inbound.cors.exposedHeaders}
-            allowCredentials: ${app.inbound.cors.allowCredentials}
-            maxAge: ${app.inbound.cors.maxAge}
-            
+            allowed-origins: ${app.inbound.cors.allowedOrigins}
+            allowed-methods: ${app.inbound.cors.allowedMethods}
+            allowed-headers: ${app.inbound.cors.allowedHeaders}
+            exposed-headers: ${app.inbound.cors.exposedHeaders}
+            allow-credentials: ${app.inbound.cors.allowCredentials}
+            max-age: ${app.inbound.cors.maxAge}
+
+      # Handle CORS headers emitted by the backend service.
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin RETAIN_FIRST
+        - DedupeResponseHeader=Access-Control-Allow-Credentials RETAIN_FIRST
+        - DedupeResponseHeader=Access-Control-Expose-Headers RETAIN_UNIQUE
+        - RemoveResponseHeader=Access-Control-Allow-Methods
+        - RemoveResponseHeader=Access-Control-Allow-Headers
+        - RemoveResponseHeader=Access-Control-Max-Age
+      
       metrics:
         enabled: ${app.inbound.metricsEnabled}
         

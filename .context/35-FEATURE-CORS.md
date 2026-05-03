@@ -23,64 +23,57 @@ The gateway solves this by declaring a centralized, environment-configurable COR
 
 ### 2.1 Global Gateway CORS Wiring
 
-CORS is wired through Spring Cloud Gateway's `globalcors` configuration in `application.yml`:
+CORS is handled by Spring Cloud Gateway's built-in `globalcors` configuration block in `application.yml`. It is registered on `RoutePredicateHandlerMapping` (all gateway routes) and, via `add-to-simple-url-handler-mapping: true`, also on `SimpleUrlHandlerMapping` (actuator and other non-route paths).
+
+A dedicated **`corsPreflightHandler`** route (see §2.3) is declared at `order: -1` with a `Method=OPTIONS` predicate. This ensures every OPTIONS preflight is matched by the gateway before it can reach any auth-protected route.
+
+When Spring dispatches a matched preflight, `AbstractHandlerMapping.getHandler()` detects it is a CORS preflight request and, because globalcors is configured, replaces the `FilteringWebHandler` with Spring's internal `REQUEST_HANDLED_HANDLER`. The CORS processor validates the request origin/method/headers against the configured policy and writes the `200 OK` preflight response with `Access-Control-*` headers. **The gateway filter chain (including any `GatewayFilter`s on the OPTIONS route) does not execute for preflights.** The backend is never contacted.
+
+For actual cross-origin requests (GET, POST, etc.) that pass through auth filters and are forwarded to the backend, globalcors adds the appropriate `Access-Control-Allow-Origin` header to the response.
+
+### 2.2 Backend CORS Header Stripping
+
+The backend entity-persistence-service emits its own `Access-Control-Allow-Origin: *` header. This must not reach the browser alongside the gateway's header because:
+- Two `Access-Control-Allow-Origin` values in one response cause browsers to reject credentialed requests.
+- A wildcard `*` is forbidden when `Access-Control-Allow-Credentials: true`.
+
+`DedupeResponseHeader RETAIN_FIRST` is used for `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials`: globalcors writes these first (at handler-mapping time), the backend's duplicate arrives later during proxying, and `RETAIN_FIRST` discards it. `RETAIN_UNIQUE` is used for `Access-Control-Expose-Headers` to collapse duplicates while preserving the full list of values. `RemoveResponseHeader` is used for the preflight-only headers (`Allow-Methods`, `Allow-Headers`, `Max-Age`) since globalcors does not write those on actual requests.
+
+### 2.3 CORS Preflight Route (`corsPreflightHandler`)
+
+Declared as the first route in `application-routes.yml`:
 
 ```yaml
-spring:
-  cloud:
-    gateway:
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: ${app.inbound.cors.allowedOrigins}
-            allowedMethods: ${app.inbound.cors.allowedMethods}
-            allowedHeaders: ${app.inbound.cors.allowedHeaders}
-            exposedHeaders: ${app.inbound.cors.exposedHeaders}
-            allowCredentials: ${app.inbound.cors.allowCredentials}
-            maxAge: ${app.inbound.cors.maxAge}
+- id: corsPreflightHandler
+  uri: ${app.outbound.routing-target...}
+  order: -1
+  predicates:
+    - Method=OPTIONS
+  filters:
+    - name: RequestRateLimiter
+      args:
+        redis-rate-limiter:
+          replenishRate: ${app.rate-limits.cors.preflight.replenishRate}
+          burstCapacity: ${app.rate-limits.cors.preflight.burstCapacity}
 ```
 
-Key behavior:
-1. Policy scope is global (`[/**]`).
-2. Effective values are sourced from `app.inbound.cors.*` properties.
-3. `add-to-simple-url-handler-mapping: true` ensures OPTIONS preflight requests are intercepted by the `CorsWebFilter` **before** they reach route filters (`AuthenticateRequest`, `AuthorizeRequest`). Without this, preflights are forwarded to the route filters and rejected with 403 because they carry no `Authorization` header.
-4. No custom filter is required for baseline CORS enforcement.
+**Why the `RequestRateLimiter` is declared but does not execute:** As described in §2.1, the gateway filter chain is bypassed for preflights. The rate-limit config is retained to document intent and to enable future enforcement via a `WebFilter`-level rate limiter (which runs before handler-mapping dispatch). Browser-side preflight caching (`maxAge: 3600`) naturally limits preflight volume in practice.
 
-### 2.2 Inbound Policy Source
+### 2.4 Inbound Policy Source
 
-Default policy values are defined in `app-inbound.yml`:
+Default policy values are defined in `app-inbound.yml` as **comma-separated scalar strings** (not YAML sequences). This format is required so that `${app.inbound.cors.*}` placeholders in `application.yml` resolve to a single property key that globalcors can reference. Spring Boot's relaxed binding splits comma-separated scalars into `List<String>` at binding time.
 
 ```yaml
 app:
   inbound:
     cors:
-      allowedOrigins:
-        - "http://localhost:8080"
-      allowedMethods:
-        - "GET"
-        - "POST"
-        - "PUT"
-        - "PATCH"
-        - "DELETE"
-        - "OPTIONS"
-        - "HEAD"
-      allowedHeaders:
-        - "Accept"
-        - "Authorization"
-        - "Content-Type"
-        - ${app.requestId}
-      exposedHeaders:
-        - "Location"
-        - "ETag"
-        - "X-Total-Count"
-        - "Retry-After"
-        - ${app.requestId}
+      allowedOrigins: "http://localhost:8080"
+      allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+      allowedHeaders: "Accept,Authorization,Content-Type,...,${app.requestId}"
+      exposedHeaders: "Location,ETag,X-Total-Count,...,${app.requestId}"
       allowCredentials: true
       maxAge: 3600
 ```
-
-The actual file contains a wider, production-oriented header list. The snippet above highlights the structure and intent.
 
 ---
 
@@ -88,29 +81,36 @@ The actual file contains a wider, production-oriented header list. The snippet a
 
 ### 3.1 Base Configuration Files
 
-CORS behavior is controlled by:
-- `application.yml` (global gateway CORS wiring),
-- `app-inbound.yml` (default policy values),
-- optional environment-specific overrides (for example profile-specific properties or deployment env vars).
+| File | Role |
+|------|------|
+| `app-inbound.yml` | Default CORS policy values (comma-separated scalars) |
+| `application.yml` | globalcors wiring + backend CORS header stripping |
+| `application-routes.yml` | `corsPreflightHandler` route definition |
+| `application-rate-limits.yml` | `cors.preflight.replenishRate/burstCapacity` values |
 
 ### 3.2 Property Reference
 
 | Property | Type | Purpose |
 |----------|------|---------|
-| `app.inbound.cors.allowedOrigins` | `List<String>` | Origins allowed to access API from browser context |
-| `app.inbound.cors.allowedMethods` | `List<String>` | HTTP methods accepted for cross-origin requests |
-| `app.inbound.cors.allowedHeaders` | `List<String>` | Request headers browser is allowed to send |
-| `app.inbound.cors.exposedHeaders` | `List<String>` | Response headers browser JavaScript can read |
+| `app.inbound.cors.allowedOrigins` | `String` (CSV) | Origins allowed to access API from browser context |
+| `app.inbound.cors.allowedMethods` | `String` (CSV) | HTTP methods accepted for cross-origin requests |
+| `app.inbound.cors.allowedHeaders` | `String` (CSV) | Request headers browser is allowed to send |
+| `app.inbound.cors.exposedHeaders` | `String` (CSV) | Response headers browser JavaScript can read |
 | `app.inbound.cors.allowCredentials` | `Boolean` | Whether credentials (cookies/auth) are allowed |
 | `app.inbound.cors.maxAge` | `Long` | Browser preflight cache duration (seconds) |
+| `app.rate-limits.cors.preflight.replenishRate` | `Int` | Token bucket refill rate for OPTIONS route |
+| `app.rate-limits.cors.preflight.burstCapacity` | `Int` | Max burst for OPTIONS route |
 
 ### 3.3 Environment Override Strategy
 
-Recommended pattern:
-1. Keep safe defaults in `app-inbound.yml`.
-2. Override `app.inbound.cors.allowedOrigins` per environment.
-3. Keep method/header lists aligned with actual client usage.
-4. Use restrictive origin lists in production (avoid broad wildcard posture when credentials are enabled).
+`app.inbound.cors.allowedOrigins` can be overridden directly in profile-specific property files. Profile-specific files have higher precedence than all non-profile config data, including files imported via `spring.config.import`. Since `allowedOrigins` is stored as a CSV scalar (not a YAML list), it resolves to a single property key that a flat property file can override cleanly.
+
+```properties
+# application-dev.properties
+app.inbound.cors.allowedOrigins=http://localhost:8080,http://localhost:5173
+```
+
+The `globalcors` binding in `application.yml` references `${app.inbound.cors.allowedOrigins}`, so it automatically picks up the overridden value.
 
 ---
 
@@ -118,25 +118,20 @@ Recommended pattern:
 
 ### 4.1 Preflight Requests (`OPTIONS`)
 
-For non-simple cross-origin calls, browsers send preflight checks first. The gateway evaluates requested method/headers against configured allow-lists and returns CORS approval headers when allowed.
-
-`maxAge` controls how long browsers can cache this approval before sending another preflight.
+1. Browser sends `OPTIONS /api/v1/entities` with `Origin` and `Access-Control-Request-Method` headers.
+2. `corsPreflightHandler` route (order: -1) matches via `Method=OPTIONS`.
+3. `AbstractHandlerMapping.getHandler()` detects a CORS preflight + globalcors config → returns `REQUEST_HANDLED_HANDLER`.
+4. Spring's `DefaultCorsProcessor` validates origin/method/headers and writes `200 OK` with `Access-Control-*` headers.
+5. Filter chain and backend are never invoked.
 
 ### 4.2 Actual Cross-Origin Requests
 
-When origin/method/header constraints are satisfied, the gateway includes appropriate `Access-Control-*` headers so browser requests proceed normally through the route filter chain.
-
-If policy does not allow the call, browser clients fail at CORS layer even if backend route or token would otherwise be valid.
+When origin/method/header constraints are satisfied, globalcors adds `Access-Control-Allow-Origin` (and related headers) to the backend response. Backend-emitted CORS headers are stripped by `default-filters` before reaching the browser.
 
 ### 4.3 Credentials & Header Exposure
 
 - `allowCredentials: true` enables credentialed cross-origin browser requests.
 - `exposedHeaders` makes operational headers (pagination, ETag, retry hints, request ID) visible to frontend code.
-
-This is essential for robust client behavior such as:
-- pagination controls from `X-Total-Count`,
-- optimistic/concurrency flows via `ETag`,
-- tracing correlation using request ID headers.
 
 ---
 
@@ -150,9 +145,9 @@ CORS policy is enforced before frontend JavaScript can consume gateway responses
 
 A single configuration surface governs all routes, avoiding duplicated CORS logic in downstream services or custom per-controller code.
 
-### 5.3 Better Frontend Developer Experience
+### 5.3 No Custom Java Required
 
-Explicitly allowed methods/headers and exposed response metadata eliminate common browser integration failures and simplify SPA/mobile-web development.
+The globalcors approach is purely configuration-driven. No `@Bean`-registered `CorsWebFilter` or `@ConfigurationProperties` binders are needed.
 
 ### 5.4 Lower Latency for Browser Workloads
 
@@ -160,7 +155,7 @@ Preflight caching (`maxAge`) reduces repeated `OPTIONS` traffic and improves per
 
 ### 5.5 Safer Multi-Environment Operation
 
-Environment-specific origin overrides allow permissive local development and strict production posture without code changes.
+Environment-specific origin overrides target the globalcors binding directly, allowing permissive local development and strict production posture without code changes.
 
 ---
 
@@ -187,9 +182,9 @@ Environment-specific origin overrides allow permissive local development and str
 
 | Feature | Integration |
 |---------|-------------|
-| **Authentication** | CORS controls browser access first; token validation still applies on accepted requests. |
+| **Authentication** | CORS controls browser access first; token validation applies on accepted non-preflight requests. Preflights bypass auth entirely (no filter chain runs). |
 | **Authorization (OPA)** | CORS approval does not bypass authorization. OPA policy checks still decide allow/deny for route operations. |
-| **Rate Limiting** | CORS and rate limiting are complementary: origin-based browser control plus caller/route throttling. |
+| **Rate Limiting** | `corsPreflightHandler` declares a rate-limit config for intent. Effective enforcement for preflights requires a WebFilter-level limiter. Actual request rate limiting applies normally. |
 | **Request Size Limiting** | CORS handles browser eligibility; size limits still enforce payload guardrails for accepted requests. |
 | **Dynamic OAS Generation** | Browser clients requesting OpenAPI endpoints are subject to the same CORS policy surface. |
 
@@ -205,4 +200,4 @@ Environment-specific origin overrides allow permissive local development and str
 
 ---
 
-**Last Updated:** March 2026
+**Last Updated:** May 2026

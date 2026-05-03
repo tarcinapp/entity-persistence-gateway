@@ -3,6 +3,10 @@ app:
     default:
       replenishRate: 10
       burstCapacity: 20
+    cors:
+      preflight:
+        replenishRate: 30
+        burstCapacity: 60
     entities:
       default:
         replenishRate: ${app.rate-limits.default.replenishRate}
