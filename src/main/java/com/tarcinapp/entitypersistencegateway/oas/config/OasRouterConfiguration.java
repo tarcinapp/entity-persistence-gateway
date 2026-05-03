@@ -44,7 +44,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class OasRouterConfiguration {
     
     private final OasOrchestratorProperties properties;
-    
+
     public OasRouterConfiguration(OasOrchestratorProperties properties) {
         this.properties = properties;
         log.info("Dynamic OAS Orchestrator is ENABLED");
@@ -119,7 +119,7 @@ public class OasRouterConfiguration {
                 handler::handleCacheStats
             );
     }
-    
+
     /**
      * Logs configuration details on startup.
      */
