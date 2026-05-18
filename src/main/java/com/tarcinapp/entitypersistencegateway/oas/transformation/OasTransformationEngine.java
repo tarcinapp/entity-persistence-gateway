@@ -431,6 +431,18 @@ public class OasTransformationEngine {
     }
     
     /**
+     * Maps gateway controller names to their corresponding base record type identifiers.
+     * Used to populate the {@code x-base-record-type} OAS extension on generated tags.
+     */
+    private static final Map<String, String> CONTROLLER_TO_BASE_RECORD_TYPE = Map.of(
+        "entities",       "entity",
+        "lists",          "list",
+        "relations",      "relation",
+        "entityReactions","entityReaction",
+        "listReactions",  "listReaction"
+    );
+
+    /**
      * Builds tags from gateway configuration.
      */
     private List<Tag> buildTags() {
@@ -455,6 +467,10 @@ public class OasTransformationEngine {
                         Tag tag = new Tag();
                         tag.setName(tagName);
                         tag.setDescription(alias.getDescription());
+                        String baseRecordType = CONTROLLER_TO_BASE_RECORD_TYPE.get(controllerName);
+                        if (baseRecordType != null) {
+                            tag.addExtension("x-base-record-type", baseRecordType);
+                        }
                         tags.add(tag);
                     }
                 });
