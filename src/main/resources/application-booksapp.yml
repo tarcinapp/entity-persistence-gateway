@@ -1,0 +1,481 @@
+# =============================================================================
+# Books Application — Kind Alias Domain Projection
+# Spring Profile: booksapp
+# =============================================================================
+#
+# Activate alongside the dev profile:
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,booksapp
+#   java -jar target/*.jar --spring.profiles.active=dev,booksapp
+#   SPRING_PROFILES_ACTIVE=dev,booksapp java -jar target/*.jar
+#
+# Domain Model:
+#
+#   ENTITIES
+#     books (kind: book)
+#       ├── children  → chapters  (books/{id}/chapters)
+#       ├── parents   → authors   (books/{id}/authors)
+#       ├── through reactions → reviews  (books/{id}/reactions/reviews)
+#       ├── through reactions → likes    (books/{id}/reactions/likes)
+#       └── through lists     → bookshelves (books/{id}/lists/bookshelves)  [GET only]
+#     authors (kind: author)
+#       └── children → books (authors/{id}/books)
+#
+#   LISTS
+#     bookshelves (kind: bookshelf)
+#       ├── children  → sections   (bookshelves/{id}/sections)
+#       ├── parents   → libraries  (bookshelves/{id}/libraries)
+#       ├── through entities  → books   (bookshelves/{id}/entities/books)
+#       └── through reactions → ratings (bookshelves/{id}/reactions/ratings)
+#     libraries (kind: library)
+#       └── children → bookshelves (libraries/{id}/bookshelves)
+#
+#   RELATIONS
+#     contains (kind: contains) — ordered, annotated book-to-bookshelf membership
+#
+#   ENTITY REACTIONS
+#     reviews (kind: review)
+#       └── children → replies (reviews/{id}/replies)
+#     likes (kind: like)
+#
+#   LIST REACTIONS
+#     ratings (kind: rating)
+#       └── children → responses (ratings/{id}/responses)
+#     bookmarks (kind: bookmark)
+#
+# =============================================================================
+
+app:
+  oas:
+    controllers:
+
+      # =========================================================================
+      # ENTITIES
+      # =========================================================================
+      entities:
+        aliases:
+
+          # -----------------------------------------------------------------------
+          # books
+          # Primary catalog entity. A book has chapters (children), belongs to
+          # authors (parents), can be reviewed and liked (through reactions),
+          # and can appear on bookshelves (through lists, read-only).
+          # -----------------------------------------------------------------------
+          - alias: books
+            kind: book
+            description: Published books in the catalog
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_name":         { "type": "string", "minLength": 1 },
+                  "isbn":          { "type": "string", "pattern": "^(97[89])?[0-9]{9}[0-9Xx]$" },
+                  "genre":         { "type": "string" },
+                  "publishedYear": { "type": "integer", "minimum": 1000, "maximum": 2100 },
+                  "pageCount":     { "type": "integer", "minimum": 1 },
+                  "language":      { "type": "string" },
+                  "synopsis":      { "type": "string" }
+                },
+                "required": ["_name", "isbn"]
+              }
+
+            children:
+              - alias: chapters
+                kind: chapter
+                description: Chapters of a book
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name":         { "type": "string" },
+                      "chapterNumber": { "type": "integer", "minimum": 1 },
+                      "pageCount":     { "type": "integer", "minimum": 1 },
+                      "summary":       { "type": "string" }
+                    },
+                    "required": ["_name", "chapterNumber"]
+                  }
+                routes:
+                  createEntityChild:
+                    # Stricter schema for creation: pageCount also required
+                    schema: |
+                      {
+                        "type": "object",
+                        "properties": {
+                          "_name":         { "type": "string" },
+                          "chapterNumber": { "type": "integer", "minimum": 1 },
+                          "pageCount":     { "type": "integer", "minimum": 1 },
+                          "summary":       { "type": "string" }
+                        },
+                        "required": ["_name", "chapterNumber", "pageCount"]
+                      }
+
+            parents:
+              - alias: authors
+                kind: author
+                description: Authors of a book
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name":   { "type": "string" },
+                      "bio":     { "type": "string" },
+                      "country": { "type": "string" }
+                    },
+                    "required": ["_name"]
+                  }
+
+            through:
+              reactions:
+                - alias: reviews
+                  kind: review
+                  description: Reader reviews for a book
+                  validationEnabled: true
+                  schema: |
+                    {
+                      "type": "object",
+                      "properties": {
+                        "_entityId": { "type": "string" },
+                        "title":     { "type": "string" },
+                        "body":      { "type": "string" },
+                        "rating":    { "type": "integer", "minimum": 1, "maximum": 5 }
+                      },
+                      "required": ["_entityId", "rating"]
+                    }
+                  routes:
+                    createReactionByEntityId:
+                      # Creation requires title + body in addition to rating
+                      schema: |
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_entityId": { "type": "string" },
+                            "title":     { "type": "string" },
+                            "body":      { "type": "string" },
+                            "rating":    { "type": "integer", "minimum": 1, "maximum": 5 }
+                          },
+                          "required": ["_entityId", "title", "body", "rating"]
+                        }
+
+                - alias: likes
+                  kind: like
+                  description: Likes on a book
+                  validationEnabled: true
+                  schema: |
+                    {
+                      "type": "object",
+                      "properties": {
+                        "_entityId": { "type": "string" }
+                      },
+                      "required": ["_entityId"]
+                    }
+
+              lists:
+                # GET only — bookshelves are the source of truth for membership
+                - alias: bookshelves
+                  kind: bookshelf
+                  description: Bookshelves that contain this book (read-only)
+
+          # -----------------------------------------------------------------------
+          # authors
+          # Top-level author entity. An author has books as children, enabling
+          # the path authors/{id}/books to list all works by that author.
+          # -----------------------------------------------------------------------
+          - alias: authors
+            kind: author
+            description: Book authors and writers
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_name":      { "type": "string", "minLength": 1 },
+                  "bio":        { "type": "string" },
+                  "country":    { "type": "string" },
+                  "birthYear":  { "type": "integer", "minimum": 1000, "maximum": 2100 },
+                  "website":    { "type": "string", "format": "uri" }
+                },
+                "required": ["_name"]
+              }
+
+            children:
+              - alias: books
+                kind: book
+                description: Books written by this author
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name":  { "type": "string" },
+                      "isbn":   { "type": "string" },
+                      "genre":  { "type": "string" }
+                    },
+                    "required": ["_name", "isbn"]
+                  }
+
+      # =========================================================================
+      # LISTS
+      # =========================================================================
+      lists:
+        aliases:
+
+          # -----------------------------------------------------------------------
+          # bookshelves
+          # A curated reading list / shelf. Sections subdivide a bookshelf
+          # (children). Libraries own bookshelves (parents). Books are
+          # accessible through-entities, ratings through-reactions.
+          # -----------------------------------------------------------------------
+          - alias: bookshelves
+            kind: bookshelf
+            description: Curated bookshelves and reading lists
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_name":       { "type": "string", "minLength": 1 },
+                  "description": { "type": "string" },
+                  "genre":       { "type": "string" },
+                  "capacity":    { "type": "integer", "minimum": 1 },
+                  "public":      { "type": "boolean" }
+                },
+                "required": ["_name"]
+              }
+
+            children:
+              - alias: sections
+                kind: section
+                description: Themed sections within a bookshelf
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name": { "type": "string" },
+                      "genre": { "type": "string" },
+                      "order": { "type": "integer", "minimum": 0 }
+                    },
+                    "required": ["_name", "genre"]
+                  }
+
+            parents:
+              - alias: libraries
+                kind: library
+                description: Libraries that house this bookshelf
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name":   { "type": "string" },
+                      "city":    { "type": "string" },
+                      "country": { "type": "string" }
+                    },
+                    "required": ["_name"]
+                  }
+
+            through:
+              entities:
+                - alias: books
+                  kind: book
+                  description: Books on this bookshelf
+
+              reactions:
+                - alias: ratings
+                  kind: rating
+                  description: Star ratings for this bookshelf
+                  validationEnabled: true
+                  schema: |
+                    {
+                      "type": "object",
+                      "properties": {
+                        "_listId": { "type": "string" },
+                        "score":   { "type": "integer", "minimum": 1, "maximum": 5 },
+                        "comment": { "type": "string" }
+                      },
+                      "required": ["_listId", "score"]
+                    }
+
+          # -----------------------------------------------------------------------
+          # libraries
+          # Physical or digital library that owns bookshelves (children).
+          # -----------------------------------------------------------------------
+          - alias: libraries
+            kind: library
+            description: Physical and digital libraries
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_name":   { "type": "string", "minLength": 1 },
+                  "city":    { "type": "string" },
+                  "country": { "type": "string" },
+                  "founded": { "type": "integer", "minimum": 1000 },
+                  "website": { "type": "string", "format": "uri" }
+                },
+                "required": ["_name", "city", "country"]
+              }
+
+            children:
+              - alias: bookshelves
+                kind: bookshelf
+                description: Bookshelves held in this library
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_name":    { "type": "string" },
+                      "genre":    { "type": "string" },
+                      "capacity": { "type": "integer" }
+                    },
+                    "required": ["_name"]
+                  }
+
+      # =========================================================================
+      # RELATIONS
+      # =========================================================================
+      relations:
+        aliases:
+
+          # -----------------------------------------------------------------------
+          # contains
+          # Ordered, annotated directed relation: a bookshelf contains a book.
+          # The "order" field controls display order within the shelf.
+          # -----------------------------------------------------------------------
+          - alias: contains
+            kind: contains
+            description: Ordered membership of a book in a bookshelf
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "order":   { "type": "integer", "minimum": 0 },
+                  "note":    { "type": "string" },
+                  "addedAt": { "type": "string", "format": "date-time" }
+                },
+                "required": ["order"]
+              }
+
+      # =========================================================================
+      # ENTITY REACTIONS
+      # =========================================================================
+      entityReactions:
+        aliases:
+
+          # -----------------------------------------------------------------------
+          # reviews
+          # Top-level book reviews. Replies are children, enabling
+          # the path reviews/{id}/replies for threaded discussion.
+          # -----------------------------------------------------------------------
+          - alias: reviews
+            kind: review
+            description: Reader reviews for books
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_entityId": { "type": "string" },
+                  "title":     { "type": "string" },
+                  "body":      { "type": "string" },
+                  "rating":    { "type": "integer", "minimum": 1, "maximum": 5 }
+                },
+                "required": ["_entityId", "rating", "body"]
+              }
+
+            children:
+              - alias: replies
+                kind: reply
+                description: Replies to a review
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_entityId": { "type": "string" },
+                      "text":      { "type": "string" },
+                      "replyTo":   { "type": "string" }
+                    },
+                    "required": ["_entityId", "text"]
+                  }
+
+          # -----------------------------------------------------------------------
+          # likes
+          # Simple, schema-lite likes on books.
+          # -----------------------------------------------------------------------
+          - alias: likes
+            kind: like
+            description: Likes on books
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_entityId": { "type": "string" }
+                },
+                "required": ["_entityId"]
+              }
+
+      # =========================================================================
+      # LIST REACTIONS
+      # =========================================================================
+      listReactions:
+        aliases:
+
+          # -----------------------------------------------------------------------
+          # ratings
+          # Star ratings on bookshelves. Library/shelf owners can reply
+          # to ratings via the ratings/{id}/responses hierarchy.
+          # -----------------------------------------------------------------------
+          - alias: ratings
+            kind: rating
+            description: Star ratings for bookshelves
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_listId": { "type": "string" },
+                  "score":   { "type": "integer", "minimum": 1, "maximum": 5 },
+                  "comment": { "type": "string" }
+                },
+                "required": ["_listId", "score"]
+              }
+
+            children:
+              - alias: responses
+                kind: response
+                description: Owner responses to a rating
+                validationEnabled: true
+                schema: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "_listId": { "type": "string" },
+                      "message": { "type": "string" }
+                    },
+                    "required": ["_listId", "message"]
+                  }
+
+          # -----------------------------------------------------------------------
+          # bookmarks
+          # Lightweight bookmarking of a bookshelf for later reading.
+          # -----------------------------------------------------------------------
+          - alias: bookmarks
+            kind: bookmark
+            description: User bookmarks on bookshelves
+            validationEnabled: true
+            schema: |
+              {
+                "type": "object",
+                "properties": {
+                  "_listId": { "type": "string" },
+                  "note":    { "type": "string" }
+                },
+                "required": ["_listId"]
+              }
