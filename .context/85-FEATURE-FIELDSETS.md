@@ -24,11 +24,10 @@ The `ApplyFieldsetConfig` gateway filter is attached to every read route across 
 
 Runtime flow:
 1. Filter reads the `fieldset` query parameter from the incoming request.
-2. If `fieldsets` disable toggle is set, filter returns the payload unchanged.
-3. If a `fieldset` name was provided, the filter resolves the named definition.
-4. If no `fieldset` name was provided, the filter checks for a resource-level default.
-5. If a definition is found, the filter applies it to the response JSON.
-6. If no definition applies, the payload is returned unchanged.
+2. If a `fieldset` name was provided, the filter resolves the named definition.
+3. If no `fieldset` name was provided, the filter checks for a resource-level default.
+4. If a definition is found, the filter applies it to the response JSON.
+5. If no definition applies, the payload is returned unchanged.
 
 Field definitions are loaded from `application-fieldsets.yml` and managed by `FieldSetsConfiguration`. The filtering logic—including JSON path traversal for nested and array fields—is handled by `FieldsetService`.
 
@@ -70,19 +69,16 @@ The following fieldsets are pre-configured in `application-fieldsets.yml` and ar
 
 When a request arrives at the `ApplyFieldsetConfig` filter, the definition to apply is resolved in this order:
 
-1. **Disable toggle check** — if `fieldsets=false` (or `0`, `no`, `off`) is present, stop and return payload unchanged.
-2. **Explicit request** — if `?fieldset=<name>` is present:
+1. **Explicit request** — if `?fieldset=<name>` is present:
    a. Look for `<name>` in the resource-specific fieldsets (`app.fieldsets.<resourceType>.fieldsets`).
    b. If not found, look in global fieldsets (`app.fieldsets.global`).
    c. If still not found, log a warning and return payload unchanged.
-3. **Resource default** — if no `fieldset` was specified, look for `app.fieldsets.<resourceType>.defaultFieldset`. If it names a valid definition, resolve it using the same resource → global lookup chain.
-4. **No match** — return payload unchanged.
+2. **Resource default** — if no `fieldset` was specified, look for `app.fieldsets.<resourceType>.defaultFieldset`. If it names a valid definition, resolve it using the same resource → global lookup chain.
+3. **No match** — return payload unchanged.
 
 ---
 
-## 6. DEFAULT FIELDSET & DISABLE TOGGLE
-
-### 6.1 Default Fieldset
+## 6. DEFAULT FIELDSET
 
 Operators can set a default projection per resource type. When a client sends a read request **without** a `?fieldset=` parameter, the gateway automatically applies the configured default:
 
@@ -97,17 +93,13 @@ app:
 
 With `entities.defaultFieldset: hide-managed-except-id`, a plain `GET /api/v1/entities` returns records with managed fields hidden (except `_id`), with no client-side opt-in required.
 
-### 6.2 Disable Toggle
-
-When a default fieldset is configured and a client needs the **full, unfiltered payload**, it must explicitly disable fieldset processing by adding `?fieldsets=false` to the request. Without this, the default always fires.
+When a default fieldset is configured and a client needs the **full, unfiltered payload**, it should use the built-in `show-all` fieldset:
 
 ```http
-GET /api/v1/entities?fieldsets=false
+GET /api/v1/entities?fieldset=show-all
 ```
 
-Accepted disable values: `false`, `0`, `no`, `off`.
-
-The disable toggle affects **both** the default fieldset and any `?fieldset=<name>` provided on the same request. It is the client-facing escape hatch for receiving the raw backend response.
+The `show-all` fieldset uses `hide` mode with an empty fields list, which effectively returns all fields.
 
 ---
 
@@ -173,8 +165,7 @@ APP_FIELDSETS_ENTITIES_DEFAULTFIELDSET=bookinfo
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `?fieldset=<name>` | string | Name of the fieldset to apply to this response |
-| `?fieldsets=false` | boolean-like | Disables all fieldset processing (explicit requests and defaults) for this request |
+| `?fieldset=<name>` | string | Name of the fieldset to apply to this response. Use `show-all` to bypass any configured default and receive the full payload. |
 
 ### 8.1 Request Examples
 
@@ -190,7 +181,7 @@ GET /api/v1/lists?fieldset=compact
 
 **Bypass the default fieldset to receive the full payload:**
 ```http
-GET /api/v1/entities?fieldsets=false
+GET /api/v1/entities?fieldset=show-all
 ```
 
 ---
@@ -226,14 +217,13 @@ If a fieldset's `show` mode includes a field that is also forbidden by policy, f
 
 - Verify `?fieldset=<name>` is present in the request URL.
 - Confirm the name exists in `app.fieldsets.global` or `app.fieldsets.<resourceType>.fieldsets`.
-- Check that `?fieldsets=false` (or equivalent) is **not** present on the same request.
 - Confirm the route includes `ApplyFieldsetConfig` in its filter chain.
 
 ### Default fieldset not applied
 
 - The default only fires when **no** `?fieldset=` parameter is sent.
 - Verify `app.fieldsets.<resourceType>.defaultFieldset` references an existing defined fieldset name.
-- Confirm `?fieldsets=false` is not present on the request.
+- Confirm the route includes `ApplyFieldsetConfig` in its filter chain.
 
 ### Fields still present after hide-mode fieldset
 

@@ -6150,13 +6150,10 @@ public class OasTransformationEngine {
             }
         }
 
-        // fieldset + fieldsets — GET routes only (collection and single-item, but not count)
+        // fieldset — GET routes only (collection and single-item, but not count)
         if (isFindRoute || isSingleGet) {
             if (!existing.contains("fieldset") && !fieldsetNames.isEmpty()) {
                 params.add(buildFieldsetParam(fieldsetNames));
-            }
-            if (!existing.contains("fieldsets")) {
-                params.add(buildFieldsetsToggleParam());
             }
         }
 
@@ -6187,25 +6184,11 @@ public class OasTransformationEngine {
         p.setIn("query");
         p.setDescription("Apply a named field projection to the response. "
             + "In show mode only the listed fields are returned; in hide mode the listed fields are removed. "
-            + "Use fieldsets=false to bypass all fieldset processing.");
+            + "Use fieldset=show-all to bypass any configured default and receive the full payload.");
         p.setRequired(false);
         Schema<String> schema = new Schema<>();
         schema.setType("string");
         schema.setEnum(new ArrayList<>(fieldsetNames));
-        p.setSchema(schema);
-        return p;
-    }
-
-    private Parameter buildFieldsetsToggleParam() {
-        Parameter p = new Parameter();
-        p.setName("fieldsets");
-        p.setIn("query");
-        p.setDescription("Disable all fieldset processing for this request (including any configured default fieldset). "
-            + "Accepted values: false, 0, no, off.");
-        p.setRequired(false);
-        Schema<String> schema = new Schema<>();
-        schema.setType("string");
-        schema.setEnum(Arrays.asList("false", "0", "no", "off"));
         p.setSchema(schema);
         return p;
     }

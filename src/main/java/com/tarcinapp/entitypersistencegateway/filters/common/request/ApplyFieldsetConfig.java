@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApplyFieldsetConfig
         extends AbstractResponsePayloadModifierFilterFactory<ApplyFieldsetConfig.Config, String, String> {    private static final String FIELDSET_QUERY_PARAM = "fieldset";
-    private static final String FIELDSETS_TOGGLE_PARAM = "fieldsets"; // accepts false|0|no|off to disable
 
     @Autowired
     private FieldSetsConfiguration fieldSetsConfig;
@@ -64,19 +63,6 @@ public class ApplyFieldsetConfig
 
         
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
-
-        // If caller explicitly disables fieldsets, skip applying any defaults or
-        // requested sets
-        boolean fieldsetsDisabled = queryParams.containsKey(FIELDSETS_TOGGLE_PARAM) &&
-                queryParams.get(FIELDSETS_TOGGLE_PARAM).stream()
-                        .map(String::toLowerCase)
-                        .anyMatch(v -> v.equals("false") || v.equals("0") || v.equals("no") || v.equals("off"));
-
-        if (fieldsetsDisabled) {
-            log.debug("Fieldsets explicitly disabled via query ({}=false). Returning original payload.",
-                    FIELDSETS_TOGGLE_PARAM);
-            return Mono.just(payload);
-        }
 
         // Check if user specified a fieldset in the query (overrides default)
         String requestedFieldset = queryParams.getFirst(FIELDSET_QUERY_PARAM);
