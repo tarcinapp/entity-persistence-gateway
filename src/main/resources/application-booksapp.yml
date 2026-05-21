@@ -46,6 +46,24 @@
 
 app:
   oas:
+    # -------------------------------------------------------------------------
+    # API Identification
+    # -------------------------------------------------------------------------
+    title: "Books API"
+    version: "1.0.0"
+    description: |
+      A domain-specific API for managing a books catalog.
+      Covers books, authors, bookshelves, libraries, and their relationships —
+      including reader reviews, likes, ratings, and bookmarks.
+
+    contact:
+      name: "Books API Team"
+      email: "books-api@example.com"
+
+    servers:
+      - url: "http://localhost:8081"
+        description: "Local Development"
+
     controllers:
 
       # =========================================================================
