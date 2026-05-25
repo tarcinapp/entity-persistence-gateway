@@ -3629,8 +3629,25 @@ public class OasTransformationEngine {
         controllerName = controllerName.trim();
         
         if (!controllersOn.isEmpty()) {
-            // Only controllers in controllersOn are enabled
-            return !controllersOn.contains(controllerName);
+            if (controllersOn.contains(controllerName)) {
+                return false; // explicitly enabled
+            }
+            // Controller not in whitelist — check if any route in routesOn belongs to this controller.
+            // If so, the controller must be processed so the escape-hatched routes can appear in OAS.
+            final String resolvedController = controllerName;
+            List<String> routesOn = normalizeList(togglesProperties.getRoutes().getOn());
+            if (!routesOn.isEmpty()) {
+                boolean hasEscapeHatchedRoute = routesOn.stream()
+                    .anyMatch(routeId -> {
+                        var metadata = routeMetadataCache.get(routeId);
+                        return metadata != null && resolvedController.equals(metadata.getControllerName());
+                    });
+                if (hasEscapeHatchedRoute) {
+                    log.debug("Controller '{}' has escape-hatched routes in routesOn — not skipping", resolvedController);
+                    return false;
+                }
+            }
+            return true; // not in whitelist and no escape-hatched routes
         } else if (!controllersOff.isEmpty()) {
             // Controllers in controllersOff are disabled
             return controllersOff.contains(controllerName);
@@ -3666,8 +3683,24 @@ public class OasTransformationEngine {
         
         // Only use blacklist mode for controller-level tags
         // tagsOn is for route-level filtering, handled by isRouteFilteredByTags()
-        if (!tagsOff.isEmpty()) {
-            return tagsOff.contains(tagName);
+        if (!tagsOff.isEmpty() && tagsOff.contains(tagName)) {
+            // Escape hatch: if any route in routesOn carries this tag, the tag must not be
+            // fully suppressed — individual route filtering will handle the rest.
+            final String resolvedTag = tagName;
+            List<String> routesOn = normalizeList(togglesProperties.getRoutes().getOn());
+            if (!routesOn.isEmpty()) {
+                boolean hasEscapeHatchedRoute = routesOn.stream()
+                    .anyMatch(routeId -> {
+                        var metadata = routeMetadataCache.get(routeId);
+                        return metadata != null && metadata.getTags() != null
+                            && metadata.getTags().contains(resolvedTag);
+                    });
+                if (hasEscapeHatchedRoute) {
+                    log.debug("Tag '{}' has escape-hatched routes in routesOn — not skipping", resolvedTag);
+                    return false;
+                }
+            }
+            return true;
         }
         
         return false;
@@ -3947,7 +3980,14 @@ public class OasTransformationEngine {
         
         // Map backend operationId to gateway route ID
         String mappedRouteId = mapBackendOperationIdToGatewayRouteId(routeId);
-        
+
+        // Escape hatch: routes explicitly named in routesOn bypass tag filtering entirely.
+        List<String> routesOn = normalizeList(togglesProperties.getRoutes().getOn());
+        if (!routesOn.isEmpty() && routesOn.contains(mappedRouteId)) {
+            log.debug("Tag filter bypass (escape hatch): routeId={} is in routesOn", mappedRouteId);
+            return false;
+        }
+
         // Get route metadata
         com.tarcinapp.entitypersistencegateway.oas.service.RouteMetadataService.RouteMetadata metadata = 
             routeMetadataCache.get(mappedRouteId);

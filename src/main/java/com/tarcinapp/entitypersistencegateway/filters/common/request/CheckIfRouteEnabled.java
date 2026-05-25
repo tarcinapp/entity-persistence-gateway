@@ -47,6 +47,14 @@ public class CheckIfRouteEnabled
             List<String> tagsOn = normalizeList(toggles.getTags().getOn());
             List<String> tagsOff = normalizeList(toggles.getTags().getOff());
 
+            // Escape hatch: routes explicitly named in routesOn bypass all controller and tag checks.
+            // This allows individual routes to be pinned open regardless of what higher-level
+            // controller/tag whitelists say.
+            if (!routesOn.isEmpty() && routeId != null && routesOn.contains(routeId)) {
+                log.debug("Route '" + routeId + "' is in routesOn escape hatch — bypassing controller and tag checks");
+                return chain.filter(exchange);
+            }
+
             String controllerName = config.getControllerName();
             boolean controllerDecidesDisabled = false;
 
