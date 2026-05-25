@@ -1,7 +1,7 @@
 app:
   queries:
-    my: "'sets[owners][userIds]='+#userId"
-    actives: "'sets[actives]'"
-    inactives: "'sets[inactives]'"
+    my: "'set[owners][userIds]='+#userId"
+    actives: "'set[actives]'"
+    inactives: "'set[inactives]'"
     name: "'filter[where][_name]=' + #query['name']"
     slug: "'filter[where][_slug]=' + #query['slug']"
