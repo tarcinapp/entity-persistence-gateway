@@ -3180,7 +3180,9 @@ spring:
           args:
             controllerName: entitiesKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities/count
-        - ConvertKindAliasToKindQuery
+        - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -3245,7 +3247,11 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateAllEntities/policy
         - name: ConvertSimplerQueriesToBackendFormat
+          args:
+            useWhereNotation: true
         - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
@@ -3849,7 +3855,9 @@ spring:
           args:
             controllerName: listKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists/count
-        - ConvertKindAliasToKindQuery
+        - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -3914,7 +3922,11 @@ spring:
           args:
             policyName: /policies/auth/routes/lists/updateAllLists/policy
         - name: ConvertSimplerQueriesToBackendFormat
+          args:
+            useWhereNotation: true
         - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
@@ -4464,7 +4476,9 @@ spring:
           args:
             controllerName: relationsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations/count
-        - ConvertKindAliasToKindQuery
+        - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -4529,7 +4543,11 @@ spring:
           args:
             policyName: /policies/auth/routes/relations/updateAllRelations/policy
         - name: ConvertSimplerQueriesToBackendFormat
+          args:
+            useWhereNotation: true
         - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - name: AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
@@ -4854,7 +4872,9 @@ spring:
           args:
             controllerName: entityReactionsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entity-reactions/count
-        - ConvertKindAliasToKindQuery
+        - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -4919,7 +4939,11 @@ spring:
           args:
             policyName: /policies/auth/routes/entityReactions/updateAllEntityReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
+          args:
+            useWhereNotation: true
         - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
@@ -5513,7 +5537,9 @@ spring:
           args:
             controllerName: listReactionsKindAlias
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}list-reactions/count
-        - ConvertKindAliasToKindQuery
+        - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
         - name: DynamicRateLimiter
@@ -5578,7 +5604,11 @@ spring:
           args:
             policyName: /policies/auth/routes/listReactions/updateAllListReactions/policy
         - name: ConvertSimplerQueriesToBackendFormat
+          args:
+            useWhereNotation: true
         - name: ConvertKindAliasToKindQuery
+          args:
+            useWhereNotation: true
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery

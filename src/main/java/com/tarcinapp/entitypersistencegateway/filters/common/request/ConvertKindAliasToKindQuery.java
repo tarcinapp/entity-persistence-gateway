@@ -17,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tarcinapp.entitypersistencegateway.KindAliasConfigAttr;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -33,8 +34,8 @@ import reactor.core.publisher.Mono;
 public class ConvertKindAliasToKindQuery
         extends AbstractGatewayFilterFactory<ConvertKindAliasToKindQuery.Config> {
 
-    // Pattern Matcher for MultiValueMap keys
-    private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("filter\\[where\\]\\[_kind\\].*");
+    // Pattern Matcher for MultiValueMap keys — matches both filter[where][_kind]* and where[_kind]*
+    private final static Pattern KIND_QUERY_PATTERN = Pattern.compile("(filter\\[where\\]\\[_kind\\]|where\\[_kind\\]).*");
 
     public ConvertKindAliasToKindQuery() {
         super(Config.class);
@@ -80,13 +81,18 @@ public class ConvertKindAliasToKindQuery
                 }
             });
 
+            // Determine the query param key to inject based on notation mode.
+            // Count/updateAll/deleteAll routes use where[_kind] (LoopBack bulk notation),
+            // while find routes use filter[where][_kind].
+            String kindQueryKey = config.isUseWhereNotation() ? "where[_kind]" : "filter[where][_kind]";
+
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(originalRequest -> {
 
                         log.debug("Adding where filter for _kind.");
 
                         // 3. Add new _kind filter
-                        newQueryParams.add("filter[where][_kind]", kindName);
+                        newQueryParams.add(kindQueryKey, kindName);
 
                         // --- URI Rebuild: Replace query parameters with MultiValueMap ---
 
@@ -122,7 +128,13 @@ public class ConvertKindAliasToKindQuery
         };
     }
 
+    @Data
     public static class Config {
-
+        /**
+         * When true, injects {@code where[_kind]=kindName} instead of
+         * {@code filter[where][_kind]=kindName}. Set to true for count/updateAll/deleteAll
+         * routes that only accept the where[*] query family.
+         */
+        private boolean useWhereNotation = false;
     }
 }
