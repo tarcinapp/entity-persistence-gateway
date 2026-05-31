@@ -1,23 +1,23 @@
 # app:
 #   toggles:
 #     routes:
-#         off:
+#         "off":
 #         - route1
 #         - route2
-#         on:
+#         "on":
 #         - route3
 #         - route4
 #     controllers:
-#         off:
+#         "off":
 #         - controller1
 #         - controller2
-#         on:
+#         "on":
 #         - controller3
 #         - controller4
 #     tags:
-#         off:
+#         "off":
 #         - tag1
 #         - tag2
-#         on:
+#         "on":
 #         - tag3
 #         - tag4

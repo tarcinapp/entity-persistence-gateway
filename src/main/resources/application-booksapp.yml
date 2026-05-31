@@ -497,3 +497,9 @@ app:
                 },
                 "required": ["_listId"]
               }
+  toggles:
+    tags:
+      "off":
+        - generic
+  queries:
+    by-book-name: "'filter[where][_name]=' + #query['book-name']"
