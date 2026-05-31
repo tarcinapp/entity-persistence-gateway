@@ -246,14 +246,33 @@ start_orchestrator() {
 
     print_status "Starting universal orchestrator..."
     cd "$ORCHESTRATOR_DIR"
+    # Truncate the log so we only scan lines from this startup
+    > "$ORCHESTRATOR_LOG_FILE"
     nohup bash -c "$ORCHESTRATOR_CMD" > "$ORCHESTRATOR_LOG_FILE" 2>&1 &
     echo $! > "$ORCHESTRATOR_PID_FILE"
 
-    sleep 3
-    if check_orchestrator; then
+    local timeout=180
+    local elapsed=0
+    local started=false
+    print_status "Waiting for orchestrator to become ready (timeout: ${timeout}s)..."
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if ! check_orchestrator; then
+            print_error "Orchestrator process died during startup"
+            rm -f "$ORCHESTRATOR_PID_FILE"
+            return 1
+        fi
+        if grep -qE "INFO[[:space:]]+\[io\.quarkus\].*\(Quarkus Main Thread\).*started in.*Listening on:" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null; then
+            started=true
+            break
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    if $started; then
         print_success "Orchestrator started successfully (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
     else
-        print_error "Failed to start orchestrator"
+        print_error "Orchestrator did not become ready within ${timeout}s"
         rm -f "$ORCHESTRATOR_PID_FILE"
         return 1
     fi
