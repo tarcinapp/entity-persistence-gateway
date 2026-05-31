@@ -1,10 +1,18 @@
 app:
   auth:
     providers: []
+#      # Example: External provider using JWKS (e.g. Google, Auth0, Keycloak)
 #      - issuer: "https://securetoken.google.com/proje-id"
 #        jwk-set-uri: "https://www.googleapis.com/service_accounts/v1/jwk/..."
 #        clockSkewSeconds: 60
-#        
+#
+#      # Example: Internal provider using a static public key
+#      # algorithm: Key algorithm used to decode the public key (required when public-key is set).
+#      #   Supported values:
+#      #     RSA   - for RS256, RS384, RS512, PS256, PS384, PS512
+#      #     EC    - for ES256, ES384, ES512
+#      #     EdDSA - for Ed25519, Ed448 (requires Java 15+, supported natively in jjwt 0.12+)
 #      - issuer: "tarcinapp-internal"
 #        public-key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..."
+#        algorithm: RSA
 #        clockSkewSeconds: 10

@@ -150,7 +150,14 @@ public class OasOrchestratorProperties {
          * Overall response timeout for backend OAS fetch.
          */
         private Duration responseTimeout = Duration.ofSeconds(5);
-        
+
+        /**
+         * Maximum number of bytes to buffer when reading the backend OAS response body.
+         * The default Spring WebClient limit is 256KB (262144 bytes).
+         * Large OpenAPI specs require this to be increased.
+         */
+        private int maxBufferSizeBytes = 10 * 1024 * 1024; // 10MB
+
         /**
          * Startup retry configuration for fetching backend OAS.
          */

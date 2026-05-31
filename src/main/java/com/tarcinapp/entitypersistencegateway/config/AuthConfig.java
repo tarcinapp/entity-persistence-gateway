@@ -18,7 +18,8 @@ public class AuthConfig {
     public static class Provider {
         private String issuer;
         private String jwkSetUri;
-        private String publicKey; 
+        private String publicKey;
+        private String algorithm; // e.g. RSA, EC — required when publicKey is set
         private long clockSkewSeconds = 60; // Default
         private String audience;
     }

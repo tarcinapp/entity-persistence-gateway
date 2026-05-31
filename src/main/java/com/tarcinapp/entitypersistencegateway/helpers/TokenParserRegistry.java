@@ -92,7 +92,7 @@ public class TokenParserRegistry {
     private JwtParser createStaticKeyParser(AuthConfig.Provider provider) {
         
         try {
-            Key key = parsePublicKey(provider.getPublicKey());
+            Key key = parsePublicKey(provider.getPublicKey(), provider.getAlgorithm());
             Locator<Key> keyLocator = header -> key;
             return Jwts.parser()
                     .keyLocator(keyLocator)
@@ -113,7 +113,11 @@ public class TokenParserRegistry {
     }
 
     // Helper method to convert PEM String to Java PublicKey object
-    private Key parsePublicKey(String keyString) throws Exception {
+    private Key parsePublicKey(String keyString, String algorithm) throws Exception {
+        if (algorithm == null || algorithm.isBlank()) {
+            throw new IllegalArgumentException("'algorithm' must be specified for static public key providers (e.g. RSA, EC)");
+        }
+
         // Remove header/footer if present
         String realKey = keyString
                 .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -122,7 +126,7 @@ public class TokenParserRegistry {
 
         byte[] keyBytes = Base64.getDecoder().decode(realKey);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
         return keyFactory.generatePublic(spec);
     }
 }

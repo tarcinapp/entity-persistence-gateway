@@ -37,14 +37,18 @@ app:
       # --------------------------------------------------------
       backend:
         # Path to backend's OAS endpoint (appended to routing-target URL)
-        spec-path: /explorer/openapi.json
+        spec-path: /openapi.json
         
         # Connection timeout in milliseconds
         connect-timeout-ms: 10000
         
         # Read timeout in milliseconds
         read-timeout-ms: 10000
-        
+
+        # Maximum bytes to buffer when reading the OAS response body.
+        # The default WebClient limit is 256KB (262144). Large OpenAPI specs need this raised.
+        max-buffer-size-bytes: 10485760  # 10MB
+
         # Application Startup Retry Logic
         # We must fetch the backend schema at startup. If it fails, we retry.
         retry:
