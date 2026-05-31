@@ -5,6 +5,7 @@
 # PID files for background processes
 OPA_PID_FILE="/tmp/opa-server.pid"
 BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
+ORCHESTRATOR_PID_FILE="/tmp/entity-persistence-universal-orchestrator.pid"
 
 # Log files
 LOG_DIR="/tmp/entity-persistence-gateway-logs"
@@ -12,6 +13,7 @@ mkdir -p "$LOG_DIR"
 OPA_LOG_FILE="$LOG_DIR/opa.log"
 BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 REDIS_LOG_FILE="$LOG_DIR/redis.log"
+ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
 
 # Redis configuration
 REDIS_CONF_FILE="/tmp/redis-dev.conf"
@@ -21,6 +23,8 @@ REDIS_PASSWORD="devpassword123"
 OPA_CMD="opa run --ignore=*_test.rego --server --log-level=debug ~/git/github/entity-persistence-gateway-policies/policies"
 BACKEND_DIR="/home/kdrkrst/git/github/entity-persistence-service"
 BACKEND_CMD="./start-with-env-file.sh dev.env"
+ORCHESTRATOR_DIR="/home/kdrkrst/git/github/entity-persistence-universal-orchestrator"
+ORCHESTRATOR_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
 
 # Colors
 GREEN='\033[0;32m'
@@ -179,7 +183,7 @@ start_backend() {
     
     print_status "Starting backend service..."
     cd "$BACKEND_DIR"
-    nohup bash -c "$BACKEND_CMD" > "$BACKEND_LOG_FILE" 2>&1 &
+    setsid nohup bash -c "$BACKEND_CMD" > "$BACKEND_LOG_FILE" 2>&1 &
     echo $! > "$BACKEND_PID_FILE"
     
     sleep 3
@@ -221,6 +225,57 @@ stop_backend() {
     fi
 }
 
+check_orchestrator() {
+    if [ -f "$ORCHESTRATOR_PID_FILE" ] && kill -0 "$(cat "$ORCHESTRATOR_PID_FILE")" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+start_orchestrator() {
+    if check_orchestrator; then
+        print_success "Orchestrator is already running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+        return 0
+    fi
+
+    if [ ! -d "$ORCHESTRATOR_DIR" ]; then
+        print_error "Orchestrator directory not found: $ORCHESTRATOR_DIR"
+        return 1
+    fi
+
+    print_status "Starting universal orchestrator..."
+    cd "$ORCHESTRATOR_DIR"
+    nohup bash -c "$ORCHESTRATOR_CMD" > "$ORCHESTRATOR_LOG_FILE" 2>&1 &
+    echo $! > "$ORCHESTRATOR_PID_FILE"
+
+    sleep 3
+    if check_orchestrator; then
+        print_success "Orchestrator started successfully (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+    else
+        print_error "Failed to start orchestrator"
+        rm -f "$ORCHESTRATOR_PID_FILE"
+        return 1
+    fi
+}
+
+stop_orchestrator() {
+    if [ -f "$ORCHESTRATOR_PID_FILE" ]; then
+        local pid=$(cat "$ORCHESTRATOR_PID_FILE")
+        print_status "Stopping orchestrator (PID: $pid)..."
+        if kill "$pid" 2>/dev/null; then
+            pkill -P "$pid" 2>/dev/null
+            rm -f "$ORCHESTRATOR_PID_FILE"
+            print_success "Orchestrator stopped"
+        else
+            print_warning "Orchestrator process not found or already stopped"
+            rm -f "$ORCHESTRATOR_PID_FILE"
+        fi
+    else
+        print_warning "Orchestrator not running"
+    fi
+}
+
 show_status() {
     echo "Entity Persistence Gateway - Development Environment"
     echo "=================================================="
@@ -244,17 +299,25 @@ show_status() {
     else
         echo "  Backend: Stopped"
     fi
+
+    if check_orchestrator; then
+        echo "  Orchestrator: Running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+    else
+        echo "  Orchestrator: Stopped"
+    fi
     
     echo
     echo "Service URLs:"
     echo "  Redis:   localhost:6379"
     echo "  OPA:     http://localhost:8181"
     echo "  Backend: Check logs for port information"
+    echo "  Orchestrator: Check logs for port information"
     echo
     echo "Log Files:"
-    echo "  Redis:   $REDIS_LOG_FILE"
-    echo "  OPA:     $OPA_LOG_FILE"
-    echo "  Backend: $BACKEND_LOG_FILE"
+    echo "  Redis:        $REDIS_LOG_FILE"
+    echo "  OPA:          $OPA_LOG_FILE"
+    echo "  Backend:      $BACKEND_LOG_FILE"
+    echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
 }
 
 case "${1:-help}" in
@@ -265,14 +328,22 @@ case "${1:-help}" in
         start_redis
         start_opa
         start_backend
+        start_orchestrator
         echo
         print_success "All services started!"
+        echo
+        echo "Log Files:"
+        echo "  Redis:        $REDIS_LOG_FILE"
+        echo "  OPA:          $OPA_LOG_FILE"
+        echo "  Backend:      $BACKEND_LOG_FILE"
+        echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
         ;;
     
     stop)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        stop_orchestrator
         stop_backend
         stop_opa
         stop_redis
@@ -286,7 +357,7 @@ case "${1:-help}" in
     
     logs)
         print_status "Showing recent logs (Ctrl+C to exit)..."
-        tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" 2>/dev/null || echo "No log files found yet"
+        tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
         ;;
     
     debug)
@@ -297,6 +368,7 @@ case "${1:-help}" in
         start_redis
         start_opa
         start_backend
+        start_orchestrator
         echo
         print_success "Dependencies started. You can now run your application in debug mode."
         ;;
