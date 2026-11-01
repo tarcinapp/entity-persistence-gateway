@@ -2,6 +2,9 @@
 
 # Simple script to manage development dependencies
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVICES_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # PID files for background processes
 OPA_PID_FILE="/tmp/opa-server.pid"
 BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
@@ -20,10 +23,10 @@ REDIS_CONF_FILE="/tmp/redis-dev.conf"
 REDIS_PASSWORD="devpassword123"
 
 # Service commands
-OPA_CMD="opa run --ignore=*_test.rego --server --log-level=debug ~/git/github/entity-persistence-gateway-policies/policies"
-BACKEND_DIR="/home/kdrkrst/git/github/entity-persistence-service"
+OPA_CMD="opa run --ignore=*_test.rego --server --log-level=debug $SERVICES_ROOT/entity-persistence-gateway-policies/policies"
+BACKEND_DIR="$SERVICES_ROOT/entity-persistence-service"
 BACKEND_CMD="./start-with-env-file.sh dev.env"
-ORCHESTRATOR_DIR="/home/kdrkrst/git/github/entity-persistence-universal-orchestrator"
+ORCHESTRATOR_DIR="$SERVICES_ROOT/entity-persistence-universal-orchestrator"
 ORCHESTRATOR_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
 
 # Colors
@@ -407,7 +410,7 @@ case "${1:-help}" in
         echo
         echo "Manual commands:"
         echo "  Redis:   redis-server --daemonize yes"
-        echo "  OPA:     opa run --ignore=*_test.rego --server --log-level=debug ~/git/github/entity-persistence-gateway-policies/policies"
-        echo "  Backend: cd /home/kdrkrst/git/github/entity-persistence-service && ./start-with-env-file.sh dev.env"
+        echo "  OPA:     opa run --ignore=*_test.rego --server --log-level=debug $SERVICES_ROOT/entity-persistence-gateway-policies/policies"
+        echo "  Backend: cd $SERVICES_ROOT/entity-persistence-service && ./start-with-env-file.sh dev.env"
         ;;
 esac
