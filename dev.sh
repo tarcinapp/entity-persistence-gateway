@@ -11,15 +11,17 @@ BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
 ORCHESTRATOR_PID_FILE="/tmp/entity-persistence-universal-orchestrator.pid"
 
 # Log files
-LOG_DIR="/tmp/entity-persistence-gateway-logs"
+# Allow callers (e.g. VSCode tasks) to override the log directory via DEV_LOG_DIR.
+# Default: <workspace-root>/logs  (one level above the gateway repo).
+LOG_DIR="${DEV_LOG_DIR:-$SERVICES_ROOT/../logs}"
 mkdir -p "$LOG_DIR"
 OPA_LOG_FILE="$LOG_DIR/opa.log"
 BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 REDIS_LOG_FILE="$LOG_DIR/redis.log"
 ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
+GATEWAY_LOG_FILE="$LOG_DIR/gateway.log"
 
 # Redis configuration
-REDIS_CONF_FILE="/tmp/redis-dev.conf"
 REDIS_PASSWORD="devpassword123"
 
 # Service commands
@@ -52,41 +54,68 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-check_redis() {
-    redis-cli -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
+rotate_logs() {
+    local ts
+    ts=$(date +%Y%m%d_%H%M%S)
+    local old_dir="$LOG_DIR/old/$ts"
+    local rotated=false
+
+    for f in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GATEWAY_LOG_FILE"; do
+        if [ -s "$f" ]; then
+            mkdir -p "$old_dir"
+            mv "$f" "$old_dir/$(basename "$f")"
+            rotated=true
+        fi
+    done
+
+    if $rotated; then
+        print_status "Previous logs moved to $old_dir"
+    fi
 }
 
-create_redis_config() {
-    cat > "$REDIS_CONF_FILE" << EOF
-# Redis development configuration
-port 6379
-bind 127.0.0.1
-daemonize yes
-requirepass $REDIS_PASSWORD
-logfile $REDIS_LOG_FILE
-databases 16
-save 900 1
-save 300 10
-save 60 10000
-dir /tmp
-EOF
+check_redis() {
+    # Redis must be reachable with our password AND must reject unauthenticated access.
+    # (If requirepass is empty, Redis accepts any client including ones that send a wrong password.)
+    redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q "^PONG$" && \
+        ! redis-cli ping 2>/dev/null | grep -q "^PONG$"
 }
 
 start_redis() {
     if check_redis; then
-        print_success "Redis is already running"
+        print_success "Redis is already running (authenticated)"
         return 0
     fi
-    
-    print_status "Creating Redis configuration..."
-    create_redis_config
-    
-    print_status "Starting Redis with authentication..."
-    redis-server "$REDIS_CONF_FILE" >/dev/null 2>&1
+
+    # Redis is up (system service or other) but has no password — set ours at runtime.
+    if redis-cli ping 2>/dev/null | grep -q "^PONG$"; then
+        print_status "Configuring Redis password for dev environment..."
+        redis-cli config set requirepass "$REDIS_PASSWORD" >/dev/null 2>&1
+        redis-cli config set logfile "$REDIS_LOG_FILE" >/dev/null 2>&1
+        sleep 1
+        if check_redis; then
+            print_success "Redis password configured (using existing instance)"
+            return 0
+        else
+            print_error "Failed to set Redis password"
+            return 1
+        fi
+    fi
+
+    # No Redis running at all — start one ourselves.
+    print_status "Redis is not running. Starting Redis..."
+    redis-server --daemonize yes --logfile "$REDIS_LOG_FILE" >/dev/null 2>&1
     sleep 2
-    
-    if check_redis; then
-        print_success "Redis started successfully with password authentication"
+
+    if redis-cli ping 2>/dev/null | grep -q "^PONG$"; then
+        redis-cli config set requirepass "$REDIS_PASSWORD" >/dev/null 2>&1
+        sleep 1
+        if check_redis; then
+            print_success "Redis started and password configured"
+            return 0
+        else
+            print_error "Redis started but failed to set password"
+            return 1
+        fi
     else
         print_error "Failed to start Redis"
         return 1
@@ -95,12 +124,18 @@ start_redis() {
 
 stop_redis() {
     if check_redis; then
-        print_status "Stopping Redis..."
-        redis-cli -a "$REDIS_PASSWORD" shutdown nosave >/dev/null 2>&1
-        print_success "Redis stopped"
-        
-        # Clean up config file
-        rm -f "$REDIS_CONF_FILE"
+        # Check if this Redis is managed by systemd (keep it running, just remove our password).
+        if systemctl is-active redis redis-server 2>/dev/null | grep -q "^active$"; then
+            print_status "Removing Redis dev password..."
+            redis-cli -a "$REDIS_PASSWORD" config set requirepass "" >/dev/null 2>&1
+            print_success "Redis dev password removed (system service kept running)"
+        else
+            print_status "Stopping Redis..."
+            redis-cli -a "$REDIS_PASSWORD" shutdown nosave >/dev/null 2>&1
+            print_success "Redis stopped"
+        fi
+    elif redis-cli ping 2>/dev/null | grep -q "^PONG$"; then
+        print_warning "Redis is running but dev password was not set (already cleaned up?)"
     else
         print_warning "Redis is not running"
     fi
@@ -125,8 +160,8 @@ start_opa() {
         return 1
     fi
     
-    if [ ! -d "$HOME/git/github/entity-persistence-gateway-policies/policies" ]; then
-        print_error "Policies directory not found: ~/git/github/entity-persistence-gateway-policies/policies"
+    if [ ! -d "$SERVICES_ROOT/entity-persistence-gateway-policies/policies" ]; then
+        print_error "Policies directory not found: $SERVICES_ROOT/entity-persistence-gateway-policies/policies"
         return 1
     fi
     
@@ -249,8 +284,6 @@ start_orchestrator() {
 
     print_status "Starting universal orchestrator..."
     cd "$ORCHESTRATOR_DIR"
-    # Truncate the log so we only scan lines from this startup
-    > "$ORCHESTRATOR_LOG_FILE"
     nohup bash -c "$ORCHESTRATOR_CMD" > "$ORCHESTRATOR_LOG_FILE" 2>&1 &
     echo $! > "$ORCHESTRATOR_PID_FILE"
 
@@ -298,6 +331,28 @@ stop_orchestrator() {
     fi
 }
 
+check_gateway() {
+    lsof -ti :8081 2>/dev/null | grep -q .
+}
+
+stop_gateway() {
+    local pids
+    pids=$(lsof -ti :8081 2>/dev/null)
+    if [ -n "$pids" ]; then
+        print_status "Stopping gateway (port 8081, PID(s): $pids)..."
+        echo "$pids" | xargs kill 2>/dev/null
+        sleep 2
+        # Force-kill if still running
+        pids=$(lsof -ti :8081 2>/dev/null)
+        if [ -n "$pids" ]; then
+            echo "$pids" | xargs kill -9 2>/dev/null
+        fi
+        print_success "Gateway stopped"
+    else
+        print_warning "Gateway is not running"
+    fi
+}
+
 show_status() {
     echo "Entity Persistence Gateway - Development Environment"
     echo "=================================================="
@@ -327,6 +382,12 @@ show_status() {
     else
         echo "  Orchestrator: Stopped"
     fi
+
+    if check_gateway; then
+        echo "  Gateway: Running (port 8081, PID: $(lsof -ti :8081 2>/dev/null | tr '\n' ' '))"
+    else
+        echo "  Gateway: Stopped"
+    fi
     
     echo
     echo "Service URLs:"
@@ -347,6 +408,7 @@ case "${1:-help}" in
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        rotate_logs
         start_redis
         start_opa
         start_backend
@@ -365,6 +427,7 @@ case "${1:-help}" in
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        stop_gateway
         stop_orchestrator
         stop_backend
         stop_opa
@@ -387,6 +450,7 @@ case "${1:-help}" in
         echo "=================================================="
         echo
         print_status "Starting dependencies for debugging..."
+        rotate_logs
         start_redis
         start_opa
         start_backend
