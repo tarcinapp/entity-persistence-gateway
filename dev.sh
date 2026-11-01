@@ -9,6 +9,8 @@ SERVICES_ROOT="$(dirname "$SCRIPT_DIR")"
 OPA_PID_FILE="/tmp/opa-server.pid"
 BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
 ORCHESTRATOR_PID_FILE="/tmp/entity-persistence-universal-orchestrator.pid"
+GATEWAY_PID_FILE="/tmp/entity-persistence-gateway.pid"
+GUI_PID_FILE="/tmp/tarcinapp-base-gui.pid"
 
 # Log files
 # Allow callers (e.g. VSCode tasks) to override the log directory via DEV_LOG_DIR.
@@ -20,6 +22,7 @@ BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 REDIS_LOG_FILE="$LOG_DIR/redis.log"
 ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
 GATEWAY_LOG_FILE="$LOG_DIR/gateway.log"
+GUI_LOG_FILE="$LOG_DIR/gui.log"
 
 # Redis configuration
 REDIS_PASSWORD="devpassword123"
@@ -30,6 +33,10 @@ BACKEND_DIR="$SERVICES_ROOT/entity-persistence-service"
 BACKEND_CMD="./start-with-env-file.sh dev.env"
 ORCHESTRATOR_DIR="$SERVICES_ROOT/entity-persistence-universal-orchestrator"
 ORCHESTRATOR_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
+GATEWAY_DIR="$SCRIPT_DIR"
+GATEWAY_CMD="./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,booksapp"
+GUI_DIR="$SERVICES_ROOT/tarcinapp-base-gui"
+GUI_CMD="npm run dev"
 
 # Colors
 GREEN='\033[0;32m'
@@ -60,7 +67,7 @@ rotate_logs() {
     local old_dir="$LOG_DIR/old/$ts"
     local rotated=false
 
-    for f in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GATEWAY_LOG_FILE"; do
+    for f in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GATEWAY_LOG_FILE" "$GUI_LOG_FILE"; do
         if [ -s "$f" ]; then
             mkdir -p "$old_dir"
             mv "$f" "$old_dir/$(basename "$f")"
@@ -332,24 +339,137 @@ stop_orchestrator() {
 }
 
 check_gateway() {
-    lsof -ti :8081 2>/dev/null | grep -q .
+    if [ -f "$GATEWAY_PID_FILE" ] && kill -0 "$(cat "$GATEWAY_PID_FILE")" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+start_gateway() {
+    if check_gateway; then
+        print_success "Gateway is already running (PID: $(cat "$GATEWAY_PID_FILE"))"
+        return 0
+    fi
+
+    print_status "Starting gateway..."
+    cd "$GATEWAY_DIR"
+    nohup bash -c "$GATEWAY_CMD" > "$GATEWAY_LOG_FILE" 2>&1 &
+    echo $! > "$GATEWAY_PID_FILE"
+
+    local timeout=60
+    local elapsed=0
+    print_status "Waiting for gateway to become ready (timeout: ${timeout}s)..."
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if ! check_gateway; then
+            print_error "Gateway process died during startup"
+            rm -f "$GATEWAY_PID_FILE"
+            return 1
+        fi
+        if grep -q "Netty started on port" "$GATEWAY_LOG_FILE" 2>/dev/null; then
+            print_success "Gateway started successfully (PID: $(cat "$GATEWAY_PID_FILE"))"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    print_error "Gateway did not become ready within ${timeout}s"
+    rm -f "$GATEWAY_PID_FILE"
+    return 1
 }
 
 stop_gateway() {
-    local pids
-    pids=$(lsof -ti :8081 2>/dev/null)
-    if [ -n "$pids" ]; then
-        print_status "Stopping gateway (port 8081, PID(s): $pids)..."
-        echo "$pids" | xargs kill 2>/dev/null
-        sleep 2
-        # Force-kill if still running
+    if [ -f "$GATEWAY_PID_FILE" ]; then
+        local pid=$(cat "$GATEWAY_PID_FILE")
+        print_status "Stopping gateway (PID: $pid)..."
+        if kill "$pid" 2>/dev/null; then
+            pkill -P "$pid" 2>/dev/null
+            sleep 2
+            # Force-kill if still running
+            kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null
+            rm -f "$GATEWAY_PID_FILE"
+            print_success "Gateway stopped"
+        else
+            print_warning "Gateway process not found or already stopped"
+            rm -f "$GATEWAY_PID_FILE"
+        fi
+    else
+        # Fallback: kill by port in case PID file is missing
+        local pids
         pids=$(lsof -ti :8081 2>/dev/null)
         if [ -n "$pids" ]; then
+            print_status "Stopping gateway by port 8081 (PID(s): $pids)..."
+            echo "$pids" | xargs kill 2>/dev/null
+            sleep 2
             echo "$pids" | xargs kill -9 2>/dev/null
+            print_success "Gateway stopped"
+        else
+            print_warning "Gateway is not running"
         fi
-        print_success "Gateway stopped"
+    fi
+}
+
+check_gui() {
+    if [ -f "$GUI_PID_FILE" ] && kill -0 "$(cat "$GUI_PID_FILE")" 2>/dev/null; then
+        return 0
     else
-        print_warning "Gateway is not running"
+        return 1
+    fi
+}
+
+start_gui() {
+    if check_gui; then
+        print_success "GUI is already running (PID: $(cat "$GUI_PID_FILE"))"
+        return 0
+    fi
+
+    if [ ! -d "$GUI_DIR" ]; then
+        print_error "GUI directory not found: $GUI_DIR"
+        return 1
+    fi
+
+    print_status "Starting GUI dev server..."
+    cd "$GUI_DIR"
+    nohup bash -c "$GUI_CMD" > "$GUI_LOG_FILE" 2>&1 &
+    echo $! > "$GUI_PID_FILE"
+
+    local timeout=30
+    local elapsed=0
+    print_status "Waiting for GUI to become ready (timeout: ${timeout}s)..."
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if ! check_gui; then
+            print_error "GUI process died during startup"
+            rm -f "$GUI_PID_FILE"
+            return 1
+        fi
+        if grep -q "Local:" "$GUI_LOG_FILE" 2>/dev/null; then
+            print_success "GUI started successfully (PID: $(cat "$GUI_PID_FILE"))"
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    print_error "GUI did not become ready within ${timeout}s"
+    rm -f "$GUI_PID_FILE"
+    return 1
+}
+
+stop_gui() {
+    if [ -f "$GUI_PID_FILE" ]; then
+        local pid=$(cat "$GUI_PID_FILE")
+        print_status "Stopping GUI (PID: $pid)..."
+        if kill "$pid" 2>/dev/null; then
+            pkill -P "$pid" 2>/dev/null
+            rm -f "$GUI_PID_FILE"
+            print_success "GUI stopped"
+        else
+            print_warning "GUI process not found or already stopped"
+            rm -f "$GUI_PID_FILE"
+        fi
+    else
+        print_warning "GUI is not running"
     fi
 }
 
@@ -384,23 +504,33 @@ show_status() {
     fi
 
     if check_gateway; then
-        echo "  Gateway: Running (port 8081, PID: $(lsof -ti :8081 2>/dev/null | tr '\n' ' '))"
+        echo "  Gateway: Running (PID: $(cat "$GATEWAY_PID_FILE"))"
     else
         echo "  Gateway: Stopped"
     fi
-    
+
+    if check_gui; then
+        echo "  GUI:     Running (PID: $(cat "$GUI_PID_FILE"))"
+    else
+        echo "  GUI:     Stopped"
+    fi
+
     echo
     echo "Service URLs:"
-    echo "  Redis:   localhost:6379"
-    echo "  OPA:     http://localhost:8181"
-    echo "  Backend: Check logs for port information"
+    echo "  Redis:        localhost:6379"
+    echo "  OPA:          http://localhost:8181"
+    echo "  Backend:      http://localhost:3000"
     echo "  Orchestrator: Check logs for port information"
+    echo "  Gateway:      http://localhost:8081"
+    echo "  GUI:          http://localhost:5173"
     echo
     echo "Log Files:"
     echo "  Redis:        $REDIS_LOG_FILE"
     echo "  OPA:          $OPA_LOG_FILE"
     echo "  Backend:      $BACKEND_LOG_FILE"
     echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
+    echo "  Gateway:      $GATEWAY_LOG_FILE"
+    echo "  GUI:          $GUI_LOG_FILE"
 }
 
 case "${1:-help}" in
@@ -413,17 +543,33 @@ case "${1:-help}" in
         start_opa
         start_backend
         start_orchestrator
+        start_gateway
         echo
-        print_success "All services started!"
+        print_success "All services started! (GUI not included — run 'start-gui' separately)"
         echo
         echo "Log Files:"
         echo "  Redis:        $REDIS_LOG_FILE"
         echo "  OPA:          $OPA_LOG_FILE"
         echo "  Backend:      $BACKEND_LOG_FILE"
         echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
+        echo "  Gateway:      $GATEWAY_LOG_FILE"
         ;;
-    
-    stop)
+
+    start-gateway)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        start_gateway
+        ;;
+
+    start-gui)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        start_gui
+        ;;
+
+    stop-backend)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
@@ -433,18 +579,32 @@ case "${1:-help}" in
         stop_opa
         stop_redis
         echo
+        print_success "Backend services stopped!"
+        ;;
+
+    stop)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        stop_gui
+        stop_gateway
+        stop_orchestrator
+        stop_backend
+        stop_opa
+        stop_redis
+        echo
         print_success "All services stopped!"
         ;;
-    
+
     status)
         show_status
         ;;
-    
+
     logs)
         print_status "Showing recent logs (Ctrl+C to exit)..."
-        tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
+        tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GATEWAY_LOG_FILE" "$GUI_LOG_FILE" 2>/dev/null || echo "No log files found yet"
         ;;
-    
+
     debug)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
@@ -458,19 +618,22 @@ case "${1:-help}" in
         echo
         print_success "Dependencies started. You can now run your application in debug mode."
         ;;
-    
+
     *)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
-        echo "Usage: $0 {start|stop|status|logs|debug}"
+        echo "Usage: $0 {start|start-gateway|start-gui|stop-backend|stop|status|logs|debug}"
         echo
         echo "Commands:"
-        echo "  start  - Start Redis and all dependencies"
-        echo "  stop   - Stop all dependencies and Redis"
-        echo "  status - Show status of all services"
-        echo "  logs   - Show service logs"
-        echo "  debug  - Start everything for debugging"
+        echo "  start         - Start all services including gateway (GUI excluded)"
+        echo "  start-gateway - Start gateway only (dependencies must already be running)"
+        echo "  start-gui     - Start GUI dev server"
+        echo "  stop-backend  - Stop gateway and all backend services (GUI untouched)"
+        echo "  stop          - Stop all services including GUI"
+        echo "  status        - Show status of all services"
+        echo "  logs          - Show service logs"
+        echo "  debug         - Start dependencies only (no gateway, no GUI)"
         echo
         echo "Manual commands:"
         echo "  Redis:   redis-server --daemonize yes"
