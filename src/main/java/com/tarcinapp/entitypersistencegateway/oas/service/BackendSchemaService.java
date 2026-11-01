@@ -1,13 +1,15 @@
 package com.tarcinapp.entitypersistencegateway.oas.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.oas.client.BackendOasClient;
 import com.tarcinapp.entitypersistencegateway.oas.config.OasOrchestratorProperties;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Schema;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -21,7 +23,11 @@ public class BackendSchemaService {
 
     private final BackendOasClient backendOasClient;
     private final OasOrchestratorProperties properties;
-    
+    // Derived from the Spring-managed ObjectMapper; NON_NULL prevents null
+    // constraint values (e.g. maximum: null) from being serialised, which
+    // would cause the JSON schema validator to fail.
+    private final ObjectMapper schemaObjectMapper;
+
     // Store parsed JsonNodes for specific backend operations
     // Key format: "POST /entities", "PATCH /entities/{id}"
     private final Map<String, JsonNode> operationSchemas = new ConcurrentHashMap<>();
@@ -46,21 +52,12 @@ public class BackendSchemaService {
             ObjectMapper objectMapper) {
         this.backendOasClient = backendOasClient;
         this.properties = properties;
+        // Copy the shared bean so we can set NON_NULL without mutating it globally.
+        this.schemaObjectMapper = objectMapper.copy()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    /**
-     * Creates an ObjectMapper configured to exclude null values.
-     * This prevents null constraint values (like maximum: null) from being
-     * serialized,
-     * which would cause the JSON schema validator to fail.
-     */
-    private ObjectMapper createSchemaObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
-        return mapper;
-    }
-
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initializeSchemas() {
         log.info("Initializing Backend Schema Service...");
         fetchAndCompileSchemas()
@@ -174,10 +171,9 @@ public class BackendSchemaService {
                 log.warn("Cached schema for {}:{} has NULL properties!", controllerName, method);
             }
 
-            // Use a dedicated ObjectMapper that excludes null values to prevent
-            // "null found, array expected" errors in the JSON schema validator
-            ObjectMapper schemaMapper = createSchemaObjectMapper();
-            JsonNode schemaNode = schemaMapper.convertValue(resolvedSchema, JsonNode.class);
+            // schemaObjectMapper is a NON_NULL copy of the shared Spring bean —
+            // prevents "null found, array expected" errors in the JSON schema validator.
+            JsonNode schemaNode = schemaObjectMapper.convertValue(resolvedSchema, JsonNode.class);
             String key = buildKey(controllerName, method);
             operationSchemas.put(key, schemaNode);
         } catch (IllegalArgumentException e) {
