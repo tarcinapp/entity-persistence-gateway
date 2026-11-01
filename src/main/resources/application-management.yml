@@ -44,26 +44,26 @@ management:
     # Gateway Actuator
     # Enables inspection of routes, filters, and topology via /actuator/gateway
     gateway:
-      enabled: true
+      access: unrestricted
     
     metrics:
-      enabled: true
+      access: unrestricted
     
     prometheus:
-      enabled: true
+      access: unrestricted
     
     # Remote Shutdown
     # SECURITY BEST PRACTICE: Always disable remote shutdown via HTTP.
     shutdown:
-      enabled: false
+      access: none
     
     env:
-      enabled: true
+      access: unrestricted
     
     # Configuration Properties
     # Often produces too much data, enable only if debugging configuration binding.
     configprops:
-      enabled: false
+      access: none
 
   # ============================================================
   # METRICS CONFIGURATION (MICROMETER)
