@@ -190,10 +190,17 @@ public abstract class AbstractPolicyAwareResponsePayloadModifierFilterFactory<C 
         }, NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 10);
     }
 
+    /**
+     * Not used by this class: the response-modification path is self-contained
+     * inside {@link #apply(PolicyEvaluatingFilterConfig)}. The parent abstract
+     * method is satisfied here to fulfil the contract, but calling this overload
+     * directly would be a programming error.
+     */
     @Override
-    // TODO: why I have this code here?
     public GatewayFilter apply(C config, PR policyResult) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException(
+                "AbstractPolicyAwareResponsePayloadModifierFilterFactory handles policy " +
+                "evaluation internally inside apply(C config). " +
+                "The two-argument form is not supported for response modifier filters.");
     }
 }
