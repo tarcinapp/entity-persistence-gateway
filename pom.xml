@@ -20,7 +20,7 @@
         <java.version>21</java.version>
         <maven.compiler.release>21</maven.compiler.release>
 
-        <spring-cloud.version>2024.0.3</spring-cloud.version>
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
 
         <redisson.version>3.52.0</redisson.version>
 
