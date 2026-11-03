@@ -5150,7 +5150,7 @@ spring:
               - kind-alias
               - by-id
               - single-record
-          - id: findChildrenEntityReactionsByReactionIdByKindAlias
+          - id: findEntityReactionChildrenByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
@@ -5203,7 +5203,7 @@ spring:
               - hierarchical
               - children
               - collection
-          - id: createChildEntityReactionByKindAlias
+          - id: createEntityReactionChildByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
@@ -5256,7 +5256,7 @@ spring:
               - kind-alias
               - hierarchical
               - children
-          - id: findParentsByEntityReactionIdByKindAlias
+          - id: findEntityReactionParentsByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
@@ -5815,7 +5815,7 @@ spring:
               - kind-alias
               - by-id
               - single-record
-          - id: findChildrenListReactionsByReactionIdByKindAlias
+          - id: findListReactionChildrenByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
@@ -5868,7 +5868,7 @@ spring:
               - hierarchical
               - children
               - collection
-          - id: createChildListReactionByKindAlias
+          - id: createListReactionChildByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
@@ -5921,7 +5921,7 @@ spring:
               - kind-alias
               - hierarchical
               - children
-          - id: findParentsByListReactionIdByKindAlias
+          - id: findListReactionParentsByKindAlias
             uri: ${app.outbound.routing-target.protocol}://${app.outbound.routing-target.host}:${app.outbound.routing-target.port}
             predicates:
             - Path=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/{kindAlias}/{recordId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
