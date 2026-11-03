@@ -431,7 +431,7 @@ start_gui() {
 
     print_status "Starting GUI dev server..."
     cd "$GUI_DIR"
-    nohup bash -c "$GUI_CMD" > "$GUI_LOG_FILE" 2>&1 &
+    setsid nohup $GUI_CMD > "$GUI_LOG_FILE" 2>&1 &
     echo $! > "$GUI_PID_FILE"
 
     local timeout=30
@@ -443,7 +443,7 @@ start_gui() {
             rm -f "$GUI_PID_FILE"
             return 1
         fi
-        if grep -q "Local:" "$GUI_LOG_FILE" 2>/dev/null; then
+        if ss -tlnp | grep -qE ":5173|:5174"; then
             print_success "GUI started successfully (PID: $(cat "$GUI_PID_FILE"))"
             return 0
         fi
@@ -469,8 +469,19 @@ stop_gui() {
             rm -f "$GUI_PID_FILE"
         fi
     else
-        print_warning "GUI is not running"
+        print_warning "GUI not running (checking for orphaned processes)"
     fi
+
+    # Additional cleanup: kill any vite process by name and by ports 5173-5180
+    pkill -f "node_modules/.bin/vite" 2>/dev/null
+    for port in 5173 5174 5175 5176 5177 5178 5179 5180; do
+        local pids
+        pids=$(lsof -ti :$port 2>/dev/null)
+        if [ -n "$pids" ]; then
+            print_status "Killing orphaned GUI process(es) on port $port: $pids"
+            echo "$pids" | xargs kill 2>/dev/null
+        fi
+    done
 }
 
 show_status() {
@@ -567,6 +578,15 @@ case "${1:-help}" in
         echo "=================================================="
         echo
         start_gui
+        ;;
+
+    stop-gui)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        stop_gui
+        echo
+        print_success "GUI stopped!"
         ;;
 
     stop-backend)
