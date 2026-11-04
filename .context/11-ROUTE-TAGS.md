@@ -343,9 +343,9 @@ The controller identifier tag is added. For base generic root controllers this o
 | `updateEntityReactionByIdByKindAlias` | patch, update, write, manage, entityReactions, entityReactionsKindAlias, kind-alias, by-id, single-record |
 | `replaceEntityReactionByIdByKindAlias` | put, replace, write, manage, entityReactions, entityReactionsKindAlias, kind-alias, by-id, single-record |
 | `deleteEntityReactionByIdByKindAlias` | delete, destructive, entityReactions, entityReactionsKindAlias, kind-alias, by-id, single-record |
-| `findChildrenEntityReactionsByReactionIdByKindAlias` | get, find, read-only, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, children, collection |
-| `createChildEntityReactionByKindAlias` | post, create, write, manage, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, children |
-| `findParentsByEntityReactionIdByKindAlias` | get, find, read-only, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, parents, collection |
+| `findEntityReactionChildrenByKindAlias` | get, find, read-only, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, children, collection |
+| `createEntityReactionChildByKindAlias` | post, create, write, manage, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, children |
+| `findEntityReactionParentsByKindAlias` | get, find, read-only, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, parents, collection |
 | `findEntityReactionHierarchyByKindAlias` | get, find, read-only, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, domain-driven, collection |
 | `createEntityReactionHierarchyByKindAlias` | post, create, write, manage, entityReactions, entityReactionsKindAlias, kind-alias, hierarchical, domain-driven |
 
@@ -361,9 +361,9 @@ The controller identifier tag is added. For base generic root controllers this o
 | `updateListReactionByIdByKindAlias` | patch, update, write, manage, listReactions, listReactionsKindAlias, kind-alias, by-id, single-record |
 | `replaceListReactionByIdByKindAlias` | put, replace, write, manage, listReactions, listReactionsKindAlias, kind-alias, by-id, single-record |
 | `deleteListReactionByIdByKindAlias` | delete, destructive, listReactions, listReactionsKindAlias, kind-alias, by-id, single-record |
-| `findChildrenListReactionsByReactionIdByKindAlias` | get, find, read-only, listReactions, listReactionsKindAlias, kind-alias, hierarchical, children, collection |
-| `createChildListReactionByKindAlias` | post, create, write, manage, listReactions, listReactionsKindAlias, kind-alias, hierarchical, children |
-| `findParentsByListReactionIdByKindAlias` | get, find, read-only, listReactions, listReactionsKindAlias, kind-alias, hierarchical, parents, collection |
+| `findListReactionChildrenByKindAlias` | get, find, read-only, listReactions, listReactionsKindAlias, kind-alias, hierarchical, children, collection |
+| `createListReactionChildByKindAlias` | post, create, write, manage, listReactions, listReactionsKindAlias, kind-alias, hierarchical, children |
+| `findListReactionParentsByKindAlias` | get, find, read-only, listReactions, listReactionsKindAlias, kind-alias, hierarchical, parents, collection |
 | `findListReactionHierarchyByKindAlias` | get, find, read-only, listReactions, listReactionsKindAlias, kind-alias, hierarchical, domain-driven, collection |
 | `createListReactionHierarchyByKindAlias` | post, create, write, manage, listReactions, listReactionsKindAlias, kind-alias, hierarchical, domain-driven |
 

@@ -363,9 +363,9 @@ Domain-projected wrappers for the five Root controllers. Each route resolves a `
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
-| `findChildrenEntityReactionsByReactionIdByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/children` | Find child reactions of a specific entity reaction within a kind alias |
-| `createChildEntityReactionByKindAlias` | POST | `/api/v1/entity-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific entity reaction within a kind alias |
-| `findParentsByEntityReactionIdByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific entity reaction within a kind alias |
+| `findEntityReactionChildrenByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/children` | Find child reactions of a specific entity reaction within a kind alias |
+| `createEntityReactionChildByKindAlias` | POST | `/api/v1/entity-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific entity reaction within a kind alias |
+| `findEntityReactionParentsByKindAlias` | GET | `/api/v1/entity-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific entity reaction within a kind alias |
 
 #### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
@@ -398,9 +398,9 @@ Domain-projected wrappers for the five Root controllers. Each route resolves a `
 
 | Route ID | Method | Path | Description |
 |----------|--------|------|-------------|
-| `findChildrenListReactionsByReactionIdByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/{recordId}/children` | Find child reactions of a specific list reaction within a kind alias |
-| `createChildListReactionByKindAlias` | POST | `/api/v1/list-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific list reaction within a kind alias |
-| `findParentsByListReactionIdByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific list reaction within a kind alias |
+| `findListReactionChildrenByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/{recordId}/children` | Find child reactions of a specific list reaction within a kind alias |
+| `createListReactionChildByKindAlias` | POST | `/api/v1/list-reactions/{kindAlias}/{recordId}/children` | Create a child reaction under a specific list reaction within a kind alias |
+| `findListReactionParentsByKindAlias` | GET | `/api/v1/list-reactions/{kindAlias}/{recordId}/parents` | Find parent reactions of a specific list reaction within a kind alias |
 
 #### Dynamic Hierarchy Routes by Kind Alias (Domain-Driven URLs) _(2 routes)_
 
