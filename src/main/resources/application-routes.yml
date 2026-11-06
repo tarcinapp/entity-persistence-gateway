@@ -265,6 +265,7 @@ spring:
           args:
             policyName: /policies/auth/routes/entities/updateEntityById/policy
         - AcquireLockForUpdate
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -756,6 +757,7 @@ spring:
           args:
             waitTime: ${app.locks.lists.update.waitTime}
             leaseTime: ${app.locks.lists.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -1257,6 +1259,7 @@ spring:
           args:
             waitTime: ${app.locks.relations.update.waitTime}
             leaseTime: ${app.locks.relations.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -1620,6 +1623,7 @@ spring:
           args:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -2305,6 +2309,7 @@ spring:
           args:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -3352,6 +3357,7 @@ spring:
           args:
             waitTime: ${app.locks.entities.update.waitTime}
             leaseTime: ${app.locks.entities.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -4027,6 +4033,7 @@ spring:
           args:
             waitTime: ${app.locks.lists.update.waitTime}
             leaseTime: ${app.locks.lists.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -4646,6 +4653,7 @@ spring:
           args:
             waitTime: ${app.locks.relations.update.waitTime}
             leaseTime: ${app.locks.relations.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -5042,6 +5050,7 @@ spring:
           args:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -5707,6 +5716,7 @@ spring:
           args:
             waitTime: ${app.locks.reactions.update.waitTime}
             leaseTime: ${app.locks.reactions.update.leaseTime}
+        - AddManagedFieldsInPatch
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions

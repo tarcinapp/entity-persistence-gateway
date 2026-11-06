@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tarcinapp.entitypersistencegateway.GatewaySecurityContext;
+import com.tarcinapp.entitypersistencegateway.auth.ForbiddenFieldsLibrary;
 import com.tarcinapp.entitypersistencegateway.auth.PolicyData;
 import com.tarcinapp.entitypersistencegateway.dto.ManagedField;
 import com.tarcinapp.entitypersistencegateway.filters.base.AbstractRequestPayloadModifierFilterFactory;
+import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -20,26 +22,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Replace (PUT) operations require the record's all parameters.
- * This filter handles Managed Fields (_createdBy, _lastUpdatedBy, _ownerUsers etc.) logic using a base class.
+ * Replace (PUT) operations require all record parameters to be present.
+ * This filter handles Managed Fields (_createdBy, _lastUpdatedBy, _ownerUsers etc.) for PUT.
  *
  * 1. _createdBy, _createdDateTime:
- * - Strategy: Preserve Original if missing.
- * - If user sent a value (even if different), we ACCEPT it. Because as route has reached to this point, we assume
- *  user is authorized to do so.
+ *    Strategy: Preserve Original if missing (putIfAbsent).
+ *    If caller sent any value, accept it — OPA already authorised it.
  *
  * 2. _ownerUsers:
- * - Strategy: Preserve Original if missing.
- * - If set, we rely on Policy to validate the content of the list.
+ *    Strategy: Preserve Original if missing (putIfAbsent).
+ *    If set, OPA validates the content.
  *
  * 3. _lastUpdatedBy & _lastUpdatedDateTime:
- * - Strategy: Smart Overwrite.
- * - If missing OR matches original (Pass-through from non-admin), set to 'Me'/'Now'.
- * - If different (Admin override), accept user's value.
+ *    Strategy: Forbidden-field-aware injection.
+ *
+ *    A. Field is forbidden for this caller (editor / member without field-level role):
+ *       Always overwrite with authSubject / now.
+ *       OPA forced them to send the original value or nothing; the gateway must still
+ *       stamp the real caller identity.
+ *
+ *    B. Field is NOT forbidden (admin, or caller holding a field-level role):
+ *       putIfAbsent — only inject when absent.
+ *       If the caller expressed any value (including the stored one), honour it.
  */
 @Component
 @Slf4j
@@ -74,6 +81,13 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
             String createdBy = String.valueOf(originalRecord.get("_createdBy"));
             String authSubject = gatewaySecurityContext.getAuthSubject();
 
+            // Resolve record type from route metadata (already in plural form, e.g. "entities").
+            // Kind comes from the original record since route metadata does not carry it.
+            String recordType = RecordTypeResolver.resolve(null, exchange, "AddManagedFieldsFromOriginalToPayloadInReplace");
+            String kind = (String) originalRecord.get("_kind");
+            boolean lastUpdatedByForbidden = isFieldForbiddenForUpdate(exchange, recordType, kind, ManagedField.LAST_UPDATED_BY.getFieldName());
+            boolean lastUpdatedDateTimeForbidden = isFieldForbiddenForUpdate(exchange, recordType, kind, ManagedField.LAST_UPDATED_DATE_TIME.getFieldName());
+
             List<ManagedField> fieldsToAdd = this.getFieldsToAdd(config);
 
             fieldsToAdd.forEach(field -> {
@@ -95,30 +109,15 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
                 }
 
                 // 3. LAST_UPDATED_BY
-                // Strategy: Update to Current User if missing OR matches original.
+                // Strategy: Forbidden-field-aware injection.
                 else if (field.equals(ManagedField.LAST_UPDATED_BY) && authSubject != null) {
-                    Object originalValue = originalRecord.get(fieldName);
-                    Object incomingValue = inboundJsonRequestMap.get(fieldName);
-
-                    // If missing OR (present AND matches original), we overwrite with current user
-                    // This handles the case where non-admins send original value to pass policy check
-                    if (!inboundJsonRequestMap.containsKey(fieldName) || Objects.equals(originalValue, incomingValue)) {
-                        inboundJsonRequestMap.put(fieldName, authSubject);
-                    }
-                    // Else: User sent a specific DIFFERENT value, we trust they are Admin.
+                    applyAuditField(inboundJsonRequestMap, fieldName, authSubject, lastUpdatedByForbidden);
                 }
 
                 // 4. LAST_UPDATED_DATE_TIME
-                // Strategy: Update to Now if missing OR matches original.
+                // Strategy: Forbidden-field-aware injection.
                 else if (field.equals(ManagedField.LAST_UPDATED_DATE_TIME)) {
-                    Object originalValue = originalRecord.get(fieldName);
-                    Object incomingValue = inboundJsonRequestMap.get(fieldName);
-
-                    // If missing OR (present AND matches original), we overwrite with NOW
-                    if (!inboundJsonRequestMap.containsKey(fieldName) || Objects.equals(originalValue, incomingValue)) {
-                        inboundJsonRequestMap.put(fieldName, now);
-                    }
-                    // Else: User sent a specific DIFFERENT value, we trust they are Admin.
+                    applyAuditField(inboundJsonRequestMap, fieldName, now, lastUpdatedDateTimeForbidden);
                 }
             });
 
@@ -131,6 +130,41 @@ public class AddManagedFieldsFromOriginalToPayloadInReplace
             log.error("Cloning policy data failed", e);
             return Mono.error(e);
         }
+    }
+
+    /**
+     * Applies an audit field using the correct strategy:
+     *
+     * - forbidden == true:  always overwrite — caller cannot control this field,
+     *                        so the gateway must always stamp the correct value.
+     * - forbidden == false: putIfAbsent — caller is authorised to set any value;
+     *                        honour whatever they expressed, only inject when absent.
+     */
+    private void applyAuditField(Map<String, Object> payload, String fieldName, Object injectValue, boolean forbidden) {
+        if (forbidden) {
+            log.trace("Field {} is forbidden for update — overwriting with injected value.", fieldName);
+            payload.put(fieldName, injectValue);
+        } else {
+            log.trace("Field {} is not forbidden for update — injecting only if absent.", fieldName);
+            payload.putIfAbsent(fieldName, injectValue);
+        }
+    }
+
+    /**
+     * Returns true when the given field appears in the forbidden-for-update list
+     * that OPA computed for this caller, record type, and kind.
+     * Falls back to false (putIfAbsent) when the library is not available.
+     */
+    private boolean isFieldForbiddenForUpdate(ServerWebExchange exchange, String recordType, String kind, String fieldName) {
+        ForbiddenFieldsLibrary library = exchange.getAttribute(FetchForbiddenFieldsGatewayFilterFactory.GATEWAY_CONTEXT_FORBIDDEN_FIELDS);
+
+        if (library == null || recordType == null) {
+            log.debug("ForbiddenFieldsLibrary or recordType not available; treating {} as not forbidden.", fieldName);
+            return false;
+        }
+
+        List<String> forbidden = library.resolveForbiddenFields(recordType, kind);
+        return forbidden != null && forbidden.contains(fieldName);
     }
 
     private List<ManagedField> getFieldsToAdd(Config config) {

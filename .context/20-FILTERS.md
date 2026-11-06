@@ -33,9 +33,10 @@ This document provides a comprehensive reference for all filters used in the Ent
 | `AuthorizeRequest` | Security | Policy-based authorization |
 | `AcquireLockForCreation` | Concurrency | Distributed locking for creates |
 | `AcquireLockForUpdate` | Concurrency | Distributed locking for updates |
-| `AddManagedFieldsInCreation` | Transformation | Adds system-managed fields |
-| `AddManagedFieldsFromOriginalToPayloadInReplace` | Transformation | Preserves managed fields in PUT |
-| `AddForbiddenFieldsFromOriginalToPayloadInReplace` | Transformation | Preserves forbidden fields in PUT |
+| `AddManagedFieldsInCreation` | Transformation | Injects system-managed fields on POST (create) |
+| `AddManagedFieldsInPatch` | Transformation | Injects `_lastUpdatedBy` and `_lastUpdatedDateTime` on PATCH (update) |
+| `AddManagedFieldsFromOriginalToPayloadInReplace` | Transformation | Injects managed fields on PUT (replace), merging with original record values |
+| `AddForbiddenFieldsFromOriginalToPayloadInReplace` | Transformation | Preserves forbidden fields on PUT to prevent blind overwrites |
 | `ApplyFieldsetConfig` | Transformation | Applies fieldset projections |
 | `FieldFilter` | Transformation | Filters response fields |
 | `PreventStringifiedJsonFilter` | Validation | Prevents stringified JSON queries |
@@ -428,27 +429,59 @@ filter[lookup][0][scope][where][pageCount][lte]=300
 
 ---
 
+#### `AddManagedFieldsInPatch`
+**Purpose:** Injects `_lastUpdatedBy` and `_lastUpdatedDateTime` into PATCH (updateById) request payloads.
+
+**Configuration:**
+```yaml
+- AddManagedFieldsInPatch
+```
+
+No configuration parameters — this filter always processes exactly `_lastUpdatedBy` and `_lastUpdatedDateTime`.
+
+**Behavior:**
+
+Uses the `ForbiddenFieldsLibrary` already present in the exchange (populated by `FetchForbiddenFields`) to decide the injection strategy per field:
+
+- **Field is forbidden for this caller** (editor / member without a field-level role — `_lastUpdatedBy` is in their `forbidden_update_list`):
+  → Always overwrite with the authenticated caller's identity / current timestamp.
+  OPA already ensured the caller could only have echoed the stored value or omitted the field entirely; the gateway still stamps the real caller identity.
+
+- **Field is NOT forbidden** (admin, or any caller holding a `tarcinapp.fields.*.​_lastUpdatedBy.update` role):
+  → `putIfAbsent` — only inject when the field is absent from the payload.
+  If the caller expressed any value (including the stored one), honour it.
+
+**Placement in filter chain:** Must run **after** `AcquireLockForUpdate` (so the `ForbiddenFieldsLibrary` and `PolicyData.originalRecord` are available) and **before** `RemoveRequestHeader=Authorization`.
+
+**Used in:** All PATCH (updateById) operations — entities, lists, relations, entityReactions, listReactions (both generic and kind-alias routes).
+
+---
+
 #### `AddManagedFieldsFromOriginalToPayloadInReplace`
-**Purpose:** Preserves managed fields when replacing resources (PUT).
+**Purpose:** Injects managed fields into PUT (replaceById) request payloads, merging with values from the original record.
 
 **Configuration:**
 ```yaml
 - AddManagedFieldsFromOriginalToPayloadInReplace
 
-# With exclusions
+# With exclusions (e.g. relations do not have _ownerUsers)
 - name: AddManagedFieldsFromOriginalToPayloadInReplace
   args:
     excludeFields:
     - OWNER_USERS
 ```
 
-**Behavior:**
-- Fetches original resource
-- Copies managed fields from original to new payload
-- Prevents managed fields from being overwritten
-- Updates `modifiedAt`, `modifiedBy`
+**Behavior per field:**
 
-**Used in:** All PUT (replace) operations
+- `_createdBy`, `_createdDateTime`: `putIfAbsent` — preserve the original record value if the caller omitted the field; honour any value the caller sent (OPA already authorised it).
+- `_ownerUsers`: `putIfAbsent` — restore from original if absent; OPA validates any supplied value.
+- `_lastUpdatedBy`, `_lastUpdatedDateTime`: **Forbidden-field-aware injection** (same logic as `AddManagedFieldsInPatch`):
+  - Field is forbidden for caller → always overwrite with `authSubject` / `now`.
+  - Field is not forbidden (admin / field-level role) → `putIfAbsent`.
+
+The forbidden-field decision is read from the `ForbiddenFieldsLibrary` already in the exchange (populated by `FetchForbiddenFields`). Record type and kind are resolved from `originalRecord._recordType` and `originalRecord._kind`.
+
+**Used in:** All PUT (replace) operations — entities, lists, relations, entityReactions, listReactions (both generic and kind-alias routes).
 
 ---
 
