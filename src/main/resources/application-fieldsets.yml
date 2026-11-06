@@ -25,6 +25,8 @@ app:
           - _viewerUsers
           - _viewerGroups
           - _parents
+          - _entityId
+          - _relationMetadata
       hide-managed-all:
         mode: hide
         fields:
@@ -46,6 +48,8 @@ app:
           - _viewerUsers
           - _viewerGroups
           - _parents
+          - _entityId
+          - _relationMetadata
       hide-managed-except-id:
         mode: hide
         fields:
@@ -66,6 +70,8 @@ app:
           - _viewerUsers
           - _viewerGroups
           - _parents
+          - _entityId
+          - _relationMetadata
      
       hide-managed-except-id-kind-name:
         mode: hide
@@ -85,6 +91,8 @@ app:
           - _viewerUsers
           - _viewerGroups
           - _parents
+          - _entityId
+          - _relationMetadata
     entities:
       defaultFieldset: null
     lists:
