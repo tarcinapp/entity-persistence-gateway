@@ -8,6 +8,7 @@ import com.tarcinapp.entitypersistencegateway.services.DynamicLocalCacheService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
@@ -49,6 +50,9 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
     // Regex to safely parse max-age from Cache-Control header
     // Captures max-age value ignoring spaces and other directives
     private static final Pattern MAX_AGE_PATTERN = Pattern.compile("max-age\\s*=\\s*(\\d+)");
+
+    @Value("${app.shortcode:tarcinapp}")
+    private String appShortcode;
 
     @Autowired
     private Environment environment;
@@ -157,8 +161,11 @@ public class DynamicLocalCacheGatewayFilterFactory extends AbstractGatewayFilter
             // e.g., ?a=1&b=2 should be same as ?b=2&a=1
             String sortedQuery = getSortedQueryString(request.getQueryParams());
 
-            // Construct Cache Key: METHOD : PATH : SORTED_QUERY : USER_ID
-            String cacheKey = request.getMethod().name() + ":" + request.getURI().getPath() +
+            // Construct Cache Key: APP_SHORTCODE : METHOD : PATH : SORTED_QUERY : USER_ID
+            // Prefixed with app.shortcode to namespace entries per application deployment,
+            // consistent with all other Redis keys in the gateway (lock keys, rate-limit keys).
+            String cacheKey = appShortcode + ":cache:" +
+                    request.getMethod().name() + ":" + request.getURI().getPath() +
                     (sortedQuery.isEmpty() ? "" : "?" + sortedQuery) +
                     ":" + userId;
 

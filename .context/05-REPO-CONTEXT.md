@@ -297,6 +297,13 @@ The gateway allows configuring connection and response timeouts per route, preve
 
 **Filters:** `DynamicTimeout`
 
+---
+
+#### 18. Application Shortcode Propagation
+The gateway injects the configured `app.shortcode` value as the `X-App-Shortcode` HTTP header on every proxied request using the built-in `AddRequestHeader` filter registered in `spring.cloud.gateway.default-filters`. This makes the application deployment identity available to all downstream services — the Universal Orchestrator, Entity Persistence Cache, and Entity Persistence Service — without requiring them to independently manage an application shortcode configuration. Downstream services use this header to namespace their own Redis cache keys and lock keys, and implement per-application branching logic in orchestrator processors. See [62-FEATURE-APP-SHORTCODE-PROPAGATION.md](62-FEATURE-APP-SHORTCODE-PROPAGATION.md) for the full specification.
+
+**Configuration:** `spring.cloud.gateway.default-filters: AddRequestHeader=X-App-Shortcode, ${app.shortcode}` (in `application.yml`, no custom filter class)
+
 ### Filters Quick Reference Table
 
 #### Built-in Spring Cloud Gateway Filters

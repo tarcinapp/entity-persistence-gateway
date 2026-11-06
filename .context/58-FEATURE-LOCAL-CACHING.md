@@ -67,15 +67,24 @@ On eligible backend `200` response:
 
 Cache key format:
 
-`METHOD:PATH:?sortedQuery:userId`
+`{appShortcode}:cache:METHOD:PATH:?sortedQuery:userId`
 
 Details:
+- `appShortcode` is the value of `app.shortcode` (e.g. `books`, `tarcinapp`), injected into `DynamicLocalCacheGatewayFilterFactory` via `@Value("${app.shortcode:tarcinapp}")`.
 - Query parameters are canonicalized (sorted keys and values), so logically equivalent query orders map to the same key.
 - `userId` is `GatewaySecurityContext.authSubject` when authenticated; otherwise `public`.
 
+Example:
+```
+books:cache:GET:/api/v1/entities?_kind=book&limit=20:user-abc123
+books:cache:GET:/api/v1/entities?_kind=book&limit=20:public
+```
+
 Practical effect:
-- two users hitting the same URL do not share the same authenticated cache entry,
-- unauthenticated/public traffic shares the `public` segment.
+- Two users hitting the same URL do not share the same authenticated cache entry.
+- Unauthenticated/public traffic shares the `public` segment.
+- Two differently-configured gateway deployments (e.g. `books` and `music`) sharing a Caffeine store or a future Redis backend cannot collide on cache keys.
+- The format is consistent with all other Redis key namespacing in the gateway: lock keys (`{shortcode}:lock:...`) and EPC cache keys (`{shortcode}:epc:cache:...`).
 
 ---
 

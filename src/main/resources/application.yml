@@ -126,6 +126,7 @@ spring:
         - RemoveResponseHeader=Access-Control-Allow-Methods
         - RemoveResponseHeader=Access-Control-Allow-Headers
         - RemoveResponseHeader=Access-Control-Max-Age
+        - AddRequestHeader=X-App-Shortcode, ${app.shortcode}
       
       metrics:
         enabled: ${app.inbound.metricsEnabled}
