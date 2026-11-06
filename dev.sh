@@ -6,14 +6,18 @@
 OPA_PID_FILE="/tmp/opa-server.pid"
 BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
 ORCHESTRATOR_PID_FILE="/tmp/entity-persistence-universal-orchestrator.pid"
+GUI_PID_FILE="/tmp/tarcinapp-base-gui.pid"
+GATEWAY_PID_FILE="/tmp/entity-persistence-gateway.pid"
 
-# Log files
-LOG_DIR="/tmp/entity-persistence-gateway-logs"
+# Log files — honour DEV_LOG_DIR if set by the caller (e.g. VSCode tasks)
+LOG_DIR="${DEV_LOG_DIR:-/tmp/entity-persistence-gateway-logs}"
 mkdir -p "$LOG_DIR"
 OPA_LOG_FILE="$LOG_DIR/opa.log"
 BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 REDIS_LOG_FILE="$LOG_DIR/redis.log"
 ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
+GUI_LOG_FILE="$LOG_DIR/gui.log"
+GATEWAY_LOG_FILE="$LOG_DIR/gateway.log"
 
 # Redis configuration
 REDIS_CONF_FILE="/tmp/redis-dev.conf"
@@ -21,9 +25,9 @@ REDIS_PASSWORD="devpassword123"
 
 # Service commands
 OPA_CMD="opa run --ignore=*_test.rego --server --log-level=debug ~/git/github/entity-persistence-gateway-policies/policies"
-BACKEND_DIR="/home/kdrkrst/git/github/entity-persistence-service"
+BACKEND_DIR="$HOME/git/github/entity-persistence-service"
 BACKEND_CMD="./start-with-env-file.sh dev.env"
-ORCHESTRATOR_DIR="/home/kdrkrst/git/github/entity-persistence-universal-orchestrator"
+ORCHESTRATOR_DIR="$HOME/git/github/entity-persistence-universal-orchestrator"
 ORCHESTRATOR_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
 
 # Colors
@@ -32,6 +36,23 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+rotate_logs() {
+    local ts old_dir
+    ts=$(date +%Y%m%d_%H%M%S)
+    old_dir="$LOG_DIR/old/$ts"
+    local rotated=false
+    for log_file in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GUI_LOG_FILE" "$GATEWAY_LOG_FILE"; do
+        if [ -s "$log_file" ]; then
+            mkdir -p "$old_dir"
+            mv "$log_file" "$old_dir/$(basename "$log_file")"
+            rotated=true
+        fi
+    done
+    if $rotated; then
+        print_status "Old logs moved to $old_dir"
+    fi
+}
 
 print_status() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -74,7 +95,15 @@ start_redis() {
         print_success "Redis is already running"
         return 0
     fi
-    
+
+    # Detect a passwordless Redis on 6379 (e.g. system service started by systemd)
+    if redis-cli ping >/dev/null 2>&1; then
+        print_error "A passwordless Redis is already running on port 6379."
+        print_error "This is likely the system Redis service. Disable it once with:"
+        print_error "  sudo systemctl stop redis-server && sudo systemctl disable redis-server"
+        return 1
+    fi
+
     print_status "Creating Redis configuration..."
     create_redis_config
     
@@ -295,6 +324,122 @@ stop_orchestrator() {
     fi
 }
 
+GATEWAY_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+check_gateway() {
+    if [ -f "$GATEWAY_PID_FILE" ] && kill -0 "$(cat "$GATEWAY_PID_FILE")" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+start_gateway() {
+    if check_gateway; then
+        print_success "Gateway is already running (PID: $(cat "$GATEWAY_PID_FILE"))"
+        return 0
+    fi
+
+    print_status "Starting entity-persistence-gateway (Spring Boot)..."
+    cd "$GATEWAY_DIR"
+    nohup ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,booksapp > "$GATEWAY_LOG_FILE" 2>&1 &
+    echo $! > "$GATEWAY_PID_FILE"
+
+    local timeout=120
+    local elapsed=0
+    print_status "Waiting for gateway to become ready (timeout: ${timeout}s)..."
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if ! check_gateway; then
+            print_error "Gateway process died during startup"
+            rm -f "$GATEWAY_PID_FILE"
+            return 1
+        fi
+        if grep -q "Started.*Application\|Netty started on port\|Tomcat started on port" "$GATEWAY_LOG_FILE" 2>/dev/null; then
+            break
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    if check_gateway; then
+        print_success "Gateway started successfully (PID: $(cat "$GATEWAY_PID_FILE"))"
+    else
+        print_error "Gateway did not become ready within ${timeout}s"
+        rm -f "$GATEWAY_PID_FILE"
+        return 1
+    fi
+}
+
+stop_gateway() {
+    if [ -f "$GATEWAY_PID_FILE" ]; then
+        local pid=$(cat "$GATEWAY_PID_FILE")
+        print_status "Stopping gateway (PID: $pid)..."
+        if kill "$pid" 2>/dev/null; then
+            pkill -P "$pid" 2>/dev/null
+            rm -f "$GATEWAY_PID_FILE"
+            print_success "Gateway stopped"
+        else
+            print_warning "Gateway process not found or already stopped"
+            rm -f "$GATEWAY_PID_FILE"
+        fi
+    else
+        print_warning "Gateway not running"
+    fi
+}
+
+GUI_DIR="$HOME/git/github/tarcinapp-base-gui"
+
+check_gui() {
+    if [ -f "$GUI_PID_FILE" ] && kill -0 "$(cat "$GUI_PID_FILE")" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+start_gui() {
+    if check_gui; then
+        print_success "GUI is already running (PID: $(cat "$GUI_PID_FILE"))"
+        return 0
+    fi
+
+    if [ ! -d "$GUI_DIR" ]; then
+        print_error "GUI directory not found: $GUI_DIR"
+        return 1
+    fi
+
+    print_status "Starting GUI (vite dev)..."
+    cd "$GUI_DIR"
+    nohup npm run dev > "$GUI_LOG_FILE" 2>&1 &
+    echo $! > "$GUI_PID_FILE"
+
+    sleep 3
+    if check_gui; then
+        print_success "GUI started successfully (PID: $(cat "$GUI_PID_FILE"))"
+    else
+        print_error "Failed to start GUI"
+        rm -f "$GUI_PID_FILE"
+        return 1
+    fi
+}
+
+stop_gui() {
+    if [ -f "$GUI_PID_FILE" ]; then
+        local pid=$(cat "$GUI_PID_FILE")
+        print_status "Stopping GUI (PID: $pid)..."
+        if kill "$pid" 2>/dev/null; then
+            pkill -P "$pid" 2>/dev/null
+            rm -f "$GUI_PID_FILE"
+            print_success "GUI stopped"
+        else
+            print_warning "GUI process not found or already stopped"
+            rm -f "$GUI_PID_FILE"
+        fi
+    else
+        print_warning "GUI not running"
+    fi
+}
+
 show_status() {
     echo "Entity Persistence Gateway - Development Environment"
     echo "=================================================="
@@ -344,10 +489,12 @@ case "${1:-help}" in
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        rotate_logs
         start_redis
         start_opa
         start_backend
         start_orchestrator
+        start_gateway
         echo
         print_success "All services started!"
         echo
@@ -356,12 +503,14 @@ case "${1:-help}" in
         echo "  OPA:          $OPA_LOG_FILE"
         echo "  Backend:      $BACKEND_LOG_FILE"
         echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
+        echo "  Gateway:      $GATEWAY_LOG_FILE"
         ;;
     
     stop)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        stop_gateway
         stop_orchestrator
         stop_backend
         stop_opa
@@ -379,6 +528,43 @@ case "${1:-help}" in
         tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
         ;;
     
+    start-gui)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        start_gui
+        echo
+        print_success "GUI started!"
+        echo "  GUI log: $GUI_LOG_FILE"
+        ;;
+
+    start-gateway)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        start_gateway
+        echo
+        echo "  Gateway log: $GATEWAY_LOG_FILE"
+        ;;
+
+    stop-gateway)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        stop_gateway
+        echo
+        print_success "Gateway stopped!"
+        ;;
+
+    stop-gui)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        stop_gui
+        echo
+        print_success "GUI stopped!"
+        ;;
+
     debug)
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
