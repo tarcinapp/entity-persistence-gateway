@@ -22,44 +22,49 @@ import com.tarcinapp.entitypersistencegateway.helpers.RecordTypeResolver;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- *  * This filter restricts the returned records from entity, list, and
+ *  * This filter restricts the returned records from entity, list, and
  * reactions-through-record queries.
- *  *
- *  * IMPORTANT: This filter is for ENTITIES, LISTS, and REACTIONS ACCESSED
+ *  *
+ *  * IMPORTANT: This filter is for ENTITIES, LISTS, and REACTIONS ACCESSED
  * THROUGH AN ENTITY OR LIST ONLY.
- *  * It does NOT apply to direct reactions routes. For direct reactions, use
+ *  * It does NOT apply to direct reactions routes. For direct reactions, use
  * AddSetsToReactionsQuery instead.
- *  *
- *  * Restrictions are based on user's role, owners of each record and record's
+ *  *
+ *  * Restrictions are based on user's role, owners of each record and record's
  * visibility.
- *  *
- *  * What is record ownership?
- *  * Each record (entity, list, or reaction via record) has ownerGroups and
+ *  *
+ *  * What is record ownership?
+ *  * Each record (entity, list, or reaction via record) has ownerGroups and
  * ownerUsers arrays.
- *  * - If user's id is present in ownerUsers, the user is the most powerful
+ *  * - If user's id is present in ownerUsers, the user is the most powerful
  * user on that record.
- *  * - If user's group is present in ownerGroups and the record's visibility is
+ *  * - If user's group is present in ownerGroups and the record's visibility is
  * protected, the user is an owner.
- *  *
- *  * If user is not an editor or an admin, then:
- *  * - User can see their own records.
- *  * - User can see active, public records.
- *  *
- *  * This filter uses the set feature of the backend to limit items in the
+ *  *
+ *  * If user is not an editor or an admin, then:
+ *  * - Member: can see their own records AND active+public records.
+ *  *   Injection: set[audience][userIds]={sub}&set[audience][groupIds]={groups}
+ *  * - Visitor: can only see active+public records (owns nothing, views nothing).
+ *  *   Injection: set[actives]=true&set[publics]=true
+ *  *   Using set[audience] for visitors would encode caller-specific identity in
+ *  *   the query string even though all visitors receive identical results, causing
+ *  *   unnecessary cache fragmentation downstream (e.g. in entity-persistence-cache).
+ *  *
+ *  * This filter uses the set feature of the backend to limit items in the
  * response. It adds required sets as query parameters and merges with any sets
  * provided by the caller.
- *  *
- *  * The filter also protects nested queries:
- *  * - filter[include][X][set] for included relations (set is at same level as
+ *  *
+ *  * The filter also protects nested queries:
+ *  * - filter[include][X][set] for included relations (set is at same level as
  * scope)
- *  * - filter[lookup][X][set] for looked-up references (set is at same level as
+ *  * - filter[lookup][X][set] for looked-up references (set is at same level as
  * scope)
- *  * - Nested combinations of includes and lookups
- *  *
- *  *
- *  * For relation-specific filtering, see: AddSetsToRelationQuery
- *  * For direct reactions filtering, see: AddSetsToReactionsQuery
- *  
+ *  * - Nested combinations of includes and lookups
+ *  *
+ *  *
+ *  * For relation-specific filtering, see: AddSetsToRelationQuery
+ *  * For direct reactions filtering, see: AddSetsToReactionsQuery
+ *
  */
 @Component
 @Slf4j
@@ -129,6 +134,30 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
                                                 "No need to limit response items for these roles. Exiting filter withouth any modification.");
                                 return chain.filter(exchange);
                         }
+
+                        /**
+                         * Determine whether the caller is a visitor.
+                         * A visitor has a .visitor role but no .member role (member check is
+                         * hierarchically higher — a member could also carry a visitor role in a
+                         * misconfigured token, but we treat member as dominant here to be safe).
+                         * Admin/editor have already been handled above, so they are not present here.
+                         */
+                        Stream<String> memberRolesStream = Stream.of(
+                                        appShortcode + ".member",
+                                        appShortcode + ".records.member",
+                                        appShortcode + ".records.find.member");
+
+                        if (recordType != null) {
+                                memberRolesStream = Stream.concat(memberRolesStream,
+                                                Stream.of(
+                                                                appShortcode + "." + recordType + ".member",
+                                                                appShortcode + "." + recordType + ".find.member"));
+                        }
+
+                        boolean isMember = memberRolesStream.anyMatch(roles::contains);
+                        boolean isVisitor = !isMember;
+
+                        log.debug("Caller is visitor: {}", isVisitor);
 
                         URI uri = exchange.getRequest().getURI();
                         if (log.isDebugEnabled()) {
@@ -203,39 +232,47 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
 
                         /**
                          * Following set is added in order to reduce the scope of the query.
-                         * Users with low authority can only see the public and active records with
-                         * their own active and pending records.
-                         * This is exactly what 'audience' set does.
-                         * * Note: If a record has user's user id in its ownerUsers array, then this
-                         * record belongs to that user.
-                         * In addition to that, if user's group id presents in record's ownerGroups
-                         * array and it's visibility is protected or public (not private) this record is
-                         * also belongs to that user too.
-                         * In addition if user's id is in viewerUsers, then user is allowed to see no
-                         * matter what is the visibility.
-                         * In addition if user's group id is in viewerGroups, then user is allowed to
-                         * see as long as visibility is protected or public (not private)
+                         *
+                         * For members: inject set[audience][userIds]={sub}&set[audience][groupIds]={groups}
+                         * The audience set returns: (active+public) OR (owned+active/pending) OR (viewed+active).
+                         *
+                         * For visitors: inject set[actives]=true&set[publics]=true
+                         * Visitors cannot own or view records, so the owner/viewer branches of audience
+                         * always produce zero results for them. Injecting audience with visitor identity
+                         * is semantically equivalent but encodes caller-specific values in the query
+                         * string — fragmenting the downstream cache for no benefit.
                          */
 
-                        // audience set requires user id and groups in following format
-                        // [userId1,userId2][group1,group2]
-                        String groupsStr = groups.stream().collect(Collectors.joining(","));
-
-                        // Add audience set to top-level query
-                        if (callerHasSets) {
-                                // Wrap under set[and][0] - both userIds and groupIds are part of the same
-                                // audience set
-                                newQueryParams.add("set[and][0][audience][userIds]", userId);
-                                newQueryParams.add("set[and][0][audience][groupIds]", groupsStr);
+                        if (isVisitor) {
+                                // Visitor: scope to active+public only, no identity encoding
+                                if (callerHasSets) {
+                                        newQueryParams.add("set[and][0][actives]", "true");
+                                        newQueryParams.add("set[and][0][publics]", "true");
+                                } else {
+                                        newQueryParams.add("set[actives]", "true");
+                                        newQueryParams.add("set[publics]", "true");
+                                }
+                                addPublicActiveSetsToIncludes(newQueryParams);
+                                addPublicActiveSetsToLookups(newQueryParams);
                         } else {
-                                // Add directly as set[audience][...]
-                                newQueryParams.add("set[audience][userIds]", userId);
-                                newQueryParams.add("set[audience][groupIds]", groupsStr);
-                        }
+                                // Member: scope to audience (owned/viewed records + active+public records)
+                                // audience set requires user id and groups in following format
+                                // [userId1,userId2][group1,group2]
+                                String groupsStr = groups.stream().collect(Collectors.joining(","));
 
-                        // Add audience sets to all includes and lookups
-                        addAudienceSetsToIncludes(newQueryParams, userId, groupsStr);
-                        addAudienceSetsToLookups(newQueryParams, userId, groupsStr);
+                                if (callerHasSets) {
+                                        // Wrap under set[and][0] - both userIds and groupIds are part of the same
+                                        // audience set
+                                        newQueryParams.add("set[and][0][audience][userIds]", userId);
+                                        newQueryParams.add("set[and][0][audience][groupIds]", groupsStr);
+                                } else {
+                                        // Add directly as set[audience][...]
+                                        newQueryParams.add("set[audience][userIds]", userId);
+                                        newQueryParams.add("set[audience][groupIds]", groupsStr);
+                                }
+                                addAudienceSetsToIncludes(newQueryParams, userId, groupsStr);
+                                addAudienceSetsToLookups(newQueryParams, userId, groupsStr);
+                        }
 
                         // as we built new query string, now we can go ahead and change the query from
                         // the original request
@@ -275,6 +312,137 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
         }
 
         /**
+         * Adds set[actives]+set[publics] to all filter[include][X] and their nested
+         * lookups. Used for visitor-role callers who cannot own or view records.
+         */
+        private void addPublicActiveSetsToIncludes(MultiValueMap<String, String> queryParams) {
+                List<String> allIncludePrefixes = queryParams.keySet().stream()
+                                .filter(name -> name.startsWith("filter[include]["))
+                                .map(name -> {
+                                        int start = "filter[include][".length();
+                                        int end = name.indexOf(']', start);
+                                        return (end > start) ? name.substring(0, end + 1) : null;
+                                })
+                                .filter(p -> p != null)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                for (String prefix : allIncludePrefixes) {
+                        String setKeyPrefix = prefix + "[set]";
+                        boolean includeHasSets = queryParams.keySet().stream()
+                                        .anyMatch(name -> name.startsWith(setKeyPrefix + "[and][0]"));
+
+                        if (includeHasSets) {
+                                queryParams.add(setKeyPrefix + "[and][1][actives]", "true");
+                                queryParams.add(setKeyPrefix + "[and][1][publics]", "true");
+                        } else {
+                                queryParams.add(setKeyPrefix + "[actives]", "true");
+                                queryParams.add(setKeyPrefix + "[publics]", "true");
+                        }
+                }
+
+                // Nested lookups within includes
+                List<String> nestedLookupPrefixes = queryParams.keySet().stream()
+                                .filter(name -> name.matches(
+                                                ".*filter\\[include\\]\\[\\d+\\]\\[scope\\]\\[lookup\\]\\[\\d+\\].*"))
+                                .map(name -> {
+                                        int lookupStart = name.indexOf("[lookup][");
+                                        if (lookupStart > 0) {
+                                                int lookupIndexStart = lookupStart + "[lookup][".length();
+                                                int lookupIndexEnd = name.indexOf(']', lookupIndexStart);
+                                                if (lookupIndexEnd > lookupIndexStart) {
+                                                        return name.substring(0, lookupIndexEnd + 1);
+                                                }
+                                        }
+                                        return null;
+                                })
+                                .filter(p -> p != null)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                for (String prefix : nestedLookupPrefixes) {
+                        String lookupSetPrefix = prefix + "[set]";
+                        boolean nestedHasSets = queryParams.keySet().stream()
+                                        .anyMatch(name -> name.startsWith(lookupSetPrefix + "[and][0]"));
+
+                        if (nestedHasSets) {
+                                queryParams.add(lookupSetPrefix + "[and][1][actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[and][1][publics]", "true");
+                        } else {
+                                queryParams.add(lookupSetPrefix + "[actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[publics]", "true");
+                        }
+                }
+        }
+
+        /**
+         * Adds set[actives]+set[publics] to all filter[lookup][X] entries and their
+         * nested lookups. Used for visitor-role callers.
+         */
+        private void addPublicActiveSetsToLookups(MultiValueMap<String, String> queryParams) {
+                List<String> allLookupPrefixes = queryParams.keySet().stream()
+                                .filter(name -> name.startsWith("filter[lookup]["))
+                                .filter(name -> !name.contains("filter[include]["))
+                                .map(name -> {
+                                        int start = "filter[lookup][".length();
+                                        int end = name.indexOf(']', start);
+                                        return (end > start) ? name.substring(0, end + 1) : null;
+                                })
+                                .filter(p -> p != null)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                for (String prefix : allLookupPrefixes) {
+                        String lookupSetPrefix = prefix + "[set]";
+                        boolean lookupHasSets = queryParams.keySet().stream()
+                                        .anyMatch(name -> name.startsWith(lookupSetPrefix + "[and][0]"));
+
+                        if (lookupHasSets) {
+                                queryParams.add(lookupSetPrefix + "[and][1][actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[and][1][publics]", "true");
+                        } else {
+                                queryParams.add(lookupSetPrefix + "[actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[publics]", "true");
+                        }
+                }
+
+                // Nested lookups within lookups
+                List<String> nestedLookupPrefixes = queryParams.keySet().stream()
+                                .filter(name -> name.startsWith("filter[lookup]["))
+                                .filter(name -> !name.contains("filter[include]["))
+                                .filter(name -> name.contains("[scope][lookup]"))
+                                .map(name -> {
+                                        int firstLookupEnd = name.indexOf(']', "[lookup]".length());
+                                        int secondLookupStart = name.indexOf("[lookup]", firstLookupEnd);
+                                        if (secondLookupStart > 0) {
+                                                int secondLookupIndexStart = secondLookupStart + "[lookup][".length();
+                                                int secondLookupIndexEnd = name.indexOf(']', secondLookupIndexStart);
+                                                if (secondLookupIndexEnd > secondLookupIndexStart) {
+                                                        return name.substring(0, secondLookupIndexEnd + 1);
+                                                }
+                                        }
+                                        return null;
+                                })
+                                .filter(p -> p != null)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                for (String prefix : nestedLookupPrefixes) {
+                        String lookupSetPrefix = prefix + "[set]";
+                        boolean nestedHasSets = queryParams.keySet().stream()
+                                        .anyMatch(name -> name.startsWith(lookupSetPrefix + "[and][0]"));
+
+                        if (nestedHasSets) {
+                                queryParams.add(lookupSetPrefix + "[and][1][actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[and][1][publics]", "true");
+                        } else {
+                                queryParams.add(lookupSetPrefix + "[actives]", "true");
+                                queryParams.add(lookupSetPrefix + "[publics]", "true");
+                        }
+                }
+        }
+
+        /**
          * Adds audience sets to all filter[include][X] entries, whether they have a
          * scope or not.
          * This ensures that included relations are also restricted by the same audience
@@ -285,7 +453,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
          * - If sets exist: add
          * filter[include][X][set][and][1][audience][userIds]={userId} and
          * [groupIds]={groupIds}
-         *   (caller's sets are at [and][0], audience is at [and][1], both userIds and
+         *   (caller's sets are at [and][0], audience is at [and][1], both userIds and
          * groupIds under same [and][1])
          * * CRITICAL: If an include does NOT have a set, we create one automatically.
          * This prevents security bypass where users query
@@ -293,7 +461,7 @@ public class AddSetsToEntityListOrReactionViaRecordQuery
          * * Also handles nested lookups within includes:
          * - filter[include][X][scope][lookup][Y][set][audience][...]
          * * @param queryParams The MultiValueMap of query parameters to modify
-         * 
+         *
          * @param userId    The user ID to inject
          * @param groupsStr Comma-separated group IDs to inject
          */
