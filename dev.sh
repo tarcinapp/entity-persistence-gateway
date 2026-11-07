@@ -21,9 +21,15 @@ ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
 GUI_LOG_FILE="$LOG_DIR/gui.log"
 GATEWAY_LOG_FILE="$LOG_DIR/gateway.log"
 
-# Redis configuration
+# Redis configuration — EPG instance (port 6379, noeviction)
 REDIS_CONF_FILE="/tmp/redis-dev.conf"
 REDIS_PASSWORD="devpassword123"
+
+# Redis configuration — EPC instance (port 6380, allkeys-lfu)
+REDIS_EPC_CONF_FILE="/tmp/redis-epc-dev.conf"
+REDIS_EPC_PORT=6380
+REDIS_EPC_PASSWORD="epcpassword123"
+REDIS_EPC_LOG_FILE="$LOG_DIR/redis-epc.log"
 
 # Service commands
 OPA_CMD="opa run --ignore=*_test.rego --server --log-level=debug ~/git/github/entity-persistence-gateway-policies/policies"
@@ -46,7 +52,7 @@ rotate_logs() {
     ts=$(date +%Y%m%d_%H%M%S)
     old_dir="$LOG_DIR/old/$ts"
     local rotated=false
-    for log_file in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GUI_LOG_FILE" "$GATEWAY_LOG_FILE"; do
+    for log_file in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GUI_LOG_FILE" "$GATEWAY_LOG_FILE"; do
         if [ -s "$log_file" ]; then
             mkdir -p "$old_dir"
             mv "$log_file" "$old_dir/$(basename "$log_file")"
@@ -75,64 +81,118 @@ print_error() {
 }
 
 check_redis() {
-    redis-cli -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
+    redis-cli -p 6379 -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
+}
+
+check_redis_epc() {
+    redis-cli -p "$REDIS_EPC_PORT" -a "$REDIS_EPC_PASSWORD" ping >/dev/null 2>&1
 }
 
 create_redis_config() {
     cat > "$REDIS_CONF_FILE" << EOF
-# Redis development configuration
+# Redis development configuration — EPG (port 6379, noeviction)
 port 6379
 bind 127.0.0.1
 daemonize yes
 requirepass $REDIS_PASSWORD
 logfile $REDIS_LOG_FILE
 databases 16
-save 900 1
-save 300 10
-save 60 10000
+maxmemory-policy noeviction
+save ""
+dir /tmp
+EOF
+}
+
+create_redis_epc_config() {
+    cat > "$REDIS_EPC_CONF_FILE" << EOF
+# Redis development configuration — EPC (port 6380, allkeys-lfu)
+port $REDIS_EPC_PORT
+bind 127.0.0.1
+daemonize yes
+requirepass $REDIS_EPC_PASSWORD
+logfile $REDIS_EPC_LOG_FILE
+databases 16
+maxmemory-policy allkeys-lfu
+save ""
 dir /tmp
 EOF
 }
 
 start_redis() {
     if check_redis; then
-        print_success "Redis is already running"
+        print_success "Redis (EPG, :6379) is already running"
         return 0
     fi
 
     # Detect a passwordless Redis on 6379 (e.g. system service started by systemd)
-    if redis-cli ping >/dev/null 2>&1; then
+    if redis-cli -p 6379 ping >/dev/null 2>&1; then
         print_error "A passwordless Redis is already running on port 6379."
         print_error "This is likely the system Redis service. Disable it once with:"
         print_error "  sudo systemctl stop redis-server && sudo systemctl disable redis-server"
         return 1
     fi
 
-    print_status "Creating Redis configuration..."
+    print_status "Creating Redis (EPG) configuration..."
     create_redis_config
     
-    print_status "Starting Redis with authentication..."
+    print_status "Starting Redis (EPG, :6379) with authentication..."
     redis-server "$REDIS_CONF_FILE" >/dev/null 2>&1
     sleep 2
     
     if check_redis; then
-        print_success "Redis started successfully with password authentication"
+        print_success "Redis (EPG, :6379) started successfully"
     else
-        print_error "Failed to start Redis"
+        print_error "Failed to start Redis (EPG, :6379)"
+        return 1
+    fi
+}
+
+start_redis_epc() {
+    if check_redis_epc; then
+        print_success "Redis (EPC, :${REDIS_EPC_PORT}) is already running"
+        return 0
+    fi
+
+    # Detect a passwordless Redis on 6380
+    if redis-cli -p "$REDIS_EPC_PORT" ping >/dev/null 2>&1; then
+        print_error "A passwordless Redis is already running on port ${REDIS_EPC_PORT}."
+        return 1
+    fi
+
+    print_status "Creating Redis (EPC) configuration..."
+    create_redis_epc_config
+
+    print_status "Starting Redis (EPC, :${REDIS_EPC_PORT}) with authentication..."
+    redis-server "$REDIS_EPC_CONF_FILE" >/dev/null 2>&1
+    sleep 2
+
+    if check_redis_epc; then
+        print_success "Redis (EPC, :${REDIS_EPC_PORT}) started successfully"
+    else
+        print_error "Failed to start Redis (EPC, :${REDIS_EPC_PORT})"
         return 1
     fi
 }
 
 stop_redis() {
     if check_redis; then
-        print_status "Stopping Redis..."
-        redis-cli -a "$REDIS_PASSWORD" shutdown nosave >/dev/null 2>&1
-        print_success "Redis stopped"
-        
-        # Clean up config file
+        print_status "Stopping Redis (EPG, :6379)..."
+        redis-cli -p 6379 -a "$REDIS_PASSWORD" shutdown nosave >/dev/null 2>&1
+        print_success "Redis (EPG) stopped"
         rm -f "$REDIS_CONF_FILE"
     else
-        print_warning "Redis is not running"
+        print_warning "Redis (EPG) is not running"
+    fi
+}
+
+stop_redis_epc() {
+    if check_redis_epc; then
+        print_status "Stopping Redis (EPC, :${REDIS_EPC_PORT})..."
+        redis-cli -p "$REDIS_EPC_PORT" -a "$REDIS_EPC_PASSWORD" shutdown nosave >/dev/null 2>&1
+        print_success "Redis (EPC) stopped"
+        rm -f "$REDIS_EPC_CONF_FILE"
+    else
+        print_warning "Redis (EPC) is not running"
     fi
 }
 
@@ -531,45 +591,53 @@ show_status() {
     echo "Service Status:"
     
     if check_redis; then
-        echo "  Redis:   Running"
+        echo "  Redis (EPG, :6379):  Running"
     else
-        echo "  Redis:   Stopped"
+        echo "  Redis (EPG, :6379):  Stopped"
+    fi
+
+    if check_redis_epc; then
+        echo "  Redis (EPC, :${REDIS_EPC_PORT}): Running"
+    else
+        echo "  Redis (EPC, :${REDIS_EPC_PORT}): Stopped"
     fi
     
     if check_opa; then
-        echo "  OPA:     Running (PID: $(cat "$OPA_PID_FILE"))"
+        echo "  OPA:          Running (PID: $(cat "$OPA_PID_FILE"))"
     else
-        echo "  OPA:     Stopped"
+        echo "  OPA:          Stopped"
     fi
     
     if check_backend; then
-        echo "  Backend: Running (PID: $(cat "$BACKEND_PID_FILE"))"
+        echo "  Backend (EPS): Running (PID: $(cat "$BACKEND_PID_FILE"))"
     else
-        echo "  Backend: Stopped"
+        echo "  Backend (EPS): Stopped"
     fi
 
     if check_epc; then
-        echo "  EPC:     Running (PID: $(cat "$EPC_PID_FILE"))"
+        echo "  EPC:           Running (PID: $(cat "$EPC_PID_FILE"))"
     else
-        echo "  EPC:     Stopped"
+        echo "  EPC:           Stopped"
     fi
 
     if check_orchestrator; then
-        echo "  Orchestrator: Running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+        echo "  Orchestrator:  Running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
     else
-        echo "  Orchestrator: Stopped"
+        echo "  Orchestrator:  Stopped"
     fi
     
     echo
     echo "Service URLs:"
-    echo "  Redis:        localhost:6379"
-    echo "  OPA:          http://localhost:8181"
-    echo "  Backend (EPS): http://localhost:3000"
-    echo "  EPC:           http://localhost:3001"
-    echo "  Orchestrator:  http://localhost:8079"
+    echo "  Redis (EPG): localhost:6379"
+    echo "  Redis (EPC): localhost:${REDIS_EPC_PORT}"
+    echo "  OPA:         http://localhost:8181"
+    echo "  EPS:         http://localhost:3000"
+    echo "  EPC:         http://localhost:3001"
+    echo "  Orchestrator:http://localhost:8079"
     echo
     echo "Log Files:"
-    echo "  Redis:        $REDIS_LOG_FILE"
+    echo "  Redis (EPG):  $REDIS_LOG_FILE"
+    echo "  Redis (EPC):  $REDIS_EPC_LOG_FILE"
     echo "  OPA:          $OPA_LOG_FILE"
     echo "  Backend:      $BACKEND_LOG_FILE"
     echo "  EPC:          $EPC_LOG_FILE"
@@ -583,6 +651,7 @@ case "${1:-help}" in
         echo
         rotate_logs
         start_redis
+        start_redis_epc
         start_opa
         start_backend
         start_epc
@@ -592,7 +661,8 @@ case "${1:-help}" in
         print_success "All services started!"
         echo
         echo "Log Files:"
-        echo "  Redis:        $REDIS_LOG_FILE"
+        echo "  Redis (EPG):  $REDIS_LOG_FILE"
+        echo "  Redis (EPC):  $REDIS_EPC_LOG_FILE"
         echo "  OPA:          $OPA_LOG_FILE"
         echo "  Backend:      $BACKEND_LOG_FILE"
         echo "  EPC:          $EPC_LOG_FILE"
@@ -609,6 +679,7 @@ case "${1:-help}" in
         stop_epc
         stop_backend
         stop_opa
+        stop_redis_epc
         stop_redis
         echo
         print_success "All services stopped!"
@@ -620,7 +691,7 @@ case "${1:-help}" in
     
     logs)
         print_status "Showing recent logs (Ctrl+C to exit)..."
-        tail -f "$REDIS_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
+        tail -f "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
         ;;
     
     start-gui)
@@ -637,9 +708,11 @@ case "${1:-help}" in
         echo "Entity Persistence Gateway - Development Environment"
         echo "=================================================="
         echo
+        start_redis_epc
         start_epc
         echo
-        echo "  EPC log: $EPC_LOG_FILE"
+        echo "  Redis (EPC) log: $REDIS_EPC_LOG_FILE"
+        echo "  EPC log:         $EPC_LOG_FILE"
         ;;
 
     stop-epc)
@@ -647,8 +720,9 @@ case "${1:-help}" in
         echo "=================================================="
         echo
         stop_epc
+        stop_redis_epc
         echo
-        print_success "EPC stopped!"
+        print_success "EPC and Redis (EPC) stopped!"
         ;;
 
     start-gateway)
@@ -684,6 +758,7 @@ case "${1:-help}" in
         echo
         print_status "Starting dependencies for debugging..."
         start_redis
+        start_redis_epc
         start_opa
         start_backend
         start_epc
@@ -699,13 +774,13 @@ case "${1:-help}" in
         echo "Usage: $0 {start|stop|status|logs|debug}"
         echo
         echo "Commands:"
-        echo "  start     - Start Redis and all dependencies"
-        echo "  stop      - Stop all dependencies and Redis"
+        echo "  start     - Start both Redis instances and all dependencies"
+        echo "  stop      - Stop all dependencies and both Redis instances"
         echo "  status    - Show status of all services"
         echo "  logs      - Show service logs"
         echo "  debug     - Start everything for debugging"
-        echo "  start-epc - Start entity-persistence-cache only"
-        echo "  stop-epc  - Stop entity-persistence-cache only"
+        echo "  start-epc - Start Redis (EPC) and entity-persistence-cache"
+        echo "  stop-epc  - Stop entity-persistence-cache and Redis (EPC)"
         echo
         echo "Manual commands:"
         echo "  Redis:   redis-server --daemonize yes"
