@@ -85,7 +85,7 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
                         }
 
                         // Fetch both resources in parallel and build policy data
-                        return fetchRelatedResourcesAndBuildPolicyData(policyData, payloadJSON, entityId, listId)
+                        return fetchRelatedResourcesAndBuildPolicyData(policyData, payloadJSON, entityId, listId, exchange)
                             .thenReturn(inboundJsonRequestStr); // Return original payload unchanged
                     } catch (JsonProcessingException e) {
                         log.error("Failed to parse JSON payload", e);
@@ -104,20 +104,21 @@ public class PolicyDataBuilderForRelationCreation extends AbstractPolicyDataBuil
     private Mono<Void> fetchRelatedResourcesAndBuildPolicyData(PolicyData policyData,
                                                                 Map<String, Object> payloadJSON,
                                                                 String entityId,
-                                                                String listId) {
+                                                                String listId,
+                                                                ServerWebExchange exchange) {
         String entityPath = "/entities/" + entityId;
         String listPath = "/lists/" + listId;
         
         log.debug("Fetching entity and list in parallel: {} and {}", entityPath, listPath);
 
         // Fetch both resources in parallel
-        Mono<AnyRecordBase> entityMono = backendBaseClient.get(entityPath, AnyRecordBase.class)
+        Mono<AnyRecordBase> entityMono = backendBaseClient.get(entityPath, AnyRecordBase.class, exchange)
             .onErrorMap(
                 WebClientResponseException.NotFound.class,
                 e -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Entity not found: " + entityId, e));
 
-        Mono<AnyRecordBase> listMono = backendBaseClient.get(listPath, AnyRecordBase.class)
+        Mono<AnyRecordBase> listMono = backendBaseClient.get(listPath, AnyRecordBase.class, exchange)
             .onErrorMap(
                 WebClientResponseException.NotFound.class,
                 e -> new ResponseStatusException(HttpStatus.NOT_FOUND,

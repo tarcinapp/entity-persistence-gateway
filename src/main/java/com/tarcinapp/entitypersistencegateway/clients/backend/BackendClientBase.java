@@ -3,12 +3,16 @@ package com.tarcinapp.entitypersistencegateway.clients.backend;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ServerWebExchange;
+
+import com.tarcinapp.entitypersistencegateway.services.RequestIdService;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -19,7 +23,10 @@ import reactor.netty.http.client.HttpClient;
 
 @Component
 public class BackendClientBase implements IBackendClientBase {
-    
+
+    @Autowired
+    private RequestIdService requestIdService;
+
     private WebClient webClient;
 
     @Value("${app.outbound.policy-source.host:entity-persistence-service}")
@@ -74,6 +81,24 @@ public class BackendClientBase implements IBackendClientBase {
             .uri(path)
             .retrieve()
             .bodyToMono(type)
-            .timeout(responseTimeout); // Enforce global timeout
+            .timeout(responseTimeout);
+    }
+
+    /**
+     * Exchange-aware overload: attaches an X-Request-Id to the outbound request so
+     * that EPG-internal pre-fetch calls (e.g. OriginalRecordFetcher) are
+     * distinguishable in downstream logs.
+     * Format: {SHORTCODE}-EPG-{TIMESTAMP}-{RANDOM}
+     */
+    public <T> Mono<T> get(String path, Class<T> type, ServerWebExchange exchange) {
+        String internalId = requestIdService.generateInternalId();
+
+        return webClient
+            .get()
+            .uri(path)
+            .header("X-Request-Id", internalId)
+            .retrieve()
+            .bodyToMono(type)
+            .timeout(responseTimeout);
     }
 }

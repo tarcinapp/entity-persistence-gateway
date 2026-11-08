@@ -43,29 +43,32 @@ public class RequestIdService {
      * Generates a completely new Request ID.
      */
     public String generateNewId(ServerWebExchange exchange) {
-        StringBuilder sb = new StringBuilder();
+        return buildId(resolveAuthParty(exchange));
+    }
 
-        // Date part (yyyyMMddHHmmssSSS)
+    /**
+     * Generates a Request ID where the client segment is the literal "EPG",
+     * identifying the call as an EPG-internal pre-fetch (e.g. for OPA policy data).
+     * Format: {SHORTCODE}-EPG-{TIMESTAMP}-{RANDOM}
+     */
+    public String generateInternalId() {
+        return buildId("EPG");
+    }
+
+    private String resolveAuthParty(ServerWebExchange exchange) {
+        GatewaySecurityContext gc = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
+        return (gc != null && gc.getAuthParty() != null) ? gc.getAuthParty() : "UNKNOWN";
+    }
+
+    private String buildId(String clientSegment) {
         Date date = Calendar.getInstance().getTime();
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
         String datePart = dateFormat.format(date);
-
-        // Detection of Auth Party (azp) via Security Context
-        GatewaySecurityContext gc = exchange.getAttribute(GatewaySecurityContext.GATEWAY_SECURITY_CONTEXT_ATTR);
-        String authParty = (gc != null && gc.getAuthParty() != null) ? gc.getAuthParty() : "UNKNOWN";
-
-        // Random part (5 characters)
         String random = RandomStringUtils.secure().nextAlphanumeric(5);
 
-        // Concatenation: PREFIX-AZP-TIMESTAMP-RANDOM
-        sb.append(requestIdPrefix.toUpperCase())
-          .append("-")
-          .append(authParty.toUpperCase())
-          .append("-")
-          .append(datePart)
-          .append("-")
-          .append(random.toUpperCase());
-
-        return sb.toString();
+        return requestIdPrefix.toUpperCase()
+            + "-" + clientSegment.toUpperCase()
+            + "-" + datePart
+            + "-" + random.toUpperCase();
     }
 }

@@ -87,7 +87,7 @@ public class PolicyDataBuilderForThroughReactionCreation extends AbstractPolicyD
     private Mono<Void> fetchParentAndBuildPolicyData(PolicyData policyData, ServerWebExchange exchange,
                                                       GatewayFilterChain chain, String parentResourceUrl) {
         // Fetch parent record as a raw Map to get ALL fields
-        return backendBaseClient.get(parentResourceUrl, Object.class)
+        return backendBaseClient.get(parentResourceUrl, Object.class, exchange)
             .flatMap(parentRecord -> {
                 Map<String, Object> parentMap;
                 if (parentRecord instanceof Map) {

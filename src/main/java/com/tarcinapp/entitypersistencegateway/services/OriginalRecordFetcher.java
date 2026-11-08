@@ -58,7 +58,7 @@ public class OriginalRecordFetcher {
         log.debug("Fetching original record from: " + originalResourceUrl);
 
         final String resolvedUrl = originalResourceUrl;
-        return backendBaseClient.get(resolvedUrl, Object.class)
+        return backendBaseClient.get(resolvedUrl, Object.class, exchange)
             .onErrorMap(
                 WebClientResponseException.NotFound.class,
                 e -> new ResponseStatusException(HttpStatus.NOT_FOUND,

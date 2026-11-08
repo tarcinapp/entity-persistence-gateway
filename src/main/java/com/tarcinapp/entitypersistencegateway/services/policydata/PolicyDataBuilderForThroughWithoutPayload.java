@@ -60,7 +60,7 @@ public class PolicyDataBuilderForThroughWithoutPayload extends AbstractPolicyDat
 
         log.debug("Fetching parent resource from: {}", parentResourceUrl);
 
-        return backendBaseClient.get(parentResourceUrl, Object.class)
+        return backendBaseClient.get(parentResourceUrl, Object.class, exchange)
                 .flatMap(parentRecord -> {
                     Map<String, Object> parentMap;
                     if (parentRecord instanceof Map) {

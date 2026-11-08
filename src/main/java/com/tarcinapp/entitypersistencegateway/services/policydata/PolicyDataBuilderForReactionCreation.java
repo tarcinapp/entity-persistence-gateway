@@ -96,7 +96,7 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
                         final String finalTargetResourceId = targetResourceId;
 
                         // Fetch the target resource and build policy data
-                        return fetchTargetResourceAndBuildPolicyData(policyData, payloadJSON, finalResourceType, finalTargetResourceId)
+                        return fetchTargetResourceAndBuildPolicyData(policyData, payloadJSON, finalResourceType, finalTargetResourceId, exchange)
                             .thenReturn(inboundJsonRequestStr); // Return original payload unchanged
                     } catch (JsonProcessingException e) {
                         log.error("Failed to parse JSON payload", e);
@@ -114,11 +114,12 @@ public class PolicyDataBuilderForReactionCreation extends AbstractPolicyDataBuil
     private Mono<Void> fetchTargetResourceAndBuildPolicyData(PolicyData policyData,
                                                               Map<String, Object> payloadJSON,
                                                               String resourceType,
-                                                              String targetResourceId) {
+                                                              String targetResourceId,
+                                                              ServerWebExchange exchange) {
         String targetResourcePath = "/" + resourceType + "/" + targetResourceId;
         log.debug("Fetching target resource: " + targetResourcePath);
 
-        return backendBaseClient.get(targetResourcePath, AnyRecordBase.class)
+        return backendBaseClient.get(targetResourcePath, AnyRecordBase.class, exchange)
             .doOnNext(targetResource -> {
                 // Create _relationMetadata with managed fields from target resource
                 Map<String, Object> relationMetadata = new HashMap<>();
