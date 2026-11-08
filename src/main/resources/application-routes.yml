@@ -89,6 +89,7 @@ spring:
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -579,6 +580,7 @@ spring:
         - AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -1078,6 +1080,7 @@ spring:
         - AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -1444,6 +1447,7 @@ spring:
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -2130,6 +2134,7 @@ spring:
         - AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
@@ -3260,6 +3265,7 @@ spring:
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entities
@@ -3936,6 +3942,7 @@ spring:
         - name: AddSetsToEntityListOrReactionViaRecordQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: lists
@@ -4558,6 +4565,7 @@ spring:
         - name: AddSetsToRelationQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: relations
@@ -4955,6 +4963,7 @@ spring:
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: entityReactions
@@ -5621,6 +5630,7 @@ spring:
         - name: AddSetsToReactionsQuery
         - PreventQueryByForbiddenFields
         - InjectTypeHintsToQuery
+        - AddManagedFieldsInUpdateAll
         - RemoveRequestHeader=Authorization
         metadata:
           recordType: listReactions
