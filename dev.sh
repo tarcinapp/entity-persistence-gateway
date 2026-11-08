@@ -6,7 +6,7 @@
 OPA_PID_FILE="/tmp/opa-server.pid"
 BACKEND_PID_FILE="/tmp/entity-persistence-service.pid"
 EPC_PID_FILE="/tmp/entity-persistence-cache.pid"
-ORCHESTRATOR_PID_FILE="/tmp/entity-persistence-universal-orchestrator.pid"
+EPBO_PID_FILE="/tmp/entity-persistence-base-orchestrator.pid"
 GUI_PID_FILE="/tmp/tarcinapp-base-gui.pid"
 GATEWAY_PID_FILE="/tmp/entity-persistence-gateway.pid"
 
@@ -17,7 +17,7 @@ OPA_LOG_FILE="$LOG_DIR/opa.log"
 BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 REDIS_LOG_FILE="$LOG_DIR/redis.log"
 EPC_LOG_FILE="$LOG_DIR/epc.log"
-ORCHESTRATOR_LOG_FILE="$LOG_DIR/orchestrator.log"
+EPBO_LOG_FILE="$LOG_DIR/epbo.log"
 GUI_LOG_FILE="$LOG_DIR/gui.log"
 GATEWAY_LOG_FILE="$LOG_DIR/gateway.log"
 
@@ -37,8 +37,8 @@ BACKEND_DIR="$HOME/git/github/entity-persistence-service"
 BACKEND_CMD="./start-with-env-file.sh dev.env"
 EPC_DIR="$HOME/git/github/entity-persistence-cache"
 EPC_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
-ORCHESTRATOR_DIR="$HOME/git/github/entity-persistence-universal-orchestrator"
-ORCHESTRATOR_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
+EPBO_DIR="$HOME/git/github/entity-persistence-base-orchestrator"
+EPBO_CMD="mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled"
 
 # Colors
 GREEN='\033[0;32m'
@@ -52,7 +52,7 @@ rotate_logs() {
     ts=$(date +%Y%m%d_%H%M%S)
     old_dir="$LOG_DIR/old/$ts"
     local rotated=false
-    for log_file in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" "$GUI_LOG_FILE" "$GATEWAY_LOG_FILE"; do
+    for log_file in "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$EPC_LOG_FILE" "$EPBO_LOG_FILE" "$GUI_LOG_FILE" "$GATEWAY_LOG_FILE"; do
         if [ -s "$log_file" ]; then
             mkdir -p "$old_dir"
             mv "$log_file" "$old_dir/$(basename "$log_file")"
@@ -398,43 +398,43 @@ stop_epc() {
     fi
 }
 
-check_orchestrator() {
-    if [ -f "$ORCHESTRATOR_PID_FILE" ] && kill -0 "$(cat "$ORCHESTRATOR_PID_FILE")" 2>/dev/null; then
+check_epbo() {
+    if [ -f "$EPBO_PID_FILE" ] && kill -0 "$(cat "$EPBO_PID_FILE")" 2>/dev/null; then
         return 0
     else
         return 1
     fi
 }
 
-start_orchestrator() {
-    if check_orchestrator; then
-        print_success "Orchestrator is already running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+start_epbo() {
+    if check_epbo; then
+        print_success "EPBO is already running (PID: $(cat "$EPBO_PID_FILE"))"
         return 0
     fi
 
-    if [ ! -d "$ORCHESTRATOR_DIR" ]; then
-        print_error "Orchestrator directory not found: $ORCHESTRATOR_DIR"
+    if [ ! -d "$EPBO_DIR" ]; then
+        print_error "EPBO directory not found: $EPBO_DIR"
         return 1
     fi
 
-    print_status "Starting universal orchestrator..."
-    cd "$ORCHESTRATOR_DIR"
+    print_status "Starting entity-persistence-base-orchestrator..."
+    cd "$EPBO_DIR"
     # Truncate the log so we only scan lines from this startup
-    > "$ORCHESTRATOR_LOG_FILE"
-    nohup bash -c "$ORCHESTRATOR_CMD" > "$ORCHESTRATOR_LOG_FILE" 2>&1 &
-    echo $! > "$ORCHESTRATOR_PID_FILE"
+    > "$EPBO_LOG_FILE"
+    nohup bash -c "$EPBO_CMD" > "$EPBO_LOG_FILE" 2>&1 &
+    echo $! > "$EPBO_PID_FILE"
 
     local timeout=180
     local elapsed=0
     local started=false
-    print_status "Waiting for orchestrator to become ready (timeout: ${timeout}s)..."
+    print_status "Waiting for EPBO to become ready (timeout: ${timeout}s)..."
     while [ "$elapsed" -lt "$timeout" ]; do
-        if ! check_orchestrator; then
-            print_error "Orchestrator process died during startup"
-            rm -f "$ORCHESTRATOR_PID_FILE"
+        if ! check_epbo; then
+            print_error "EPBO process died during startup"
+            rm -f "$EPBO_PID_FILE"
             return 1
         fi
-        if grep -qE "INFO[[:space:]]+\[io\.quarkus\].*\(Quarkus Main Thread\).*started in.*Listening on:" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null; then
+        if grep -qE "INFO[[:space:]]+\[io\.quarkus\].*\(Quarkus Main Thread\).*started in.*Listening on:" "$EPBO_LOG_FILE" 2>/dev/null; then
             started=true
             break
         fi
@@ -443,28 +443,38 @@ start_orchestrator() {
     done
 
     if $started; then
-        print_success "Orchestrator started successfully (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+        print_success "EPBO started successfully (PID: $(cat "$EPBO_PID_FILE"))"
     else
-        print_error "Orchestrator did not become ready within ${timeout}s"
-        rm -f "$ORCHESTRATOR_PID_FILE"
+        print_error "EPBO did not become ready within ${timeout}s"
+        rm -f "$EPBO_PID_FILE"
         return 1
     fi
 }
 
-stop_orchestrator() {
-    if [ -f "$ORCHESTRATOR_PID_FILE" ]; then
-        local pid=$(cat "$ORCHESTRATOR_PID_FILE")
-        print_status "Stopping orchestrator (PID: $pid)..."
+stop_epbo() {
+    if [ -f "$EPBO_PID_FILE" ]; then
+        local pid=$(cat "$EPBO_PID_FILE")
+        print_status "Stopping EPBO (PID: $pid)..."
         if kill "$pid" 2>/dev/null; then
             pkill -P "$pid" 2>/dev/null
-            rm -f "$ORCHESTRATOR_PID_FILE"
-            print_success "Orchestrator stopped"
+            rm -f "$EPBO_PID_FILE"
+            print_success "EPBO stopped"
         else
-            print_warning "Orchestrator process not found or already stopped"
-            rm -f "$ORCHESTRATOR_PID_FILE"
+            print_warning "EPBO process not found or already stopped"
+            rm -f "$EPBO_PID_FILE"
         fi
     else
-        print_warning "Orchestrator not running"
+        print_warning "EPBO not running"
+    fi
+
+    # Additional cleanup: kill any process still holding port 3002
+    local epbo_pids
+    epbo_pids=$(lsof -ti :3002 2>/dev/null)
+    if [ -n "$epbo_pids" ]; then
+        print_status "Found EPBO process(es) on port 3002: $epbo_pids"
+        for pid in $epbo_pids; do
+            kill "$pid" 2>/dev/null && print_success "Killed process $pid" || print_warning "Could not kill process $pid"
+        done
     fi
 }
 
@@ -620,12 +630,12 @@ show_status() {
         echo "  EPC:           Stopped"
     fi
 
-    if check_orchestrator; then
-        echo "  Orchestrator:  Running (PID: $(cat "$ORCHESTRATOR_PID_FILE"))"
+    if check_epbo; then
+        echo "  EPBO:          Running (PID: $(cat "$EPBO_PID_FILE"))"
     else
-        echo "  Orchestrator:  Stopped"
+        echo "  EPBO:          Stopped"
     fi
-    
+
     echo
     echo "Service URLs:"
     echo "  Redis (EPG): localhost:6379"
@@ -633,7 +643,8 @@ show_status() {
     echo "  OPA:         http://localhost:8181"
     echo "  EPS:         http://localhost:3000"
     echo "  EPC:         http://localhost:3001"
-    echo "  Orchestrator:http://localhost:8079"
+    echo "  EPBO:        http://localhost:3002"
+    echo "  EPG:         http://localhost:8081"
     echo
     echo "Log Files:"
     echo "  Redis (EPG):  $REDIS_LOG_FILE"
@@ -641,7 +652,7 @@ show_status() {
     echo "  OPA:          $OPA_LOG_FILE"
     echo "  Backend:      $BACKEND_LOG_FILE"
     echo "  EPC:          $EPC_LOG_FILE"
-    echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
+    echo "  EPBO:         $EPBO_LOG_FILE"
 }
 
 case "${1:-help}" in
@@ -655,7 +666,7 @@ case "${1:-help}" in
         start_opa
         start_backend
         start_epc
-        start_orchestrator
+        start_epbo
         start_gateway
         echo
         print_success "All services started!"
@@ -666,7 +677,7 @@ case "${1:-help}" in
         echo "  OPA:          $OPA_LOG_FILE"
         echo "  Backend:      $BACKEND_LOG_FILE"
         echo "  EPC:          $EPC_LOG_FILE"
-        echo "  Orchestrator: $ORCHESTRATOR_LOG_FILE"
+        echo "  EPBO:         $EPBO_LOG_FILE"
         echo "  Gateway:      $GATEWAY_LOG_FILE"
         ;;
     
@@ -675,7 +686,7 @@ case "${1:-help}" in
         echo "=================================================="
         echo
         stop_gateway
-        stop_orchestrator
+        stop_epbo
         stop_epc
         stop_backend
         stop_opa
@@ -691,7 +702,7 @@ case "${1:-help}" in
     
     logs)
         print_status "Showing recent logs (Ctrl+C to exit)..."
-        tail -f "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$EPC_LOG_FILE" "$ORCHESTRATOR_LOG_FILE" 2>/dev/null || echo "No log files found yet"
+        tail -f "$REDIS_LOG_FILE" "$REDIS_EPC_LOG_FILE" "$OPA_LOG_FILE" "$BACKEND_LOG_FILE" "$EPC_LOG_FILE" "$EPBO_LOG_FILE" "$GATEWAY_LOG_FILE" 2>/dev/null || echo "No log files found yet"
         ;;
     
     start-gui)
@@ -723,6 +734,24 @@ case "${1:-help}" in
         stop_redis_epc
         echo
         print_success "EPC and Redis (EPC) stopped!"
+        ;;
+
+    start-epbo)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        start_epbo
+        echo
+        echo "  EPBO log: $EPBO_LOG_FILE"
+        ;;
+
+    stop-epbo)
+        echo "Entity Persistence Gateway - Development Environment"
+        echo "=================================================="
+        echo
+        stop_epbo
+        echo
+        print_success "EPBO stopped!"
         ;;
 
     start-gateway)
@@ -762,7 +791,7 @@ case "${1:-help}" in
         start_opa
         start_backend
         start_epc
-        start_orchestrator
+        start_epbo
         echo
         print_success "Dependencies started. You can now run your application in debug mode."
         ;;
@@ -779,8 +808,10 @@ case "${1:-help}" in
         echo "  status    - Show status of all services"
         echo "  logs      - Show service logs"
         echo "  debug     - Start everything for debugging"
-        echo "  start-epc - Start Redis (EPC) and entity-persistence-cache"
-        echo "  stop-epc  - Stop entity-persistence-cache and Redis (EPC)"
+        echo "  start-epc  - Start Redis (EPC) and entity-persistence-cache"
+        echo "  stop-epc   - Stop entity-persistence-cache and Redis (EPC)"
+        echo "  start-epbo - Start entity-persistence-base-orchestrator"
+        echo "  stop-epbo  - Stop entity-persistence-base-orchestrator"
         echo
         echo "Manual commands:"
         echo "  Redis:   redis-server --daemonize yes"
