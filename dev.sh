@@ -354,7 +354,7 @@ start_epc() {
             rm -f "$EPC_PID_FILE"
             return 1
         fi
-        if grep -qE "INFO[[:space:]]+\[io\.quarkus\].*\(Quarkus Main Thread\).*started in.*Listening on:" "$EPC_LOG_FILE" 2>/dev/null; then
+        if grep -qE "started in.*Listening on:" "$EPC_LOG_FILE" 2>/dev/null; then
             started=true
             break
         fi
@@ -434,7 +434,7 @@ start_epbo() {
             rm -f "$EPBO_PID_FILE"
             return 1
         fi
-        if grep -qE "INFO[[:space:]]+\[io\.quarkus\].*\(Quarkus Main Thread\).*started in.*Listening on:" "$EPBO_LOG_FILE" 2>/dev/null; then
+        if grep -qE "started in.*Listening on:" "$EPBO_LOG_FILE" 2>/dev/null; then
             started=true
             break
         fi
