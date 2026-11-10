@@ -29,6 +29,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -73,6 +74,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -117,6 +119,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -164,6 +167,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -208,6 +212,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -256,6 +261,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -297,6 +303,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -338,6 +345,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}, ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -371,6 +379,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -423,6 +432,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -466,6 +476,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesParentsAccessor}, ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -520,6 +531,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -564,6 +576,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -608,6 +621,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -655,6 +669,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -698,6 +713,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -746,6 +762,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -790,6 +807,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -834,6 +852,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -868,6 +887,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsChildrenAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -920,6 +940,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsChildrenAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -963,6 +984,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsParentsAccessor}, ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1017,6 +1039,7 @@ spring:
             controllerName: relations
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1064,6 +1087,7 @@ spring:
             controllerName: relations
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1108,6 +1132,7 @@ spring:
             controllerName: relations
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1153,6 +1178,7 @@ spring:
             controllerName: relations
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - FetchForbiddenFields
         - name: RequestRateLimiter
           args:
@@ -1200,6 +1226,7 @@ spring:
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1249,6 +1276,7 @@ spring:
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1296,6 +1324,7 @@ spring:
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1346,6 +1375,7 @@ spring:
             replacement: ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1384,6 +1414,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1431,6 +1462,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1476,6 +1508,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1522,6 +1555,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1567,6 +1601,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1614,6 +1649,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1659,6 +1695,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1704,6 +1741,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}, ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1739,6 +1777,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1790,6 +1829,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1834,6 +1874,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}, ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1887,6 +1928,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1934,6 +1976,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -1978,6 +2021,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2026,6 +2070,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2073,6 +2118,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2118,6 +2164,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2163,6 +2210,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2209,6 +2257,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2254,6 +2303,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2301,6 +2351,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2346,6 +2397,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2391,6 +2443,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}, ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2425,6 +2478,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2476,6 +2530,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2520,6 +2575,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}, ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2573,6 +2629,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2620,6 +2677,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2664,6 +2722,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2712,6 +2771,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.reactionsThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2758,6 +2818,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2804,6 +2865,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}, ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2847,6 +2909,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2896,6 +2959,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<recordId>.*)/${app.inbound.controllerBasePaths.entitiesThroughList}, ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -2937,6 +3001,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<recordId>.*)/${app.inbound.controllerBasePaths.listsThroughEntity}, ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -3040,6 +3105,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
@@ -3085,6 +3151,7 @@ spring:
             controllerName: entitiesKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
@@ -3142,6 +3209,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.replaceEntityById.replenishRate}
@@ -3195,6 +3263,7 @@ spring:
             useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.countEntities.replenishRate}
@@ -3246,6 +3315,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
@@ -3298,6 +3368,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityById.replenishRate}
@@ -3350,6 +3421,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateEntityById.replenishRate}
@@ -3396,6 +3468,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entities/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
@@ -3434,6 +3507,7 @@ spring:
           ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
@@ -3493,6 +3567,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
@@ -3542,6 +3617,7 @@ spring:
           ${app.outbound.routing-target.baseUri}entities/${recordId}/${app.inbound.controllerBasePaths.entitiesParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityParents.replenishRate}
@@ -3602,6 +3678,7 @@ spring:
         # Path rewrite handled by HierarchyKindAliasResolver
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntityChildren.replenishRate}
@@ -3663,6 +3740,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntityChild.replenishRate}
@@ -3717,6 +3795,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.createList.replenishRate}
@@ -3762,6 +3841,7 @@ spring:
             controllerName: listKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
@@ -3819,6 +3899,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.replaceListById.replenishRate}
@@ -3872,6 +3953,7 @@ spring:
             useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.countLists.replenishRate}
@@ -3923,6 +4005,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.updateAllLists.replenishRate}
@@ -3975,6 +4058,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findListById.replenishRate}
@@ -4027,6 +4111,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.updateListById.replenishRate}
@@ -4073,6 +4158,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}lists/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.deleteListById.replenishRate}
@@ -4111,6 +4197,7 @@ spring:
           ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findListChildren.replenishRate}
@@ -4170,6 +4257,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.createListChild.replenishRate}
@@ -4219,6 +4307,7 @@ spring:
           ${app.outbound.routing-target.baseUri}lists/${recordId}/${app.inbound.controllerBasePaths.listsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findListParents.replenishRate}
@@ -4278,6 +4367,7 @@ spring:
             controllerName: listKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findListChildren.replenishRate}
@@ -4339,6 +4429,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.createListChild.replenishRate}
@@ -4393,6 +4484,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.createRelation.replenishRate}
@@ -4441,6 +4533,7 @@ spring:
             controllerName: relationsKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.findRelations.replenishRate}
@@ -4495,6 +4588,7 @@ spring:
             useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.countRelations.replenishRate}
@@ -4546,6 +4640,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}relations
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.updateAllRelations.replenishRate}
@@ -4598,6 +4693,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.findRelationById.replenishRate}
@@ -4648,6 +4744,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.updateRelationById.replenishRate}
@@ -4698,6 +4795,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.replaceRelationById.replenishRate}
@@ -4751,6 +4849,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.relations}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}relations/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.relations.deleteRelationById.replenishRate}
@@ -4794,6 +4893,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
@@ -4839,6 +4939,7 @@ spring:
             controllerName: entityReactionsKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
@@ -4893,6 +4994,7 @@ spring:
             useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.countEntityReactions.replenishRate}
@@ -4944,6 +5046,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}entity-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
@@ -4996,6 +5099,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findEntityReactionById.replenishRate}
@@ -5046,6 +5150,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateEntityReactionById.replenishRate}
@@ -5096,6 +5201,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.replaceEntityReactionById.replenishRate}
@@ -5146,6 +5252,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entityReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
@@ -5184,6 +5291,7 @@ spring:
           ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.replenishRate}
@@ -5241,6 +5349,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createChildEntityReaction.replenishRate}
@@ -5290,6 +5399,7 @@ spring:
           ${app.outbound.routing-target.baseUri}entity-reactions/${recordId}/${app.inbound.controllerBasePaths.entityReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findParentsByEntityReactionId.replenishRate}
@@ -5349,6 +5459,7 @@ spring:
             controllerName: entityReactionsKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findChildrenEntityReactionsByReactionId.replenishRate}
@@ -5407,6 +5518,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createChildEntityReaction.replenishRate}
@@ -5461,6 +5573,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
@@ -5506,6 +5619,7 @@ spring:
             controllerName: listReactionsKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
@@ -5560,6 +5674,7 @@ spring:
             useWhereNotation: true
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.countListReactions.replenishRate}
@@ -5611,6 +5726,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*), ${app.outbound.routing-target.baseUri}list-reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
@@ -5663,6 +5779,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}list-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findListReactionById.replenishRate}
@@ -5713,6 +5830,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}list-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateListReactionById.replenishRate}
@@ -5763,6 +5881,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.replaceListReactionById.replenishRate}
@@ -5813,6 +5932,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.listReactions}/(?<kindAlias>/?.*)/(?<recordId>.*), ${app.outbound.routing-target.baseUri}list-reactions/${recordId}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
@@ -5851,6 +5971,7 @@ spring:
           ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsChildrenAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.replenishRate}
@@ -5908,6 +6029,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createChildListReaction.replenishRate}
@@ -5957,6 +6079,7 @@ spring:
           ${app.outbound.routing-target.baseUri}list-reactions/${recordId}/${app.inbound.controllerBasePaths.listReactionsParentsAccessor}
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findParentsByListReactionId.replenishRate}
@@ -6014,6 +6137,7 @@ spring:
             controllerName: listReactionsKindAlias
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findChildrenListReactionsByReactionId.replenishRate}
@@ -6072,6 +6196,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createChildListReaction.replenishRate}
@@ -6132,6 +6257,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createEntityReaction.replenishRate}
@@ -6186,6 +6312,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateAllEntityReactions.replenishRate}
@@ -6236,6 +6363,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findEntityReactions.replenishRate}
@@ -6290,6 +6418,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.deleteEntityReactionById.replenishRate}
@@ -6344,6 +6473,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.createListReaction.replenishRate}
@@ -6398,6 +6528,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.updateAllListReactions.replenishRate}
@@ -6448,6 +6579,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.findListReactions.replenishRate}
@@ -6502,6 +6634,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.reactionsThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/reactions
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.reactions.deleteListReactionById.replenishRate}
@@ -6556,6 +6689,7 @@ spring:
         - PlaceKindNameIntoPayload
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.createEntity.replenishRate}
@@ -6609,6 +6743,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.updateAllEntities.replenishRate}
@@ -6658,6 +6793,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.findEntities.replenishRate}
@@ -6713,6 +6849,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.lists}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.entitiesThroughList}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}lists/${recordId}/entities
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.entities.deleteEntityById.replenishRate}
@@ -6761,6 +6898,7 @@ spring:
         - RewritePath=${app.inbound.baseUri}${app.inbound.controllerBasePaths.entities}/(?<kindAlias>[^/]+)/(?<recordId>[^/]+)/${app.inbound.controllerBasePaths.listsThroughEntity}/(?<throughAlias>[^/]+), ${app.outbound.routing-target.baseUri}entities/${recordId}/lists
         - AuthenticateRequest
         - GenerateRequestId
+        - InjectAuthContextHeaders
         - name: DynamicRateLimiter
           args:
             replenishRate: ${app.rate-limits.lists.findLists.replenishRate}
