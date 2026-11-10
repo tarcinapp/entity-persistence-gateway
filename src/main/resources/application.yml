@@ -25,10 +25,9 @@ server:
     enabled: true
     mime-types: application/json
   shutdown: graceful
-  server:
-    error:
-      include-message: ${app.error.include-message}
-      include-stacktrace: ${app.error.include-stacktrace}
+  error:
+    include-message: ${app.error.include-message}
+    include-stacktrace: ${app.error.include-stacktrace}
 
 spring:
   # LINKING: We map Spring's native JMX settings to our custom variables defined in application-jmx.yml
@@ -118,14 +117,36 @@ spring:
             allow-credentials: ${app.inbound.cors.allowCredentials}
             max-age: ${app.inbound.cors.maxAge}
 
-      # Handle CORS headers emitted by the backend service.
       default-filters:
+
+        # Deduplicate CORS origin/credentials headers that may arrive doubled when both gateway and backend set them.
         - DedupeResponseHeader=Access-Control-Allow-Origin RETAIN_FIRST
+
+        # Deduplicate CORS credentials header for the same reason.
         - DedupeResponseHeader=Access-Control-Allow-Credentials RETAIN_FIRST
+
+        # Deduplicate CORS exposed-headers, keeping all unique values from both sources.
         - DedupeResponseHeader=Access-Control-Expose-Headers RETAIN_UNIQUE
+
+        # Strip preflight-only CORS headers that the backend echoes; the gateway handles these itself.
         - RemoveResponseHeader=Access-Control-Allow-Methods
+
+        # Strip preflight-only CORS headers that the backend echoes; the gateway handles these itself.
         - RemoveResponseHeader=Access-Control-Allow-Headers
+
+        # Strip preflight-only CORS headers that the backend echoes; the gateway handles these itself.
         - RemoveResponseHeader=Access-Control-Max-Age
+
+        # Internal auth-context header — must never be returned to the client.
+        - RemoveResponseHeader=X-User-Id
+
+        # Internal auth-context header — must never be returned to the client.
+        - RemoveResponseHeader=X-User-Roles
+
+        # Internal auth-context header — must never be returned to the client.
+        - RemoveResponseHeader=X-User-Groups
+
+        # Stamp every proxied request with the application shortcode so downstream services can identify the deployment.
         - AddRequestHeader=X-App-Shortcode, ${app.shortcode}
       
       metrics:
