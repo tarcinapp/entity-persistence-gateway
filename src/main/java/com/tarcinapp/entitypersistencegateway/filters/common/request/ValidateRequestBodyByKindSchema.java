@@ -162,11 +162,12 @@ public class ValidateRequestBodyByKindSchema
         // Process Alias Schema
         boolean aliasValidationEnabled = aliasConfig.getValidationEnabled() == null
                 || aliasConfig.getValidationEnabled();
-        if (aliasValidationEnabled && aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
+        String aliasRequestSchema = OpenApiProperties.resolveRequestSchema(aliasConfig);
+        if (aliasValidationEnabled && aliasRequestSchema != null && aliasConfig.getKind() != null) {
             String aliasSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind());
 
             // 1. Create POST Schema (Creation)
-            ObjectNode aliasPostSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), basePostSchemaNode);
+            ObjectNode aliasPostSchemaNode = mergeSchemaWithBase(aliasRequestSchema, basePostSchemaNode);
             JsonNode sanitizedPostSchema = sanitizeSchema(aliasPostSchemaNode);
             JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedPostSchema);
             if (registerToCommon) {
@@ -176,7 +177,7 @@ public class ValidateRequestBodyByKindSchema
             }
 
             // 2. Create PUT Schema (Replacement)
-            ObjectNode aliasPutSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), baseResourceSchemaNode);
+            ObjectNode aliasPutSchemaNode = mergeSchemaWithBase(aliasRequestSchema, baseResourceSchemaNode);
             JsonNode sanitizedPutSchema = sanitizeSchema(aliasPutSchemaNode);
             JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedPutSchema);
             if (registerToCommon) {
@@ -186,7 +187,7 @@ public class ValidateRequestBodyByKindSchema
             }
 
             // 3. Create Patch Schema
-            ObjectNode aliasPatchSchemaNode = mergeSchemaWithBase(aliasConfig.getSchema(), basePatchSchemaNode);
+            ObjectNode aliasPatchSchemaNode = mergeSchemaWithBase(aliasRequestSchema, basePatchSchemaNode);
             // Explicitly remove required fields for PATCH variants to allow partial updates
             aliasPatchSchemaNode.remove("required");
             JsonNode sanitizedPatchSchema = sanitizeSchema(aliasPatchSchemaNode);
@@ -209,11 +210,12 @@ public class ValidateRequestBodyByKindSchema
 
                 boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
                         || routeConfig.getValidationEnabled();
-                if (routeValidationEnabled && routeConfig.getSchema() != null && aliasConfig.getKind() != null) {
+                String routeRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeValidationEnabled && routeRequestSchema != null && aliasConfig.getKind() != null) {
                     String routeSchemaKey = buildSchemaKey(controllerName, aliasConfig.getKind(), routeId);
 
                     // POST Version
-                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    ObjectNode routePostNode = mergeSchemaWithBase(routeRequestSchema, basePostSchemaNode);
                     JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
                     JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
                     if (registerToCommon) {
@@ -223,7 +225,7 @@ public class ValidateRequestBodyByKindSchema
                     }
 
                     // PUT Version
-                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    ObjectNode routePutNode = mergeSchemaWithBase(routeRequestSchema, baseResourceSchemaNode);
                     JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
                     JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
                     if (registerToCommon) {
@@ -233,7 +235,7 @@ public class ValidateRequestBodyByKindSchema
                     }
 
                     // PATCH Version
-                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    ObjectNode routePatchNode = mergeSchemaWithBase(routeRequestSchema, basePatchSchemaNode);
                     routePatchNode.remove("required");
                     JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
                     JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
@@ -328,11 +330,12 @@ public class ValidateRequestBodyByKindSchema
 
                 boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
                         || routeConfig.getValidationEnabled();
-                if (routeValidationEnabled && routeConfig.getSchema() != null && !routeConfig.getSchema().isBlank()) {
+                String throughRouteRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeValidationEnabled && throughRouteRequestSchema != null) {
                     String throughRouteSchemaKey = buildThroughRouteSchemaKey(controllerName, rootKind,
                             targetAliasConfig.getAlias(), routeId);
 
-                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    ObjectNode routePostNode = mergeSchemaWithBase(throughRouteRequestSchema, basePostSchemaNode);
                     JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
                     JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
                     if (registerToCommon) {
@@ -341,7 +344,7 @@ public class ValidateRequestBodyByKindSchema
                         postSchemasRelations.put(throughRouteSchemaKey, postSchema);
                     }
 
-                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    ObjectNode routePutNode = mergeSchemaWithBase(throughRouteRequestSchema, baseResourceSchemaNode);
                     JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
                     JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
                     if (registerToCommon) {
@@ -350,7 +353,7 @@ public class ValidateRequestBodyByKindSchema
                         putSchemasRelations.put(throughRouteSchemaKey, putSchema);
                     }
 
-                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    ObjectNode routePatchNode = mergeSchemaWithBase(throughRouteRequestSchema, basePatchSchemaNode);
                     routePatchNode.remove("required");
                     JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
                     JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
@@ -366,10 +369,11 @@ public class ValidateRequestBodyByKindSchema
         }
 
         // Register through-level schema
-        if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
+        String throughLevelRequestSchema = OpenApiProperties.resolveRequestSchema(targetAliasConfig);
+        if (throughLevelRequestSchema != null) {
             String throughSchemaKey = buildThroughSchemaKey(controllerName, rootKind, targetAliasConfig.getAlias());
 
-            ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+            ObjectNode schemaNode = mergeSchemaWithBase(throughLevelRequestSchema, basePostSchemaNode);
             JsonNode sanitizedPost = sanitizeSchema(schemaNode);
             JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedPost);
             if (registerToCommon) {
@@ -378,7 +382,7 @@ public class ValidateRequestBodyByKindSchema
                 postSchemasRelations.put(throughSchemaKey, postSchema);
             }
 
-            ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+            ObjectNode putSchemaNode = mergeSchemaWithBase(throughLevelRequestSchema, baseResourceSchemaNode);
             JsonNode sanitizedPut = sanitizeSchema(putSchemaNode);
             JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedPut);
             if (registerToCommon) {
@@ -387,7 +391,7 @@ public class ValidateRequestBodyByKindSchema
                 putSchemasRelations.put(throughSchemaKey, putSchema);
             }
 
-            ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
+            ObjectNode patchSchemaNode = mergeSchemaWithBase(throughLevelRequestSchema, basePatchSchemaNode);
             patchSchemaNode.remove("required");
             JsonNode sanitizedPatch = sanitizeSchema(patchSchemaNode);
             JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedPatch);
@@ -463,12 +467,13 @@ public class ValidateRequestBodyByKindSchema
 
                 boolean routeValidationEnabled = routeConfig.getValidationEnabled() == null
                         || routeConfig.getValidationEnabled();
-                if (routeValidationEnabled && routeConfig.getSchema() != null && !routeConfig.getSchema().isBlank()) {
-                    String hierarchyRouteSchemaKey = buildHierarchyRouteSchemaKey(controllerName, rootKind, 
+                String hierarchyRouteRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeValidationEnabled && hierarchyRouteRequestSchema != null) {
+                    String hierarchyRouteSchemaKey = buildHierarchyRouteSchemaKey(controllerName, rootKind,
                             targetAliasConfig.getAlias(), routeId);
 
                     // POST Version
-                    ObjectNode routePostNode = mergeSchemaWithBase(routeConfig.getSchema(), basePostSchemaNode);
+                    ObjectNode routePostNode = mergeSchemaWithBase(hierarchyRouteRequestSchema, basePostSchemaNode);
                     JsonNode sanitizedRoutePost = sanitizeSchema(routePostNode);
                     JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePost);
                     if (registerToCommon) {
@@ -478,7 +483,7 @@ public class ValidateRequestBodyByKindSchema
                     }
 
                     // PUT Version
-                    ObjectNode routePutNode = mergeSchemaWithBase(routeConfig.getSchema(), baseResourceSchemaNode);
+                    ObjectNode routePutNode = mergeSchemaWithBase(hierarchyRouteRequestSchema, baseResourceSchemaNode);
                     JsonNode sanitizedRoutePut = sanitizeSchema(routePutNode);
                     JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePut);
                     if (registerToCommon) {
@@ -488,7 +493,7 @@ public class ValidateRequestBodyByKindSchema
                     }
 
                     // PATCH Version
-                    ObjectNode routePatchNode = mergeSchemaWithBase(routeConfig.getSchema(), basePatchSchemaNode);
+                    ObjectNode routePatchNode = mergeSchemaWithBase(hierarchyRouteRequestSchema, basePatchSchemaNode);
                     routePatchNode.remove("required");
                     JsonNode sanitizedRoutePatch = sanitizeSchema(routePatchNode);
                     JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedRoutePatch);
@@ -504,11 +509,12 @@ public class ValidateRequestBodyByKindSchema
         }
 
         // Only register if hierarchy-level has its own schema defined
-        if (targetAliasConfig.getSchema() != null && !targetAliasConfig.getSchema().isBlank()) {
+        String hierarchyLevelRequestSchema = OpenApiProperties.resolveRequestSchema(targetAliasConfig);
+        if (hierarchyLevelRequestSchema != null) {
             String hierarchySchemaKey = buildHierarchySchemaKey(controllerName, rootKind, targetAliasConfig.getAlias());
 
             // 1. Create POST Schema
-            ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+            ObjectNode schemaNode = mergeSchemaWithBase(hierarchyLevelRequestSchema, basePostSchemaNode);
             JsonNode sanitizedHierarchyPost = sanitizeSchema(schemaNode);
             JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPost);
 
@@ -519,7 +525,7 @@ public class ValidateRequestBodyByKindSchema
             }
 
             // 2. Create PUT Schema
-            ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+            ObjectNode putSchemaNode = mergeSchemaWithBase(hierarchyLevelRequestSchema, baseResourceSchemaNode);
             JsonNode sanitizedHierarchyPut = sanitizeSchema(putSchemaNode);
             JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPut);
 
@@ -530,7 +536,7 @@ public class ValidateRequestBodyByKindSchema
             }
 
             // 3. Create Patch Schema
-            ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
+            ObjectNode patchSchemaNode = mergeSchemaWithBase(hierarchyLevelRequestSchema, basePatchSchemaNode);
             patchSchemaNode.remove("required");
             JsonNode sanitizedHierarchyPatch = sanitizeSchema(patchSchemaNode);
             JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedHierarchyPatch);
@@ -546,7 +552,8 @@ public class ValidateRequestBodyByKindSchema
 
         // Also register the target's alias-level schema (if it has a kind)
         // This supports Priority 3 fallback: target kind's alias-level schema
-        if (targetAliasConfig.getKind() != null && targetAliasConfig.getSchema() != null) {
+        String targetAliasRequestSchema = OpenApiProperties.resolveRequestSchema(targetAliasConfig);
+        if (targetAliasConfig.getKind() != null && targetAliasRequestSchema != null) {
             String targetAliasKey = buildSchemaKey(controllerName, targetAliasConfig.getKind());
 
             // Check if already registered (in respective maps)
@@ -557,7 +564,7 @@ public class ValidateRequestBodyByKindSchema
             if (!targetPostMap.containsKey(targetAliasKey)) {
 
                 // POST Version
-                ObjectNode schemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePostSchemaNode);
+                ObjectNode schemaNode = mergeSchemaWithBase(targetAliasRequestSchema, basePostSchemaNode);
                 JsonNode sanitizedFallbackPost = sanitizeSchema(schemaNode);
                 JsonSchema postSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPost);
 
@@ -568,7 +575,7 @@ public class ValidateRequestBodyByKindSchema
                 }
 
                 // PUT Version
-                ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), baseResourceSchemaNode);
+                ObjectNode putSchemaNode = mergeSchemaWithBase(targetAliasRequestSchema, baseResourceSchemaNode);
                 JsonNode sanitizedFallbackPut = sanitizeSchema(putSchemaNode);
                 JsonSchema putSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPut);
 
@@ -579,7 +586,7 @@ public class ValidateRequestBodyByKindSchema
                 }
 
                 // PATCH Version
-                ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasConfig.getSchema(), basePatchSchemaNode);
+                ObjectNode patchSchemaNode = mergeSchemaWithBase(targetAliasRequestSchema, basePatchSchemaNode);
                 patchSchemaNode.remove("required");
                 JsonNode sanitizedFallbackPatch = sanitizeSchema(patchSchemaNode);
                 JsonSchema patchSchema = SCHEMA_FACTORY.getSchema(sanitizedFallbackPatch);

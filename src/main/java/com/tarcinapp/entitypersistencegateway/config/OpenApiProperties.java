@@ -75,8 +75,11 @@ public class OpenApiProperties {
             aliasLookupByControllerAndAlias.put(buildAliasKey(controllerName, aliasConfig.getAlias()), aliasContext);
         }
 
-        if (aliasConfig.getSchema() != null && aliasConfig.getKind() != null) {
-            schemaByControllerAndKind.put(buildSchemaKey(controllerName, aliasConfig.getKind()), aliasConfig.getSchema());
+        if (aliasConfig.getKind() != null) {
+            String effective = resolveRequestSchema(aliasConfig);
+            if (effective != null) {
+                schemaByControllerAndKind.put(buildSchemaKey(controllerName, aliasConfig.getKind()), effective);
+            }
         }
 
         if (aliasConfig.getChildren() != null) {
@@ -128,6 +131,8 @@ public class OpenApiProperties {
         private String kind;
         private String description;
         private String schema;
+        private String requestSchema;
+        private String responseSchema;
         private Boolean validationEnabled;
         private List<AliasConfig> children = new ArrayList<>();
         private List<AliasConfig> parents = new ArrayList<>();
@@ -148,9 +153,55 @@ public class OpenApiProperties {
         private String summary;
         private String description;
         private String schema;
+        private String requestSchema;
+        private String responseSchema;
         private Boolean validationEnabled;
         private List<String> tags = new ArrayList<>();
         private Map<String, Object> request;
+    }
+
+    /**
+     * Returns the effective schema string to use when building request-body variants
+     * (New{Kind} for POST, Patch{Kind} for PATCH, {Kind} for PUT).
+     *
+     * Resolution order:
+     *   1. config.requestSchema  — explicit per-direction override
+     *   2. config.schema         — unified fallback (unchanged behaviour)
+     *   3. null                  — no schema configured
+     */
+    public static String resolveRequestSchema(AliasConfig config) {
+        if (config == null) return null;
+        if (config.getRequestSchema() != null) return config.getRequestSchema();
+        return config.getSchema();
+    }
+
+    public static String resolveRequestSchema(RouteConfig config) {
+        if (config == null) return null;
+        if (config.getRequestSchema() != null) return config.getRequestSchema();
+        return config.getSchema();
+    }
+
+    /**
+     * Returns the effective schema string to use when building response variants
+     * ({Kind} for GET / POST / PUT / PATCH / DELETE responses).
+     *
+     * Resolution order:
+     *   1. config.responseSchema — explicit per-direction override
+     *   2. config.schema         — unified fallback (unchanged behaviour)
+     *   3. null                  — no schema configured
+     *
+     * NOTE: responseSchema never feeds ValidateRequestBodyByKindSchema.
+     */
+    public static String resolveResponseSchema(AliasConfig config) {
+        if (config == null) return null;
+        if (config.getResponseSchema() != null) return config.getResponseSchema();
+        return config.getSchema();
+    }
+
+    public static String resolveResponseSchema(RouteConfig config) {
+        if (config == null) return null;
+        if (config.getResponseSchema() != null) return config.getResponseSchema();
+        return config.getSchema();
     }
 
     @Data

@@ -4501,16 +4501,20 @@ public class OasTransformationEngine {
             log.info("addSchemaForAlias: aliasConfig is null, skipping");
             return;
         }
-        if (aliasConfig.getSchema() == null) {
-            log.info("addSchemaForAlias: schema is null for alias={}, kind={}, parent={}", 
-                aliasConfig.getAlias(), aliasConfig.getKind(), parentAlias);
-            return;
-        }
         if (aliasConfig.getKind() == null) {
             log.info("addSchemaForAlias: kind is null for alias={}", aliasConfig.getAlias());
             return;
         }
-        
+
+        String effectiveRequestSchemaJson = OpenApiProperties.resolveRequestSchema(aliasConfig);
+        String effectiveResponseSchemaJson = OpenApiProperties.resolveResponseSchema(aliasConfig);
+
+        if (effectiveRequestSchemaJson == null && effectiveResponseSchemaJson == null) {
+            log.info("addSchemaForAlias: no schema configured for alias={}, kind={}, parent={}",
+                aliasConfig.getAlias(), aliasConfig.getKind(), parentAlias);
+            return;
+        }
+
         try {
             // Build schema name based on path context
             // Top-level: Author, Book
@@ -4529,25 +4533,30 @@ public class OasTransformationEngine {
             }
             
             // 1. Resource Schema (GET/PUT) - use Resource Base (includes ID, read-only fields)
-            Schema mergedSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectiveResourceBase, controllerName);
-            removeKindFromSchema(mergedSchema);
-            schemas.put(schemaName, mergedSchema);
+            //    Source: responseSchema if set, else schema.
+            if (effectiveResponseSchemaJson != null) {
+                Schema mergedSchema = mergeSchemaWithBase(effectiveResponseSchemaJson, effectiveResourceBase, controllerName);
+                removeKindFromSchema(mergedSchema);
+                schemas.put(schemaName, mergedSchema);
+            }
             
             // 2. New Variant (POST) - use POST Base (excludes ID, uses create constraints)
-            // Also add "New" variant without required base fields for POST
-            Schema newSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePostBase, controllerName);
-            // Remove base-schema required fields (gateway provides defaults for those)
-            // but keep user-config required fields (those ARE required from the client)
-            newSchema.setRequired(extractUserRequiredFields(aliasConfig.getSchema()));
-            removeKindFromSchema(newSchema);
-            schemas.put("New" + schemaName, newSchema);
-            
-            // 3. Patch Variant (PATCH) - use PATCH Base (partial update)
-            // Also add "Patch" variant without required fields for PATCH (partial updates)
-            Schema patchSchema = mergeSchemaWithBase(aliasConfig.getSchema(), effectivePatchBase, controllerName);
-            patchSchema.setRequired(null); // No required for partial update
-            removeKindFromSchema(patchSchema);
-            schemas.put("Patch" + schemaName, patchSchema);
+            //    Source: requestSchema if set, else schema.
+            if (effectiveRequestSchemaJson != null) {
+                Schema newSchema = mergeSchemaWithBase(effectiveRequestSchemaJson, effectivePostBase, controllerName);
+                // Remove base-schema required fields (gateway provides defaults for those)
+                // but keep user-config required fields (those ARE required from the client)
+                newSchema.setRequired(extractUserRequiredFields(effectiveRequestSchemaJson));
+                removeKindFromSchema(newSchema);
+                schemas.put("New" + schemaName, newSchema);
+
+                // 3. Patch Variant (PATCH) - use PATCH Base (partial update)
+                //    Source: same as New variant (requestSchema).
+                Schema patchSchema = mergeSchemaWithBase(effectiveRequestSchemaJson, effectivePatchBase, controllerName);
+                patchSchema.setRequired(null); // No required for partial update
+                removeKindFromSchema(patchSchema);
+                schemas.put("Patch" + schemaName, patchSchema);
+            }
             
             log.debug("Added merged domain schemas: {}, New{}, Patch{} (from kind: {})", 
                 schemaName, schemaName, schemaName, aliasConfig.getKind());
@@ -4598,10 +4607,12 @@ public class OasTransformationEngine {
             RouteConfig routeConfig = routeEntry.getValue();
             
             // Skip routes without custom schemas
-            if (routeConfig.getSchema() == null || routeConfig.getSchema().isBlank()) {
+            String routeRequestSchemaJson = OpenApiProperties.resolveRequestSchema(routeConfig);
+            String routeResponseSchemaJson = OpenApiProperties.resolveResponseSchema(routeConfig);
+            if (routeRequestSchemaJson == null && routeResponseSchemaJson == null) {
                 continue;
             }
-            
+
             try {
                 // Determine which schema variant to create based on route type
                 // Routes that create use POST base: createEntity, createList, etc.
@@ -4614,39 +4625,49 @@ public class OasTransformationEngine {
                 
                 if (routeIdLower.contains("create")) {
                     // POST REQUEST variant: New{SchemaName}{RouteId}
-                    routeSchemaName = "New" + schemaName + capitalizeFirst(routeId);
-                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePostBase, controllerName);
-                    // Remove base-schema required fields (gateway provides defaults for those)
-                    // but keep user-config required fields (those ARE required from the client)
-                    routeSchema.setRequired(extractUserRequiredFields(routeConfig.getSchema()));
-                    removeKindFromSchema(routeSchema);
-                    log.debug("Created route-specific POST request schema: {} (from route: {})", routeSchemaName, routeId);
-                    
-                    // POST RESPONSE variant: {SchemaName}{RouteId} — merged with Resource base
-                    // The backend returns all fields (including read-only like _id, timestamps)
-                    // so the response schema should use the resource base, not the POST base.
-                    String responseSchemaName = schemaName + capitalizeFirst(routeId);
-                    Schema responseSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
-                    removeKindFromSchema(responseSchema);
-                    schemas.put(responseSchemaName, responseSchema);
-                    log.debug("Created route-specific POST response schema: {} (from route: {})", responseSchemaName, routeId);
+                    // Source: requestSchema if set, else schema.
+                    if (routeRequestSchemaJson != null) {
+                        routeSchemaName = "New" + schemaName + capitalizeFirst(routeId);
+                        routeSchema = mergeSchemaWithBase(routeRequestSchemaJson, effectivePostBase, controllerName);
+                        routeSchema.setRequired(extractUserRequiredFields(routeRequestSchemaJson));
+                        removeKindFromSchema(routeSchema);
+                        schemas.put(routeSchemaName, routeSchema);
+                        log.debug("Created route-specific POST request schema: {} (from route: {})", routeSchemaName, routeId);
+                    }
+
+                    // POST RESPONSE variant: {SchemaName}{RouteId} — merged with Resource base.
+                    // Source: responseSchema if set, else schema.
+                    if (routeResponseSchemaJson != null) {
+                        String responseSchemaName = schemaName + capitalizeFirst(routeId);
+                        Schema responseSchema = mergeSchemaWithBase(routeResponseSchemaJson, effectiveResourceBase, controllerName);
+                        removeKindFromSchema(responseSchema);
+                        schemas.put(responseSchemaName, responseSchema);
+                        log.debug("Created route-specific POST response schema: {} (from route: {})", responseSchemaName, routeId);
+                    }
+                    continue; // variants already put above; skip the schemas.put at the bottom
                 } else if (routeIdLower.contains("update") || routeIdLower.contains("patch")) {
                     // PATCH variant: Patch{SchemaName}{RouteId}
+                    // Source: requestSchema if set, else schema.
+                    if (routeRequestSchemaJson == null) continue;
                     routeSchemaName = "Patch" + schemaName + capitalizeFirst(routeId);
-                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectivePatchBase, controllerName);
+                    routeSchema = mergeSchemaWithBase(routeRequestSchemaJson, effectivePatchBase, controllerName);
                     routeSchema.setRequired(null); // No required for partial update
                     removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific PATCH schema: {} (from route: {})", routeSchemaName, routeId);
                 } else if (routeIdLower.contains("replace") || routeIdLower.contains("put")) {
                     // PUT variant: {SchemaName}{RouteId}
+                    // Request body uses requestSchema; fall back to responseSchema for documentation.
+                    String src = routeRequestSchemaJson != null ? routeRequestSchemaJson : routeResponseSchemaJson;
                     routeSchemaName = schemaName + capitalizeFirst(routeId);
-                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    routeSchema = mergeSchemaWithBase(src, effectiveResourceBase, controllerName);
                     removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific PUT schema: {} (from route: {})", routeSchemaName, routeId);
                 } else {
-                    // Default to resource variant
+                    // Default to resource variant — use responseSchema if set, else requestSchema.
+                    String src = routeResponseSchemaJson != null ? routeResponseSchemaJson : routeRequestSchemaJson;
+                    if (src == null) continue;
                     routeSchemaName = schemaName + capitalizeFirst(routeId);
-                    routeSchema = mergeSchemaWithBase(routeConfig.getSchema(), effectiveResourceBase, controllerName);
+                    routeSchema = mergeSchemaWithBase(src, effectiveResourceBase, controllerName);
                     removeKindFromSchema(routeSchema);
                     log.debug("Created route-specific schema: {} (from route: {})", routeSchemaName, routeId);
                 }

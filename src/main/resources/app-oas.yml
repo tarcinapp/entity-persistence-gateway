@@ -33,9 +33,19 @@
 #                     Auto-derived by heuristic (strip trailing 's') if omitted.
 #                     Set explicitly for irregular plurals (e.g. "heroes" → singular: "hero").
 # - description:      Human-readable description surfaced in generated OpenAPI docs
-# - schema:           JSON Schema for request/response validation (JSON string)
+# - schema:           JSON Schema used for both request validation and response documentation.
+#                     Acts as the unified fallback when requestSchema or responseSchema are absent.
+# - requestSchema:    JSON Schema used exclusively for request-body variants (POST, PUT, PATCH).
+#                     Overrides 'schema' for request-side generation when present.
+#                     Consumed by: ValidateRequestBodyByKindSchema filter (runtime validation)
+#                     and OAS New{Kind} / Patch{Kind} component schema generation.
+# - responseSchema:   JSON Schema used exclusively for response variants (GET response,
+#                     POST/PUT/PATCH/DELETE response bodies in the generated OAS).
+#                     Overrides 'schema' for response-side OAS documentation when present.
+#                     NOTE: responseSchema does NOT affect runtime request validation.
+#                     Consumed by: OAS {Kind} component schema generation only.
 # - validationEnabled: Toggle validation on/off (alias-level or route-level).
-#                     Defaults to true when a schema is provided.
+#                     Defaults to true when a schema or requestSchema is provided.
 # - routes:           Per-route configuration (must match route IDs in application-routes.yml)
 # - children:         Nested resource configuration for hierarchical parent→child traversal
 # - parents:          Nested resource configuration for hierarchical child→parent traversal

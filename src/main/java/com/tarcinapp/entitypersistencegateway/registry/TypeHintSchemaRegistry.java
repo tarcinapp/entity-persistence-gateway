@@ -190,8 +190,9 @@ public class TypeHintSchemaRegistry {
         }
 
         // Alias-level schema  (priority 5)
-        if (aliasConfig.getSchema() != null) {
-            parseAndStore(controllerName + ":" + aliasConfig.getKind(), aliasConfig.getSchema(), newRegistry);
+        String aliasRequestSchema = OpenApiProperties.resolveRequestSchema(aliasConfig);
+        if (aliasRequestSchema != null) {
+            parseAndStore(controllerName + ":" + aliasConfig.getKind(), aliasRequestSchema, newRegistry);
         }
 
         // Route-level schemas (priority 4)
@@ -199,9 +200,10 @@ public class TypeHintSchemaRegistry {
             for (Map.Entry<String, RouteConfig> routeEntry : aliasConfig.getRoutes().entrySet()) {
                 String routeId = routeEntry.getKey();
                 RouteConfig routeConfig = routeEntry.getValue();
-                if (routeConfig.getSchema() != null) {
+                String routeRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeRequestSchema != null) {
                     parseAndStore(controllerName + ":" + aliasConfig.getKind() + ":" + routeId,
-                            routeConfig.getSchema(), newRegistry);
+                            routeRequestSchema, newRegistry);
                 }
             }
         }
@@ -240,18 +242,20 @@ public class TypeHintSchemaRegistry {
             for (Map.Entry<String, RouteConfig> routeEntry : targetAlias.getRoutes().entrySet()) {
                 String routeId = routeEntry.getKey();
                 RouteConfig routeConfig = routeEntry.getValue();
-                if (routeConfig.getSchema() != null) {
+                String routeRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeRequestSchema != null) {
                     String key = "hierarchy-route:" + controllerName + ":" + rootKind + ":"
                             + targetAlias.getAlias() + ":" + routeId;
-                    parseAndStore(key, routeConfig.getSchema(), newRegistry);
+                    parseAndStore(key, routeRequestSchema, newRegistry);
                 }
             }
         }
 
         // Hierarchy-level schema (priority 1)
-        if (targetAlias.getSchema() != null) {
+        String hierarchyRequestSchema = OpenApiProperties.resolveRequestSchema(targetAlias);
+        if (hierarchyRequestSchema != null) {
             String key = "hierarchy:" + controllerName + ":" + rootKind + ":" + targetAlias.getAlias();
-            parseAndStore(key, targetAlias.getSchema(), newRegistry);
+            parseAndStore(key, hierarchyRequestSchema, newRegistry);
         }
     }
 
@@ -276,18 +280,20 @@ public class TypeHintSchemaRegistry {
             for (Map.Entry<String, RouteConfig> routeEntry : throughAlias.getRoutes().entrySet()) {
                 String routeId = routeEntry.getKey();
                 RouteConfig routeConfig = routeEntry.getValue();
-                if (routeConfig.getSchema() != null) {
+                String routeRequestSchema = OpenApiProperties.resolveRequestSchema(routeConfig);
+                if (routeRequestSchema != null) {
                     String key = "through-route:" + controllerName + ":" + rootKind + ":"
                             + throughAlias.getAlias() + ":" + routeId;
-                    parseAndStore(key, routeConfig.getSchema(), newRegistry);
+                    parseAndStore(key, routeRequestSchema, newRegistry);
                 }
             }
         }
 
         // Through-level schema (priority 3)
-        if (throughAlias.getSchema() != null) {
+        String throughRequestSchema = OpenApiProperties.resolveRequestSchema(throughAlias);
+        if (throughRequestSchema != null) {
             String key = "through:" + controllerName + ":" + rootKind + ":" + throughAlias.getAlias();
-            parseAndStore(key, throughAlias.getSchema(), newRegistry);
+            parseAndStore(key, throughRequestSchema, newRegistry);
         }
     }
 
